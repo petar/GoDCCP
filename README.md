@@ -1,6 +1,8 @@
 ## Description
 
-GoDCCP is an implementation of the Datagram Congestion Control Protocol in Google Go.
+GoDCCP is an implementation of the 
+[Datagram Congestion Control Protocol](http://read.cs.ucla.edu/dccp) in 
+[Google Go](http://golang.org).
 
 ## Installation
 
