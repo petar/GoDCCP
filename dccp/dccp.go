@@ -118,7 +118,6 @@ const (
 //    |     |       |0|                                               |
 //    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 type GenericHeader struct {
-	?
 	SourcePort, DestPort uint16
 	DataOffset           uint16
 	CCVal, CsCov         uint8
@@ -128,7 +127,6 @@ type GenericHeader struct {
 	X                    bool
 	Reserved             uint8
 	SequenceNumber       uint64
-}
 }
 
 // Up to:
