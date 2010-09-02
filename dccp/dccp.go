@@ -44,27 +44,11 @@ const MaximumSegmentLifetime = ?
 // Connections progress through three phases: initiation, including a three-way
 // handshake; data transfer; and termination.
 
-// Packet types
-const (
-	Request  = 0
-	Response = 1
-	Data     = 2
-	Ack      = 3
-	DataAck  = 4
-	CloseReq = 5
-	Close    = 6
-	Reset    = 7
-	Sync     = 8
-	SyncAck  = 9
-	// Packet types 10-15 reserved
-)
-
 // DCCP sequence numbers increment by one per packet
 type SequenceNumber uint64
 
 // The nine possible states are as follows.  They are listed in
-// increasing order, so that "state >= CLOSEREQ" means the same as
-// "state = CLOSEREQ or state = CLOSING or state = TIMEWAIT".
+// increasing order.
 const (
 	CLOSED   = iota
 	LISTEN   = _
@@ -83,51 +67,8 @@ const (
 
 // There are four feature negotiation options in all: 
 // Change L, Confirm L, Change R, and Confirm R.
+// L = feature location, R = feature remote
 
-//  The DCCP generic header takes different forms depending on the value
-//  of X, the Extended Sequence Numbers bit.  If X is one, the Sequence
-//  Number field is 48 bits long, and the generic header takes 16 bytes,
-//  as follows.
-//
-//     0                   1                   2                   3
-//     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//    |          Source Port          |           Dest Port           |
-//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//    |  Data Offset  | CCVal | CsCov |           Checksum            |
-//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//    |     |       |X|               |                               .
-//    | Res | Type  |=|   Reserved    |  Sequence Number (high bits)  .
-//    |     |       |1|               |                               .
-//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//    .  Sequence Number (low bits)                                   |
-//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//
-//   If X is zero, only the low 24 bits of the Sequence Number are
-//   transmitted, and the generic header is 12 bytes long.
-//
-//     0                   1                   2                   3
-//     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//    |          Source Port          |           Dest Port           |
-//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//    |  Data Offset  | CCVal | CsCov |           Checksum            |
-//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//    |     |       |X|                                               |
-//    | Res | Type  |=|          Sequence Number (low bits)           |
-//    |     |       |0|                                               |
-//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-type GenericHeader struct {
-	SourcePort, DestPort uint16
-	DataOffset           uint16
-	CCVal, CsCov         uint8
-	Checksum             uint16
-	Res                  uint8
-	Type                 uint8
-	X                    bool
-	Reserved             uint8
-	SequenceNumber       uint64
-}
 
 // Up to:
 // Kohler, et al.              Standards Track                    [Page 21]
