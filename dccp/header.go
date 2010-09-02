@@ -65,7 +65,38 @@ const (
 	Reset    = 7
 	Sync     = 8
 	SyncAck  = 9
-	// Packet types 10-15 reserved
+)
+
+func isTypeReserved(type int) bool {
+	return type >= 10 && type <= 15
+}
+
+// Reset codes
+const (
+	ResetUnspecified       = 0
+	ResetClosed            = 1
+	ResetAborted           = 2
+	ResetNoConnection      = 3
+	ResetPacketError       = 4
+	ResetOptionError       = 5
+	ResetMandatoryError    = 6
+	ResetConnectionRefused = 7
+	ResetBadServiceCode    = 8
+	ResetTooBusy           = 9
+	ResetBadInitCookie     = 10
+	ResetAgressionPenalty  = 11
+)
+
+func isResetCodeReserved(code int) bool {
+	return code >= 12 && code <= 127
+}
+
+func isResetCodeCCIDSpecific(code int) bool {
+	return code >= 128 && code <= 255
+}
+
+var (
+	ErrUnconstrained = os.NewError("unconstrained")
 )
 
 func unmarshalGenericHeader(buf []byte) (*genericHeader, os.Error) {
@@ -76,45 +107,80 @@ func marshalGenericHeader(hdr *genericHeader) []byte {
 	?
 }
 
-// Any DCCP header has a subset of the following subheaders, in this order:
-// + Generic header
-// + Acknowledgement Number Subheader
-// + Service Code
-// + Options and Padding
-// + Application Data
-
-// See RFC 4340, Page 21
-func calcAckNoSubheaderSize(Type int, X bool) int {
-	if Type == Request || Type == Data {
-		return 0
-	}
-	if X == 0 {
-		return 4
-	}
-	if X == 1 {
-		return 8
+// If @err is nil, the value of @X can be determined from the @Type.
+func calcX(Type int, AllowShortSeqNoFeature bool) (X int, err os.Error) {
+	switch Type {
+	case Request, Response:
+		return 1, nil
+	case Data, Ack, DataAck:
+		if AllowShortSeqNoFeature {
+			return 0, ErrUnconstrained
+		}
+		return 1, nil // X=1 means 48-bit (long) sequence numbers
+	case CloseReq, Close:
+		return 1, nil
+	case Reset:
+		return 1, nil
+	case Sync, SyncAck:
+		return 1, nil
 	}
 	panic("unreach")
 }
 
-func calcServiceCodeSize(..) int {
+// Any DCCP header has a subset of the following subheaders, in this order:
+// + Generic header
+// + Acknowledgement Number Subheader
+// + Service Code, or Reset Code and Reset Data fields
+// + Options and Padding
+// + Application Data
+
+// See RFC 4340, Page 21
+func calcAckNoSubheaderSize(Type int, X int) int {
+	if X != 0 && X != 1 {
+		panic("logic")
+	}
+	if Type == Request || Type == Data {
+		return 0
+	}
+	if X == 1 {
+		return 8
+	}
+	return 4
+}
+
+func calcServiceCodeSize(Type int) int {
+	switch Type {
+	case Request, Response:
+		return 4
+	case Data, Ack, DataAck:
+		return 0
+	case CloseReq, Close:
+		return 0
+	case Reset:
+		return 4
+	case Sync, SyncAck:
+		return 0
+	}
+	panic("unreach")
 }
 
 func mayHaveAppData(Type int) bool {
 	switch Type {
 	case Request, Response:
 		return true
-	case ...
+	case Data:
+		return true
+	case Ack:
+		return true // may have App Data (essentially for padding) but must be ignored
+	case DataAck:
+		return true
+	case CloseReq, Close:
+		return true // may have App Data (essentially for padding) but must be ignored
+	case Reset:
+		return true // used for UTF-8 encoded error text
+	case Sync, SyncAck:
+		return true // may have App Data (essentially for padding) but must be ignored
 	}
 	panic("unreach")
 }
 
-// RETURNS 0 or 1 if X is determined by Type, and -1 otherwise
-func calcX(Type uint8) int {
-	switch Type {
-	case Request, Response:
-		return 1
-	case ..	
-	}
-	panic("unreach")
-}

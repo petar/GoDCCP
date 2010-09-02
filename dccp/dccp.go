@@ -70,5 +70,4 @@ const (
 // L = feature location, R = feature remote
 
 
-// Up to:
-// Kohler, et al.              Standards Track                    [Page 21]
+// Up to Section 5.8 (non-inclusive)
