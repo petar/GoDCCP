@@ -38,14 +38,14 @@ package dccp
 //    |     |       |0|                                               |
 //    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-type genericHeader struct {
+type GenericHeader struct {
 	SourcePort, DestPort uint16
 	DataOffset           uint8
 	CCVal, CsCov         uint8
 	Checksum             uint16
 	Res                  uint8
 	Type                 uint8
-	X                    bool
+	X                    uint8
 	Reserved             uint8
 	SequenceNumber       uint64
 }
@@ -98,14 +98,6 @@ func isResetCodeCCIDSpecific(code int) bool {
 var (
 	ErrUnconstrained = os.NewError("unconstrained")
 )
-
-func unmarshalGenericHeader(buf []byte) (*genericHeader, os.Error) {
-	?
-}
-
-func marshalGenericHeader(hdr *genericHeader) []byte {
-	?
-}
 
 // If @err is nil, the value of @X can be determined from the @Type.
 func calcX(Type int, AllowShortSeqNoFeature bool) (X int, err os.Error) {
@@ -182,5 +174,65 @@ func mayHaveAppData(Type int) bool {
 		return true // may have App Data (essentially for padding) but must be ignored
 	}
 	panic("unreach")
+}
+
+// Options
+
+const (
+	OptionPadding         = 0
+	OptionMandatory       = 1
+	OptionSlowReceiver    = 2
+	OptionChangeL         = 32
+	OptionConfirmL        = 33
+	OptionChangeR         = 34
+	OptionConfirmR        = 35
+	OptionInitCookie      = 36
+	OptionNDPCount        = 37
+	OptionAckVectorNonce0 = 38
+	OptionAckVectorNonce1 = 39
+	OptionDataDropped     = 40
+	OptionTimestamp       = 41
+	OptionTimestampEcho   = 42
+	OptionElapsedTime     = 43
+	OptionDataChecksum    = 44
+)
+
+func isOptionReserved(optionType int) bool {
+	return (optionType >= 3 && optionType <= 31) || 
+		(optionType >= 45 && optionType <= 127)
+}
+
+func isOptionCCIDSpecific(optionType int) bool {
+	return optionType >= 128 && optionType <= 255
+}
+
+func isOptionSingleByte(optionType int) bool {
+	return optionType >= 0 && optionType <= 31
+}
+
+func isOptionValidForType(optionType, Type int) bool {
+	if Type != Data {
+		return true
+	}
+	switch optionType {
+	case OptionPadding,
+		OptionSlowReceiver,
+		OptionNDPCount,
+		OptionTimestamp,
+		OptionTimestampEcho,
+		OptionDataChecksum:
+		return true
+	default:
+		return false
+	}
+	panic("unreach")
+}
+
+func ReadGenericHeader(buf []byte) (*GenericHeader, os.Error) {
+	?
+}
+
+func (gh *GenericHeader) Write(hdr *GenericHeader) []byte {
+	?
 }
 

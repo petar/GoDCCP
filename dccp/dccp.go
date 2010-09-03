@@ -70,4 +70,4 @@ const (
 // L = feature location, R = feature remote
 
 
-// Up to Section 5.8 (non-inclusive)
+// Up to Section 6 (non-inclusive)
