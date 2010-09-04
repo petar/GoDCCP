@@ -4,6 +4,7 @@ TARG=github.com/petar/GoDCCP/dccp
 GOFILES=\
 	dccp.go\
 	header.go\
-	util.go\
+	read.go\
+	wire.go\
 
 include $(GOROOT)/src/Make.pkg

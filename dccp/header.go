@@ -4,40 +4,6 @@
 
 package dccp
 
-//  The DCCP generic header takes different forms depending on the value
-//  of X, the Extended Sequence Numbers bit.  If X is one, the Sequence
-//  Number field is 48 bits long, and the generic header takes 16 bytes,
-//  as follows.
-//
-//     0                   1                   2                   3
-//     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//    |          Source Port          |           Dest Port           |
-//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//    |  Data Offset  | CCVal | CsCov |           Checksum            |
-//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//    |     |       |X|               |                               .
-//    | Res | Type  |=|   Reserved    |  Sequence Number (high bits)  .
-//    |     |       |1|               |                               .
-//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//    .  Sequence Number (low bits)                                   |
-//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//
-//   If X is zero, only the low 24 bits of the Sequence Number are
-//   transmitted, and the generic header is 12 bytes long.
-//
-//     0                   1                   2                   3
-//     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//    |          Source Port          |           Dest Port           |
-//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//    |  Data Offset  | CCVal | CsCov |           Checksum            |
-//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//    |     |       |X|                                               |
-//    | Res | Type  |=|          Sequence Number (low bits)           |
-//    |     |       |0|                                               |
-//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
 type GenericHeader struct {
 	SourcePort, DestPort uint16
 	DataOffset           uint8
@@ -49,6 +15,11 @@ type GenericHeader struct {
 	Reserved             uint8
 	SequenceNumber       uint64
 }
+
+var (
+	ErrUnconstrained = os.NewError("unconstrained")
+	ErrSize          = os.NewError("size")
+)
 
 // Packet types. Stored in the Type field of the generic header.
 // Receivers MUST ignore any packets with reserved type.  That is,
@@ -95,10 +66,6 @@ func isResetCodeCCIDSpecific(code int) bool {
 	return code >= 128 && code <= 255
 }
 
-var (
-	ErrUnconstrained = os.NewError("unconstrained")
-)
-
 // If @err is nil, the value of @X can be determined from the @Type.
 func calcX(Type int, AllowShortSeqNoFeature bool) (X int, err os.Error) {
 	switch Type {
@@ -120,11 +87,11 @@ func calcX(Type int, AllowShortSeqNoFeature bool) (X int, err os.Error) {
 }
 
 // Any DCCP header has a subset of the following subheaders, in this order:
-// + Generic header
-// + Acknowledgement Number Subheader
-// + Service Code, or Reset Code and Reset Data fields
-// + Options and Padding
-// + Application Data
+// (1) Generic header
+// (2) Acknowledgement Number Subheader
+// (3) Code Subheader: Service Code, or Reset Code and Reset Data fields
+// (4) Options and Padding
+// (5) Application Data
 
 // See RFC 4340, Page 21
 func calcAckNoSubheaderSize(Type int, X int) int {
@@ -140,7 +107,7 @@ func calcAckNoSubheaderSize(Type int, X int) int {
 	return 4
 }
 
-func calcServiceCodeSize(Type int) int {
+func calcCodeSubheaderSize(Type int) int {
 	switch Type {
 	case Request, Response:
 		return 4
@@ -154,6 +121,24 @@ func calcServiceCodeSize(Type int) int {
 		return 0
 	}
 	panic("unreach")
+}
+
+// calcFixedHeaderSize() returns the size of the fixed portion of
+// the generic header in bytes, based on its @Type and @X. This
+// includes (1), (2) and (3).
+func calcFixedHeaderSize(Type int, X int) int {
+	var r int
+	switch X {
+	case 0:
+		r = 12
+	case 1:
+		r = 16
+	default:
+		panic("logic")
+	}
+	r += calcAckNoSubheaderSize(Type, X)
+	r += calcCodeSubheaderSize(Type)
+	return r
 }
 
 func mayHaveAppData(Type int) bool {
@@ -228,11 +213,6 @@ func isOptionValidForType(optionType, Type int) bool {
 	panic("unreach")
 }
 
-func ReadGenericHeader(buf []byte) (*GenericHeader, os.Error) {
-	?
-}
-
 func (gh *GenericHeader) Write(hdr *GenericHeader) []byte {
 	?
 }
-

@@ -4,6 +4,8 @@
 
 package dccp
 
+const WordSize = 4  // Each wire-format word is 4 bytes
+
 // Wire format to integers
 
 func decode1ByteUint(w []byte) uint8 {
