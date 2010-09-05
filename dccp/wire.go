@@ -4,7 +4,7 @@
 
 package dccp
 
-const WordSize = 4  // Each wire-format word is 4 bytes
+const wireWordSize = 4  // Each wire-format word is 4 bytes
 
 // Wire format to integers
 
@@ -25,15 +25,26 @@ func decode2ByteUint(w []byte) uint16 {
 	return u
 }
 
+func decode3ByteUint(w []byte) uint32 {
+	if len(w) != 3 {
+		panic("size")
+	}
+	var u uint32
+	u |= uint32(w[2])
+	u |= uint32(w[1]) << (8*1)
+	u |= uint32(w[0]) << (8*2)
+	return u
+}
+
 func decode4ByteUint(w []byte) uint32 {
 	if len(w) != 4 {
 		panic("size")
 	}
 	var u uint32
 	u |= uint32(w[3])
-	u |= uint32(w[2]) << 8*1
-	u |= uint32(w[1]) << 8*2
-	u |= uint32(w[0]) << 8*3
+	u |= uint32(w[2]) << (8*1)
+	u |= uint32(w[1]) << (8*2)
+	u |= uint32(w[0]) << (8*3)
 	return u
 }
 
@@ -43,11 +54,11 @@ func decode6ByteUint(w []byte) uint64 {
 	}
 	var u uint64
 	u |= uint64(w[5])
-	u |= uint64(w[4]) << 8*1
-	u |= uint64(w[3]) << 8*2
-	u |= uint64(w[2]) << 8*3
-	u |= uint64(w[1]) << 8*4
-	u |= uint64(w[0]) << 8*5
+	u |= uint64(w[4]) << (8*1)
+	u |= uint64(w[3]) << (8*2)
+	u |= uint64(w[2]) << (8*3)
+	u |= uint64(w[1]) << (8*4)
+	u |= uint64(w[0]) << (8*5)
 	return u
 }
 
@@ -68,14 +79,26 @@ func encode2ByteUint(u uint16, w []byte) {
 	w[0] = uint8((u >> 8) & 0xff)
 }
 
+func encode3ByteUint(u uint32, w []byte) {
+	if len(w) != 3 {
+		panic("size")
+	}
+	w[2] = uint8(u & 0xff)
+	w[1] = uint8((u >> (8*1)) & 0xff)
+	w[0] = uint8((u >> (8*2)) & 0xff)
+	if (u >> (8*3)) != 0 {
+		panic("overflow")
+	}
+}
+
 func encode4ByteUint(u uint32, w []byte) {
 	if len(w) != 4 {
 		panic("size")
 	}
 	w[3] = uint8(u & 0xff)
-	w[2] = uint8((u >> 8*1) & 0xff)
-	w[1] = uint8((u >> 8*2) & 0xff)
-	w[0] = uint8((u >> 8*3) & 0xff)
+	w[2] = uint8((u >> (8*1)) & 0xff)
+	w[1] = uint8((u >> (8*2)) & 0xff)
+	w[0] = uint8((u >> (8*3)) & 0xff)
 }
 
 func encode6ByteUint(u uint64, w []byte) {
@@ -83,12 +106,12 @@ func encode6ByteUint(u uint64, w []byte) {
 		panic("size")
 	}
 	w[5] = uint8(u & 0xff)
-	w[4] = uint8((u >> 8*1) & 0xff)
-	w[3] = uint8((u >> 8*2) & 0xff)
-	w[2] = uint8((u >> 8*3) & 0xff)
-	w[1] = uint8((u >> 8*4) & 0xff)
-	w[0] = uint8((u >> 8*5) & 0xff)
-	if (u >> 8*6) != 0 {
+	w[4] = uint8((u >> (8*1)) & 0xff)
+	w[3] = uint8((u >> (8*2)) & 0xff)
+	w[2] = uint8((u >> (8*3)) & 0xff)
+	w[1] = uint8((u >> (8*4)) & 0xff)
+	w[0] = uint8((u >> (8*5)) & 0xff)
+	if (u >> (8*6)) != 0 {
 		panic("overflow")
 	}
 }

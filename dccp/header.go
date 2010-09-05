@@ -6,19 +6,17 @@ package dccp
 
 type GenericHeader struct {
 	SourcePort, DestPort uint16
-	DataOffset           uint8
 	CCVal, CsCov         uint8
-	Checksum             uint16
-	Res                  uint8
 	Type                 uint8
 	X                    uint8
-	Reserved             uint8
-	SequenceNumber       uint64
+	SeqNo                uint64
+	AckNo                uint64
 }
 
 var (
-	ErrUnconstrained = os.NewError("unconstrained")
 	ErrSize          = os.NewError("size")
+	ErrSemantic      = os.NewError("semantic")
+	ErrNumeric       = os.NewError("numeric")
 )
 
 // Packet types. Stored in the Type field of the generic header.
@@ -66,22 +64,21 @@ func isResetCodeCCIDSpecific(code int) bool {
 	return code >= 128 && code <= 255
 }
 
-// If @err is nil, the value of @X can be determined from the @Type.
-func calcX(Type int, AllowShortSeqNoFeature bool) (X int, err os.Error) {
+func areTypeAndXCompatible(Type int, X int, AllowShortSeqNoFeature bool) bool {
 	switch Type {
 	case Request, Response:
-		return 1, nil
+		return X == 1
 	case Data, Ack, DataAck:
 		if AllowShortSeqNoFeature {
-			return 0, ErrUnconstrained
+			return true
 		}
-		return 1, nil // X=1 means 48-bit (long) sequence numbers
+		return X == 1
 	case CloseReq, Close:
-		return 1, nil
+		return X == 1
 	case Reset:
-		return 1, nil
+		return X == 1
 	case Sync, SyncAck:
-		return 1, nil
+		return X == 1
 	}
 	panic("unreach")
 }

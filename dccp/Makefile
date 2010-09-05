@@ -1,10 +1,10 @@
-include $(GOROOT)/src/Make.$(GOARCH)
+include $(GOROOT)/src/Make.inc
 
 TARG=github.com/petar/GoDCCP/dccp
 GOFILES=\
-	dccp.go\
-	header.go\
-	read.go\
 	wire.go\
+	#header.go\
+	#read.go\
+	#dccp.go\
 
 include $(GOROOT)/src/Make.pkg
