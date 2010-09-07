@@ -4,19 +4,34 @@
 
 package dccp
 
+import "os"
+
 type GenericHeader struct {
-	SourcePort, DestPort uint16
-	CCVal, CsCov         uint8
-	Type                 uint8
-	X                    uint8
-	SeqNo                uint64
-	AckNo                uint64
+	SourcePort    uint16
+	DestPort      uint16
+	CCVal, CsCov  byte
+	Type          int
+	X             bool
+	SeqNo         uint64
+	AckNo         uint64
+	ServiceCode   uint64
+	Reset         []byte
+	Options       []Option
+	Data          []byte
+}
+
+type Option struct {
+	Type      int
+	Data      []byte
+	Mandatory bool
 }
 
 var (
+	ErrAlign         = os.NewError("align")
 	ErrSize          = os.NewError("size")
 	ErrSemantic      = os.NewError("semantic")
 	ErrNumeric       = os.NewError("numeric")
+	ErrOption        = os.NewError("option")
 )
 
 // Packet types. Stored in the Type field of the generic header.
@@ -36,8 +51,8 @@ const (
 	SyncAck  = 9
 )
 
-func isTypeReserved(type int) bool {
-	return type >= 10 && type <= 15
+func isTypeReserved(Type int) bool {
+	return Type >= 10 && Type <= 15
 }
 
 // Reset codes
@@ -64,21 +79,21 @@ func isResetCodeCCIDSpecific(code int) bool {
 	return code >= 128 && code <= 255
 }
 
-func areTypeAndXCompatible(Type int, X int, AllowShortSeqNoFeature bool) bool {
+func areTypeAndXCompatible(Type int, X bool, AllowShortSeqNoFeature bool) bool {
 	switch Type {
 	case Request, Response:
-		return X == 1
+		return X
 	case Data, Ack, DataAck:
 		if AllowShortSeqNoFeature {
 			return true
 		}
-		return X == 1
+		return X
 	case CloseReq, Close:
-		return X == 1
+		return X
 	case Reset:
-		return X == 1
+		return X
 	case Sync, SyncAck:
-		return X == 1
+		return X
 	}
 	panic("unreach")
 }
@@ -91,14 +106,11 @@ func areTypeAndXCompatible(Type int, X int, AllowShortSeqNoFeature bool) bool {
 // (5) Application Data
 
 // See RFC 4340, Page 21
-func calcAckNoSubheaderSize(Type int, X int) int {
-	if X != 0 && X != 1 {
-		panic("logic")
-	}
+func calcAckNoSubheaderSize(Type int, X bool) int {
 	if Type == Request || Type == Data {
 		return 0
 	}
-	if X == 1 {
+	if X {
 		return 8
 	}
 	return 4
@@ -123,15 +135,13 @@ func calcCodeSubheaderSize(Type int) int {
 // calcFixedHeaderSize() returns the size of the fixed portion of
 // the generic header in bytes, based on its @Type and @X. This
 // includes (1), (2) and (3).
-func calcFixedHeaderSize(Type int, X int) int {
+func calcFixedHeaderSize(Type int, X bool) int {
 	var r int
 	switch X {
-	case 0:
+	case false:
 		r = 12
-	case 1:
+	case true:
 		r = 16
-	default:
-		panic("logic")
 	}
 	r += calcAckNoSubheaderSize(Type, X)
 	r += calcCodeSubheaderSize(Type)
@@ -208,8 +218,4 @@ func isOptionValidForType(optionType, Type int) bool {
 		return false
 	}
 	panic("unreach")
-}
-
-func (gh *GenericHeader) Write(hdr *GenericHeader) []byte {
-	?
 }
