@@ -2,9 +2,10 @@ include $(GOROOT)/src/Make.inc
 
 TARG=github.com/petar/GoDCCP/dccp
 GOFILES=\
-	wire.go\
+	checksum.go\
 	header.go\
 	read.go\
+	wire.go\
 	#dccp.go\
 
 include $(GOROOT)/src/Make.pkg
