@@ -6,14 +6,17 @@ package dccp
 
 import "os"
 
-func ReadGenericHeader(buf []byte) (*GenericHeader, os.Error) {
+func ReadGenericHeader(buf []byte, 
+		sourceIP, destIP []byte, protoNo int,
+		allowShortSeqNoFeature bool) (*GenericHeader, os.Error) {
+
 	if len(buf) < 12 {
 		return nil, ErrSize
 	}
 	gh := &GenericHeader{}
 	k := 0
 
-	// Read (1) Generic Header
+	// Read (1a) Generic Header
 
 	gh.SourcePort = decode2ByteUint(buf[k:k+2])
 	k += 2
@@ -25,22 +28,22 @@ func ReadGenericHeader(buf []byte) (*GenericHeader, os.Error) {
 	dataOffset := int(decode1ByteUint(buf[k:k+1])) * wireWordSize
 	k += 1
 
+	// Read CCVal
 	gh.CCVal = buf[k] >> 4
-	gh.CsCov = buf[k] & 0x0f
-	k += 1
-	// XXX: CCVal/CsCov check bounds
 
-	/* checksum := */ decode2ByteUint(buf[k:k+2])
-	k += 2
-	// XXX: Checksum check
+	// Read CsCov
+	CsCov := int(buf[k] & 0x0f)
+	k += 1
+
+	k += 2 // Skip over the checksum field. It is implicitly used in checksum verification later
 
 	// gh.Res = buf[k] >> 5 // The 3-bit Res field should be ignored
 	gh.Type = int((buf[k] >> 1) & 0x0f)
 	gh.X = (buf[k] & 0x01) == 1
 	k += 1
 
-	// XXX: Don't assume that AllowShortSeqNoFeature is false
-	if !areTypeAndXCompatible(gh.Type, gh.X, false) {
+	// Check that X and Type are compatible
+	if !areTypeAndXCompatible(gh.Type, gh.X, allowShortSeqNoFeature) {
 		return nil, ErrSemantic
 	}
 	
@@ -49,6 +52,21 @@ func ReadGenericHeader(buf []byte) (*GenericHeader, os.Error) {
 		return nil, ErrNumeric
 	}
 
+	// Verify checksum
+	XXX // what if len(buf) is odd, or len of data is odd
+	appcov, err := calcChecksumAppCoverage(gh.CsCov, len(buf) - dataOffset)
+	if err != nil {
+		return nil, err
+	}
+	csum := csumSum(buf[0:dataOffset])
+	csum = csumAdd(csum, csumPseudoIP(sourceIP, destIP, protoNo, len(buf)))
+	csum = csumPartial(csum, buf[dataOffset:dataOffset+appcov])
+	csum = csumDone(csum)
+	if csum != nil {
+		return nil, ErrChecksum
+	}
+
+	// Read SeqNo
 	switch gh.X {
 	case false:
 		gh.SeqNo = uint64(decode3ByteUint(buf[k:k+3]))
@@ -63,7 +81,7 @@ func ReadGenericHeader(buf []byte) (*GenericHeader, os.Error) {
 		k += 6
 	}
 
-	// Read (2) Acknowledgement Number Subheader
+	// Read (1b) Acknowledgement Number Subheader
 
 	switch calcAckNoSubheaderSize(gh.Type, gh.X) {
 	case 0:
@@ -87,7 +105,7 @@ func ReadGenericHeader(buf []byte) (*GenericHeader, os.Error) {
 		panic("unreach")
 	}
 
-	// Read (3) Code Subheader: Service Code, or Reset Code and Reset Data fields
+	// Read (1c) Code Subheader: Service Code, or Reset Code and Reset Data fields
 	switch gh.Type {
 	case Request, Response:
 		gh.ServiceCode = decode6ByteUint(buf[k:k+4])
@@ -97,7 +115,7 @@ func ReadGenericHeader(buf []byte) (*GenericHeader, os.Error) {
 		k += 4
 	}
 
-	// Read (4) Options and Padding
+	// Read (2) Options and Padding
 	opts, err := readOptions(buf[k:dataOffset])
 	if err != nil {
 		return nil, err
@@ -107,7 +125,7 @@ func ReadGenericHeader(buf []byte) (*GenericHeader, os.Error) {
 		return nil, err
 	}
 
-	// Read (5) Application Data
+	// Read (3) Application Data
 	gh.Data = buf[dataOffset:]
 
 	return gh, nil

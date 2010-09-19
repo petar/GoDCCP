@@ -32,7 +32,7 @@ func csumAdd(u,w uint16) uint16 {
 	return uint16(sum)
 }
 
-// XXX: This method can be optimized significantly
+// TODO(petar): This method can be optimized significantly
 func csumSum(buf []byte) uint16 {
 	if len(buf) % 2 != 0 {
 		panic("csum parity")
@@ -50,3 +50,43 @@ func csumPartial(sum uint16, buf []byte) uint16 {
 }
 
 func csumDone(sum uint16) uint16 { return ^sum }
+
+// @dccpLen is the length of the DCCP header with options, plus the length of any data
+func csumPseudoIP(sourceIP, destIP []byte, protoNo int, dccpLen int) uint16 {
+	if len(sourceIP) == 4 {
+		return csumPseudoIPv4(sourceIP, destIP, protoNo, dccpLen)
+	}
+	return csumPseudoIPv6(sourceIP, destIP, protoNo, dccpLen)
+}
+
+func csumPseudoIPv4(sourceIP, destIP []byte, protoNo int, dccpLen int) uint16 {
+	if len(sourceIP) != 4 || len(destIP) != 4 {
+		panic("size")
+	}
+	if uint(protoNo) >> 8 != 0 {
+		panic("proto no")
+	}
+	if uint16(dccpLen) >> 16 != 0 {
+		panic("len")
+	}
+	sum := csumSum(sourceIP)
+	sum = csumPartial(sum, destIP)
+	sum = csumAdd(sum, uint16(protoNo))
+	sum = csumAdd(sum, uint16(dccpLen))
+	return sum
+}
+
+func csumPseudoIPv6(sourceIP, destIP []byte, protoNo int, dccpLen int) uint16 {
+	if len(sourceIP) != 16 || len(destIP) != 16 {
+		panic("size")
+	}
+	if uint(protoNo) >> 8 != 0 {
+		panic("proto no")
+	}
+	sum := csumSum(sourceIP)
+	sum = csumPartial(sum, destIP)
+	sum = csumAdd(sum, uint16(uint32(dccpLen) >> 16))
+	sum = csumAdd(sum, uint16(uint32(dccpLen) & 0xffff))
+	sum = csumAdd(sum, uint16(protoNo))
+	return sum
+}

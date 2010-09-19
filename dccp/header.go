@@ -9,7 +9,7 @@ import "os"
 type GenericHeader struct {
 	SourcePort    uint16
 	DestPort      uint16
-	CCVal, CsCov  byte
+	CCVal         byte
 	Type          int
 	X             bool
 	SeqNo         uint64
@@ -32,6 +32,8 @@ var (
 	ErrSemantic      = os.NewError("semantic")
 	ErrNumeric       = os.NewError("numeric")
 	ErrOption        = os.NewError("option")
+	ErrCsCov         = os.NewError("cscov")
+	ErrChecksum      = os.NewError("checksum")
 )
 
 // Packet types. Stored in the Type field of the generic header.
@@ -99,11 +101,11 @@ func areTypeAndXCompatible(Type int, X bool, AllowShortSeqNoFeature bool) bool {
 }
 
 // Any DCCP header has a subset of the following subheaders, in this order:
-// (1) Generic header
-// (2) Acknowledgement Number Subheader
-// (3) Code Subheader: Service Code, or Reset Code and Reset Data fields
-// (4) Options and Padding
-// (5) Application Data
+// (1a) Generic header
+// (1b) Acknowledgement Number Subheader
+// (1c) Code Subheader: Service Code, or Reset Code and Reset Data fields
+// (2) Options and Padding
+// (3) Application Data
 
 // See RFC 4340, Page 21
 func calcAckNoSubheaderSize(Type int, X bool) int {
@@ -134,7 +136,7 @@ func calcCodeSubheaderSize(Type int) int {
 
 // calcFixedHeaderSize() returns the size of the fixed portion of
 // the generic header in bytes, based on its @Type and @X. This
-// includes (1), (2) and (3).
+// includes (1a), (1b) and (1c).
 func calcFixedHeaderSize(Type int, X bool) int {
 	var r int
 	switch X {
@@ -166,6 +168,24 @@ func mayHaveAppData(Type int) bool {
 		return true // may have App Data (essentially for padding) but must be ignored
 	}
 	panic("unreach")
+}
+
+// Checksum
+
+// calcChecksumDataCoverage() computes how many bytes of the
+// data is covered by the checksum, not counting neccessary padding
+func calcChecksumAppCoverage(CsCov int, dataLen int) (int, os.Error) {
+	if CsCov > 15 {
+		panic("cscov")
+	}
+	if CsCov == 0 {
+		return dataLen, nil
+	}
+	cov := (CsCov-1)*4
+	if cov > dataLen {
+		return 0, ErrCsCov
+	}
+	return cov, nil
 }
 
 // Options
