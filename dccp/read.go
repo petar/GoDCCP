@@ -53,16 +53,15 @@ func ReadGenericHeader(buf []byte,
 	}
 
 	// Verify checksum
-	XXX // what if len(buf) is odd, or len of data is odd
-	appcov, err := calcChecksumAppCoverage(gh.CsCov, len(buf) - dataOffset)
+	appcov, err := calcChecksumAppCoverage(CsCov, len(buf) - dataOffset)
 	if err != nil {
 		return nil, err
 	}
 	csum := csumSum(buf[0:dataOffset])
 	csum = csumAdd(csum, csumPseudoIP(sourceIP, destIP, protoNo, len(buf)))
-	csum = csumPartial(csum, buf[dataOffset:dataOffset+appcov])
+	csum = csumAdd(csum, csumSum(buf[dataOffset:dataOffset+appcov]))
 	csum = csumDone(csum)
-	if csum != nil {
+	if csum != 0 {
 		return nil, ErrChecksum
 	}
 

@@ -34,13 +34,16 @@ func csumAdd(u,w uint16) uint16 {
 
 // TODO(petar): This method can be optimized significantly
 func csumSum(buf []byte) uint16 {
-	if len(buf) % 2 != 0 {
-		panic("csum parity")
-	}
 	var sum uint16
 	l16 := len(buf) >> 1
 	for i := 0; i < l16; i++ {
 		sum = csumAdd(sum, csumBytesToUint16(buf[2*i:2*i+2]))
+	}
+	if (l16 << 2) < len(buf) {
+		two := make([]byte, 2)
+		two[0] = buf[len(buf)-1]
+		two[1] = 0
+		sum = csumAdd(sum, csumBytesToUint16(two))
 	}
 	return sum
 }
