@@ -10,20 +10,15 @@ type GenericHeader struct {
 	SourcePort    uint16
 	DestPort      uint16
 	CCVal         byte
-	Type          int
+	CsCov         byte
+	Type          byte
 	X             bool
 	SeqNo         uint64
 	AckNo         uint64
-	ServiceCode   uint64
+	ServiceCode   uint32
 	Reset         []byte
 	Options       []Option
 	Data          []byte
-}
-
-type Option struct {
-	Type      int
-	Data      []byte
-	Mandatory bool
 }
 
 var (
@@ -32,6 +27,8 @@ var (
 	ErrSemantic      = os.NewError("semantic")
 	ErrNumeric       = os.NewError("numeric")
 	ErrOption        = os.NewError("option")
+	ErrOptionsTooBig = os.NewError("options too big")
+	ErrOversize      = os.NewError("over size")
 	ErrCsCov         = os.NewError("cscov")
 	ErrChecksum      = os.NewError("checksum")
 )
@@ -53,7 +50,7 @@ const (
 	SyncAck  = 9
 )
 
-func isTypeReserved(Type int) bool {
+func isTypeReserved(Type byte) bool {
 	return Type >= 10 && Type <= 15
 }
 
@@ -81,7 +78,7 @@ func isResetCodeCCIDSpecific(code int) bool {
 	return code >= 128 && code <= 255
 }
 
-func areTypeAndXCompatible(Type int, X bool, AllowShortSeqNoFeature bool) bool {
+func areTypeAndXCompatible(Type byte, X bool, AllowShortSeqNoFeature bool) bool {
 	switch Type {
 	case Request, Response:
 		return X
@@ -108,7 +105,7 @@ func areTypeAndXCompatible(Type int, X bool, AllowShortSeqNoFeature bool) bool {
 // (3) Application Data
 
 // See RFC 4340, Page 21
-func calcAckNoSubheaderSize(Type int, X bool) int {
+func getAckNoSubheaderSize(Type byte, X bool) int {
 	if Type == Request || Type == Data {
 		return 0
 	}
@@ -118,7 +115,7 @@ func calcAckNoSubheaderSize(Type int, X bool) int {
 	return 4
 }
 
-func calcCodeSubheaderSize(Type int) int {
+func getCodeSubheaderSize(Type byte) int {
 	switch Type {
 	case Request, Response:
 		return 4
@@ -134,10 +131,10 @@ func calcCodeSubheaderSize(Type int) int {
 	panic("unreach")
 }
 
-// calcFixedHeaderSize() returns the size of the fixed portion of
+// getFixedHeaderSize() returns the size of the fixed portion of
 // the generic header in bytes, based on its @Type and @X. This
 // includes (1a), (1b) and (1c).
-func calcFixedHeaderSize(Type int, X bool) int {
+func getFixedHeaderSize(Type byte, X bool) int {
 	var r int
 	switch X {
 	case false:
@@ -145,12 +142,12 @@ func calcFixedHeaderSize(Type int, X bool) int {
 	case true:
 		r = 16
 	}
-	r += calcAckNoSubheaderSize(Type, X)
-	r += calcCodeSubheaderSize(Type)
+	r += getAckNoSubheaderSize(Type, X)
+	r += getCodeSubheaderSize(Type)
 	return r
 }
 
-func mayHaveAppData(Type int) bool {
+func mayHaveAppData(Type byte) bool {
 	switch Type {
 	case Request, Response:
 		return true
@@ -172,70 +169,18 @@ func mayHaveAppData(Type int) bool {
 
 // Checksum
 
-// calcChecksumDataCoverage() computes how many bytes of the
-// data is covered by the checksum, not counting neccessary padding
-func calcChecksumAppCoverage(CsCov int, dataLen int) (int, os.Error) {
+// getChecksumAppCoverage() computes how many bytes of the
+// app data is covered by the checksum, not counting neccessary padding
+func getChecksumAppCoverage(CsCov byte, dataLen int) (int, os.Error) {
 	if CsCov > 15 {
-		panic("cscov")
+		return 0, ErrCsCov
 	}
 	if CsCov == 0 {
 		return dataLen, nil
 	}
-	cov := (CsCov-1)*4
+	cov := int(CsCov-1) << 2
 	if cov > dataLen {
 		return 0, ErrCsCov
 	}
 	return cov, nil
-}
-
-// Options
-
-const (
-	OptionPadding         = 0
-	OptionMandatory       = 1
-	OptionSlowReceiver    = 2
-	OptionChangeL         = 32
-	OptionConfirmL        = 33
-	OptionChangeR         = 34
-	OptionConfirmR        = 35
-	OptionInitCookie      = 36
-	OptionNDPCount        = 37
-	OptionAckVectorNonce0 = 38
-	OptionAckVectorNonce1 = 39
-	OptionDataDropped     = 40
-	OptionTimestamp       = 41
-	OptionTimestampEcho   = 42
-	OptionElapsedTime     = 43
-	OptionDataChecksum    = 44
-)
-
-func isOptionReserved(optionType int) bool {
-	return (optionType >= 3 && optionType <= 31) || 
-		(optionType >= 45 && optionType <= 127)
-}
-
-func isOptionCCIDSpecific(optionType int) bool {
-	return optionType >= 128 && optionType <= 255
-}
-
-func isOptionSingleByte(optionType int) bool {
-	return optionType >= 0 && optionType <= 31
-}
-
-func isOptionValidForType(optionType, Type int) bool {
-	if Type != Data {
-		return true
-	}
-	switch optionType {
-	case OptionPadding,
-		OptionSlowReceiver,
-		OptionNDPCount,
-		OptionTimestamp,
-		OptionTimestampEcho,
-		OptionDataChecksum:
-		return true
-	default:
-		return false
-	}
-	panic("unreach")
 }

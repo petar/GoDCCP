@@ -5,7 +5,9 @@ GOFILES=\
 	checksum.go\
 	header.go\
 	read.go\
+	options.go\
 	wire.go\
+	write.go\
 	#dccp.go\
 
 include $(GOROOT)/src/Make.pkg

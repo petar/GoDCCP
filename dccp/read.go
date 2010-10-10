@@ -25,20 +25,25 @@ func ReadGenericHeader(buf []byte,
 	k += 2
 
 	// Compute the Data Offset in bytes
-	dataOffset := int(decode1ByteUint(buf[k:k+1])) * wireWordSize
+	dataOffset := int(decode1ByteUint(buf[k:k+1])) << 2
 	k += 1
 
 	// Read CCVal
 	gh.CCVal = buf[k] >> 4
 
 	// Read CsCov
-	CsCov := int(buf[k] & 0x0f)
+	gh.CsCov = buf[k] & 0x0f
 	k += 1
 
 	k += 2 // Skip over the checksum field. It is implicitly used in checksum verification later
 
+	// Read Res
 	// gh.Res = buf[k] >> 5 // The 3-bit Res field should be ignored
-	gh.Type = int((buf[k] >> 1) & 0x0f)
+
+	// Read Type
+	gh.Type = (buf[k] >> 1) & 0x0f
+
+	// Read X
 	gh.X = (buf[k] & 0x01) == 1
 	k += 1
 
@@ -48,12 +53,12 @@ func ReadGenericHeader(buf []byte,
 	}
 	
 	// Check Data Offset bounds
-	if dataOffset < calcFixedHeaderSize(gh.Type, gh.X) || dataOffset > len(buf) {
+	if dataOffset < getFixedHeaderSize(gh.Type, gh.X) || dataOffset > len(buf) {
 		return nil, ErrNumeric
 	}
 
 	// Verify checksum
-	appcov, err := calcChecksumAppCoverage(CsCov, len(buf) - dataOffset)
+	appcov, err := getChecksumAppCoverage(gh.CsCov, len(buf) - dataOffset)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +87,7 @@ func ReadGenericHeader(buf []byte,
 
 	// Read (1b) Acknowledgement Number Subheader
 
-	switch calcAckNoSubheaderSize(gh.Type, gh.X) {
+	switch getAckNoSubheaderSize(gh.Type, gh.X) {
 	case 0:
 	case 4:
 		padding := decode1ByteUint(buf[k:k+1])
@@ -107,7 +112,7 @@ func ReadGenericHeader(buf []byte,
 	// Read (1c) Code Subheader: Service Code, or Reset Code and Reset Data fields
 	switch gh.Type {
 	case Request, Response:
-		gh.ServiceCode = decode6ByteUint(buf[k:k+4])
+		gh.ServiceCode = decode4ByteUint(buf[k:k+4])
 		k += 4
 	case Reset:
 		gh.Reset = buf[k:k+4]
@@ -119,7 +124,7 @@ func ReadGenericHeader(buf []byte,
 	if err != nil {
 		return nil, err
 	}
-	opts, err = sanitizeOptions(gh.Type, opts)
+	opts, err = sanitizeOptionsAfterReading(gh.Type, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +144,7 @@ func readOptions(buf []byte) ([]Option, os.Error) {
 	j, k := 0, 0
 	for k < len(buf) {
 		// Read option type
-		t := int(buf[k])
+		t := buf[k]
 		k += 1
 
 		if isOptionSingleByte(t) {
@@ -169,7 +174,7 @@ func readOptions(buf []byte) ([]Option, os.Error) {
 	return opts[0:j], nil
 }
 
-func sanitizeOptions(Type int, opts []Option) ([]Option, os.Error) {
+func sanitizeOptionsAfterReading(Type byte, opts []Option) ([]Option, os.Error) {
 	r := make([]Option, len(opts))
 	j := 0
 
