@@ -4,11 +4,14 @@
 
 package dccp
 
-import "os"
+import (
+	//"fmt"
+	"os"
+)
 
-// GetFootprint() retutns the option's wire footprint, which includes
+// getFootprint() retutns the option's wire footprint, which includes
 // a preceding Mandatory option on the wire, if necessary
-func (opt *Option) GetFootprint() (int, os.Error) {
+func (opt *Option) getFootprint() (int, os.Error) {
 	if opt.Type == OptionPadding || opt.Type == OptionMandatory {
 		return 0, ErrOption
 	}
@@ -49,7 +52,7 @@ func (gh *GenericHeader) getOptionsFootprint() (int, os.Error) {
 			}
 			continue
 		}
-		s, err := opt.GetFootprint()
+		s, err := opt.getFootprint()
 		if err != nil {
 			return 0, err
 		}
@@ -61,8 +64,8 @@ func (gh *GenericHeader) getOptionsFootprint() (int, os.Error) {
 	return r, nil
 }
 
-// GetHeaderFootprint() returns the size of the wire-format packet header (excluding app data)
-func (gh *GenericHeader) GetHeaderFootprint(allowShortSeqNoFeature bool) (int, os.Error) {
+// getHeaderFootprint() returns the size of the wire-format packet header (excluding app data)
+func (gh *GenericHeader) getHeaderFootprint(allowShortSeqNoFeature bool) (int, os.Error) {
 
 	// Check that X and Type are compatible
 	if !areTypeAndXCompatible(gh.Type, gh.X, allowShortSeqNoFeature) {
@@ -86,16 +89,24 @@ func (gh *GenericHeader) GetHeaderFootprint(allowShortSeqNoFeature bool) (int, o
 	return r, nil
 }
 
-// Write() writes the DCCP header to buf. It is expected that buf[CalcWriteSize():]
-// contains the application data.
-func (gh *GenericHeader) Write(buf []byte, 
-		sourceIP, destIP []byte, protoNo int,
-		allowShortSeqNoFeature bool) os.Error {
-
-	dataOffset, err := gh.GetHeaderFootprint(allowShortSeqNoFeature)
+// Write() writes the DCCP header to two return buffers.
+// The first one is the header part, and the second one is the data
+// part which is simply the slice GenericHeader.Data
+func (gh *GenericHeader) Write(
+		sourceIP, destIP []byte, 
+		protoNo byte,
+		allowShortSeqNoFeature bool) (header,data []byte, err os.Error) {
+	
+	err = verifyIPAndProto(sourceIP, destIP, protoNo)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
+
+	dataOffset, err := gh.getHeaderFootprint(allowShortSeqNoFeature)
+	if err != nil {
+		return nil, nil, err
+	}
+	buf := make([]byte, dataOffset)
 
 	k := 0
 
@@ -176,24 +187,28 @@ func (gh *GenericHeader) Write(buf []byte,
 	// Write (2) Options and Padding
 	writeOptions(gh.Options, buf[k:dataOffset], gh.Type)
 
-	//  Application Data is assumed present in buf[dataOffset:]
-
 	// Write checksum
-	appcov, err := getChecksumAppCoverage(gh.CsCov, len(buf) - dataOffset)
+	dlen := 0
+	if gh.Data != nil {
+		dlen = len(gh.Data)
+	}
+	appCov, err := getChecksumAppCoverage(gh.CsCov, dlen)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 	csum := csumSum(buf[0:dataOffset])
-	csum = csumAdd(csum, csumPseudoIP(sourceIP, destIP, protoNo, len(buf)))
-	csum = csumAdd(csum, csumSum(buf[dataOffset:dataOffset+appcov]))
+	csum = csumAdd(csum, csumPseudoIP(sourceIP, destIP, protoNo, len(buf) + dlen))
+	if appCov > 0 {
+		csum = csumAdd(csum, csumSum(gh.Data[0:appCov]))
+	}
 	csum = csumDone(csum)
 	csumUint16ToBytes(csum, buf[6:8])
 
-	return nil
+	return buf, gh.Data, nil
 }
 
 func writeOptions(opts []Option, buf []byte, Type byte) {
-	if len(buf) >> 2 != 0 {
+	if len(buf) & 0x3 != 0 {
 		panic("logic")
 	}
 	k := 0

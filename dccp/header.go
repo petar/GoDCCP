@@ -31,6 +31,7 @@ var (
 	ErrOversize      = os.NewError("over size")
 	ErrCsCov         = os.NewError("cscov")
 	ErrChecksum      = os.NewError("checksum")
+	ErrIPFormat      = os.NewError("ip format")
 )
 
 // Packet types. Stored in the Type field of the generic header.

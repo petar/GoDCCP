@@ -4,11 +4,31 @@
 
 package dccp
 
-import "os"
+import (
+	//"fmt"
+	"os"
+)
 
-func ReadGenericHeader(buf []byte, 
-		sourceIP, destIP []byte, protoNo int,
-		allowShortSeqNoFeature bool) (*GenericHeader, os.Error) {
+func verifyIPAndProto(sourceIP, destIP []byte, protoNo byte) os.Error {
+	if sourceIP == nil || destIP == nil {
+		return ErrIPFormat
+	}
+	if !((len(sourceIP) == 4 && len(destIP)==4) || (len(sourceIP)==16 && len(destIP)==16)) {
+		return ErrIPFormat
+	}
+	return nil
+}
+
+func ReadGenericHeader(
+		buf []byte, 
+		sourceIP, destIP []byte, 
+		protoNo byte,
+		allowShortSeqNoFeature bool) (header *GenericHeader, err os.Error) {
+
+	err = verifyIPAndProto(sourceIP, destIP, protoNo)
+	if err != nil {
+		return nil, err
+	}
 
 	if len(buf) < 12 {
 		return nil, ErrSize
@@ -58,13 +78,13 @@ func ReadGenericHeader(buf []byte,
 	}
 
 	// Verify checksum
-	appcov, err := getChecksumAppCoverage(gh.CsCov, len(buf) - dataOffset)
+	appCov, err := getChecksumAppCoverage(gh.CsCov, len(buf) - dataOffset)
 	if err != nil {
 		return nil, err
 	}
 	csum := csumSum(buf[0:dataOffset])
 	csum = csumAdd(csum, csumPseudoIP(sourceIP, destIP, protoNo, len(buf)))
-	csum = csumAdd(csum, csumSum(buf[dataOffset:dataOffset+appcov]))
+	csum = csumAdd(csum, csumSum(buf[dataOffset:dataOffset+appCov]))
 	csum = csumDone(csum)
 	if csum != 0 {
 		return nil, ErrChecksum
@@ -128,6 +148,7 @@ func ReadGenericHeader(buf []byte,
 	if err != nil {
 		return nil, err
 	}
+	gh.Options = opts
 
 	// Read (3) Application Data
 	gh.Data = buf[dataOffset:]
@@ -136,7 +157,7 @@ func ReadGenericHeader(buf []byte,
 }
 
 func readOptions(buf []byte) ([]Option, os.Error) {
-	if len(buf) >> 2 != 0 {
+	if len(buf) & 0x3 != 0 {
 		return nil, ErrAlign
 	}
 
