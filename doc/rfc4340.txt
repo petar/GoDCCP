@@ -483,7 +483,7 @@ RFC 4340      Datagram Congestion Control Protocol (DCCP)     March 2006
    taken by some CCID, or, if no estimate is available, the default
    round-trip time parameter".
 
-   The maximum segment lifetime, or MSL, is the maximum length of time a
+   The $maximum segment lifetime$, or $MSL$, is the maximum length of time a
    packet can survive in the network.  The DCCP MSL should equal that of
    TCP, which is normally two minutes.
 
@@ -644,7 +644,7 @@ RFC 4340      Datagram Congestion Control Protocol (DCCP)     March 2006
    sequence number not received.  Separate options indicate any
    intermediate sequence numbers that weren't received.
 
-4.3.  States
+4.3.  $States$
 
    DCCP endpoints progress through different states during the course of
    a connection, corresponding roughly to the three phases of
@@ -1029,6 +1029,8 @@ RFC 4340      Datagram Congestion Control Protocol (DCCP)     March 2006
    Number field is 48 bits long, and the generic header takes 16 bytes,
    as follows.
 
+$XHeader$
+
        0                   1                   2                   3
        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -1089,7 +1091,7 @@ RFC 4340      Datagram Congestion Control Protocol (DCCP)     March 2006
       ignore packets whose Data Offset is smaller than the minimum-sized
       header for the given Type or larger than the DCCP packet itself.
 
-   CCVal: 4 bits
+   $CCVal$: 4 bits
       Used by the HC-Sender CCID.  For example, the A-to-B CCID's
       sender, which is active at DCCP A, MAY send 4 bits of information
       per packet to its receiver by encoding that information in CCVal.
@@ -1097,7 +1099,7 @@ RFC 4340      Datagram Congestion Control Protocol (DCCP)     March 2006
       specifies otherwise, and the receiver MUST ignore the CCVal field
       unless its HC-Receiver CCID specifies otherwise.
 
-   Checksum Coverage (CsCov): 4 bits
+   Checksum Coverage ($CsCov$): 4 bits
       Checksum Coverage determines the parts of the packet that are
       covered by the Checksum field.  This always includes the DCCP
       header and options, but some or all of the application data may be
@@ -1236,7 +1238,7 @@ Kohler, et al.              Standards Track                    [Page 22]
 RFC 4340      Datagram Congestion Control Protocol (DCCP)     March 2006
 
 
-   Service Code: 32 bits
+   $Service Code$: 32 bits
       Describes the application-level service to which the client
       application wants to connect.  Service Codes are intended to
       provide information about which application protocol a connection

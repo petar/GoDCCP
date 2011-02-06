@@ -39,7 +39,7 @@ const DefaultRoundtripTime = ?
 // The maximum segment lifetime, or MSL, is the maximum length of time a
 //  packet can survive in the network.  The DCCP MSL should equal that of
 //  TCP, which is normally two minutes.
-const MaximumSegmentLifetime = ?
+const MaximumSegmentLifetime = ?  // Should be 2 mins as default
 
 // Connections progress through three phases: initiation, including a three-way
 // handshake; data transfer; and termination.

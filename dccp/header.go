@@ -6,33 +6,34 @@ package dccp
 
 import "os"
 
-type GenericHeader struct {
-	SourcePort    uint16
-	DestPort      uint16
-	CCVal         byte
-	CsCov         byte
-	Type          byte
-	X             bool
-	SeqNo         uint64
-	AckNo         uint64
-	ServiceCode   uint32
-	Reset         []byte
-	Options       []Option
-	Data          []byte
-}
+// We use a subset of DCCP, defined as follows:
+//	X=1
+//      allowShortSeqNoFeature=0
 
-var (
-	ErrAlign         = os.NewError("align")
-	ErrSize          = os.NewError("size")
-	ErrSemantic      = os.NewError("semantic")
-	ErrNumeric       = os.NewError("numeric")
-	ErrOption        = os.NewError("option")
-	ErrOptionsTooBig = os.NewError("options too big")
-	ErrOversize      = os.NewError("over size")
-	ErrCsCov         = os.NewError("cscov")
-	ErrChecksum      = os.NewError("checksum")
-	ErrIPFormat      = os.NewError("ip format")
-)
+// Any DCCP header has a subset of the following subheaders, in this order:
+// (1a) Generic header
+// (1b) Acknowledgement Number Subheader
+// (1c) Code Subheader: Service Code, or Reset Code and Reset Data fields
+// (2) Options and Padding
+// (3) Application Data
+
+type GenericHeader struct {
+	SourcePort    uint16	// Sender port
+	DestPort      uint16	// Receiver port
+	CCVal         byte	// Used by the HC-Sender to transmit 4-bit values
+	CsCov         byte	// Specifies the parts of packet covered by the checksum
+	Type          byte	// Packet type: Data, Ack, Sync, etc.
+	X             bool	// Extended seq numbers: generally always true (for us)
+	SeqNo         uint64	// 48-bit if X=1
+	AckNo         uint64	// 48-bit if X=1
+	ServiceCode   uint32	// ServiceCode: Applicaton level service (in Req,Resp pkts)
+				// ResetCode: Reason for reset (in Reset pkts)
+	Reset         []byte	// ResetData: Additional reset info (in Reset pkts)
+	Options       []Option  // Used for feature negotiation, padding, mandatory flags
+	Data          []byte	// Application data (in Req, Resp, Data, DataAck pkts) 
+				// Ignored (in Ack, Close, CloseReq, Sync, SyncAck pkts)
+				// Error text (in Reset pkts)
+}
 
 // Packet types. Stored in the Type field of the generic header.
 // Receivers MUST ignore any packets with reserved type.  That is,
@@ -49,6 +50,19 @@ const (
 	Reset    = 7
 	Sync     = 8
 	SyncAck  = 9
+)
+
+var (
+	ErrAlign         = os.NewError("align")
+	ErrSize          = os.NewError("size")
+	ErrSemantic      = os.NewError("semantic")
+	ErrNumeric       = os.NewError("numeric")
+	ErrOption        = os.NewError("option")
+	ErrOptionsTooBig = os.NewError("options too big")
+	ErrOversize      = os.NewError("over size")
+	ErrCsCov         = os.NewError("cscov")
+	ErrChecksum      = os.NewError("checksum")
+	ErrIPFormat      = os.NewError("ip format")
 )
 
 func isTypeReserved(Type byte) bool {
@@ -69,6 +83,8 @@ const (
 	ResetTooBusy           = 9
 	ResetBadInitCookie     = 10
 	ResetAgressionPenalty  = 11
+	// Reserved 12 to 127
+	// CCID-specific 128 to 255
 )
 
 func isResetCodeReserved(code int) bool {
@@ -97,13 +113,6 @@ func areTypeAndXCompatible(Type byte, X bool, AllowShortSeqNoFeature bool) bool 
 	}
 	panic("unreach")
 }
-
-// Any DCCP header has a subset of the following subheaders, in this order:
-// (1a) Generic header
-// (1b) Acknowledgement Number Subheader
-// (1c) Code Subheader: Service Code, or Reset Code and Reset Data fields
-// (2) Options and Padding
-// (3) Application Data
 
 // See RFC 4340, Page 21
 func getAckNoSubheaderSize(Type byte, X bool) int {

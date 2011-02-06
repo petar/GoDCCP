@@ -8,6 +8,7 @@ GOFILES=\
 	options.go\
 	wire.go\
 	write.go\
-	#dccp.go\
+	dccp.go\
+	endlogic.go\
 
 include $(GOROOT)/src/Make.pkg

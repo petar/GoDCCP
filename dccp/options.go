@@ -27,6 +27,8 @@ const (
 	OptionTimestampEcho   = 42
 	OptionElapsedTime     = 43
 	OptionDataChecksum    = 44
+	// Reserved 45 to 127
+	// CCID-specific 128 to 255
 )
 
 func isOptionReserved(optionType byte) bool {

@@ -9,6 +9,7 @@ import (
 	"os"
 )
 
+// verifyIPAndProto() checks that both sourceIP and destIP are valid for protoNo
 func verifyIPAndProto(sourceIP, destIP []byte, protoNo byte) os.Error {
 	if sourceIP == nil || destIP == nil {
 		return ErrIPFormat
