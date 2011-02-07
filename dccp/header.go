@@ -35,6 +35,19 @@ type GenericHeader struct {
 				// Error text (in Reset pkts)
 }
 
+var (
+	ErrAlign         = os.NewError("align")
+	ErrSize          = os.NewError("size")
+	ErrSemantic      = os.NewError("semantic")
+	ErrNumeric       = os.NewError("numeric")
+	ErrOption        = os.NewError("option")
+	ErrOptionsTooBig = os.NewError("options too big")
+	ErrOversize      = os.NewError("over size")
+	ErrCsCov         = os.NewError("cscov")
+	ErrChecksum      = os.NewError("checksum")
+	ErrIPFormat      = os.NewError("ip format")
+)
+
 // Packet types. Stored in the Type field of the generic header.
 // Receivers MUST ignore any packets with reserved type.  That is,
 // packets with reserved type MUST NOT be processed, and they MUST
@@ -52,21 +65,18 @@ const (
 	SyncAck  = 9
 )
 
-var (
-	ErrAlign         = os.NewError("align")
-	ErrSize          = os.NewError("size")
-	ErrSemantic      = os.NewError("semantic")
-	ErrNumeric       = os.NewError("numeric")
-	ErrOption        = os.NewError("option")
-	ErrOptionsTooBig = os.NewError("options too big")
-	ErrOversize      = os.NewError("over size")
-	ErrCsCov         = os.NewError("cscov")
-	ErrChecksum      = os.NewError("checksum")
-	ErrIPFormat      = os.NewError("ip format")
-)
-
 func isTypeReserved(Type byte) bool {
 	return Type >= 10 && Type <= 15
+}
+
+func isDataPacket(Type byte) bool {
+	switch Type {
+	case Request, Response, Data, DataAck:
+		return true
+	case Ack, Close, CloseReq, Reset, Sync, SyncAck:
+		return false
+	}
+	panic("unreach")
 }
 
 // Reset codes

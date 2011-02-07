@@ -43,31 +43,3 @@ const MaximumSegmentLifetime = ?  // Should be 2 mins as default
 
 // Connections progress through three phases: initiation, including a three-way
 // handshake; data transfer; and termination.
-
-// DCCP sequence numbers increment by one per packet
-type SequenceNumber uint64
-
-// The nine possible states are as follows.  They are listed in
-// increasing order.
-const (
-	CLOSED   = iota
-	LISTEN   = _
-	REQUEST  = _
-	RESPOND  = _
-	PARTOPEN = _
-	OPEN     = _
-	CLOSEREQ = _
-	CLOSING  = _
-	TIMEWAIT = _
-)
-
-// Congestion control mechanisms are denoted by one-byte 
-// congestion control identifiers, or CCIDs.
-// CCIDs 2 (TCP-like) and 3 (TFRC) are currently defined.
-
-// There are four feature negotiation options in all: 
-// Change L, Confirm L, Change R, and Confirm R.
-// L = feature location, R = feature remote
-
-
-// Up to Section 6 (non-inclusive)

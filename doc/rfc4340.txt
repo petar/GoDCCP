@@ -2785,7 +2785,7 @@ RFC 4340      Datagram Congestion Control Protocol (DCCP)     March 2006
    and large bursts of loss, but there's no need for leniency in the
    absence of unusual events -- that is, during ongoing successful
    communication.  Therefore, DCCP implementations SHOULD use the
-   following, more stringent checks for active connections, where a
+   following, more stringent checks for $active connections$, where a
    connection is considered active if it has received valid packets from
    the other endpoint within the last three round-trip times.
 
@@ -2978,7 +2978,7 @@ RFC 4340      Datagram Congestion Control Protocol (DCCP)     March 2006
    cause the connection to be reset are ignored when they appear on
    DCCP-Data packets.
 
-7.5.6.  Sequence Number Handling Examples
+7.5.6.  $Sequence Number Handling Examples$
 
    In the following example, DCCP A and DCCP B recover from a large
    burst of loss that runs DCCP A's sequence numbers out of DCCP B's
@@ -3119,20 +3119,20 @@ RFC 4340      Datagram Congestion Control Protocol (DCCP)     March 2006
 
 7.7.  NDP Count and Detecting Application Loss
 
-   DCCP's sequence numbers increment by one on every packet, including
-   non-data packets (packets that don't carry application data).  This
+   $DCCP's sequence numbers increment by one on every packet, including
+   non-data packets (packets that don't carry application data).$  This
    makes DCCP sequence numbers suitable for detecting any network loss,
    but not for detecting the loss of application data.  The NDP Count
-   option reports the length of each burst of non-data packets.  This
+   option reports the length of each burst of non-data packets.  $This
    lets the receiving DCCP reliably determine when a burst of loss
-   included application data.
+   included application data.$
 
    +--------+--------+-------- ... --------+
    |00100101| Length |      NDP Count      |
    +--------+--------+-------- ... --------+
     Type=37  Len=3-8       (1-6 bytes)
 
-   If a DCCP endpoint's Send NDP Count feature is one (see below), then
+   $If a DCCP endpoint's Send NDP Count feature is one (see below), then
    that endpoint MUST send an NDP Count option on every packet whose
 
 
@@ -3142,17 +3142,17 @@ Kohler, et al.              Standards Track                    [Page 56]
 RFC 4340      Datagram Congestion Control Protocol (DCCP)     March 2006
 
 
-   immediate predecessor was a non-data packet.  Non-data packets
+   immediate predecessor was a non-data packet.$  Non-data packets
    consist of DCCP packet types DCCP-Ack, DCCP-Close, DCCP-CloseReq,
    DCCP-Reset, DCCP-Sync, and DCCP-SyncAck.  The other packet types,
    namely DCCP-Request, DCCP-Response, DCCP-Data, and DCCP-DataAck, are
    considered data packets, although not all DCCP-Request and DCCP-
    Response packets will actually carry application data.
 
-   The value stored in NDP Count equals the number of consecutive non-
+   $The value stored in NDP Count equals the number of consecutive non-
    data packets in the run immediately previous to the current packet.
    Packets with no NDP Count option are considered to have NDP Count
-   zero.
+   zero.$
 
    The NDP Count option can carry one to six bytes of data.  The
    smallest option format that can hold the NDP Count SHOULD be used.

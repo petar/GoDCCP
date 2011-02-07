@@ -10,5 +10,7 @@ GOFILES=\
 	write.go\
 	dccp.go\
 	endlogic.go\
+	conn.go\
+	header-util.go\
 
 include $(GOROOT)/src/Make.pkg
