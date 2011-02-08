@@ -4503,10 +4503,10 @@ RFC 4340      Datagram Congestion Control Protocol (DCCP)     March 2006
    the number of packets outstanding in the network; in CCID 3, it
    includes the lengths of recent loss intervals.  Both CCIDs use an
    estimate of the round-trip time.  Congestion state depends on the
-   network path and is invalidated by path changes.  Therefore, DCCP
+   network path and is invalidated by path changes.  $Therefore, DCCP
    senders and receivers SHOULD reset their congestion state --
    essentially restarting congestion control from "slow start" or
-   equivalent -- on significant changes in the end-to-end path.  For
+   equivalent -- on significant changes in the end-to-end path.$  For
    example, an endpoint that sends or receives a Mobile IPv6 Binding
    Update message [RFC3775] SHOULD reset its congestion state for any
    corresponding DCCP connections.
@@ -5647,7 +5647,7 @@ RFC 4340      Datagram Congestion Control Protocol (DCCP)     March 2006
 
 14.  Maximum Packet Size
 
-   A DCCP implementation MUST maintain the maximum packet size (MPS)
+   A DCCP implementation MUST maintain the maximum packet size ($MPS$)
    allowed for each active DCCP session.  The MPS is influenced by the
    maximum packet size allowed by the current congestion control
    mechanism (CCMPS), the maximum packet size supported by the path's

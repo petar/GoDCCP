@@ -12,5 +12,9 @@ GOFILES=\
 	endlogic.go\
 	conn.go\
 	header-util.go\
+	servicecode.go\
+	congestion.go\
+	timing.go\
+	link.go\
 
 include $(GOROOT)/src/Make.pkg

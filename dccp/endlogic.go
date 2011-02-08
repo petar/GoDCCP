@@ -8,22 +8,32 @@ import (
 	"rand"
 )
 
+// XXX: Abstract the congestion control mechanism in a separate interface
+
 // Endpoint logic for a single Half-connection
 type Endpoint struct {
-	RTT uint64	// Round-trip time
+	RTT		uint64	// Round-trip time
 
-	ISS uint64	// Initial Sequence number Sent
-	ISR uint64	// Initial Sequence number Received
-	GSS uint64	// Greatest Sequence number Sent
-			//	The greatest SeqNo of a packet sent by this endpoint
-	GSR uint64	// Greatest Sequence number Received (consequently, sent as AckNo back)
-			//	The greatest SeqNo of a packet received by the other endpoint
-	GAR uint64	// Greatest Acknowledgement number Received
+	ISS		uint64	// Initial Sequence number Sent
+	ISR		uint64	// Initial Sequence number Received
+	GSS		uint64	// Greatest Sequence number Sent
+				//	The greatest SeqNo of a packet sent by this endpoint
+	GSR		uint64	// Greatest Sequence number Received (consequently, sent as AckNo back)
+				//	The greatest SeqNo of a packet received by the other endpoint
+	GAR		uint64	// Greatest Acknowledgement number Received
 
-	SWBF uint64	// Sequence Window/B Feature
-	SWAF uint64	// Sequence Window/A Feature
+	SWBF		uint64	// Sequence Window/B Feature
+	SWAF		uint64	// Sequence Window/A Feature
 
-	State int
+	MPS		uint32	// Maximum Packet Size
+					// The MPS is influenced by the
+					// maximum packet size allowed by the current congestion control
+					// mechanism (CCMPS), the maximum packet size supported by the path's
+					// links (PMTU, the Path Maximum Transmission Unit) [RFC1191], and the
+					// lengths of the IP and DCCP headers.
+
+	State		int
+	ServiceCode	uint32
 }
 
 // CCID7 is the name we pick for our implementation of a congestion control 
@@ -224,3 +234,91 @@ func (e *Endpoint) NDPCount() uint64 {
 // of loss contained at least one data packet.  For example, the
 // receiver cannot always tell whether a burst of loss contained a non-
 // data packet.
+
+// Connect() instructs the endpoint to initiate a connect request.
+func (e *Endpoint) Connect() {
+	?
+
+	// Is CLOSED
+
+	// Enter REQUEST
+
+	// Send Request pkt
+
+	// Wait for Response pkt
+
+		// A client in the REQUEST state SHOULD use an exponential-backoff timer
+		// to send new DCCP-Request packets if no response is received.  The
+		// first retransmission should occur after approximately one second,
+		// backing off to not less than one packet every 64 seconds; or the
+
+		// A client MAY give up on its DCCP-Requests after some time (3 minutes,
+		// for example).  When it does, it SHOULD send a DCCP-Reset packet to
+		// the server with Reset Code 2, "Aborted", to clean up state in case
+		// one or more of the Requests actually arrived.  A client in REQUEST
+		// state has never received an initial sequence number from its peer, so
+		// the DCCP-Reset's Acknowledgement Number MUST be set to zero.
+
+	// When receive response, enter PARTOPEN
+
+		// When the client receives a DCCP-Response from the server, it moves
+		// from the REQUEST state to PARTOPEN and completes the three-way
+		// handshake by sending a DCCP-Ack packet to the server.  The client
+		// remains in PARTOPEN until it can be sure that the server has received
+		// some packet the client sent from PARTOPEN (either the initial DCCP-
+		// Ack or a later packet).  Clients in the PARTOPEN state that want to
+		// send data MUST do so using DCCP-DataAck packets, not DCCP-Data
+		// packets.  This is because DCCP-Data packets lack Acknowledgement
+		// Numbers, so the server can't tell from a DCCP-Data packet whether the
+		// client saw its DCCP-Response.
+
+		// The single DCCP-Ack sent when entering the PARTOPEN state might, of
+		// course, be dropped by the network.  The client SHOULD ensure that
+		// some packet gets through eventually.  The preferred mechanism would
+		// be a roughly 200-millisecond timer, set every time a packet is
+		// transmitted in PARTOPEN.  If this timer goes off and the client is
+		// still in PARTOPEN, the client generates another DCCP-Ack and backs
+		// off the timer.  If the client remains in PARTOPEN for more than 4MSL
+		// (8 minutes), it SHOULD reset the connection with Reset Code 2,
+		// "Aborted".
+
+	// Send an Ack or DataAck
+
+	// Wait for first ack, then enter OPEN
+		// The client leaves the PARTOPEN state for OPEN when it receives a
+		// valid packet other than DCCP-Response, DCCP-Reset, or DCCP-Sync from
+		// the server.
+}
+
+// Listen() handles the server-side listen logic for an endpoint
+func (e *Endpoint) Listen() {
+	?
+
+	// Enter LISTEN
+
+	// Wait for Request packet
+
+	// Enter RESPOND
+
+	// Wait for first ack, then enter OPEN
+
+
+	// The server leaves the RESPOND state for OPEN when it receives a valid
+	// DCCP-Ack from the client, completing the three-way handshake.  It MAY
+	// also leave the RESPOND state for CLOSED after a timeout of not less
+	// than 4MSL (8 minutes); when doing so, it SHOULD send a DCCP-Reset
+	// with Reset Code 2, "Aborted", to clean up state at the client.
+}
+
+// While OPEN
+
+   // DCCP A sends DCCP-Data and DCCP-DataAck packets to DCCP B due to
+   // application events on host A.  These packets are congestion-
+   // controlled by the CCID for the A-to-B half-connection.  In contrast,
+   // DCCP-Ack packets sent by DCCP A are controlled by the CCID for the
+   // B-to-A half-connection.  Generally, DCCP A will piggyback
+   // acknowledgement information on DCCP-Data packets when acceptable,
+   // creating DCCP-DataAck packets.  DCCP-Ack packets are used when there
+   // is no data to send from DCCP A to DCCP B, or when the congestion
+   // state of the A-to-B CCID will not allow data to be sent.
+
