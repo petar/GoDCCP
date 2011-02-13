@@ -63,6 +63,9 @@ func ReadGenericHeader(
 
 	// Read Type
 	gh.Type = (buf[k] >> 1) & 0x0f
+	if !isTypeUnderstood(gh.Type) {
+		return nil, ErrUnknownType
+	}
 
 	// Read X
 	gh.X = (buf[k] & 0x01) == 1

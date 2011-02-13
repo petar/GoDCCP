@@ -4,8 +4,12 @@
 
 package dccp
 
+import (
+	"net"
+)
 
-type Link interface {
+type listener struct {
+}
 
-	func MTU() uint32	// (Path) Maximum Transmission Unit, PMTU
+func Listen(..) (net.Listener, os.Error) {
 }

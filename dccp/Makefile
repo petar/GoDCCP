@@ -10,11 +10,13 @@ GOFILES=\
 	write.go\
 	dccp.go\
 	endlogic.go\
+	endlogic-loop.go
 	conn.go\
 	header-util.go\
 	servicecode.go\
 	congestion.go\
 	timing.go\
-	link.go\
+	physical.go\
+	listener.go\
 
 include $(GOROOT)/src/Make.pkg

@@ -46,6 +46,9 @@ var (
 	ErrCsCov         = os.NewError("cscov")
 	ErrChecksum      = os.NewError("checksum")
 	ErrIPFormat      = os.NewError("ip format")
+	ErrUnknownType   = os.NewError("unknown packet type")
+	ErrUnsupported   = os.NewError("unsupported")
+	ErrProto         = os.NewError("protocol error")
 )
 
 // Packet types. Stored in the Type field of the generic header.
@@ -64,6 +67,15 @@ const (
 	Sync     = 8
 	SyncAck  = 9
 )
+
+// Constants for protoNo
+const (
+	AnyProto = iota
+)
+
+func isTypeUnderstood(Type byte) bool {
+	return Type >= Request && Type <= SyncAck
+}
 
 func isTypeReserved(Type byte) bool {
 	return Type >= 10 && Type <= 15
@@ -188,6 +200,15 @@ func mayHaveAppData(Type byte) bool {
 }
 
 // Checksum
+
+const (
+	CsCovAllData = iota
+	CsCovNoData  = _
+	CsCov4       = _
+	CsCov8       = _
+	CsCov12      = _
+	// etc.
+)
 
 // getChecksumAppCoverage() computes how many bytes of the
 // app data is covered by the checksum, not counting neccessary padding

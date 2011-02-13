@@ -10,8 +10,16 @@ import (
 
 // XXX: Abstract the congestion control mechanism in a separate interface
 
+type FlowID struct {
+	SourceAddr, DestAddr	[]byte
+	SourcePort, DestPort	uint16
+}
+
 // Endpoint logic for a single Half-connection
 type Endpoint struct {
+	link		Link
+	flowID		FlowID
+
 	RTT		uint64	// Round-trip time
 
 	ISS		uint64	// Initial Sequence number Sent
@@ -21,6 +29,8 @@ type Endpoint struct {
 	GSR		uint64	// Greatest Sequence number Received (consequently, sent as AckNo back)
 				//	The greatest SeqNo of a packet received by the other endpoint
 	GAR		uint64	// Greatest Acknowledgement number Received
+
+	OSR		uint64	// First OPEN Sequence number Received
 
 	SWBF		uint64	// Sequence Window/B Feature
 	SWAF		uint64	// Sequence Window/A Feature
@@ -69,7 +79,10 @@ const (
 
 func NewEndpoint() *Endpoint {
 	? // uninit'ed fields
+	iss := pickInitialSeqNo()
 	return &Endpoint{
+		ISS: iss,
+		GAR: iss,
 		SWBF: DefaultSWF_CCID7,
 		SWAF: DefaultSWF_CCID7,
 	}
