@@ -31,12 +31,9 @@ func (e *Endlogic) readPacket() (*GenericHeader, os.Error) {
 
 func (e *Endpoint) loop() {
 	for {
-		if !e.link.Healthy() {
-			break
-		}
 		h,err := e.readPacket()
 		if err != nil {
-			continue
+			continue XX // no continue
 		}
 		?
 	}

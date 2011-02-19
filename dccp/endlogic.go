@@ -10,15 +10,9 @@ import (
 
 // XXX: Abstract the congestion control mechanism in a separate interface
 
-type FlowID struct {
-	SourceAddr, DestAddr	[]byte
-	SourcePort, DestPort	uint16
-}
-
 // Endpoint logic for a single Half-connection
 type Endpoint struct {
-	link		Link
-	flowID		FlowID
+	phy		physicalFlow
 
 	RTT		uint64	// Round-trip time
 
@@ -36,11 +30,11 @@ type Endpoint struct {
 	SWAF		uint64	// Sequence Window/A Feature
 
 	MPS		uint32	// Maximum Packet Size
-					// The MPS is influenced by the
-					// maximum packet size allowed by the current congestion control
-					// mechanism (CCMPS), the maximum packet size supported by the path's
-					// links (PMTU, the Path Maximum Transmission Unit) [RFC1191], and the
-					// lengths of the IP and DCCP headers.
+				// The MPS is influenced by the
+				// maximum packet size allowed by the current congestion control
+				// mechanism (CCMPS), the maximum packet size supported by the path's
+				// links (PMTU, the Path Maximum Transmission Unit) [RFC1191], and the
+				// lengths of the IP and DCCP headers.
 
 	State		int
 	ServiceCode	uint32
@@ -77,16 +71,19 @@ const (
 	MaxSWF = 2^46-1
 )
 
-func NewEndpoint() *Endpoint {
+func NewEndpoint(phy physicalFlow) *Endpoint {
 	? // uninit'ed fields
 	iss := pickInitialSeqNo()
 	return &Endpoint{
-		ISS: iss,
-		GAR: iss,
-		SWBF: DefaultSWF_CCID7,
-		SWAF: DefaultSWF_CCID7,
+		phy:	phy,
+		ISS:	iss,
+		GAR:    iss,
+		SWBF:   DefaultSWF_CCID7,
+		SWAF:   DefaultSWF_CCID7,
 	}
 }
+
+func (e *Endpoint) send(buf []byte) os.Error { return e.phy.Send(buf, e.flowID) }
 
 func pickInitialSeqNo() uint64 { return uint64(rand.Int63()) & 0xffffff }
 
