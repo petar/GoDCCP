@@ -7,23 +7,47 @@ package dccp
 
 // readPacket() reads the next buffer of data from the link layer
 // and tries to parse it into a valid GenericHeader{}
-func (e *Endlogic) readPacket() (*GenericHeader, os.Error) {
+func readPacket(r Reader, flowid FlowID) (*GenericHeader, os.Error) {
 
 	// Read packet from physical layer
-	buf, err := e.link.Recv()
+	buf, err := r.Read()
 	if err != nil {
 		return nil, err
 	}
 	// Parse generic header
-	h, err := ReadGenericHeader(buf, e.link.SourceIP(), e.link.DestIP(), AnyProto, false)
+	h, err := ReadGenericHeader(buf, flowid.SourceAddr, flowid.DestAddr, AnyProto, false)
 	if err != nil {
 		return nil, err
 	}
-	// Ensure extended SeqNo's and source/dest port match with endpoint
+	// Ensure extended SeqNo's 
 	if !h.X {
 		return nil, ErrUnsupported
 	}
-	if h.SourcePort != e.destPort || h.DestPort != e.SourcePort {
+	return h, nil
+}
+
+func arrayEqual(a,b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := 0; i < len(a); i++ {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func (e *Endlogic) readPacket() (h *GenericHeader, err os.Error) {
+	h, err = readPacket(e.phy, e.flowid)
+	if err != nil {
+		return nil, err
+	}
+	// Ensure source/dest address and port match with endpoint
+	if !arrayEqual(h.SourceAddr, e.DestAddr) || !arrayEqual(h.DestAddr, e.SourceAddr) {
+		return nil, ErrProto
+	}
+	if h.SourcePort != e.DestPort || h.DestPort != e.SourcePort {
 		return nil, ErrProto
 	}
 	return h, nil

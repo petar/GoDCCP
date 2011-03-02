@@ -8,11 +8,15 @@ import (
 	"net"
 )
 
+// Listener{} takes care of listening for connections.
+// It handles the LISTEN state.
 type Listener struct {
-	phy Physical
+	phy    Physical
+	conns  []*Conn	// List of active connections
+			// TODO: Lookups in a short array should be fine for now. Hashing?
 }
 
-func Listen(phy Physical) (net.Listener, os.Error) {
+func Listen(phy Physical) net.Listener {
 	l := &Listener{
 		phy: phy,
 	}
@@ -20,8 +24,62 @@ func Listen(phy Physical) (net.Listener, os.Error) {
 	return l
 }
 
-// XXX: multiplex phy layer between listener and active conns
+// loop() reads and processes incoming packets
+func (l *Listener) loop() {
+	for {
+		h,err := e.readPacket(l.phy, zeroFlowID)
+		if err != nil {
+			continue XX // no continue
+		}
+		?
+	}
+}
+
+// readAndSwitch() reads an incoming packet and sends it over to
+// its Conn{} destination if any, or returns it otherwise
+func (l *listener) readAndSwitch() (h *GenericHeader, err os.Error) {
+	h, err = read(l.phy)
+	if err != nil {
+		return 
+	}
+	?
+}
+
+// read() reads the next buffer of data from the link layer
+// and tries to parse it into a valid GenericHeader{}
+func read(r Reader) (*GenericHeader, os.Error) {
+
+	// Read packet from physical layer
+	buf, phyFlowID, err := r.Read()
+	if err != nil {
+		return nil, err
+	}
+	// Parse generic header
+	h, err := ReadGenericHeader(buf, zeroPhyFlowID.SourceAddr, zeroPhyFlowID.DestAddr, AnyProto, false)
+	if err != nil {
+		return nil, err
+	}
+	// Ensure extended SeqNo's 
+	if !h.X {
+		return nil, ErrUnsupported
+	}
+	return h, nil
+}
+
+func arrayEqual(a,b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := 0; i < len(a); i++ {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func (l *Listener) Accept() (c Conn, err os.Error) {
+	? //XX
 	h,err := e.readPacket()
 	if err != nil {
 		return nil, err
@@ -30,6 +88,7 @@ func (l *Listener) Accept() (c Conn, err os.Error) {
 }
 
 func (l *Listener) Close() os.Error {
+	? //XX
 	return l.phy.Close();
 }
 

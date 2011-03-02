@@ -9,8 +9,7 @@ import (
 
 // Conn wraps the two Endpoints (for each Half-connection) 
 type Conn struct {
-	snd Endpoint
-	rcv Endpoint
+	flowid	*FlowID
+	write	Endpoint
+	read	Endpoint
 }
-
-?

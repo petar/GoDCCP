@@ -5,23 +5,40 @@
 package dccp
 
 import (
+	"io"
 	"os"
 	"sync"
 )
 
+type Reader interface {
+	Read() (buf []byte, flowid *PhysicalFlowID, err os.Error)	// Receive next packet of data
+}
+
+type Writer interface {
+	Write(buf []byte, flowid *PhysicalFlowID) os.Error		// Send a packet of data
+}
+
 // Physical{} is an abstract interface to a physical packet layer which
 // sends and receives packets and supports a notion of time
 type Physical interface {
-
-	Send(buf []byte, flowid *FlowID) os.Error		// Send a block of data
-	Receive() (buf []byte, flowid *FlowID, err os.Error)	// Receive next block of data
-	Close() os.Error
+	Reader
+	Writer
+	io.Closer
 }
 
-type FlowID struct {
+// PhysicalFlowID{} contains IP address/port identifiers of a source/destination pair.
+type PhysicalFlowID struct {
 	SourceAddr, DestAddr	[]byte
 	SourcePort, DestPort	uint16
 }
+var zeroPhyFlowID = PhysicalFlowId{
+	SourceAddr: make([]byte, 4),
+	DestAddr: make([]byte, 4),
+}
+
+// physicalSwitch is presently not used, since we've opted for multiplexing
+// packet flows on logical bases not physical basis. However, it may be useful
+// to others realizations of DCCP.
 
 // physicalSwitch{} helps multiplex the physical layer among 
 // a listener type and connection types
@@ -34,7 +51,7 @@ type physicalSwitch struct {
 }
 type receiveResult struct {
 	buf    []byte
-	flowid *FlowID
+	flowid *PhysicalFlowID
 }
 
 func newPhysicalSwitch(phy Physical) *physicalSwitch {
@@ -47,7 +64,7 @@ func newPhysicalSwitch(phy Physical) *physicalSwitch {
 	return phsw
 }
 
-func (phsw *physocalSwitch) readLoop() {
+func (phsw *physicalSwitch) readLoop() {
 	for {
 		phsw.lk.Lock()
 		phy := phsw.phy
@@ -55,7 +72,7 @@ func (phsw *physocalSwitch) readLoop() {
 		if phy == nil {
 			break
 		}
-		buf, flowid, err := phy.Receive()
+		buf, flowid, err := phy.Read()
 		if err != nil {
 			break
 		}
@@ -75,34 +92,34 @@ func (phsw *physocalSwitch) readLoop() {
 	phsw.lk.Unlock()
 }
 
-func (phsw *physicalSwitch) findFlow(flowid *FlowID) *physicalFlow {
+func (phsw *physicalSwitch) findFlow(flowid *PhysicalFlowID) *physicalFlow {
 	phsw.lk.Lock()
 	defer phsw.lk.Unlock()
 	for _, phfl := range phsw.flows {
-		if phfl.FlowID == flowid {	// Pointer comparison is OK!
+		if phfl.PhysicalFlowID == flowid {	// Pointer comparison is OK!
 			return phfl
 		}
 	}
 	return nil
 }
 
-func (phsw *physicalSwitch) MakeFlow(flowid *FlowID) *physicalFlow {
+func (phsw *physicalSwitch) MakeFlow(flowid *PhysicalFlowID) *physicalFlow {
 	phsw.lk.Lock()
 	defer phsw.lk.Unlock()
 	ch := make(chan []buf)
 	phsw.flows = append(phsw.flows, flowid)
 	return &physicalFlow{
-		FlowID: flowid,
+		PhysicalFlowID: flowid,
 		phy:    phsw,
 		ch:     ch,
 	}
 }
 
-func (phsw *physicalSwitch) delFlow(flowid *FlowID) {
+func (phsw *physicalSwitch) delFlow(flowid *PhysicalFlowID) {
 	phsw.lk.Lock()
 	defer phsw.lk.Unlock()
 	for i, phfl := range phsw.flows {
-		if phfl.FlowID == flowid {	// Pointer comparison is OK!
+		if phfl.PhysicalFlowID == flowid {	// Pointer comparison is OK!
 			l := len(phsw.flows)
 			phsw.flows[i] = phsw.flows[l-1]
 			phsw.flows = phsw.flows[:l-1]
@@ -112,17 +129,17 @@ func (phsw *physicalSwitch) delFlow(flowid *FlowID) {
 	panic("unreach")
 }
 
-func (phsw *physicalSwitch) Send(buf []byte, flowid *FlowID) os.Error {
+func (phsw *physicalSwitch) Write(buf []byte, flowid *PhysicalFlowID) os.Error {
 	phsw.lk.Lock()
 	phy := phsw.phy
 	phsw.lk.Unlock()
 	if phy == nil {
 		return os.EBADF
 	}
-	return phy.Send(buf, flowid)
+	return phy.Write(buf, flowid)
 }
 
-func (phsw *physicalSwitch) Receive() (buf []byte, flowid *FlowID, err os.Error) {
+func (phsw *physicalSwitch) Read() (buf []byte, flowid *PhysicalFlowID, err os.Error) {
 	r := <-phsw.rest
 	if r.buf == nil {
 		err = os.EBADF
@@ -142,16 +159,16 @@ func (phsw *physicalSwitch) Now() int64 { return time.Now() }
 
 // physicalFlow{} is 
 type physicalFlow struct {
-	*FlowID
+	*PhysicalFlowID
 	phsw *physicalSwitch
 	ch   chan []byte
 }
 
-func (phfl *physicalFlow) Send(buf []byte) os.Error {
-	return phfl.phsw.Send(buf, phfl.FlowID)
+func (phfl *physicalFlow) Write(buf []byte) os.Error {
+	return phfl.phsw.Write(buf, phfl.PhysicalFlowID)
 }
 
-func (phfl *physicalFlow) Receive() (buf []byte, err os.Error) {
+func (phfl *physicalFlow) Read() (buf []byte, err os.Error) {
 	buf = <-phfl.ch
 	if buf == nil {
 		err = os.EBADF
