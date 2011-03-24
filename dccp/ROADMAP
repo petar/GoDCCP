@@ -1,20 +1,20 @@
 
 addr.go			[DONE]		net.Addr type for DCCP connections
 checksum.go		[DONE]		Self-contained checksumming routines
-congestion.go
-conn.go			[..]		Conn wraps the two DCCP endpoints
-dccp.go			[..]		Some global constants
-dial.go
-endlogic-loop.go
-endlogic.go
-header-util.go		[..]		Header convenience routines
+congestion.go		[]
+conn.go			[]		Conn wraps the two DCCP endpoints
+dccp.go			[]		Some global constants
+dial.go			[]
+endlogic-loop.go	[]
+endlogic.go		[]
+header-util.go		[]		Header convenience routines
 header.go		[DONE]		GenericHeader definition and RFC routines
-listener.go
+listener.go		[]
 options.go		[DONE]		Option definition and RFC routines
-physical.go
+physical.go		[]
 read.go			[DONE]		GenericHeader wire-format reader
-servicecode.go
-switch.go
-timing.go
+servicecode.go		[]
+switch.go		[]
+timing.go		[]
 wire.go			[DONE]		Wire representation of primitive types
 write.go		[DONE]		GenericHeader wire-format writer
