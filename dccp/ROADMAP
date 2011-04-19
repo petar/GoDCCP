@@ -7,14 +7,15 @@ dccp.go			[]		Some global constants
 dial.go			[]
 endlogic-loop.go	[]
 endlogic.go		[]
+flow.go			[DONE]		Defines flow ID structure and read/write methods. Used by switch.go
 header-util.go		[]		Header convenience routines
 header.go		[DONE]		GenericHeader definition and RFC routines
 listener.go		[]
 options.go		[DONE]		Option definition and RFC routines
-physical.go		[]
+physical.go		[DONE]		Defines a connection-less packet read/writer
 read.go			[DONE]		GenericHeader wire-format reader
 servicecode.go		[]
-switch.go		[]
+switch.go		[]		?
 timing.go		[]
 wire.go			[DONE]		Wire representation of primitive types
 write.go		[DONE]		GenericHeader wire-format writer

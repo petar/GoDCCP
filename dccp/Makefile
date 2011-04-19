@@ -9,16 +9,18 @@ GOFILES=\
 	options.go\
 	wire.go\
 	write.go\
-	dccp.go\
-	endlogic.go\
-	endlogic-loop.go
-	conn.go\
-	header-util.go\
-	servicecode.go\
-	congestion.go\
-	timing.go\
 	physical.go\
-	listener.go\
-	dial.go\
+	flow.go\
+	#servicecode.go\
+	#dccp.go\
+	#switch.go\
+	#dial.go\
+	#listener.go\
+	#endlogic.go\
+	#endlogic-loop.go
+	#conn.go\
+	#header-util.go\
+	#congestion.go\
+	#timing.go\
 
 include $(GOROOT)/src/Make.pkg

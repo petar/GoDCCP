@@ -4,7 +4,7 @@
 
 package dccp
 
-import "net"
+import ()
 
 type Addr struct{}
 
@@ -12,4 +12,4 @@ func (a *Addr) Network() string { return "GoDCCP" }
 
 func (a *Addr) String() string { return "godccp.default" }
 
-const DefaultAddr = Addr{}
+var DefaultAddr = Addr{}

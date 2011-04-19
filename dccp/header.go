@@ -203,10 +203,10 @@ func mayHaveAppData(Type byte) bool {
 
 const (
 	CsCovAllData = iota
-	CsCovNoData  = _
-	CsCov4       = _
-	CsCov8       = _
-	CsCov12      = _
+	CsCovNoData
+	CsCov4
+	CsCov8
+	CsCov12
 	// etc.
 )
 

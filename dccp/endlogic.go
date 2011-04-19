@@ -8,18 +8,6 @@ import (
 	"rand"
 )
 
-// XXX: Abstract the congestion control mechanism in a separate interface
-
-// FlowID{} contains identifiers of the local and remote logical addresses.
-// These are usually random numbers created by the handshake. They superficially
-// resemble an IP address/port pair in order to fit in the respective slots in
-// the header format. 
-type FlowID struct {
-	SourceAddr, DestAddr	[]byte
-	SourcePort, DestPort	uint16
-}
-var zeroFlowID = FlowID{}
-
 // Endpoint logic for a single Half-connection
 type Endpoint struct {
 	phy		Physical

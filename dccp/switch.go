@@ -9,23 +9,23 @@ import (
 	"sync"
 )
 
-// connSwitch{} helps multiplex the physical layer among 
-// multiple connections based on logical flow ID.
+// connSwitch{} helps multiplex the connection-less physical packets among 
+// multiple logical connections based on their logical flow ID.
 type connSwitch struct {
+	sync.Mutex
 	phy    Physical
 	flows  []*connFlow	// TODO: Lookups in a short array should be fine for now. Hashing?
 	rest   chan connReadResult
-	lk     sync.Mutex
 }
 type connReadResult struct {
 	buf    []byte
-	flowid *PhysicalFlowID
+	flowid *FlowID
 }
 
 func newConnSwitch(phy Physical) *connSwitch {
 	cswtch := &connSwitch{ 
 		phy:   phy, 
-		flows: make([]*connFlow),
+		flows: make([]*connFlow, 0),
 		rest:  make(chan connReadResult),
 	}
 	go cswtch.loop()
@@ -34,16 +34,19 @@ func newConnSwitch(phy Physical) *connSwitch {
 
 func (cswtch *connSwitch) loop() {
 	for {
-		cswtch.lk.Lock()
+		cswtch.Lock()
 		phy := cswtch.phy
-		cswtch.lk.Unlock()
+		cswtch.Unlock()
 		if phy == nil {
 			break
 		}
-		buf, flowid, err := phy.Read()
+		buf, addr, err := phy.Read()
 		if err != nil {
 			break
 		}
+		?
+		hdr, err := ReadGenericHeader(buf, , , AnyProto, false)
+
 		cflow := cswtch.findFlow(flowid)
 		if cflow != nil {
 			cflow.ch <- buf
@@ -52,13 +55,31 @@ func (cswtch *connSwitch) loop() {
 		}
 	}
 	close(cswtch.rest)
-	cswtch.lk.Lock()
+	cswtch.Lock()
 	for _, cflow := range cswtch.flows {
 		close(cswtch.ch)
 	}
 	cswtch.phy = nil
-	cswtch.lk.Unlock()
+	cswtch.Unlock()
 }
+
+// ReadSwitchHeader() reads a header consisting of switch-specific flow information followed by a
+// DCCP generic header
+func ReadSwitchHeader(p []byte) (flowid *FlowID, header *GenericHeader, err os.Error) {
+	flowid = &FlowID{}
+	n, err := flowid.Read(p)
+	if err != nil {
+		return nil, nil, err
+	}
+	p = p[n:]
+	header, err = ReadGenericHeader(p, flowid.SourceAddr, flowid.DestAddr, AnyProto, false)
+	if err != nil {
+		return nil, nil, err
+	}
+	return flowid, header, nil
+}
+
+XX
 
 func (cswtch *connSwitch) findFlow(flowid *PhysicalFlowID) *physicalFlow {
 	cswtch.lk.Lock()
