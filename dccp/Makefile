@@ -9,7 +9,7 @@ GOFILES=\
 	options.go\
 	wire.go\
 	write.go\
-	physical.go\
+	link.go\
 	#servicecode.go\
 	#dccp.go\
 	#switch.go\

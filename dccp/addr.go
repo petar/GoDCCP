@@ -15,10 +15,35 @@ import (
 type IP [IPLen]byte
 const IPLen = 16
 
-func (fip *IP) String() string {
+func (ip *IP) Equal(q *IP) bool { 
+	for i := 0; i < IPLen; i++ {
+		if ip[i] != q[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func (ip *IP) Read(p []byte) (n int, err os.Error) {
+	if len(p) < IPLen {
+		return 0, os.NewError("ip too short")
+	}
+	copy(ip[:], p[:IPLen])
+	return IPLen, nil
+}
+
+func (ip *IP) Write(p []byte) (n int, err os.Error) {
+	if len(p) < IPLen {
+		return 0, os.NewError("ip can't fit")
+	}
+	copy(p, ip[:])
+	return IPLen, nil
+}
+
+func (ip *IP) String() string {
 	var w bytes.Buffer
-	for i, b := range *fip {
-		if i != 0 {
+	for i, b := range *ip {
+		if i % 2 == 0 && i > 0 {
 			w.WriteByte('`');
 		}
 		w.WriteString(btox(b))
@@ -26,32 +51,27 @@ func (fip *IP) String() string {
 	return string(w.Bytes())
 }
 
-func (fip *IP) Read(p []byte) (n int, err os.Error) {
-	if len(p) < IPLen {
-		return 0, os.NewError("flow ip too short")
+func (ip *IP) Parse(s string) (n int, err os.Error) {
+	l := IPLen*2 + IPLen/2 - 1 
+	if len(s) < l {
+		return 0, os.NewError("bad ip len")
 	}
-	copy(fip[:], p[:IPLen])
-	return IPLen, nil
-}
-
-func (fip *IP) Write(p []byte) (n int, err os.Error) {
-	if len(p) < IPLen {
-		return 0, os.NewError("flow ip can't fit")
-	}
-	copy(p, fip[:])
-	return IPLen, nil
-}
-
-func (fip *IP) Parse(s string) (n int, err os.Error) {
-	if len(s) < IPLen*3-1 {
-		return 0, os.NewError("bad flow ip len")
-	}
-	for i := 0; i < IPLen; i++ {
-		b, err := xtob(s[3*i:3*i+2])
+	k := 0
+	for i := 0; i < IPLen; {
+		if i % 2 == 0 && i > 0 {
+			if s[i] != '`' {
+				return 0, os.NewError("missing ip dot")
+			}
+			i++
+			continue
+		}
+		b, err := xtob(s[i:i+2])
 		if err != nil {
 			return 0, err
 		}
-		fip[i] = byte(b)
+		i += 2
+		ip[k] = byte(b)
+		k++
 	}
 	return IPLen*3-1, nil
 }
@@ -90,29 +110,29 @@ func xtob(s string) (b byte, err os.Error) {
 	return (b1 << 4) | b0, nil
 }
 
-// Addr{} combines a flow address and a port, which uniquely identifies a dial-to point
+// Addr{} combines an IP and a port, which uniquely identifies a dial-to point
 type Addr struct {
 	IP   IP
 	Port uint16
 }
 
-func (fa *Addr) Address() string {
-	return fa.IP.String() + ":" + strconv.Itoa(int(fa.Port))
+func (addr *Addr) Address() string {
+	return addr.IP.String() + ":" + strconv.Itoa(int(addr.Port))
 }
 
-func (fa *Addr) Network() string { return "flow" }
+func (addr *Addr) Network() string { return "godccp" }
 
-func (fa *Addr) Parse(s string) (n int, err os.Error) {
-	n, err = fa.IP.Parse(s)
+func (addr *Addr) Parse(s string) (n int, err os.Error) {
+	n, err = addr.IP.Parse(s)
 	if err != nil {
 		return 0, err
 	}
 	s = s[n:]
 	if len(s) == 0 {
-		return 0, os.NewError("flow addr missing port")
+		return 0, os.NewError("addr missing port")
 	}
 	if s[0] != ':' {
-		return 0, os.NewError("floaw addr expecting ':'")
+		return 0, os.NewError("addr expecting ':'")
 	}
 	n += 1
 	s = s[n:]
@@ -127,33 +147,33 @@ func (fa *Addr) Parse(s string) (n int, err os.Error) {
 	if err != nil {
 		return 0, err
 	}
-	fa.Port = uint16(p)
+	addr.Port = uint16(p)
 	return n, nil
 }
 
-func (fa *Addr) Read(p []byte) (n int, err os.Error) {
-	n, err = fa.IP.Read(p)
+func (addr *Addr) Read(p []byte) (n int, err os.Error) {
+	n, err = addr.IP.Read(p)
 	if err != nil {
 		return 0, err
 	}
 	p = p[n:]
 	if len(p) < 2 {
-		return 0, os.NewError("flow addr missing port")
+		return 0, os.NewError("addr missing port")
 	}
-	fa.Port = decode2ByteUint(p[0:2])
+	addr.Port = decode2ByteUint(p[0:2])
 	return n+2, nil
 }
 
-func (fa *Addr) Write(p []byte) (n int, err os.Error) {
-	n, err = fa.IP.Write(p)
+func (addr *Addr) Write(p []byte) (n int, err os.Error) {
+	n, err = addr.IP.Write(p)
 	if err != nil {
 		return 0, err
 	}
 	p = p[n:]
 	if len(p) < 2 {
-		return 0, os.NewError("flow addr can't fit port")
+		return 0, os.NewError("addr can't fit port")
 	}
-	encode2ByteUint(fa.Port, p[0:2])
+	encode2ByteUint(addr.Port, p[0:2])
 	return n+2, nil
 }
 
@@ -164,26 +184,26 @@ type ID struct {
 
 var ZeroID = ID{}
 
-// Read reads the flow ID from the wire format
-func (f *ID) Read(p []byte) (n int, err os.Error) {
-	n0, err := f.Source.Read(p)
+// Read reads the ID from the wire format
+func (id *ID) Read(p []byte) (n int, err os.Error) {
+	n0, err := id.Source.Read(p)
 	if err != nil {
 		return 0, err
 	}
-	n1, err := f.Dest.Read(p[n0:])
+	n1, err := id.Dest.Read(p[n0:])
 	if err != nil {
 		return 0, err
 	}
 	return n0+n1, nil
 }
 
-// Write writes the flow ID in wire format
-func (f *ID) Write(p []byte) (n int, err os.Error) {
-	n0, err := f.Source.Write(p)
+// Write writes the ID in wire format
+func (id *ID) Write(p []byte) (n int, err os.Error) {
+	n0, err := id.Source.Write(p)
 	if err != nil {
 		return 0, err
 	}
-	n1, err := f.Dest.Read(p[n0:])
+	n1, err := id.Dest.Read(p[n0:])
 	if err != nil {
 		return 0, err
 	}
