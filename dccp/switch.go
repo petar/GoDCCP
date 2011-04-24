@@ -9,34 +9,37 @@ import (
 	"sync"
 )
 
-// connSwitch{} helps multiplex the connection-less physical packets among 
+// flowSwitch{} helps multiplex the connection-less physical packets among 
 // multiple logical connections based on their logical flow ID.
-type connSwitch struct {
+type flowSwitch struct {
 	sync.Mutex
 	phy    Physical
-	flows  []*connFlow	// TODO: Lookups in a short array should be fine for now. Hashing?
+	flows  []*flow	// TODO: Lookups in a short array should be fine for now. Hashing?
 	rest   chan connReadResult
 }
-type connReadResult struct {
-	buf    []byte
+
+// switchHeader{} is an internal data structure that carries a parsed switch packet,
+// which contains a flow id and a generic DCCP header
+type switchHeader struct {
 	flowid *FlowID
+	header *GenericHeader
 }
 
-func newConnSwitch(phy Physical) *connSwitch {
-	cswtch := &connSwitch{ 
+func newConnSwitch(phy Physical) *flowSwitch {
+	swtch := &flowSwitch{ 
 		phy:   phy, 
-		flows: make([]*connFlow, 0),
+		flows: make([]*flow, 0),
 		rest:  make(chan connReadResult),
 	}
-	go cswtch.loop()
-	return cswtch
+	go swtch.loop()
+	return swtch
 }
 
-func (cswtch *connSwitch) loop() {
+func (swtch *flowSwitch) loop() {
 	for {
-		cswtch.Lock()
-		phy := cswtch.phy
-		cswtch.Unlock()
+		swtch.Lock()
+		phy := swtch.phy
+		swtch.Unlock()
 		if phy == nil {
 			break
 		}
@@ -44,28 +47,30 @@ func (cswtch *connSwitch) loop() {
 		if err != nil {
 			break
 		}
-		?
-		hdr, err := ReadGenericHeader(buf, , , AnyProto, false)
-
-		cflow := cswtch.findFlow(flowid)
-		if cflow != nil {
-			cflow.ch <- buf
+		flowid, header, err := readSwitchHeader(buf)
+		if err != nil {
+			continue
+		}
+		// Is there a flow with this dest ID already?
+		flow := swtch.findFlow(flowid.DestID)
+		if flow != nil {
+			flow.ch <- switchHeader{flowid, header}
 		} else {
-			cswtch.rest <- connReadResult{buf, flowid}
+			swtch.rest <- switchHeader{flowid, header}
 		}
 	}
-	close(cswtch.rest)
-	cswtch.Lock()
-	for _, cflow := range cswtch.flows {
-		close(cswtch.ch)
+	close(swtch.rest)
+	swtch.Lock()
+	for _, flow := range swtch.flows {
+		close(flow.ch)
 	}
-	cswtch.phy = nil
-	cswtch.Unlock()
+	swtch.phy = nil
+	swtch.Unlock()
 }
 
 // ReadSwitchHeader() reads a header consisting of switch-specific flow information followed by a
 // DCCP generic header
-func ReadSwitchHeader(p []byte) (flowid *FlowID, header *GenericHeader, err os.Error) {
+func readSwitchHeader(p []byte) (flowid *FlowID, header *GenericHeader, err os.Error) {
 	flowid = &FlowID{}
 	n, err := flowid.Read(p)
 	if err != nil {
@@ -79,96 +84,101 @@ func ReadSwitchHeader(p []byte) (flowid *FlowID, header *GenericHeader, err os.E
 	return flowid, header, nil
 }
 
-XX
+// findFlow() checks if we there already exists a flow with the given address
+func (swtch *flowSwitch) findFlow(flowaddr *FlowAddr) *flow {
+	swtch.lk.Lock()
+	defer swtch.lk.Unlock()
 
-func (cswtch *connSwitch) findFlow(flowid *PhysicalFlowID) *physicalFlow {
-	cswtch.lk.Lock()
-	defer cswtch.lk.Unlock()
-	for _, cflow := range cswtch.flows {
-		if cflow.PhysicalFlowID == flowid {	// Pointer comparison is OK!
-			return cflow
+	for _, flow := range swtch.flows {
+		if flow.addr == *flowaddr {
+			return flow
 		}
 	}
 	return nil
 }
 
-func (cswtch *connSwitch) MakeFlow(flowid *PhysicalFlowID) *physicalFlow {
-	cswtch.lk.Lock()
-	defer cswtch.lk.Unlock()
-	ch := make(chan []buf)
-	cswtch.flows = append(cswtch.flows, flowid)
-	return &physicalFlow{
-		PhysicalFlowID: flowid,
-		phy:    cswtch,
-		ch:     ch,
+XX
+
+// addr@ is a textual representation of a flow address and port, e.g.
+//   0011`2233`4455`6677`8899`aabb`ccdd`eeff:453
+func (swtch *flowSwitch) Dial(addr string) (flow net.Conn, err os.Error) {
+	swtch.lk.Lock()
+	defer swtch.lk.Unlock()
+	ch := make(chan switchHeader)
+	flow = &flow{
+		addr:  flowid,
+		swtch: swtch,
+		ch:    ch,
 	}
+	swtch.flows = append(swtch.flows, flow)
+	return flow, nil
 }
 
-func (cswtch *connSwitch) delFlow(flowid *PhysicalFlowID) {
-	cswtch.lk.Lock()
-	defer cswtch.lk.Unlock()
-	for i, cflow := range cswtch.flows {
-		if cflow.PhysicalFlowID == flowid {	// Pointer comparison is OK!
-			l := len(cswtch.flows)
-			cswtch.flows[i] = cswtch.flows[l-1]
-			cswtch.flows = cswtch.flows[:l-1]
+XX
+
+func (swtch *flowSwitch) delFlow(flowid *PhysicalFlowID) {
+	swtch.lk.Lock()
+	defer swtch.lk.Unlock()
+	for i, flow := range swtch.flows {
+		if flow.PhysicalFlowID == flowid {	// Pointer comparison is OK!
+			l := len(swtch.flows)
+			swtch.flows[i] = swtch.flows[l-1]
+			swtch.flows = swtch.flows[:l-1]
 			return
 		}
 	}
 	panic("unreach")
 }
 
-func (cswtch *connSwitch) Write(buf []byte, flowid *PhysicalFlowID) os.Error {
-	cswtch.lk.Lock()
-	phy := cswtch.phy
-	cswtch.lk.Unlock()
+func (swtch *flowSwitch) Write(buf []byte, flowid *PhysicalFlowID) os.Error {
+	swtch.lk.Lock()
+	phy := swtch.phy
+	swtch.lk.Unlock()
 	if phy == nil {
 		return os.EBADF
 	}
 	return phy.Write(buf, flowid)
 }
 
-func (cswtch *connSwitch) Read() (buf []byte, flowid *PhysicalFlowID, err os.Error) {
-	r := <-cswtch.rest
+func (swtch *flowSwitch) Read() (buf []byte, flowid *PhysicalFlowID, err os.Error) {
+	r := <-swtch.rest
 	if r.buf == nil {
 		err = os.EBADF
 	}
 	return r.buf, r.flowid, err
 }
 
-func (cswtch *phsyicalSwitch) Close() os.Error {
-	cswtch.lk.Lock()
-	phy := cswtch.phy
-	cswtch.phy = nil
-	cswtch.lk.Unlock()
+func (swtch *phsyicalSwitch) Close() os.Error {
+	swtch.lk.Lock()
+	phy := swtch.phy
+	swtch.phy = nil
+	swtch.lk.Unlock()
 	return phy.Close()
 }
 
-func (cswtch *connSwitch) Now() int64 { return time.Now() }
+func (swtch *flowSwitch) Now() int64 { return time.Now() }
 
-// connFlow{} acts as a packet ReadWriteCloser{} for Conn.
-type connFlow struct {
-	*FlowID
-	cswtch *listener
-	ch     chan []byte
+// flow{} acts as a packet ReadWriteCloser{} for Conn.
+type flow struct {
+	addr   FlowAddr
+	swtch  *flowSwitch
+	ch     chan switchHeader
 }
 
-func (cflow *connFlow) Write(buf []byte) os.Error {
-	return cflow.cswtch.Write(buf, cflow.FlowID)
+func (flow *flow) Write(buf []byte) os.Error {
+	return flow.swtch.Write(buf, flow.FlowID)
 }
 
-func (cflow *connFlow) Read() (buf []byte, err os.Error) {
-	buf = <-cflow.ch
+func (flow *flow) Read() (buf []byte, err os.Error) {
+	buf = <-flow.ch
 	if buf == nil {
 		err = os.EBADF
 	}
 	return 
 }
 
-func (cflow *connFlow) Now() int64 { return cflow.cswtch.Now() }
-
-func (cflow *connFlow) Close() os.Error {
-	cflow.cswtch.delFlow(cflow)
+func (flow *flow) Close() os.Error {
+	flow.swtch.delFlow(flow)
 	return nil
 }
 
