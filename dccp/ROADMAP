@@ -1,5 +1,4 @@
 
-addr.go			[DONE]		net.Addr type for DCCP connections
 checksum.go		[DONE]		Self-contained checksumming routines
 congestion.go		[]
 conn.go			[]		Conn wraps the two DCCP endpoints
@@ -7,7 +6,7 @@ dccp.go			[]		Some global constants
 dial.go			[]
 endlogic-loop.go	[]
 endlogic.go		[]
-flow.go			[DONE]		Defines flow ID structure and read/write methods. Used by switch.go
+addr.go			[DONE]		Defines abstract versions of IP, Addr and ID
 header-util.go		[]		Header convenience routines
 header.go		[DONE]		GenericHeader definition and RFC routines
 listener.go		[]

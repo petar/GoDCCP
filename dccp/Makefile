@@ -10,7 +10,6 @@ GOFILES=\
 	wire.go\
 	write.go\
 	physical.go\
-	flow.go\
 	#servicecode.go\
 	#dccp.go\
 	#switch.go\
