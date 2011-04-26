@@ -6,43 +6,52 @@ package dccp
 
 import (
 	"bytes"
+	"rand"
 	"os"
 	"strconv"
 	"strings"
 )
 
-// IP is a general-purpose address space (similar to IPv6)
-type IP [IPLen]byte
-const IPLen = 16
+// Label is a general-purpose address space (similar to IPv6)
+type Label [LabelLen]byte
+const LabelLen = 16
 
-func (ip *IP) Equal(q *IP) bool { 
-	for i := 0; i < IPLen; i++ {
-		if ip[i] != q[i] {
+func (label *Label) Choose() {
+	for i := 0; i < LabelLen/2; i++ {
+		q := rand.Int()
+		label[2*i] = byte(q & 0xff)
+		label[2*i+1] = byte(q & 0xff00)
+	}
+}
+
+func (label *Label) Equal(q *Label) bool { 
+	for i := 0; i < LabelLen; i++ {
+		if label[i] != q[i] {
 			return false
 		}
 	}
 	return true
 }
 
-func (ip *IP) Read(p []byte) (n int, err os.Error) {
-	if len(p) < IPLen {
-		return 0, os.NewError("ip too short")
+func (label *Label) Read(p []byte) (n int, err os.Error) {
+	if len(p) < LabelLen {
+		return 0, os.NewError("label too short")
 	}
-	copy(ip[:], p[:IPLen])
-	return IPLen, nil
+	copy(label[:], p[:LabelLen])
+	return LabelLen, nil
 }
 
-func (ip *IP) Write(p []byte) (n int, err os.Error) {
-	if len(p) < IPLen {
-		return 0, os.NewError("ip can't fit")
+func (label *Label) Write(p []byte) (n int, err os.Error) {
+	if len(p) < LabelLen {
+		return 0, os.NewError("label can't fit")
 	}
-	copy(p, ip[:])
-	return IPLen, nil
+	copy(p, label[:])
+	return LabelLen, nil
 }
 
-func (ip *IP) String() string {
+func (label *Label) String() string {
 	var w bytes.Buffer
-	for i, b := range *ip {
+	for i, b := range *label {
 		if i % 2 == 0 && i > 0 {
 			w.WriteByte('`');
 		}
@@ -51,16 +60,18 @@ func (ip *IP) String() string {
 	return string(w.Bytes())
 }
 
-func (ip *IP) Parse(s string) (n int, err os.Error) {
-	l := IPLen*2 + IPLen/2 - 1 
+func (label *Label) Address() string { return label.String() }
+
+func (label *Label) Parse(s string) (n int, err os.Error) {
+	l := LabelLen*2 + LabelLen/2 - 1 
 	if len(s) < l {
-		return 0, os.NewError("bad ip len")
+		return 0, os.NewError("bad label len")
 	}
 	k := 0
-	for i := 0; i < IPLen; {
+	for i := 0; i < LabelLen; {
 		if i % 2 == 0 && i > 0 {
 			if s[i] != '`' {
-				return 0, os.NewError("missing ip dot")
+				return 0, os.NewError("missing label dot")
 			}
 			i++
 			continue
@@ -70,10 +81,10 @@ func (ip *IP) Parse(s string) (n int, err os.Error) {
 			return 0, err
 		}
 		i += 2
-		ip[k] = byte(b)
+		label[k] = byte(b)
 		k++
 	}
-	return IPLen*3-1, nil
+	return LabelLen*3-1, nil
 }
 
 const xalpha = "0123456789abcdef"
@@ -110,20 +121,60 @@ func xtob(s string) (b byte, err os.Error) {
 	return (b1 << 4) | b0, nil
 }
 
-// Addr{} combines an IP and a port, which uniquely identifies a dial-to point
+// Each end-point of a flow assigns its own FlowKey{} to the flow
+type FlowKey struct {
+	Label
+}
+
+func (fkey *FlowKey) Network() string { return "godccp-flow" }
+
+// FlowPair{} contains identifiers of the local and remote logical addresses.
+type FlowPair struct {
+	Source, Dest FlowKey
+}
+
+var ZeroFlowPair = FlowPair{}
+
+// Read reads the FlowPair from the wire format
+func (fpair *FlowPair) Read(p []byte) (n int, err os.Error) {
+	n0, err := fpair.Source.Read(p)
+	if err != nil {
+		return 0, err
+	}
+	n1, err := fpair.Dest.Read(p[n0:])
+	if err != nil {
+		return 0, err
+	}
+	return n0+n1, nil
+}
+
+// Write writes the FlowPair in wire format
+func (fpair *FlowPair) Write(p []byte) (n int, err os.Error) {
+	n0, err := fpair.Source.Write(p)
+	if err != nil {
+		return 0, err
+	}
+	n1, err := fpair.Dest.Read(p[n0:])
+	if err != nil {
+		return 0, err
+	}
+	return n0+n1, nil
+}
+
+// Addr{} combines a link-layer address and a user-level port
 type Addr struct {
-	IP   IP
-	Port uint16
+	Addr  LinkAddr
+	Port  uint16
 }
 
 func (addr *Addr) Address() string {
-	return addr.IP.String() + ":" + strconv.Itoa(int(addr.Port))
+	return addr.Addr.String() + ":" + strconv.Itoa(int(addr.Port))
 }
 
 func (addr *Addr) Network() string { return "godccp" }
 
 func (addr *Addr) Parse(s string) (n int, err os.Error) {
-	n, err = addr.IP.Parse(s)
+	n, err = addr.Addr.Parse(s)
 	if err != nil {
 		return 0, err
 	}
@@ -152,7 +203,7 @@ func (addr *Addr) Parse(s string) (n int, err os.Error) {
 }
 
 func (addr *Addr) Read(p []byte) (n int, err os.Error) {
-	n, err = addr.IP.Read(p)
+	n, err = addr.Addr.Read(p)
 	if err != nil {
 		return 0, err
 	}
@@ -165,7 +216,7 @@ func (addr *Addr) Read(p []byte) (n int, err os.Error) {
 }
 
 func (addr *Addr) Write(p []byte) (n int, err os.Error) {
-	n, err = addr.IP.Write(p)
+	n, err = addr.Addr.Write(p)
 	if err != nil {
 		return 0, err
 	}
@@ -175,37 +226,4 @@ func (addr *Addr) Write(p []byte) (n int, err os.Error) {
 	}
 	encode2ByteUint(addr.Port, p[0:2])
 	return n+2, nil
-}
-
-// ID{} contains identifiers of the local and remote logical addresses.
-type ID struct {
-	Source, Dest Addr
-}
-
-var ZeroID = ID{}
-
-// Read reads the ID from the wire format
-func (id *ID) Read(p []byte) (n int, err os.Error) {
-	n0, err := id.Source.Read(p)
-	if err != nil {
-		return 0, err
-	}
-	n1, err := id.Dest.Read(p[n0:])
-	if err != nil {
-		return 0, err
-	}
-	return n0+n1, nil
-}
-
-// Write writes the ID in wire format
-func (id *ID) Write(p []byte) (n int, err os.Error) {
-	n0, err := id.Source.Write(p)
-	if err != nil {
-		return 0, err
-	}
-	n1, err := id.Dest.Read(p[n0:])
-	if err != nil {
-		return 0, err
-	}
-	return n0+n1, nil
 }

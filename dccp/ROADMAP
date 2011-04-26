@@ -6,12 +6,12 @@ dccp.go			[]		Some global constants
 dial.go			[]
 endlogic-loop.go	[]
 endlogic.go		[]
-addr.go			[DONE]		Defines abstract versions of IP, Addr and ID
 header-util.go		[]		Header convenience routines
 header.go		[DONE]		GenericHeader definition and RFC routines
 listener.go		[]
 options.go		[DONE]		Option definition and RFC routines
-link.go			[DONE]		Defines a connection-less packet read/writer, abstracts away link layer
+addr.go			[DONE]		Add general-purpose ID Label, and derivative FlowKey and FlowPair
+link.go			[DONE]		Defines a connection-less packet read/writer Link
 read.go			[DONE]		GenericHeader wire-format reader
 servicecode.go		[]
 switch.go		[]		?

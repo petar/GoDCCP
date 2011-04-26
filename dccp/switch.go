@@ -13,23 +13,23 @@ import (
 // multiple logical connections based on their logical flow ID.
 type flowSwitch struct {
 	sync.Mutex
-	link  Link
-	flows []*flow	// TODO: Lookups in a short array should be fine for now. Hashing?
-	rest  chan connReadResult
+	link       Link
+	flows      []*flow	// TODO: Lookups in a short array should be fine for now. Hashing?
+	acceptChan chan *flow
 }
 
 // switchHeader{} is an internal data structure that carries a parsed switch packet,
 // which contains a flow id and a generic DCCP header
 type switchHeader struct {
-	id     *ID
-	header *GenericHeader
+	pair   *FlowPair
+	cargo  []byte
 }
 
 func newConnSwitch(link Link) *flowSwitch {
 	swtch := &flowSwitch{ 
-		link:  link, 
-		flows: make([]*flow, 0),
-		rest:  make(chan connReadResult),
+		link:       link, 
+		flows:      make([]*flow, 0),
+		acceptChan: make(chan *flow),
 	}
 	go swtch.loop()
 	return swtch
@@ -47,19 +47,17 @@ func (swtch *flowSwitch) loop() {
 		if err != nil {
 			break
 		}
-		id, header, err := readSwitchHeader(buf)
+		pair, cargo, err := readSwitchHeader(buf)
 		if err != nil {
 			continue
 		}
-		// Is there a flow with this dest ID already?
-		flow := swtch.findFlow(&id.Dest)
+		flow := swtch.findFlow(&pair.Dest)
 		if flow != nil {
-			flow.ch <- switchHeader{id, header}
-		} else {
-			swtch.rest <- switchHeader{id, header}
+			flow = swtch.acceptFlow(pair, cargo, addr)
 		}
+		flow.ch <- switchHeader{pair, cargo}
 	}
-	close(swtch.rest)
+	close(swtch.acceptChan)
 	swtch.Lock()
 	for _, flow := range swtch.flows {
 		close(flow.ch)
@@ -68,63 +66,88 @@ func (swtch *flowSwitch) loop() {
 	swtch.Unlock()
 }
 
-// ReadSwitchHeader() reads a header consisting of switch-specific flow information followed by a
-// DCCP generic header
-func readSwitchHeader(p []byte) (id *ID, header *GenericHeader, err os.Error) {
-	id = &FlowID{}
-	n, err := id.Read(p)
-	if err != nil {
-		return nil, nil, err
+func (swtch *flowSwitch) acceptFlow(pair *FlowPair, cargo []byte, linkaddr *LinkAddr) *flow {
+	swtch.Lock()
+	defer swtch.Unlock()
+
+	ch := make(chan switchHeader)
+	flow = &flow{
+		linkaddr: *linkaddr,
+		swtch:    swtch,
+		ch:       ch,
 	}
-	p = p[n:]
-	header, err = ReadGenericHeader(p, id.SourceAddr, id.DestAddr, AnyProto, false)
-	if err != nil {
-		return nil, nil, err
-	}
-	return id, header, nil
+	flow.pair.Source.Choose()
+	swtch.flows = append(swtch.flows, flow)
+
+	return flow
 }
 
-// findFlow() checks if there already exists a flow with the given local IP
-func (swtch *flowSwitch) findFlow(ip *IP) *flow {
+// ReadSwitchHeader() reads a header consisting of switch-specific flow information followed by data
+func readSwitchHeader(p []byte) (pair *FlowPair, cargo []byte, err os.Error) {
+	pair = &FlowPair{}
+	n, err := pair.Read(p)
+	if err != nil {
+		return nil, nil, err
+	}
+	cargo = p[n:]
+	return pair, cargo, nil
+}
+
+// Accept() returns the first incoming flow request
+func (swtch *flowSwitch) Accept() (c net.Conn, err os.Error) {
+	f, closed := <-swtch.acceptChan
+	if closed {
+		return nil, os.EBADF
+	}
+	return f
+}
+
+// findFlow() checks if there already exists a flow with the given local key
+func (swtch *flowSwitch) findFlow(key *FlowKey) *flow {
 	swtch.lk.Lock()
 	defer swtch.lk.Unlock()
 
 	for _, flow := range swtch.flows {
-		if flow.id.Source.IP.Equals(ip) {
+		if flow.pair.Source.Equals(key) {
 			return flow
 		}
 	}
 	return nil
 }
 
-// addr@ is a textual representation of a flow address and port, e.g.
+// addr@ is a textual representation of a link-level address, e.g.
 //   0011`2233`4455`6677`8899`aabb`ccdd`eeff:453
 func (swtch *flowSwitch) Dial(addr string) (flow net.Conn, err os.Error) {
-	swtch.lk.Lock()
-	defer swtch.lk.Unlock()
+	a := &LinkAddr{}
+	if _, err = a.Parse(addr); err != nil {
+		return nil, err
+	}
+	return swtch.DialAddr(a)
+}
+
+func (swtch *flowSwitch) DialAddr(addr *LinkAddr) (flow net.Conn, err os.Error) {
+	swtch.Lock()
+	defer swtch.Unlock()
 
 	ch := make(chan switchHeader)
 	flow = &flow{
-		swtch: swtch,
-		ch:    ch,
+		linkaddr: *addr,
+		swtch:    swtch,
+		ch:       ch,
 	}
-	if _, err = flow.linkaddr.Parse(addr); err != nil {
-		return nil, err
-	}
-	flow.id.Source.Init()
-
+	flow.pair.Source.Choose()
 	swtch.flows = append(swtch.flows, flow)
 
 	return flow, nil
 }
 
-XX
+// delFlow() removes the flow with the specified local key from the data structure
+func (swtch *flowSwitch) delFlow(key *FlowKey) {
+	swtch.Lock()
+	defer swtch.Unlock()
 
-func (swtch *flowSwitch) delFlow(flowid *PhysicalFlowID) {
-	swtch.lk.Lock()
-	defer swtch.lk.Unlock()
 	for i, flow := range swtch.flows {
-		if flow.PhysicalFlowID == flowid {	// Pointer comparison is OK!
+		if flow.pair.Source.Equals(key) {
 			l := len(swtch.flows)
 			swtch.flows[i] = swtch.flows[l-1]
 			swtch.flows = swtch.flows[:l-1]
@@ -132,24 +155,6 @@ func (swtch *flowSwitch) delFlow(flowid *PhysicalFlowID) {
 		}
 	}
 	panic("unreach")
-}
-
-func (swtch *flowSwitch) Write(buf []byte, flowid *PhysicalFlowID) os.Error {
-	swtch.lk.Lock()
-	link := swtch.link
-	swtch.lk.Unlock()
-	if link == nil {
-		return os.EBADF
-	}
-	return link.Write(buf, flowid)
-}
-
-func (swtch *flowSwitch) Read() (buf []byte, flowid *PhysicalFlowID, err os.Error) {
-	r := <-swtch.rest
-	if r.buf == nil {
-		err = os.EBADF
-	}
-	return r.buf, r.flowid, err
 }
 
 func (swtch *phsyicalSwitch) Close() os.Error {
@@ -160,30 +165,5 @@ func (swtch *phsyicalSwitch) Close() os.Error {
 	return link.Close()
 }
 
+// Now() returns the current time in nanoseconds
 func (swtch *flowSwitch) Now() int64 { return time.Now() }
-
-// flow{} acts as a packet ReadWriteCloser{} for Conn.
-type flow struct {
-	linkaddr Addr
-	id       ID
-	swtch    *flowSwitch
-	ch       chan switchHeader
-}
-
-func (flow *flow) Write(buf []byte) os.Error {
-	return flow.swtch.Write(buf, flow.FlowID)
-}
-
-func (flow *flow) Read() (buf []byte, err os.Error) {
-	buf = <-flow.ch
-	if buf == nil {
-		err = os.EBADF
-	}
-	return 
-}
-
-func (flow *flow) Close() os.Error {
-	flow.swtch.delFlow(flow)
-	return nil
-}
-
