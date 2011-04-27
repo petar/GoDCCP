@@ -104,7 +104,7 @@ func (m *mux) Accept() (c net.Conn, err os.Error) {
 }
 
 // findFlow() checks if there already exists a flow with the given local key
-func (m *mux) findFlow(key *FlowKey) *flow {
+func (m *mux) findFlow(key *Label) *flow {
 	m.lk.Lock()
 	defer m.lk.Unlock()
 
@@ -142,7 +142,7 @@ func (m *mux) DialAddr(remote *LinkAddr) (flow net.Conn, err os.Error) {
 }
 
 // delFlow() removes the flow with the specified local key from the data structure
-func (m *mux) delFlow(key *FlowKey) {
+func (m *mux) delFlow(key *Label) {
 	m.Lock()
 	defer m.Unlock()
 

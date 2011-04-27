@@ -2,6 +2,7 @@ include $(GOROOT)/src/Make.inc
 
 TARG=github.com/petar/GoDCCP/dccp
 GOFILES=\
+	label.go\
 	addr.go\
 	checksum.go\
 	header.go\

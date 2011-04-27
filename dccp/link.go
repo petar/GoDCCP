@@ -19,34 +19,39 @@ type Link interface {
 	io.Closer
 }
 
-// LinkAddr{} is the data type used to identify network nodes at the link layer
+// LinkAddr{} is the data type used to identify network nodes at the link layer. It is mutable.
 type LinkAddr struct {
-	Label
+	*Label
 	Port uint16
 }
 
-var ZeroLinkAddr = &LinkAddr{}
-
+// Network() returns the name of the link address namespace, included to conform to net.Addr
 func (addr *LinkAddr) Network() string { return "godccp-link" }
 
-func (addr *LinkAddr) Address() string {
+// String() returns the string represenation of the link address
+func (addr *LinkAddr) String() string {
 	return addr.Label.String() + ":" + strconv.Itoa(int(addr.Port))
 }
 
-func (addr *LinkAddr) Parse(s string) (n int, err os.Error) {
-	n, err = addr.Label.Parse(s)
+// Address() is identical to String(), included as a method so that LinkAddr conforms to net.Addr
+func (addr *LinkAddr) Address() string { return addr.String() }
+
+// ParseLinkAddr() parses a link address from s@ in string format
+func ParseLinkAddr(s string) (addr *LinkAddr, n int, err os.Error) {
+	var label *Label
+	label, n, err = ParseLabel(s)
 	if err != nil {
-		return 0, err
+		return nil, 0, err
 	}
 	s = s[n:]
 	if len(s) == 0 {
-		return 0, os.NewError("link addr missing port")
+		return nil, 0, os.NewError("link addr missing port")
 	}
 	if s[0] != ':' {
-		return 0, os.NewError("link addr expecting ':'")
+		return nil, 0, os.NewError("link addr expecting ':'")
 	}
 	n += 1
-	s = s[n:]
+	s = s[1:]
 	q := strings.Index(s, " ")
 	if q >= 0 {
 		s = s[:q]
@@ -56,25 +61,26 @@ func (addr *LinkAddr) Parse(s string) (n int, err os.Error) {
 	}
 	p, err := strconv.Atoui(s)
 	if err != nil {
-		return 0, err
+		return nil, 0, err
 	}
-	addr.Port = uint16(p)
-	return n, nil
+	return &LinkAddr{label, uint16(p)}, n, nil
 }
 
-func (addr *LinkAddr) Read(p []byte) (n int, err os.Error) {
-	n, err = addr.Label.Read(p)
+// Read() reads a link address from p@ in wire format
+func ReadLinkAddr(p []byte) (addr *LinkAddr, n int, err os.Error) {
+	var label *Label
+	label, n, err = ReadLabel(p)
 	if err != nil {
-		return 0, err
+		return nil, 0, err
 	}
 	p = p[n:]
 	if len(p) < 2 {
-		return 0, os.NewError("link addr missing port")
+		return nil, 0, os.NewError("link addr missing port")
 	}
-	addr.Port = decode2ByteUint(p[0:2])
-	return n+2, nil
+	return &LinkAddr{label, decode2ByteUint(p[0:2])}, n+2, nil
 }
 
+// Write() writes the link address to p@ in wire format
 func (addr *LinkAddr) Write(p []byte) (n int, err os.Error) {
 	n, err = addr.Label.Write(p)
 	if err != nil {
