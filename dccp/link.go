@@ -25,6 +25,8 @@ type LinkAddr struct {
 	Port uint16
 }
 
+var ZeroLinkAddr = &LinkAddr{}
+
 func (addr *LinkAddr) Network() string { return "godccp-link" }
 
 func (addr *LinkAddr) Address() string {

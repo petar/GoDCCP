@@ -16,6 +16,9 @@ import (
 type Label [LabelLen]byte
 const LabelLen = 16
 
+// Len() returns the length of the label's footprint in wire format
+func (label *Label) Len() int { return LabelLen }
+
 func (label *Label) Choose() {
 	for i := 0; i < LabelLen/2; i++ {
 		q := rand.Int()
@@ -134,6 +137,16 @@ type FlowPair struct {
 }
 
 var ZeroFlowPair = FlowPair{}
+
+// Len() returns the length of the flow pair's footprint in wire format
+func (fpair *FlowPair) Len() int { return fpair.Source.Len() + fpair.Dest.Len() }
+
+// Flip() switches the source and destination keys
+func (fpair *FlowPair) Flip() {
+	save := fpair.Source
+	fpair.Source = fpair.Dest
+	fpair.Dest = save
+}
 
 // Read reads the FlowPair from the wire format
 func (fpair *FlowPair) Read(p []byte) (n int, err os.Error) {
