@@ -12,7 +12,7 @@ import (
 
 // flow{} is a net.Conn{}
 type flow struct {
-	addr     *Addr
+	addr     net.Addr
 	m        *mux
 	ch       chan muxHeader
 
@@ -24,7 +24,7 @@ type flow struct {
 	leftover []byte
 }
 
-func newFlow(addr *Addr, m *mux, ch chan muxHeader, local, remote *Label) *flow {
+func newFlow(addr net.Addr, m *mux, ch chan muxHeader, local, remote *Label) *flow {
 	return &flow{
 		addr:   addr,
 		local:  local,
@@ -102,7 +102,7 @@ func (f *flow) Close() os.Error {
 	return nil
 }
 
-func (f *flow) LocalAddr() net.Addr { return ZeroAddr }
+func (f *flow) LocalAddr() net.Addr { return nil }
 
 func (f *flow) RemoteAddr() net.Addr { return f.addr }
 

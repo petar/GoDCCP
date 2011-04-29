@@ -12,7 +12,9 @@ GOFILES=\
 	options.go\
 	wire.go\
 	write.go\
+	addr.go\
 	link.go\
+	udplink.go\
 	#servicecode.go\
 	#dccp.go\
 	#switch.go\

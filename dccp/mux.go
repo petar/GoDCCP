@@ -72,7 +72,7 @@ func (m *mux) loop() {
 	m.Unlock()
 }
 
-func (m *mux) process(msg *muxMsg, cargo []byte, addr *Addr) {
+func (m *mux) process(msg *muxMsg, cargo []byte, addr net.Addr) {
 	// REMARK: By design, only one copy of process() can run at a time (*)
 
 	// Every packet must have a source (remote) label
@@ -108,18 +108,18 @@ func (m *mux) process(msg *muxMsg, cargo []byte, addr *Addr) {
 	f.ch <- muxHeader{msg, cargo}
 }
 
-func (m *mux) accept(remoteLabel *Label, remoteAddr *Addr) *flow {
-	if remoteLabel == nil {
-		panic("remoteLabel == nil")
+func (m *mux) accept(remote *Label, addr net.Addr) *flow {
+	if remote == nil {
+		panic("remote == nil")
 	}
 
 	ch := make(chan muxHeader)
-	localLabel := ChooseLabel()
-	f := newFlow(remoteAddr, m, ch, localLabel, remoteLabel)
+	local := ChooseLabel()
+	f := newFlow(addr, m, ch, local, remote)
 
 	m.Lock()
-	m.flowsLocal[localLabel.Hash()] = f
-	m.flowsRemote[remoteLabel.Hash()] = f
+	m.flowsLocal[local.Hash()] = f
+	m.flowsRemote[remote.Hash()] = f
 	m.Unlock()
 
 	m.acceptChan <- f
@@ -168,23 +168,13 @@ func (m *mux) findRemote(remote *Label) *flow {
 	return m.flowsRemote[remote.Hash()]
 }
 
-// addr@ is a textual representation of a link-level address, e.g.
-//   0011`2233`4455`6677`8899`aabb`ccdd`eeff:453
-func (m *mux) Dial(addr string) (c net.Conn, err os.Error) {
-	a, _, err := ParseAddr(addr)
-	if err != nil {
-		return nil, err
-	}
-	return m.DialAddr(a)
-}
-
-func (m *mux) DialAddr(remoteAddr *Addr) (c net.Conn, err os.Error) {
+func (m *mux) Dial(addr net.Addr) (c net.Conn, err os.Error) {
 	ch := make(chan muxHeader)
-	localLabel := ChooseLabel()
-	f := newFlow(remoteAddr, m, ch, localLabel, nil)
+	local := ChooseLabel()
+	f := newFlow(addr, m, ch, local, nil)
 
 	m.Lock()
-	m.flowsLocal[localLabel.Hash()] = f
+	m.flowsLocal[local.Hash()] = f
 	m.Unlock()
 
 	return f, nil
@@ -203,7 +193,7 @@ func (m *mux) del(local *Label, remote *Label) {
 	}
 }
 
-func (m *mux) write(msg *muxMsg, cargo []byte, remote *Addr) (n int, err os.Error) {
+func (m *mux) write(msg *muxMsg, cargo []byte, addr net.Addr) (n int, err os.Error) {
 	m.Lock()
 	link := m.link
 	m.Unlock()
@@ -215,7 +205,7 @@ func (m *mux) write(msg *muxMsg, cargo []byte, remote *Addr) (n int, err os.Erro
 	msg.Write(buf)
 	copy(buf[msg.Len():], cargo)
 	
-	n, err = link.Write(buf, remote)
+	n, err = link.Write(buf, addr)
 	return max(0, n-msg.Len()), err
 }
 
