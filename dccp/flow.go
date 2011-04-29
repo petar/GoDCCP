@@ -13,20 +13,43 @@ import (
 // flow{} acts as a packet ReadWriteCloser{} for Conn.
 type flow struct {
 	sync.Mutex
-	remote   *LinkAddr	// Link-layer address of the remote
-	pair     *FlowPair	// Local and remote flow-layer keys
-	m        *mux
-	ch       chan muxHeader
-	leftover []byte
+	remoteAddr  *LinkAddr	// Link-layer address of the remote
+	localLabel  *Label
+	remoteLabel *Label
+	m           *mux
+	ch          chan muxHeader
+	leftover    []byte
 }
 
-func newFlow(remote *LinkAddr, m *mux, ch chan muxHeader, pair *FlowPair) *flow {
+func newFlow(remote *LinkAddr, m *mux, ch chan muxHeader, localLabel, remoteLabel *Label) *flow {
 	return &flow{
-		remote: remote,
-		m:      mux,
-		ch:     ch,
-		pair:   pair,
+		remote:      remote,
+		localLabel:  localLabel,
+		remoteLabel: remoteLabel,
+		m:           mux,
+		ch:          ch,
 	}
+}
+
+func (f *flow) setRemoteLabel(remote *Label) {
+	f.Lock()
+	defer f.Unlock()
+	if f.remoteLabel != nil {
+		panic("setting remote label twice")
+	}
+	f.remoteLabel = remote
+}
+
+func (f *flow) getRemoteLabel() *Label {
+	f.Lock()
+	defer f.Unlock()
+	return f.remoteLabel
+}
+
+func (f *flow) getLocalLabel() *Label {
+	f.Lock()
+	defer f.Unlock()
+	return f.localLabel
 }
 
 func (f *flow) Write(buf []byte) (n int, err os.Error) {

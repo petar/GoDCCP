@@ -14,30 +14,30 @@ import (
 // Link{} is an abstract interface to a physical connection-less packet layer which sends and
 // receives packets
 type Link interface {
-	Read() (buf []byte, addr *LinkAddr, err os.Error)	// Receive next packet of data
-	Write(buf []byte, addr *LinkAddr) os.Error		// Send a packet of data
+	Read() (buf []byte, addr *Addr, err os.Error)		// Receive next packet of data
+	Write(buf []byte, addr *Addr) (n int, err os.Error)	// Send a packet of data. Partial writes allowed
 	io.Closer
 }
 
-// LinkAddr{} is the data type used to identify network nodes at the link layer. It is mutable.
-type LinkAddr struct {
+// Addr{} is the data type used to identify network nodes at the link layer. It is mutable.
+type Addr struct {
 	*Label
 	Port uint16
 }
 
 // Network() returns the name of the link address namespace, included to conform to net.Addr
-func (addr *LinkAddr) Network() string { return "godccp-link" }
+func (addr *Addr) Network() string { return "godccp-addr" }
 
 // String() returns the string represenation of the link address
-func (addr *LinkAddr) String() string {
+func (addr *Addr) String() string {
 	return addr.Label.String() + ":" + strconv.Itoa(int(addr.Port))
 }
 
-// Address() is identical to String(), included as a method so that LinkAddr conforms to net.Addr
-func (addr *LinkAddr) Address() string { return addr.String() }
+// Address() is identical to String(), included as a method so that Addr conforms to net.Addr
+func (addr *Addr) Address() string { return addr.String() }
 
-// ParseLinkAddr() parses a link address from s@ in string format
-func ParseLinkAddr(s string) (addr *LinkAddr, n int, err os.Error) {
+// ParseAddr() parses a link address from s@ in string format
+func ParseAddr(s string) (addr *Addr, n int, err os.Error) {
 	var label *Label
 	label, n, err = ParseLabel(s)
 	if err != nil {
@@ -63,11 +63,11 @@ func ParseLinkAddr(s string) (addr *LinkAddr, n int, err os.Error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	return &LinkAddr{label, uint16(p)}, n, nil
+	return &Addr{label, uint16(p)}, n, nil
 }
 
 // Read() reads a link address from p@ in wire format
-func ReadLinkAddr(p []byte) (addr *LinkAddr, n int, err os.Error) {
+func ReadAddr(p []byte) (addr *Addr, n int, err os.Error) {
 	var label *Label
 	label, n, err = ReadLabel(p)
 	if err != nil {
@@ -77,11 +77,11 @@ func ReadLinkAddr(p []byte) (addr *LinkAddr, n int, err os.Error) {
 	if len(p) < 2 {
 		return nil, 0, os.NewError("link addr missing port")
 	}
-	return &LinkAddr{label, decode2ByteUint(p[0:2])}, n+2, nil
+	return &Addr{label, decode2ByteUint(p[0:2])}, n+2, nil
 }
 
 // Write() writes the link address to p@ in wire format
-func (addr *LinkAddr) Write(p []byte) (n int, err os.Error) {
+func (addr *Addr) Write(p []byte) (n int, err os.Error) {
 	n, err = addr.Label.Write(p)
 	if err != nil {
 		return 0, err
