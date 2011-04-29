@@ -24,6 +24,7 @@ type Addr struct {
 	*Label
 	Port uint16
 }
+var ZeroAddr = &Addr{}
 
 // Network() returns the name of the link address namespace, included to conform to net.Addr
 func (addr *Addr) Network() string { return "godccp-addr" }

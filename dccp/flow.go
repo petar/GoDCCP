@@ -5,85 +5,85 @@
 package dccp
 
 import (
-	"io"
+	"net"
 	"os"
 	"sync"
 )
 
-// flow{} acts as a packet ReadWriteCloser{} for Conn.
+// flow{} is a net.Conn{}
 type flow struct {
-	sync.Mutex
-	remoteAddr  *LinkAddr	// Link-layer address of the remote
-	localLabel  *Label
-	remoteLabel *Label
-	m           *mux
-	ch          chan muxHeader
-	leftover    []byte
+	addr     *Addr
+	m        *mux
+	ch       chan muxHeader
+
+	sync.Mutex // protects local and remote
+	local    *Label
+	remote   *Label
+
+	rlk      sync.Mutex // protects leftover and calls to Read()
+	leftover []byte
 }
 
-func newFlow(remote *LinkAddr, m *mux, ch chan muxHeader, localLabel, remoteLabel *Label) *flow {
+func newFlow(addr *Addr, m *mux, ch chan muxHeader, local, remote *Label) *flow {
 	return &flow{
-		remote:      remote,
-		localLabel:  localLabel,
-		remoteLabel: remoteLabel,
-		m:           mux,
-		ch:          ch,
+		addr:   addr,
+		local:  local,
+		remote: remote,
+		m:      m,
+		ch:     ch,
 	}
 }
 
-func (f *flow) setRemoteLabel(remote *Label) {
+func (f *flow) setRemote(remote *Label) {
 	f.Lock()
 	defer f.Unlock()
-	if f.remoteLabel != nil {
+	if f.remote != nil {
 		panic("setting remote label twice")
 	}
-	f.remoteLabel = remote
+	f.remote = remote
 }
 
-func (f *flow) getRemoteLabel() *Label {
+func (f *flow) getRemote() *Label {
 	f.Lock()
 	defer f.Unlock()
-	return f.remoteLabel
+	return f.remote
 }
 
-func (f *flow) getLocalLabel() *Label {
+func (f *flow) getLocal() *Label {
 	f.Lock()
 	defer f.Unlock()
-	return f.localLabel
+	return f.local
 }
 
-func (f *flow) Write(buf []byte) (n int, err os.Error) {
+func (f *flow) Write(cargo []byte) (n int, err os.Error) {
 	f.Lock()
 	m := f.m
 	f.Unlock()
 	if m == nil {
 		return 0, os.EBADF
 	}
-	return m.write(buf, f.pair)
+	return m.write(&muxMsg{f.getLocal(), f.getRemote()}, cargo, f.addr)
 }
 
-// Read() behaves unpredictably if calls occur concurrently.
 func (f *flow) Read(p []byte) (n int, err os.Error) {
-	f.Lock()
+	f.rlk.Lock()
+	defer f.rlk.Unlock()
+
 	if len(f.leftover) > 0 {
 		n = copy(p, f.leftover)
 		f.leftover = f.leftover[n:]
-		f.Unlock()
 		return n, nil
 	}
-	f.Unlock()
 
-	header, closed := <-flow.ch
+	header, closed := <-f.ch
 	if closed {
-		return 0, os.EBADF
+		return 0, os.EIO
 	}
-	cargo := header.cargo
+	cargo := header.Cargo
 	n = copy(p, cargo)
 	cargo = cargo[n:]
 	if len(cargo) > 0 {
-		f.Lock()
 		f.leftover = cargo
-		f.Unlock()
 	}
 
 	return n, nil
@@ -92,19 +92,19 @@ func (f *flow) Read(p []byte) (n int, err os.Error) {
 func (f *flow) Close() os.Error {
 	close(f.ch)
 	f.Lock()
-	m = f.m
+	m := f.m
 	f.m = nil
 	f.Unlock()
 	if m == nil {
 		return os.EBADF
 	}
-	m.delFlow(f)
+	m.del(f.getLocal(), f.getRemote())
 	return nil
 }
 
-func (f *flow) LocalAddr() net.Addr { return ZeroLinkAddr }
+func (f *flow) LocalAddr() net.Addr { return ZeroAddr }
 
-func (f *flow) RemoteAddr() net.Addr { return f.remote }
+func (f *flow) RemoteAddr() net.Addr { return f.addr }
 
 func (f *flow) SetTimeout(nsec int64) os.Error { panic("unimpl") }
 

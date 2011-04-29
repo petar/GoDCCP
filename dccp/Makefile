@@ -4,6 +4,8 @@ TARG=github.com/petar/GoDCCP/dccp
 GOFILES=\
 	label.go\
 	muxmsg.go\
+	mux.go\
+	flow.go\
 	checksum.go\
 	header.go\
 	read.go\

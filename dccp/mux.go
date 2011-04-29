@@ -5,9 +5,10 @@
 package dccp
 
 import (
-	"log"
+	"net"
 	"os"
 	"sync"
+	"time"
 )
 
 // XXX: Drop packets going to recently closed flows. Combine with
@@ -57,7 +58,7 @@ func (m *mux) loop() {
 		if err != nil {
 			continue
 		}
-		m.process(msg, cargo)
+		m.process(msg, cargo, addr)
 	}
 	close(m.acceptChan)
 	m.Lock()
@@ -71,7 +72,7 @@ func (m *mux) loop() {
 	m.Unlock()
 }
 
-func (m *mux) process(msg *muxMsg, cargo []byte) {
+func (m *mux) process(msg *muxMsg, cargo []byte, addr *Addr) {
 	// REMARK: By design, only one copy of process() can run at a time (*)
 
 	// Every packet must have a source (remote) label
@@ -87,14 +88,14 @@ func (m *mux) process(msg *muxMsg, cargo []byte) {
 			return
 		}
 		// Check if this is the first time we hear about the remote label on this flow
-		if f.getRemoteLabel() == nil {
+		if f.getRemote() == nil {
 			// If yes, then we just discovered the remote label. Save it.
 			// Remark (*), above, ensures that the next 4 lines are executed atomically
-			f.setRemoteLabel(msg.Source)
+			f.setRemote(msg.Source)
 			m.Lock()
-			m.flowsRemote[msg.Source] = f
+			m.flowsRemote[msg.Source.Hash()] = f
 			m.Unlock()
-		} else if !f.getRemoteLabel().Equal(msg.Source) {
+		} else if !f.getRemote().Equal(msg.Source) {
 			return
 		}
 	} else {
@@ -150,8 +151,8 @@ func (m *mux) findLocal(local *Label) *flow {
 	if local == nil {
 		return nil
 	}
-	m.lk.Lock()
-	defer m.lk.Unlock()
+	m.Lock()
+	defer m.Unlock()
 
 	return m.flowsLocal[local.Hash()]
 }
@@ -161,8 +162,8 @@ func (m *mux) findRemote(remote *Label) *flow {
 	if remote == nil {
 		return nil
 	}
-	m.lk.Lock()
-	defer m.lk.Unlock()
+	m.Lock()
+	defer m.Unlock()
 
 	return m.flowsRemote[remote.Hash()]
 }
@@ -170,7 +171,7 @@ func (m *mux) findRemote(remote *Label) *flow {
 // addr@ is a textual representation of a link-level address, e.g.
 //   0011`2233`4455`6677`8899`aabb`ccdd`eeff:453
 func (m *mux) Dial(addr string) (c net.Conn, err os.Error) {
-	a, err := ParseAddr(addr)
+	a, _, err := ParseAddr(addr)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +181,7 @@ func (m *mux) Dial(addr string) (c net.Conn, err os.Error) {
 func (m *mux) DialAddr(remoteAddr *Addr) (c net.Conn, err os.Error) {
 	ch := make(chan muxHeader)
 	localLabel := ChooseLabel()
-	f = newFlow(remoteAddr, m, ch, localLabel, nil)
+	f := newFlow(remoteAddr, m, ch, localLabel, nil)
 
 	m.Lock()
 	m.flowsLocal[localLabel.Hash()] = f
@@ -189,8 +190,8 @@ func (m *mux) DialAddr(remoteAddr *Addr) (c net.Conn, err os.Error) {
 	return f, nil
 }
 
-// delFlow() removes the flow with the specified labels from the data structure
-func (m *mux) delFlow(local *Label, remote *Label) {
+// del() removes the flow with the specified labels from the data structure
+func (m *mux) del(local *Label, remote *Label) {
 	m.Lock()
 	defer m.Unlock()
 
@@ -214,7 +215,7 @@ func (m *mux) write(msg *muxMsg, cargo []byte, remote *Addr) (n int, err os.Erro
 	msg.Write(buf)
 	copy(buf[msg.Len():], cargo)
 	
-	err, n = link.Write(buf, remote)
+	n, err = link.Write(buf, remote)
 	return max(0, n-msg.Len()), err
 }
 
@@ -245,4 +246,4 @@ func (m *mux) Close() os.Error {
 }
 
 // Now() returns the current time in nanoseconds
-func (m *mux) Now() int64 { return time.Now() }
+func (m *mux) Now() int64 { return time.Nanoseconds() }
