@@ -5,7 +5,6 @@
 package dccp
 
 import (
-	"io"
 	"os"
 	"strconv"
 	"strings"

@@ -6,21 +6,32 @@ package dccp
 
 import (
 	"net"
+	"os"
 )
 
 // UDPLink{} binds to a UDP port and acts as a Link{} type.
 type UDPLink struct {
+	c *net.UDPConn
 }
 
-func BindUDPLink() (link *UDPLink, err os.Error) {
-	?
+func BindUDPLink(netw string, laddr *net.UDPAddr) (link *UDPLink, err os.Error) {
+	c, err := net.ListenUDP(netw, laddr)
+	if err != nil {
+		return nil, err
+	}
+	return &UDPLink{c}, nil
 }
 
-func (u *UDPLink) Read() (buf []byte, addr *Addr, err os.Error) {
+func (u *UDPLink) FragmentSize() int { return 1500 }
+
+func (u *UDPLink) ReadFrom(buf []byte) (n int, addr net.Addr, err os.Error) {
+	return u.c.ReadFrom(buf)
 }
 
-func (u *UDPLink) Write(buf []byte, addr *Addr) (n int, err os.Error) {
+func (u *UDPLink) Write(buf []byte, addr net.Addr) (n int, err os.Error) {
+	return u.c.WriteTo(buf, addr)
 }
 
 func (u *UDPLink) Close() os.Error {
+	return u.c.Close()
 }

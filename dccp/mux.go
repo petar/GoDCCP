@@ -5,6 +5,7 @@
 package dccp
 
 import (
+	"log"
 	"net"
 	"os"
 	"sync"
@@ -13,12 +14,16 @@ import (
 
 // XXX: Drop packets going to recently closed flows. Combine with
 // XXX: Keepalive mechanism (no, this belongs in DCCP), just close connections that are idle for a while
+// XXX: Add logic to handle fragmentation (length field, catch errors)
+
+// TODO: Keep track of flows with only one packet (likely caused by fragmentation)
 
 // mux{} helps multiplex the connection-less physical packets among 
 // multiple logical connections based on their logical flow ID.
 type mux struct {
 	sync.Mutex
 	link        Link
+	fragLen     int
 	flowsLocal  map[uint64]*flow  // Flows hashed by local label
 	flowsRemote map[uint64]*flow  // Flows hashed by remote label
 	acceptChan  chan *flow
@@ -31,9 +36,10 @@ type muxHeader struct {
 	Cargo  []byte
 }
 
-func newMux(link Link) *mux {
+func newMux(link Link, fragLen int) *mux {
 	m := &mux{ 
 		link:        link, 
+		fragLen:     fragLen,
 		flowsLocal:  make(map[uint64]*flow),
 		flowsRemote: make(map[uint64]*flow),
 		acceptChan:  make(chan *flow),
@@ -42,7 +48,10 @@ func newMux(link Link) *mux {
 	return m
 }
 
+const fragSafety = 5
+
 func (m *mux) loop() {
+	buf := make([]byte, m.fragLen + fragSafety)
 	for {
 		m.Lock()
 		link := m.link
@@ -50,8 +59,12 @@ func (m *mux) loop() {
 		if link == nil {
 			break
 		}
-		buf, addr, err := link.Read()
+		n, addr, err := link.ReadFrom(buf)
 		if err != nil {
+			break
+		}
+		if len(buf)-n < fragSafety {
+			log.Printf("fragment exceeded max size")
 			break
 		}
 		msg, cargo, err := readMuxHeader(buf)
@@ -194,6 +207,9 @@ func (m *mux) del(local *Label, remote *Label) {
 }
 
 func (m *mux) write(msg *muxMsg, cargo []byte, addr net.Addr) (n int, err os.Error) {
+	if msg.Len() + len(cargo) > m.fragLen {
+		return 0, os.NewError("fragment too big")
+	}
 	m.Lock()
 	link := m.link
 	m.Unlock()
@@ -205,7 +221,7 @@ func (m *mux) write(msg *muxMsg, cargo []byte, addr net.Addr) (n int, err os.Err
 	msg.Write(buf)
 	copy(buf[msg.Len():], cargo)
 	
-	n, err = link.Write(buf, addr)
+	n, err = link.WriteTo(buf, addr)
 	return max(0, n-msg.Len()), err
 }
 
