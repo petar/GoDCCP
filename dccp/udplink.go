@@ -22,13 +22,13 @@ func BindUDPLink(netw string, laddr *net.UDPAddr) (link *UDPLink, err os.Error) 
 	return &UDPLink{c}, nil
 }
 
-func (u *UDPLink) FragmentSize() int { return 1500 }
+func (u *UDPLink) FragmentLen() int { return 1500 }
 
 func (u *UDPLink) ReadFrom(buf []byte) (n int, addr net.Addr, err os.Error) {
 	return u.c.ReadFrom(buf)
 }
 
-func (u *UDPLink) Write(buf []byte, addr net.Addr) (n int, err os.Error) {
+func (u *UDPLink) WriteTo(buf []byte, addr net.Addr) (n int, err os.Error) {
 	return u.c.WriteTo(buf, addr)
 }
 

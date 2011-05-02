@@ -75,8 +75,8 @@ func (f *flow) Read(p []byte) (n int, err os.Error) {
 		return n, nil
 	}
 
-	header, closed := <-f.ch
-	if closed {
+	header, ok := <-f.ch
+	if !ok {
 		return 0, os.EIO
 	}
 	cargo := header.Cargo

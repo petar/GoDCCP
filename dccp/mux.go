@@ -15,6 +15,7 @@ import (
 // XXX: Drop packets going to recently closed flows. Combine with
 // XXX: Keepalive mechanism (no, this belongs in DCCP), just close connections that are idle for a while
 // XXX: Add logic to handle fragmentation (length field, catch errors)
+// XXX: When everyone looses ptr to mux, the object remains in memory since loop() is keeping it
 
 // TODO: Keep track of flows with only one packet (likely caused by fragmentation)
 
@@ -61,14 +62,16 @@ func (m *mux) loop() {
 		}
 		n, addr, err := link.ReadFrom(buf)
 		if err != nil {
+			log.Printf("link·readFrom %s\n", err)
 			break
 		}
 		if len(buf)-n < fragSafety {
 			log.Printf("fragment exceeded max size")
 			break
 		}
-		msg, cargo, err := readMuxHeader(buf)
+		msg, cargo, err := readMuxHeader(buf[:n])
 		if err != nil {
+			log.Printf("link·readMuxHeader %s\n", err)
 			continue
 		}
 		m.process(msg, cargo, addr)
@@ -152,8 +155,8 @@ func readMuxHeader(p []byte) (msg *muxMsg, cargo []byte, err os.Error) {
 
 // Accept() returns the first incoming flow request
 func (m *mux) Accept() (c net.Conn, err os.Error) {
-	f, closed := <-m.acceptChan
-	if closed {
+	f, ok := <-m.acceptChan
+	if !ok {
 		return nil, os.EBADF
 	}
 	return f, nil
