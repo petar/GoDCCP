@@ -55,6 +55,10 @@ func (f *flow) getLocal() *Label {
 	return f.local
 }
 
+func (f *flow) String() string {
+	return f.getLocal().String() + "--" + f.getRemote().String()
+}
+
 func (f *flow) Write(cargo []byte) (n int, err os.Error) {
 	f.Lock()
 	m := f.m
@@ -70,6 +74,7 @@ func (f *flow) Read(p []byte) (n int, err os.Error) {
 	defer f.rlk.Unlock()
 
 	if len(f.leftover) > 0 {
+		panic("leftover not recommended")
 		n = copy(p, f.leftover)
 		f.leftover = f.leftover[n:]
 		return n, nil
@@ -80,9 +85,12 @@ func (f *flow) Read(p []byte) (n int, err os.Error) {
 		return 0, os.EIO
 	}
 	cargo := header.Cargo
+	// TODO: This copy might be avoidable, since cargo@ is already an array dedicated to
+	// this read, and allocated in mux.loop()
 	n = copy(p, cargo)
 	cargo = cargo[n:]
 	if len(cargo) > 0 {
+		panic("leftovers not desirable")
 		f.leftover = cargo
 	}
 

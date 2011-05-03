@@ -12,7 +12,6 @@ listener.go		[]
 options.go		[DONE]		Option definition and RFC routines
 read.go			[DONE]		GenericHeader wire-format reader
 servicecode.go		[]
-switch.go		[]		?
 timing.go		[]
 addr.go			[DONE]		A general-purpose address object for link-layer addresses
 wire.go			[DONE]		Wire representation of primitive types

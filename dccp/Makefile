@@ -15,6 +15,7 @@ GOFILES=\
 	addr.go\
 	link.go\
 	udplink.go\
+	chanlink.go\
 	signal.go\
 	#servicecode.go\
 	#dccp.go\

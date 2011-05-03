@@ -5,7 +5,7 @@
 package dccp
 
 import (
-	"log"
+	"fmt"
 	"net"
 	"os"
 	"sync"
@@ -16,6 +16,7 @@ import (
 // XXX: Keepalive mechanism (no, this belongs in DCCP), just close connections that are idle for a while
 // XXX: Add logic to handle fragmentation (length field, catch errors)
 // XXX: When everyone looses ptr to mux, the object remains in memory since loop() is keeping it
+// XXX: Every other Label is 00
 
 // TODO: Keep track of flows with only one packet (likely caused by fragmentation)
 
@@ -52,7 +53,6 @@ func newMux(link Link, fragLen int) *mux {
 const fragSafety = 5
 
 func (m *mux) loop() {
-	buf := make([]byte, m.fragLen + fragSafety)
 	for {
 		m.Lock()
 		link := m.link
@@ -60,18 +60,19 @@ func (m *mux) loop() {
 		if link == nil {
 			break
 		}
+		buf := make([]byte, m.fragLen + fragSafety)
 		n, addr, err := link.ReadFrom(buf)
 		if err != nil {
-			log.Printf("link·readFrom %s\n", err)
+			fmt.Printf("link·readFrom %s\n", err)
 			break
 		}
 		if len(buf)-n < fragSafety {
-			log.Printf("fragment exceeded max size")
+			fmt.Printf("fragment exceeded max size")
 			break
 		}
 		msg, cargo, err := readMuxHeader(buf[:n])
 		if err != nil {
-			log.Printf("link·readMuxHeader %s\n", err)
+			fmt.Printf("link·readMuxHeader %s\n", err)
 			continue
 		}
 		m.process(msg, cargo, addr)
