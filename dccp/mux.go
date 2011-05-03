@@ -5,7 +5,6 @@
 package dccp
 
 import (
-	"fmt"
 	"net"
 	"os"
 	"sync"
@@ -17,6 +16,8 @@ import (
 // XXX: Add logic to handle fragmentation (length field, catch errors)
 // XXX: When everyone looses ptr to mux, the object remains in memory since loop() is keeping it
 // XXX: Every other Label is 00
+// XXX: mux should not pass "cargo" bigger than allowed size. flow.Read() should fail if provided
+//      buffer cannot accommodate them.
 
 // TODO: Keep track of flows with only one packet (likely caused by fragmentation)
 
@@ -63,16 +64,13 @@ func (m *mux) loop() {
 		buf := make([]byte, m.fragLen + fragSafety)
 		n, addr, err := link.ReadFrom(buf)
 		if err != nil {
-			fmt.Printf("link·readFrom %s\n", err)
 			break
 		}
 		if len(buf)-n < fragSafety {
-			fmt.Printf("fragment exceeded max size")
 			break
 		}
 		msg, cargo, err := readMuxHeader(buf[:n])
 		if err != nil {
-			fmt.Printf("link·readMuxHeader %s\n", err)
 			continue
 		}
 		m.process(msg, cargo, addr)
@@ -80,12 +78,11 @@ func (m *mux) loop() {
 	close(m.acceptChan)
 	m.Lock()
 	for _, f := range m.flowsLocal {
-		close(f.ch)
+		f.foreclose()
 	}
 	for _, f := range m.flowsRemote {
-		close(f.ch)
+		f.foreclose()
 	}
-	m.link = nil
 	m.Unlock()
 }
 
@@ -197,7 +194,7 @@ func (m *mux) Dial(addr net.Addr) (c net.Conn, err os.Error) {
 	return f, nil
 }
 
-// del() removes the flow with the specified labels from the data structure
+// del() removes the flow with the specified labels from the data structure, if it still exists
 func (m *mux) del(local *Label, remote *Label) {
 	m.Lock()
 	defer m.Unlock()
@@ -243,10 +240,10 @@ func (m *mux) Close() os.Error {
 	link := m.link
 	m.link = nil
 	for _, f := range m.flowsLocal {
-		close(f.ch)
+		f.foreclose()
 	}
 	for _, f := range m.flowsRemote {
-		close(f.ch)
+		f.foreclose()
 	}
 	m.Unlock()
 	if link == nil {

@@ -7,23 +7,32 @@ package dccp
 import (
 	"net"
 	"os"
+	"sync"
 )
 
 // ChanLink{} treats one side of a channel as an incoming packet link
 type ChanLink struct {
+	sync.Mutex
 	in, out  chan []byte
 }
 
 func NewChanPipe() (p,q *ChanLink) {
 	c0 := make(chan []byte)
 	c1 := make(chan []byte)
-	return &ChanLink{ c0, c1 }, &ChanLink{ c1, c0 }
+	return &ChanLink{ in: c0, out: c1 }, &ChanLink{ in: c1, out: c0 }
 }
 
 func (l *ChanLink) FragmentLen() int { return 1500 }
 
 func (l *ChanLink) ReadFrom(buf []byte) (n int, addr net.Addr, err os.Error) {
-	p, ok := <- l.in
+	l.Lock()
+	in := l.in
+	l.Unlock()
+	if in == nil {
+		return 0, nil, os.EBADF
+	}
+
+	p, ok := <-in
 	if !ok {
 		return 0, nil, os.EIO
 	}
@@ -35,14 +44,26 @@ func (l *ChanLink) ReadFrom(buf []byte) (n int, addr net.Addr, err os.Error) {
 }
 
 func (l *ChanLink) WriteTo(buf []byte, addr net.Addr) (n int, err os.Error) {
+	l.Lock()
+	out := l.out
+	l.Unlock()
+	if out == nil {
+		return 0, os.EBADF
+	}
+
 	p := make([]byte, len(buf))
 	copy(p, buf)
-	l.out <- p
+	out <- p
 	return len(buf), nil
 }
 
 func (l *ChanLink) Close() os.Error {
-	close(l.in)
-	close(l.out)
+	l.Lock()
+	defer l.Unlock()
+
+	if l.out != nil {
+		close(l.out)
+		l.out = nil
+	}
 	return nil
 }

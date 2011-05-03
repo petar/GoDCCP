@@ -20,8 +20,7 @@ type flow struct {
 	local    *Label
 	remote   *Label
 
-	rlk      sync.Mutex // protects leftover and calls to Read()
-	leftover []byte
+	rlk      sync.Mutex // synchronizes calls to Read()
 }
 
 func newFlow(addr net.Addr, m *mux, ch chan muxHeader, local, remote *Label) *flow {
@@ -73,14 +72,13 @@ func (f *flow) Read(p []byte) (n int, err os.Error) {
 	f.rlk.Lock()
 	defer f.rlk.Unlock()
 
-	if len(f.leftover) > 0 {
-		panic("leftover not recommended")
-		n = copy(p, f.leftover)
-		f.leftover = f.leftover[n:]
-		return n, nil
+	f.Lock()
+	ch := f.ch
+	f.Unlock()
+	if ch == nil {
+		return 0, os.EIO
 	}
-
-	header, ok := <-f.ch
+	header, ok := <-ch
 	if !ok {
 		return 0, os.EIO
 	}
@@ -88,18 +86,29 @@ func (f *flow) Read(p []byte) (n int, err os.Error) {
 	// TODO: This copy might be avoidable, since cargo@ is already an array dedicated to
 	// this read, and allocated in mux.loop()
 	n = copy(p, cargo)
-	cargo = cargo[n:]
-	if len(cargo) > 0 {
+	if n != len(cargo) {
 		panic("leftovers not desirable")
-		f.leftover = cargo
 	}
 
 	return n, nil
 }
 
-func (f *flow) Close() os.Error {
-	close(f.ch)
+func (f *flow) foreclose() {
 	f.Lock()
+	defer f.Unlock()
+
+	if f.ch != nil {
+		close(f.ch)
+		f.ch = nil
+	}
+}
+
+func (f *flow) Close() os.Error {
+	f.Lock()
+	if f.ch != nil {
+		close(f.ch)
+		f.ch = nil
+	}
 	m := f.m
 	f.m = nil
 	f.Unlock()
