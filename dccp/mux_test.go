@@ -5,14 +5,9 @@
 package dccp
 
 import (
-	"fmt"
 	"net"
 	"testing"
 )
-
-// TODO: 
-//   Test over-sized writes
-//   Test that small writes are not combined in single packets
 
 type endToEnd struct {
 	t     *testing.T
@@ -40,7 +35,6 @@ func (ee *endToEnd) acceptLoop(link Link) {
 		}
 		go func(c net.Conn) {
 			i := int(readUint32(ee.t, c))
-			fmt.Printf("ACCEPTING %d\n", i)
 
 			// Expect to read the number i i-times
 			for j := 0; j < i; j++ {
@@ -48,7 +42,7 @@ func (ee *endToEnd) acceptLoop(link Link) {
 				if i0 != i {
 					ee.t.Fatalf("expecting %d, got %d\n", i, i0)
 				}
-				fmt.Printf("%d/%d --> %d\n", j+1, i, i0)
+				writeUint32(ee.t, c, uint32(i))
 			}
 			if err = c.Close(); err != nil {
 				ee.t.Fatalf("close %s", err)
@@ -61,7 +55,6 @@ func (ee *endToEnd) acceptLoop(link Link) {
 	for i := 0; i < ee.nc; i++ {
 		<-gg
 	}
-	fmt.Printf("CLOSING accept loop\n")
 	if err := m.Close(); err != nil {
 		ee.t.Errorf("a-close: %s", err)
 	}
@@ -84,6 +77,10 @@ func (ee *endToEnd) dialLoop(link Link) {
 			// Write the number i i-times
 			for j := 0; j < i; j++ {
 				writeUint32(ee.t, c, uint32(i))
+				i0 := int(readUint32(ee.t, c))
+				if i0 != i {
+					ee.t.Fatalf("expecting %d, got %d\n", i, i0)
+				}
 			}
 			if err = c.Close(); err != nil {
 				ee.t.Fatalf("close: %s", err)
@@ -95,7 +92,6 @@ func (ee *endToEnd) dialLoop(link Link) {
 	for i := 0; i < ee.nc; i++ {
 		<-gg
 	}
-	fmt.Printf("CLOSING dial loop\n")
 	if err := m.Close(); err != nil {
 		ee.t.Errorf("d-close: %s", err)
 	}
@@ -131,11 +127,10 @@ func (ee *endToEnd) Run() {
 	go ee.acceptLoop(ee.alink)
 	go ee.dialLoop(ee.dlink)
 	for i := 0; i < ee.nc; i++ {
-		k, ok := <-ee.done
+		_, ok := <-ee.done
 		if !ok {
 			ee.t.Fatalf("premature close")
 		}
-		fmt.Printf("finished with conn #%d\n", k)
 	}
 }
 
