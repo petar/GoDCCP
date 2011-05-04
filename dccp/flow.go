@@ -16,21 +16,40 @@ type flow struct {
 	m        *mux
 	ch       chan muxHeader
 
-	sync.Mutex // protects local and remote
-	local    *Label
-	remote   *Label
+	sync.Mutex // protects the variables below
+	local     *Label
+	remote    *Label
+	lastRead  int64
+	lastWrite int64
 
 	rlk      sync.Mutex // synchronizes calls to Read()
 }
 
 func newFlow(addr net.Addr, m *mux, ch chan muxHeader, local, remote *Label) *flow {
+	now := m.Now()
 	return &flow{
-		addr:   addr,
-		local:  local,
-		remote: remote,
-		m:      m,
-		ch:     ch,
+		addr:      addr,
+		local:     local,
+		remote:    remote,
+		lastRead:  now,
+		lastWrite: now,
+		m:         m,
+		ch:        ch,
 	}
+}
+
+// LastRead() returns the timestamp of the last successful read operation
+func (f *flow) LastRead() int64 {
+	f.Lock()
+	defer f.Unlock()
+	return f.lastRead
+}
+
+// LastWrite() returns the timestamp of the last successful write operation
+func (f *flow) LastWrite() int64 {
+	f.Lock()
+	defer f.Unlock()
+	return f.lastWrite
 }
 
 func (f *flow) setRemote(remote *Label) {
@@ -65,7 +84,13 @@ func (f *flow) Write(cargo []byte) (n int, err os.Error) {
 	if m == nil {
 		return 0, os.EBADF
 	}
-	return m.write(&muxMsg{f.getLocal(), f.getRemote()}, cargo, f.addr)
+	n, err =  m.write(&muxMsg{f.getLocal(), f.getRemote()}, cargo, f.addr)
+	if err != nil {
+		f.Lock()
+		f.lastWrite = m.Now()
+		f.Unlock()
+	}
+	return n, err
 }
 
 func (f *flow) Read(p []byte) (n int, err os.Error) {
@@ -89,6 +114,12 @@ func (f *flow) Read(p []byte) (n int, err os.Error) {
 	if n != len(cargo) {
 		panic("leftovers not desirable")
 	}
+
+	f.Lock()
+	if f.m != nil {
+		f.lastRead = f.m.Now()
+	}
+	f.Unlock()
 
 	return n, nil
 }

@@ -11,26 +11,36 @@ import (
 	"time"
 )
 
-// XXX: Drop packets going to recently closed flows. Combine with
-// XXX: Keepalive mechanism (no, this belongs in DCCP), just close connections that are idle for a while
-// XXX: Add logic to handle fragmentation (length field, catch errors)
-// XXX: When everyone looses ptr to mux, the object remains in memory since loop() is keeping it
 // XXX: Every other Label is 00
+// XXX: When everyone looses ptr to mux, the object remains in memory since loop() is keeping it
 // XXX: mux should not pass "cargo" bigger than allowed size. flow.Read() should fail if provided
 //      buffer cannot accommodate them.
+// XXX: Add logic to handle fragmentation (length field, catch errors)
 
 // TODO: Keep track of flows with only one packet (likely caused by fragmentation)
 
-// mux{} helps multiplex the connection-less physical packets among 
-// multiple logical connections based on their logical flow ID.
+// mux{} is a thin protocol layer that works on top of a connection-less packet layer, like UDP.
+// mux{} multiplexes packets into flows. A flow is a point-to-point connection, which has no
+// congestion or reliability mechanism.
+//
+// mux{} implements a mechanism for dropping packets that linger (are received) for up to
+// one minute after their respective flow has been closed.
+//
+// mux{} force-closes flows that have experienced no activity for 10 mins
 type mux struct {
 	sync.Mutex
-	link        Link
-	fragLen     int
-	flowsLocal  map[uint64]*flow  // Flows hashed by local label
-	flowsRemote map[uint64]*flow  // Flows hashed by remote label
-	acceptChan  chan *flow
+	link           Link
+	fragLen        int
+	flowsLocal     map[uint64]*flow  // Active flows hashed by local label
+	flowsRemote    map[uint64]*flow
+	lingerLocal    map[uint64]int64  // Local labels of recently-closed flows mapped to time of closure
+	lingerRemote   map[uint64]int64
+	acceptChan     chan *flow
 }
+const (
+       	muxLingerTime = 60e9  // 1 min in nanoseconds
+	muxExpireTime = 600e9 // 10 min in nanoseconds
+)
 
 // muxHeader{} is an internal data structure that carries a parsed switch packet,
 // which contains a flow id and a generic DCCP header
@@ -41,38 +51,50 @@ type muxHeader struct {
 
 func newMux(link Link, fragLen int) *mux {
 	m := &mux{ 
-		link:        link, 
-		fragLen:     fragLen,
-		flowsLocal:  make(map[uint64]*flow),
-		flowsRemote: make(map[uint64]*flow),
-		acceptChan:  make(chan *flow),
+		link:         link, 
+		fragLen:      fragLen,
+		flowsLocal:   make(map[uint64]*flow),
+		flowsRemote:  make(map[uint64]*flow),
+		lingerLocal:  make(map[uint64]int64),
+		lingerRemote: make(map[uint64]int64),
+		acceptChan:   make(chan *flow),
 	}
-	go m.loop()
+	go m.readLoop()
+	go m.expireLingeringLoop()
+	go m.expireLoop()
 	return m
 }
 
 const fragSafety = 5
 
-func (m *mux) loop() {
+func (m *mux) readLoop() {
 	for {
+		// Check that mux is still open
 		m.Lock()
 		link := m.link
 		m.Unlock()
 		if link == nil {
 			break
 		}
+
+		// Read incoming packet
 		buf := make([]byte, m.fragLen + fragSafety)
 		n, addr, err := link.ReadFrom(buf)
 		if err != nil {
 			break
 		}
+
+		// Check that it is not oversized
 		if len(buf)-n < fragSafety {
 			break
 		}
+
+		// Read mux header
 		msg, cargo, err := readMuxHeader(buf[:n])
 		if err != nil {
 			continue
 		}
+
 		m.process(msg, cargo, addr)
 	}
 	close(m.acceptChan)
@@ -93,6 +115,12 @@ func (m *mux) process(msg *muxMsg, cargo []byte, addr net.Addr) {
 	if msg.Source == nil {
 		return
 	}
+
+	// If it's a lingering packet, drop it
+	if m.isLingering(msg.Sink, msg.Source) {
+		return
+	}
+
 	var f *flow
 	// Does the packet have a sink label?
 	if msg.Sink != nil {
@@ -194,16 +222,97 @@ func (m *mux) Dial(addr net.Addr) (c net.Conn, err os.Error) {
 	return f, nil
 }
 
+// expireLoop() force-closes flows that have been inactive for more than 10 min
+func (m *mux) expireLoop() {
+	for {
+		time.Sleep(muxExpireTime)
+
+		// Check if mux has been closed
+		m.Lock()
+		link := m.link
+		m.Unlock()
+		if link == nil {
+			break
+		}
+
+		now := m.Now()
+		m.Lock()
+		// All active flows have local labels, so it's enough to iterate just flowsLocal[]
+		for _, f := range m.flowsLocal {
+			if now-f.LastWrite() > muxExpireTime {
+				f.foreclose()
+			}
+		}
+		m.Unlock()
+	}
+}
+
+// isLingering() returns true if the labels of this packet pertain to a flow
+// that has been closed in the past minute.
+func (m *mux) isLingering(local, remote *Label) bool {
+	m.Lock()
+	defer m.Unlock()
+
+	if local != nil {
+		if _, yes := m.lingerLocal[local.Hash()]; yes {
+			return true
+		}
+	}
+	if remote != nil {
+		if _, yes := m.lingerRemote[remote.Hash()]; yes {
+			return true
+		}
+	}
+	return false
+}
+
+// expireLingeringLoop() removes the labels of connections that have been closed for more than
+// a minute from the data structure that remembers them
+func (m *mux) expireLingeringLoop() {
+	for {
+		time.Sleep(muxLingerTime)
+
+		// Check if mux has been closed
+		m.Lock()
+		link := m.link
+		m.Unlock()
+		if link == nil {
+			break
+		}
+
+		now := m.Now()
+		m.Lock()
+		for h, t := range m.lingerLocal {
+			if now - t >= muxLingerTime {
+				m.lingerLocal[h] = 0, false
+			}
+		}
+		for h, t := range m.lingerRemote {
+			if now - t >= muxLingerTime {
+				m.lingerRemote[h] = 0, false
+			}
+		}
+		m.Unlock()
+	}
+}
+
 // del() removes the flow with the specified labels from the data structure, if it still exists
 func (m *mux) del(local *Label, remote *Label) {
 	m.Lock()
 	defer m.Unlock()
 
+	now := m.Now()
 	if local != nil {
 		m.flowsLocal[local.Hash()] = nil, false
+		if _, alreadyClosed := m.lingerLocal[local.Hash()]; !alreadyClosed {
+			m.lingerLocal[local.Hash()] = now
+		}
 	}
 	if remote != nil {
 		m.flowsRemote[remote.Hash()] = nil, false
+		if _, alreadyClosed := m.lingerRemote[remote.Hash()]; !alreadyClosed {
+			m.lingerRemote[remote.Hash()] = now
+		}
 	}
 }
 
