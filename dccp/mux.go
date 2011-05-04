@@ -11,13 +11,6 @@ import (
 	"time"
 )
 
-// XXX: When everyone looses ptr to mux, the object remains in memory since loop() is keeping it
-// XXX: mux should not pass "cargo" bigger than allowed size. flow.Read() should fail if provided
-//      buffer cannot accommodate them.
-// XXX: Add logic to handle fragmentation (length field, catch errors)
-
-// TODO: Keep track of flows with only one packet (likely caused by fragmentation)
-
 // mux{} is a thin protocol layer that works on top of a connection-less packet layer, like UDP.
 // mux{} multiplexes packets into flows. A flow is a point-to-point connection, which has no
 // congestion or reliability mechanism.
@@ -29,7 +22,7 @@ import (
 type mux struct {
 	sync.Mutex
 	link           Link
-	fragLen        int
+	maxFragLen     int  // Max allowed packet size, including mux header. Larger incoming/outgoing packets are dropped.
 	flowsLocal     map[uint64]*flow  // Active flows hashed by local label
 	flowsRemote    map[uint64]*flow
 	lingerLocal    map[uint64]int64  // Local labels of recently-closed flows mapped to time of closure
@@ -42,16 +35,16 @@ const (
 )
 
 // muxHeader{} is an internal data structure that carries a parsed switch packet,
-// which contains a flow id and a generic DCCP header
+// which contains a flow ID and a generic DCCP header
 type muxHeader struct {
 	Msg    *muxMsg
 	Cargo  []byte
 }
 
-func newMux(link Link, fragLen int) *mux {
+func newMux(link Link, maxFragLen int) *mux {
 	m := &mux{ 
 		link:         link, 
-		fragLen:      fragLen,
+		maxFragLen:   maxFragLen,
 		flowsLocal:   make(map[uint64]*flow),
 		flowsRemote:  make(map[uint64]*flow),
 		lingerLocal:  make(map[uint64]int64),
@@ -77,13 +70,13 @@ func (m *mux) readLoop() {
 		}
 
 		// Read incoming packet
-		buf := make([]byte, m.fragLen + fragSafety)
+		buf := make([]byte, m.maxFragLen + fragSafety)
 		n, addr, err := link.ReadFrom(buf)
 		if err != nil {
 			break
 		}
 
-		// Check that it is not oversized
+		// Check that packet is not oversized
 		if len(buf)-n < fragSafety {
 			break
 		}
@@ -316,7 +309,7 @@ func (m *mux) del(local *Label, remote *Label) {
 }
 
 func (m *mux) write(msg *muxMsg, cargo []byte, addr net.Addr) (n int, err os.Error) {
-	if msg.Len() + len(cargo) > m.fragLen {
+	if msg.Len() + len(cargo) > m.maxFragLen {
 		return 0, os.NewError("fragment too big")
 	}
 	m.Lock()
