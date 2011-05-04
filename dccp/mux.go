@@ -11,7 +11,6 @@ import (
 	"time"
 )
 
-// XXX: Every other Label is 00
 // XXX: When everyone looses ptr to mux, the object remains in memory since loop() is keeping it
 // XXX: mux should not pass "cargo" bigger than allowed size. flow.Read() should fail if provided
 //      buffer cannot accommodate them.

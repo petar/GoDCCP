@@ -45,7 +45,8 @@ func ChooseLabel() *Label {
 	for i := 0; i < LabelLen/2; i++ {
 		q := rand.Int()
 		label.data[2*i] = byte(q & 0xff)
-		label.data[2*i+1] = byte(q & 0xff00)
+		q >>= 8
+		label.data[2*i+1] = byte(q & 0xff)
 	}
 	label.hash()
 	return label
