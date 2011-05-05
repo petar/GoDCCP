@@ -39,6 +39,7 @@ var (
 	ErrAlign         = os.NewError("align")
 	ErrSize          = os.NewError("size")
 	ErrSemantic      = os.NewError("semantic")
+	ErrSyntax        = os.NewError("syntax")
 	ErrNumeric       = os.NewError("numeric")
 	ErrOption        = os.NewError("option")
 	ErrOptionsTooBig = os.NewError("options too big")

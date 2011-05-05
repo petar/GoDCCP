@@ -1,0 +1,2 @@
+
+* add new interface for flow{} so that Read does not take a []byte

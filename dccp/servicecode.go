@@ -6,21 +6,65 @@ package dccp
 
 import "os"
 
+// After '8.1.2. Service Codes'
 
-// SC:	Indicates a Service Code representable using a subset of the
-//      ASCII characters.  The colon is followed by one to four
-//      characters taken from the following set: letters, digits, and
-//      the characters in "-_+.*/?@" (not including quotes).
-//      Numerically, these characters have values in {42-43, 45-57,
-//      63-90, 95, 97-122}.  The Service Code is calculated by
-//      padding the string on the right with spaces (value 32) and
-//	intepreting the four-character result as a 32-bit big-endian
-//      number.
-
-func MarshalServiceCode(code uint32) string { 
-	? 
+// isASCIIServiceCodeChar() returns true if c@ is a ServiceCode character
+// that can be displayed in ASCII
+func isASCIIServiceCodeChar(c byte) bool {
+	if c == 32 {
+		return true
+	}
+	if c >= 42 && c <= 43 {
+		return true
+	}
+	if c >= 45 && c <= 57 {
+		return true
+	}
+	if c >= 63 && c <= 90 {
+		return true
+	}
+	if c == 95 {
+		return true
+	}
+	if c >= 97 && c <= 122 {
+		return true
+	}
+	return false
 }
 
-func UnmarshalServiceCode(p []byte) (uint32, os.Error) { 
-	? 
+func serviceCodeToSlice(u uint32) []byte {
+	p := make([]byte, 4)
+	p[0] = byte(u >> 3*8)
+	p[1] = byte((u >> 2*8) & 0xff)
+	p[2] = byte((u >> 1*8) & 0xff)
+	p[3] = byte(u & 0xff)
+	return p
+}
+
+func sliceToServiceCode(p []byte) uint32 {
+	var s uint32
+	s = uint32(p[0])
+	s <<= 8
+	s |= uint32(p[1])
+	s <<= 8
+	s |= uint32(p[2])
+	s <<= 8
+	s |= uint32(p[3])
+	return s
+}
+
+// TODO: Implement additional string representations according to '8.1.2. Service Codes'
+
+func ServiceCodeString(code uint32) string { 
+	return "SC:" + string(serviceCodeToSlice(code))
+}
+
+func ParseServiceCode(p []byte) (uint32, os.Error) { 
+	if len(p) != 7 {
+		return 0, ErrSyntax
+	}
+	if string(p[:3]) != "SC:" {
+		return 0, ErrSyntax
+	}
+	return sliceToServiceCode(p[3:7]), nil
 }

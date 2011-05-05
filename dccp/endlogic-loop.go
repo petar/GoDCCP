@@ -7,7 +7,7 @@ package dccp
 
 // readPacket() reads the next buffer of data from the link layer
 // and tries to parse it into a valid GenericHeader{}
-func readPacket(r Reader, flowid FlowID) (*GenericHeader, os.Error) {
+func readPacket(r Reader, source, sink *Label) (*GenericHeader, os.Error) {
 
 	// Read packet from physical layer
 	buf, err := r.Read()
@@ -15,7 +15,7 @@ func readPacket(r Reader, flowid FlowID) (*GenericHeader, os.Error) {
 		return nil, err
 	}
 	// Parse generic header
-	h, err := ReadGenericHeader(buf, flowid.SourceAddr, flowid.DestAddr, AnyProto, false)
+	h, err := ReadGenericHeader(buf, source.Bytes(), sink.Bytes(), AnyProto, false)
 	if err != nil {
 		return nil, err
 	}

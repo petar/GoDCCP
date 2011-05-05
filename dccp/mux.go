@@ -11,15 +11,15 @@ import (
 	"time"
 )
 
-// mux{} is a thin protocol layer that works on top of a connection-less packet layer, like UDP.
-// mux{} multiplexes packets into flows. A flow is a point-to-point connection, which has no
+// Mux{} is a thin protocol layer that works on top of a connection-less packet layer, like UDP.
+// Mux{} multiplexes packets into flows. A flow is a point-to-point connection, which has no
 // congestion or reliability mechanism.
 //
-// mux{} implements a mechanism for dropping packets that linger (are received) for up to
+// Mux{} implements a mechanism for dropping packets that linger (are received) for up to
 // one minute after their respective flow has been closed.
 //
-// mux{} force-closes flows that have experienced no activity for 10 mins
-type mux struct {
+// Mux{} force-closes flows that have experienced no activity for 10 mins
+type Mux struct {
 	sync.Mutex
 	link           Link
 	maxFragLen     int  // Max allowed packet size, including mux header. Larger incoming/outgoing packets are dropped.
@@ -30,8 +30,9 @@ type mux struct {
 	acceptChan     chan *flow
 }
 const (
-       	muxLingerTime = 60e9  // 1 min in nanoseconds
-	muxExpireTime = 600e9 // 10 min in nanoseconds
+       	MuxLingerTime = 60e9  // 1 min in nanoseconds
+	MuxExpireTime = 600e9 // 10 min in nanoseconds
+	MuxFragSafety = 5
 )
 
 // muxHeader{} is an internal data structure that carries a parsed switch packet,
@@ -41,8 +42,8 @@ type muxHeader struct {
 	Cargo  []byte
 }
 
-func newMux(link Link, maxFragLen int) *mux {
-	m := &mux{ 
+func NewMux(link Link, maxFragLen int) *Mux {
+	m := &Mux{ 
 		link:         link, 
 		maxFragLen:   maxFragLen,
 		flowsLocal:   make(map[uint64]*flow),
@@ -57,9 +58,7 @@ func newMux(link Link, maxFragLen int) *mux {
 	return m
 }
 
-const fragSafety = 5
-
-func (m *mux) readLoop() {
+func (m *Mux) readLoop() {
 	for {
 		// Check that mux is still open
 		m.Lock()
@@ -70,14 +69,14 @@ func (m *mux) readLoop() {
 		}
 
 		// Read incoming packet
-		buf := make([]byte, m.maxFragLen + fragSafety)
+		buf := make([]byte, m.maxFragLen + MuxFragSafety)
 		n, addr, err := link.ReadFrom(buf)
 		if err != nil {
 			break
 		}
 
 		// Check that packet is not oversized
-		if len(buf)-n < fragSafety {
+		if len(buf)-n < MuxFragSafety {
 			break
 		}
 
@@ -100,7 +99,7 @@ func (m *mux) readLoop() {
 	m.Unlock()
 }
 
-func (m *mux) process(msg *muxMsg, cargo []byte, addr net.Addr) {
+func (m *Mux) process(msg *muxMsg, cargo []byte, addr net.Addr) {
 	// REMARK: By design, only one copy of process() can run at a time (*)
 
 	// Every packet must have a source (remote) label
@@ -142,7 +141,7 @@ func (m *mux) process(msg *muxMsg, cargo []byte, addr net.Addr) {
 	f.ch <- muxHeader{msg, cargo}
 }
 
-func (m *mux) accept(remote *Label, addr net.Addr) *flow {
+func (m *Mux) accept(remote *Label, addr net.Addr) *flow {
 	if remote == nil {
 		panic("remote == nil")
 	}
@@ -172,7 +171,7 @@ func readMuxHeader(p []byte) (msg *muxMsg, cargo []byte, err os.Error) {
 }
 
 // Accept() returns the first incoming flow request
-func (m *mux) Accept() (c net.Conn, err os.Error) {
+func (m *Mux) Accept() (c net.Conn, err os.Error) {
 	f, ok := <-m.acceptChan
 	if !ok {
 		return nil, os.EBADF
@@ -181,7 +180,7 @@ func (m *mux) Accept() (c net.Conn, err os.Error) {
 }
 
 // findLocal() checks if there already exists a flow corresponding to the given local label
-func (m *mux) findLocal(local *Label) *flow {
+func (m *Mux) findLocal(local *Label) *flow {
 	if local == nil {
 		return nil
 	}
@@ -192,7 +191,7 @@ func (m *mux) findLocal(local *Label) *flow {
 }
 
 // findRemote() checks if there already exists a flow corresponding to the given remote label
-func (m *mux) findRemote(remote *Label) *flow {
+func (m *Mux) findRemote(remote *Label) *flow {
 	if remote == nil {
 		return nil
 	}
@@ -202,7 +201,7 @@ func (m *mux) findRemote(remote *Label) *flow {
 	return m.flowsRemote[remote.Hash()]
 }
 
-func (m *mux) Dial(addr net.Addr) (c net.Conn, err os.Error) {
+func (m *Mux) Dial(addr net.Addr) (c net.Conn, err os.Error) {
 	ch := make(chan muxHeader)
 	local := ChooseLabel()
 	f := newFlow(addr, m, ch, local, nil)
@@ -215,9 +214,9 @@ func (m *mux) Dial(addr net.Addr) (c net.Conn, err os.Error) {
 }
 
 // expireLoop() force-closes flows that have been inactive for more than 10 min
-func (m *mux) expireLoop() {
+func (m *Mux) expireLoop() {
 	for {
-		time.Sleep(muxExpireTime)
+		time.Sleep(MuxExpireTime)
 
 		// Check if mux has been closed
 		m.Lock()
@@ -231,7 +230,7 @@ func (m *mux) expireLoop() {
 		m.Lock()
 		// All active flows have local labels, so it's enough to iterate just flowsLocal[]
 		for _, f := range m.flowsLocal {
-			if now-f.LastWrite() > muxExpireTime {
+			if now-f.LastWrite() > MuxExpireTime {
 				f.foreclose()
 			}
 		}
@@ -241,7 +240,7 @@ func (m *mux) expireLoop() {
 
 // isLingering() returns true if the labels of this packet pertain to a flow
 // that has been closed in the past minute.
-func (m *mux) isLingering(local, remote *Label) bool {
+func (m *Mux) isLingering(local, remote *Label) bool {
 	m.Lock()
 	defer m.Unlock()
 
@@ -260,9 +259,9 @@ func (m *mux) isLingering(local, remote *Label) bool {
 
 // expireLingeringLoop() removes the labels of connections that have been closed for more than
 // a minute from the data structure that remembers them
-func (m *mux) expireLingeringLoop() {
+func (m *Mux) expireLingeringLoop() {
 	for {
-		time.Sleep(muxLingerTime)
+		time.Sleep(MuxLingerTime)
 
 		// Check if mux has been closed
 		m.Lock()
@@ -275,12 +274,12 @@ func (m *mux) expireLingeringLoop() {
 		now := m.Now()
 		m.Lock()
 		for h, t := range m.lingerLocal {
-			if now - t >= muxLingerTime {
+			if now - t >= MuxLingerTime {
 				m.lingerLocal[h] = 0, false
 			}
 		}
 		for h, t := range m.lingerRemote {
-			if now - t >= muxLingerTime {
+			if now - t >= MuxLingerTime {
 				m.lingerRemote[h] = 0, false
 			}
 		}
@@ -289,7 +288,7 @@ func (m *mux) expireLingeringLoop() {
 }
 
 // del() removes the flow with the specified labels from the data structure, if it still exists
-func (m *mux) del(local *Label, remote *Label) {
+func (m *Mux) del(local *Label, remote *Label) {
 	m.Lock()
 	defer m.Unlock()
 
@@ -308,7 +307,7 @@ func (m *mux) del(local *Label, remote *Label) {
 	}
 }
 
-func (m *mux) write(msg *muxMsg, cargo []byte, addr net.Addr) (n int, err os.Error) {
+func (m *Mux) write(msg *muxMsg, cargo []byte, addr net.Addr) (n int, err os.Error) {
 	if msg.Len() + len(cargo) > m.maxFragLen {
 		return 0, os.NewError("fragment too big")
 	}
@@ -336,7 +335,7 @@ func max(i,j int) int {
 
 // Close() closes the mux and signals all outstanding connections
 // that it is time to terminate
-func (m *mux) Close() os.Error {
+func (m *Mux) Close() os.Error {
 	m.Lock()
 	link := m.link
 	m.link = nil
@@ -354,4 +353,4 @@ func (m *mux) Close() os.Error {
 }
 
 // Now() returns the current time in nanoseconds
-func (m *mux) Now() int64 { return time.Nanoseconds() }
+func (m *Mux) Now() int64 { return time.Nanoseconds() }

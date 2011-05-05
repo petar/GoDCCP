@@ -17,7 +17,7 @@ GOFILES=\
 	udplink.go\
 	chanlink.go\
 	signal.go\
-	#servicecode.go\
+	servicecode.go\
 	#dccp.go\
 	#switch.go\
 	#dial.go\

@@ -8,19 +8,17 @@ import (
 	"net"
 )
 
-// Listener{} takes care of listening for connections.
+// Listener{} takes care of listening for incoming connections.
 // It handles the LISTEN state.
 type Listener struct {
-	phy    Physical
-	conns  []*Conn	// List of active connections
+	m     *Mux
+	conns []*Conn	// List of active connections
 			// TODO: Lookups in a short array should be fine for now. Hashing?
 }
 
-func Listen(phy Physical) net.Listener {
-	l := &Listener{
-		phy: phy,
-	}
-	go l.loop();
+func Listen(m *Mux) net.Listener {
+	l := &Listener{ m: m, }
+	go l.loop()
 	return l
 }
 

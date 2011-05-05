@@ -13,7 +13,7 @@ import (
 // flow{} is a net.Conn{}
 type flow struct {
 	addr     net.Addr
-	m        *mux
+	m        *Mux
 	ch       chan muxHeader
 
 	sync.Mutex // protects the variables below
@@ -25,7 +25,7 @@ type flow struct {
 	rlk      sync.Mutex // synchronizes calls to Read()
 }
 
-func newFlow(addr net.Addr, m *mux, ch chan muxHeader, local, remote *Label) *flow {
+func newFlow(addr net.Addr, m *Mux, ch chan muxHeader, local, remote *Label) *flow {
 	now := m.Now()
 	return &flow{
 		addr:      addr,
@@ -109,7 +109,7 @@ func (f *flow) Read(p []byte) (n int, err os.Error) {
 	}
 	cargo := header.Cargo
 	// TODO: This copy might be avoidable, since cargo@ is already an array dedicated to
-	// this read, and allocated in mux.loop()
+	// this read, and allocated in Mux.loop()
 	n = copy(p, cargo)
 	if n != len(cargo) {
 		panic("leftovers not desirable")

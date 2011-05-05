@@ -24,7 +24,7 @@ func newEndToEnd(t *testing.T, alink,dlink Link, addr net.Addr, nc int) *endToEn
 
 func (ee *endToEnd) acceptLoop(link Link) {
 
-	m := newMux(link, link.FragmentLen())
+	m := NewMux(link, link.FragmentLen())
 
 	// Accept connections
 	gg := make(chan int)

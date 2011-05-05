@@ -28,6 +28,13 @@ var (
 // Len() returns the length of the label's footprint in wire format
 func (label *Label) Len() int { return LabelLen }
 
+func (label *Label) Bytes() []byte {
+	if label != nil {
+		return label.data[:]
+	}
+	return labelZero.data[:]
+}
+
 func (label *Label) hash() { label.h = crc64.Checksum(label.data[:], labelCRC64Table) }
 
 func isZero(bb []byte) bool {

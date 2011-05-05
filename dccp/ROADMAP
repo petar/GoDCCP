@@ -1,23 +1,39 @@
+--- UNFINISHED
 
-checksum.go		[DONE]		Self-contained checksumming routines
-congestion.go		[]
-conn.go			[]		Conn wraps the two DCCP endpoints
 dccp.go			[]		Some global constants
+timing.go		[]
+congestion.go		[]
+
+--- Generic DCCP header stuff
+
+header.go		[DONE]		GenericHeader definition and RFC routines
+header-util.go		[]		Header convenience routines
+read.go			[DONE]		GenericHeader wire-format reader
+write.go		[DONE]		GenericHeader wire-format writer
+options.go		[DONE]		Option definition and RFC routines
+servicecode.go		[DONE]		Service codes and their string representation
+
+--- Connection logic
+
+conn.go			[]		Conn wraps the two DCCP endpoints
 dial.go			[]
+listener.go		[]
 endlogic-loop.go	[]
 endlogic.go		[]
-header-util.go		[]		Header convenience routines
-header.go		[DONE]		GenericHeader definition and RFC routines
-listener.go		[]
-options.go		[DONE]		Option definition and RFC routines
-read.go			[DONE]		GenericHeader wire-format reader
-servicecode.go		[]
-timing.go		[]
-addr.go			[DONE]		A general-purpose address object for link-layer addresses
+
+
+
+--- Low-level encoding
+
+checksum.go		[DONE]		Self-contained checksumming routines
 wire.go			[DONE]		Wire representation of primitive types
-write.go		[DONE]		GenericHeader wire-format writer
+
+--- Address types, link-layer and packet multiplexing
+
+addr.go			[DONE]		A general-purpose address object for link-layer addresses
 link.go			[DONE]		Interface for a general-purpose connection-less packet read/writer (link-layer)
 mux.go			[DONE]		Multiplexing-layer that adds notion of flow on top of a link-layer	
 muxmsg.go		[DONE]		Wire encodable/decodable header for multiplexing-layer messages
 flow.go			[DONE]		Part of the multiplexing-layer, implementation of the flow logic
 udplink.go		[DONE]		Vanilla link-layer implementation on top of UDP
+
