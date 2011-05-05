@@ -15,6 +15,7 @@ type flow struct {
 	addr     net.Addr
 	m        *Mux
 	ch       chan muxHeader
+	largest  int
 
 	sync.Mutex // protects the variables below
 	local     *Label
@@ -25,7 +26,7 @@ type flow struct {
 	rlk      sync.Mutex // synchronizes calls to Read()
 }
 
-func newFlow(addr net.Addr, m *Mux, ch chan muxHeader, local, remote *Label) *flow {
+func newFlow(addr net.Addr, m *Mux, ch chan muxHeader, largest int, local, remote *Label) *flow {
 	now := m.Now()
 	return &flow{
 		addr:      addr,
@@ -35,18 +36,22 @@ func newFlow(addr net.Addr, m *Mux, ch chan muxHeader, local, remote *Label) *fl
 		lastWrite: now,
 		m:         m,
 		ch:        ch,
+		largest:   largest,
 	}
 }
 
+// Largest returns the largest size of read/write block
+func (f *flow) Largest() int { return f.largest }
+
 // LastRead() returns the timestamp of the last successful read operation
-func (f *flow) LastRead() int64 {
+func (f *flow) LastReadTime() int64 {
 	f.Lock()
 	defer f.Unlock()
 	return f.lastRead
 }
 
 // LastWrite() returns the timestamp of the last successful write operation
-func (f *flow) LastWrite() int64 {
+func (f *flow) LastWriteTime() int64 {
 	f.Lock()
 	defer f.Unlock()
 	return f.lastWrite
@@ -77,23 +82,23 @@ func (f *flow) String() string {
 	return f.getLocal().String() + "--" + f.getRemote().String()
 }
 
-func (f *flow) Write(cargo []byte) (n int, err os.Error) {
+func (f *flow) WriteBlock(block []byte) os.Error {
 	f.Lock()
 	m := f.m
 	f.Unlock()
 	if m == nil {
-		return 0, os.EBADF
+		return os.EBADF
 	}
-	n, err =  m.write(&muxMsg{f.getLocal(), f.getRemote()}, cargo, f.addr)
+	err :=  m.write(&muxMsg{f.getLocal(), f.getRemote()}, block, f.addr)
 	if err != nil {
 		f.Lock()
 		f.lastWrite = m.Now()
 		f.Unlock()
 	}
-	return n, err
+	return err
 }
 
-func (f *flow) Read(p []byte) (n int, err os.Error) {
+func (f *flow) ReadBlock() (block []byte, err os.Error) {
 	f.rlk.Lock()
 	defer f.rlk.Unlock()
 
@@ -101,18 +106,11 @@ func (f *flow) Read(p []byte) (n int, err os.Error) {
 	ch := f.ch
 	f.Unlock()
 	if ch == nil {
-		return 0, os.EIO
+		return nil, os.EIO
 	}
 	header, ok := <-ch
 	if !ok {
-		return 0, os.EIO
-	}
-	cargo := header.Cargo
-	// TODO: This copy might be avoidable, since cargo@ is already an array dedicated to
-	// this read, and allocated in Mux.loop()
-	n = copy(p, cargo)
-	if n != len(cargo) {
-		panic("leftovers not desirable")
+		return nil, os.EIO
 	}
 
 	f.Lock()
@@ -121,7 +119,7 @@ func (f *flow) Read(p []byte) (n int, err os.Error) {
 	}
 	f.Unlock()
 
-	return n, nil
+	return header.Cargo, nil
 }
 
 func (f *flow) foreclose() {
@@ -149,13 +147,3 @@ func (f *flow) Close() os.Error {
 	m.del(f.getLocal(), f.getRemote())
 	return nil
 }
-
-func (f *flow) LocalAddr() net.Addr { return nil }
-
-func (f *flow) RemoteAddr() net.Addr { return f.addr }
-
-func (f *flow) SetTimeout(nsec int64) os.Error { panic("unimpl") }
-
-func (f *flow) SetReadTimeout(nsec int64) os.Error { panic("unimpl") }
-
-func (f *flow) SetWriteTimeout(nsec int64) os.Error { panic("unimpl") }

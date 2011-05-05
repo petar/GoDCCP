@@ -34,6 +34,7 @@ addr.go			[DONE]		A general-purpose address object for link-layer addresses
 link.go			[DONE]		Interface for a general-purpose connection-less packet read/writer (link-layer)
 mux.go			[DONE]		Multiplexing-layer that adds notion of flow on top of a link-layer	
 muxmsg.go		[DONE]		Wire encodable/decodable header for multiplexing-layer messages
+block.go		[DONE]		An interface for connections where data is read/written in indivisible blocks
 flow.go			[DONE]		Part of the multiplexing-layer, implementation of the flow logic
 udplink.go		[DONE]		Vanilla link-layer implementation on top of UDP
 

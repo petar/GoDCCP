@@ -18,6 +18,7 @@ GOFILES=\
 	chanlink.go\
 	signal.go\
 	servicecode.go\
+	block.go\
 	#dccp.go\
 	#switch.go\
 	#dial.go\

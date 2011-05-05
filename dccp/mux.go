@@ -22,7 +22,7 @@ import (
 type Mux struct {
 	sync.Mutex
 	link           Link
-	maxFragLen     int  // Max allowed packet size, including mux header. Larger incoming/outgoing packets are dropped.
+	largest        int  // Max allowed block size, including mux header. Larger incoming/outgoing packets are dropped.
 	flowsLocal     map[uint64]*flow  // Active flows hashed by local label
 	flowsRemote    map[uint64]*flow
 	lingerLocal    map[uint64]int64  // Local labels of recently-closed flows mapped to time of closure
@@ -32,7 +32,7 @@ type Mux struct {
 const (
        	MuxLingerTime = 60e9  // 1 min in nanoseconds
 	MuxExpireTime = 600e9 // 10 min in nanoseconds
-	MuxFragSafety = 5
+	MuxReadSafety = 5
 )
 
 // muxHeader{} is an internal data structure that carries a parsed switch packet,
@@ -42,10 +42,10 @@ type muxHeader struct {
 	Cargo  []byte
 }
 
-func NewMux(link Link, maxFragLen int) *Mux {
+func NewMux(link Link, largest int) *Mux {
 	m := &Mux{ 
 		link:         link, 
-		maxFragLen:   maxFragLen,
+		largest:      largest,
 		flowsLocal:   make(map[uint64]*flow),
 		flowsRemote:  make(map[uint64]*flow),
 		lingerLocal:  make(map[uint64]int64),
@@ -69,14 +69,14 @@ func (m *Mux) readLoop() {
 		}
 
 		// Read incoming packet
-		buf := make([]byte, m.maxFragLen + MuxFragSafety)
+		buf := make([]byte, m.largest + MuxReadSafety)
 		n, addr, err := link.ReadFrom(buf)
 		if err != nil {
 			break
 		}
 
 		// Check that packet is not oversized
-		if len(buf)-n < MuxFragSafety {
+		if len(buf)-n < MuxReadSafety {
 			break
 		}
 
@@ -148,7 +148,7 @@ func (m *Mux) accept(remote *Label, addr net.Addr) *flow {
 
 	ch := make(chan muxHeader)
 	local := ChooseLabel()
-	f := newFlow(addr, m, ch, local, remote)
+	f := newFlow(addr, m, ch, m.largestCargo(), local, remote)
 
 	m.Lock()
 	m.flowsLocal[local.Hash()] = f
@@ -171,7 +171,7 @@ func readMuxHeader(p []byte) (msg *muxMsg, cargo []byte, err os.Error) {
 }
 
 // Accept() returns the first incoming flow request
-func (m *Mux) Accept() (c net.Conn, err os.Error) {
+func (m *Mux) Accept() (c BlockConn, err os.Error) {
 	f, ok := <-m.acceptChan
 	if !ok {
 		return nil, os.EBADF
@@ -201,10 +201,10 @@ func (m *Mux) findRemote(remote *Label) *flow {
 	return m.flowsRemote[remote.Hash()]
 }
 
-func (m *Mux) Dial(addr net.Addr) (c net.Conn, err os.Error) {
+func (m *Mux) Dial(addr net.Addr) (c BlockConn, err os.Error) {
 	ch := make(chan muxHeader)
 	local := ChooseLabel()
-	f := newFlow(addr, m, ch, local, nil)
+	f := newFlow(addr, m, ch, m.largestCargo(), local, nil)
 
 	m.Lock()
 	m.flowsLocal[local.Hash()] = f
@@ -230,7 +230,7 @@ func (m *Mux) expireLoop() {
 		m.Lock()
 		// All active flows have local labels, so it's enough to iterate just flowsLocal[]
 		for _, f := range m.flowsLocal {
-			if now-f.LastWrite() > MuxExpireTime {
+			if now-f.LastWriteTime() > MuxExpireTime {
 				f.foreclose()
 			}
 		}
@@ -307,23 +307,28 @@ func (m *Mux) del(local *Label, remote *Label) {
 	}
 }
 
-func (m *Mux) write(msg *muxMsg, cargo []byte, addr net.Addr) (n int, err os.Error) {
-	if msg.Len() + len(cargo) > m.maxFragLen {
-		return 0, os.NewError("fragment too big")
+func (m *Mux) largestCargo() int { return m.largest - muxMsgFootprint }
+
+func (m *Mux) write(msg *muxMsg, block []byte, addr net.Addr) os.Error {
+	if muxMsgFootprint + len(block) > m.largest {
+		return os.NewError("block too big")
 	}
 	m.Lock()
 	link := m.link
 	m.Unlock()
 	if link == nil {
-		return 0, os.EBADF
+		return os.EBADF
 	}
 
-	buf := make([]byte, msg.Len() + len(cargo))
+	buf := make([]byte, muxMsgFootprint + len(block))
 	msg.Write(buf)
-	copy(buf[msg.Len():], cargo)
+	copy(buf[muxMsgFootprint:], block)
 	
-	n, err = link.WriteTo(buf, addr)
-	return max(0, n-msg.Len()), err
+	n, err := link.WriteTo(buf, addr)
+	if n != muxMsgFootprint + len(block) {
+		panic("block divided")
+	}
+	return err
 }
 
 func max(i,j int) int {

@@ -10,9 +10,7 @@ import "os"
 type muxMsg struct {
 	Source, Sink *Label
 }
-
-// Len() returns the length of the flow pair's footprint in wire format
-func (msg *muxMsg) Len() int { return msg.Source.Len() + msg.Sink.Len() }
+const muxMsgFootprint = 2*labelFootprint;
 
 // readMuxMsg() decodes a muxMsg{} from wire format
 func readMuxMsg(p []byte) (msg *muxMsg, n int, err os.Error) {

@@ -8,6 +8,8 @@ import "os"
 
 // After '8.1.2. Service Codes'
 
+func isValidServiceCode(sc uint32) bool { return sc != 4294967295 }
+
 // isASCIIServiceCodeChar() returns true if c@ is a ServiceCode character
 // that can be displayed in ASCII
 func isASCIIServiceCodeChar(c byte) bool {

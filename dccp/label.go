@@ -25,8 +25,7 @@ var (
 	labelCRC64Table = crc64.MakeTable(crc64.ISO)
 )
 
-// Len() returns the length of the label's footprint in wire format
-func (label *Label) Len() int { return LabelLen }
+const labelFootprint = LabelLen
 
 func (label *Label) Bytes() []byte {
 	if label != nil {
