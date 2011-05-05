@@ -1,0 +1,46 @@
+
+8.1.  Connection Establishment
+==============================
+
+     Client State                             Server State
+        CLOSED                                   LISTEN
+   1.   REQUEST   -->       Request        -->
+   2.             <--       Response       <--   RESPOND
+   3.   PARTOPEN  -->     Ack, DataAck     -->
+   4.             <--  Data, Ack, DataAck  <--   OPEN
+   5.   OPEN      <->  Data, Ack, DataAck  <->   OPEN
+
+8.1.1.  Client Request
+======================
+
+
+CLIENT:
+	Enter REQUEST state
+	Choose Initial Seq No
+	Send DCCP-Request
+
+(REQUEST)
+	Use exponential back-off to resent DCCP-Request
+	First retransmit at 1 sec,
+	Backing off to not less than one packet every 64 seconds
+	Each new DCCP-Request MUST increment the Seq No 
+		and MUST contain the same Service Code and application data as the original DCCP-Request.
+
+	MAY give up on DCCP-Requests after some time (eg. 3 minutes)
+	When it does, it SHOULD send a DCCP-Reset packet to the server with Reset Code 2, "Aborted"
+
+	A client in REQUEST state has never received an initial sequence number from its peer, so the DCCP-Reset's Acknowledgement Number MUST be set to zero.
+
+    The client leaves the REQUEST state for PARTOPEN when it receives a DCCP-Response from the server.
+
+
+ServiceCodes:
+
+	32-bit Service Code, which identifies the application-level service
+		Write as "SC:fdpz" where the chars after ";" represent the 4 bytes
+	
+	Each active socket(Conn, 2x HalfConn) MUST have exactly one Service Code.
+
+	If the DCCP-Request's Service Code doesn't equal any of the server's Service Codes for the 
+	given port, the server MUST reject the request by sending a DCCP-Reset packet with Reset Code 8, 
+	"Bad Service Code".
