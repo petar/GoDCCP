@@ -22,7 +22,7 @@ func NewChanPipe() (p,q *ChanLink) {
 	return &ChanLink{ in: c0, out: c1 }, &ChanLink{ in: c1, out: c0 }
 }
 
-func (l *ChanLink) FragmentLen() int { return 1500 }
+func (l *ChanLink) MaxBlockLen() int { return 1500 }
 
 func (l *ChanLink) ReadFrom(buf []byte) (n int, addr net.Addr, err os.Error) {
 	l.Lock()

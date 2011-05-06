@@ -11,7 +11,7 @@ import (
 // A BlockConn is an I/O facility that explicitly reads/writes data in the form
 // of indivisible blocks of data. 
 type BlockConn interface {
-	Largest() int	// The largest allowable block size (for read and write)
+	MaxBlockLen() int	// The largest allowable block size (for read and write)
 	ReadBlock() (block []byte, err os.Error)
 	WriteBlock(block []byte) (err os.Error)
 	Close() os.Error

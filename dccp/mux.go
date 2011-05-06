@@ -148,7 +148,7 @@ func (m *Mux) accept(remote *Label, addr net.Addr) *flow {
 
 	ch := make(chan muxHeader)
 	local := ChooseLabel()
-	f := newFlow(addr, m, ch, m.largestCargo(), local, remote)
+	f := newFlow(addr, m, ch, m.cargoMaxLen(), local, remote)
 
 	m.Lock()
 	m.flowsLocal[local.Hash()] = f
@@ -204,7 +204,7 @@ func (m *Mux) findRemote(remote *Label) *flow {
 func (m *Mux) Dial(addr net.Addr) (c BlockConn, err os.Error) {
 	ch := make(chan muxHeader)
 	local := ChooseLabel()
-	f := newFlow(addr, m, ch, m.largestCargo(), local, nil)
+	f := newFlow(addr, m, ch, m.cargoMaxLen(), local, nil)
 
 	m.Lock()
 	m.flowsLocal[local.Hash()] = f
@@ -307,7 +307,7 @@ func (m *Mux) del(local *Label, remote *Label) {
 	}
 }
 
-func (m *Mux) largestCargo() int { return m.largest - muxMsgFootprint }
+func (m *Mux) cargoMaxLen() int { return m.largest - muxMsgFootprint }
 
 func (m *Mux) write(msg *muxMsg, block []byte, addr net.Addr) os.Error {
 	if muxMsgFootprint + len(block) > m.largest {

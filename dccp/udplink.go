@@ -22,7 +22,7 @@ func BindUDPLink(netw string, laddr *net.UDPAddr) (link *UDPLink, err os.Error) 
 	return &UDPLink{c}, nil
 }
 
-func (u *UDPLink) FragmentLen() int { return 1500 }
+func (u *UDPLink) MaxBlockLen() int { return 1500 }
 
 func (u *UDPLink) ReadFrom(buf []byte) (n int, addr net.Addr, err os.Error) {
 	return u.c.ReadFrom(buf)

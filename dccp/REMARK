@@ -7,7 +7,5 @@
 	provides: It's a flow-based unreliable transport that sends and 
 	receives packets, not continuous data
 
-
-
 * Init Cookies (See '8.1.4. Init Cookie Option') are not supported neither on the
 client nor the server side, currently.

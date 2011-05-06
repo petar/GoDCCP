@@ -35,12 +35,72 @@ CLIENT:
 
 
 ServiceCodes:
-
-	32-bit Service Code, which identifies the application-level service
-		Write as "SC:fdpz" where the chars after ";" represent the 4 bytes
 	
 	Each active socket(Conn, 2x HalfConn) MUST have exactly one Service Code.
 
 	If the DCCP-Request's Service Code doesn't equal any of the server's Service Codes for the 
 	given port, the server MUST reject the request by sending a DCCP-Reset packet with Reset Code 8, 
 	"Bad Service Code".
+
+Server Response:
+
+	The server MAY respond to a DCCP-Request packet with a DCCP-Reset
+	packet to refuse the connection: 7, "Connection Refused"; 8, "Bad Service Code";
+	9, "Too Busy"
+
+	The server SHOULD limit the rate at which it generates these resets; for example, to not more than 1024 per second.
+
+	The server SHOULD NOT retransmit DCCP-Response packets; the client
+	will retransmit the DCCP-Request if necessary.
+
+	Every valid DCCP-Request received while the server is in the RESPOND
+	state MUST elicit a new DCCP-Response.
+	
+	Each new DCCP-Response MUST increment the server's Sequence Number by one and MUST include the 
+	same application data, if any, as the original DCCP-Response.
+
+	The server MUST NOT accept more than one piece of DCCP-Request
+   application data per connection.  In particular, the DCCP-Response
+   sent in reply to a retransmitted DCCP-Request with application data
+   SHOULD contain a Data Dropped option, in which the retransmitted
+   DCCP-Request data is reported with Drop Code 0, Protocol Constraints.
+   The original DCCP-Request SHOULD also be reported in the Data Dropped
+   option, either in a Normal Block (if the server accepted the data or
+   there was no data) or in a Drop Code 0 Drop Block (if the server
+   refused the data the first time as well).
+
+   The server leaves the RESPOND state for OPEN when it receives a valid
+   DCCP-Ack from the client, completing the three-way handshake.
+
+   It MAY also leave the RESPOND state for CLOSED after a timeout of not less
+   than 4MSL (8 minutes); when doing so, it SHOULD send a DCCP-Reset
+   with Reset Code 2, "Aborted", to clean up state at the client.
+
+Handshake completion:
+
+   When the client receives a DCCP-Response from the server, it moves
+   from the REQUEST state to PARTOPEN and completes the three-way
+   handshake by sending a DCCP-Ack packet to the server.  The client
+   remains in PARTOPEN until it can be sure that the server has received
+   some packet the client sent from PARTOPEN (either the initial DCCP-
+   Ack or a later packet).  Clients in the PARTOPEN state that want to
+   send data MUST do so using DCCP-DataAck packets, not DCCP-Data
+   packets.  This is because DCCP-Data packets lack Acknowledgement
+   Numbers, so the server can't tell from a DCCP-Data packet whether the
+   client saw its DCCP-Response.  Furthermore, if the DCCP-Response
+   included an Init Cookie, that Init Cookie MUST be included on every
+   packet sent in PARTOPEN.
+
+   The single DCCP-Ack sent when entering the PARTOPEN state might, of
+   course, be dropped by the network.  The client SHOULD ensure that
+   some packet gets through eventually.  The preferred mechanism would
+   be a roughly 200-millisecond timer, set every time a packet is
+   transmitted in PARTOPEN.  If this timer goes off and the client is
+   still in PARTOPEN, the client generates another DCCP-Ack and backs
+   off the timer.  If the client remains in PARTOPEN for more than 4MSL
+   (8 minutes), it SHOULD reset the connection with Reset Code 2,
+   "Aborted".
+
+   The client leaves the PARTOPEN state for OPEN when it receives a
+   valid packet other than DCCP-Response, DCCP-Reset, or DCCP-Sync from
+   the server.
