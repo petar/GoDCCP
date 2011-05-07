@@ -4,80 +4,28 @@
 
 package dccp
 
+import (
+	"os"
+)
 
-// readPacket() reads the next buffer of data from the link layer
-// and tries to parse it into a valid Header{}
-func readPacket(r Reader, source, sink *Label) (*Header, os.Error) {
-
-	// Read packet from physical layer
-	buf, err := r.Read()
+func (c *Conn) readHeader() (h *Header, err os.Error) {
+	h, err = c.hc.ReadHeader()
 	if err != nil {
 		return nil, err
 	}
-	// Parse header
-	h, err := ReadHeader(buf, source.Bytes(), sink.Bytes(), AnyProto, false)
-	if err != nil {
-		return nil, err
-	}
-	// Ensure extended SeqNo's 
+	// We don't support non-extended (short) SeqNo's 
 	if !h.X {
 		return nil, ErrUnsupported
 	}
 	return h, nil
 }
 
-func arrayEqual(a,b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := 0; i < len(a); i++ {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
-func (c *Conn) readPacket() (h *Header, err os.Error) {
-	h, err = readPacket(e.hc, e.flowid)
-	if err != nil {
-		return nil, err
-	}
-	// Ensure source/dest address and port match with endpoint
-	if !arrayEqual(h.SourceAddr, e.DestAddr) || !arrayEqual(h.DestAddr, e.SourceAddr) {
-		return nil, ErrProto
-	}
-	if h.SourcePort != e.DestPort || h.DestPort != e.SourcePort {
-		return nil, ErrProto
-	}
-	return h, nil
-}
-
-func (e *Endpoint) loop() {
+func (c *Conn) readLoop() {
 	for {
-		h,err := e.readPacket()
+		h, err := e.readPacket()
 		if err != nil {
 			continue XX // no continue
 		}
 		?
 	}
-}
-
-// If endpoint is in TIMEWAIT, it must perform a Reset sequence
-func (e *Endpoint) reactInTIMEWAIT(h *Header) os.Error {
-	if h.Type == Reset {
-		return
-	}
-	var seqno uint64 = 0
-	if h.HasAckNo() {
-		seqno = h.AckNo+1
-	}
-	g := NewResetHeader(ResetNoConnection, e.flowID.SourcePort, e.flowID.DestPort, 
-		seqno, h.SeqNo)
-	hdr,data,err := g.Write(e.flowID.SourceAddr, e.flowID.DestAddr, AnyProto, false)
-	if err != nil {
-		return err
-	}
-	e.link.Send(append(hdr, data))
-	return nil
 }

@@ -91,22 +91,22 @@ func (gh *Header) getHeaderFootprint(allowShortSeqNoFeature bool) (int, os.Error
 
 // Write() writes the DCCP header to two return buffers.
 // The first one is the header part, and the second one is the data
-// part which is simply the slice Header.Data
+// part which simply equals the slice Header.Data
 func (gh *Header) Write(
 		sourceIP, destIP []byte, 
 		protoNo byte,
-		allowShortSeqNoFeature bool) (header,data []byte, err os.Error) {
+		allowShortSeqNoFeature bool) (header []byte, err os.Error) {
 	
 	err = verifyIPAndProto(sourceIP, destIP, protoNo)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	dataOffset, err := gh.getHeaderFootprint(allowShortSeqNoFeature)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	buf := make([]byte, dataOffset)
+	buf := make([]byte, dataOffset + len(gh.Data))
 
 	k := 0
 
@@ -194,7 +194,7 @@ func (gh *Header) Write(
 	}
 	appCov, err := getChecksumAppCoverage(gh.CsCov, dlen)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	csum := csumSum(buf[0:dataOffset])
 	csum = csumAdd(csum, csumPseudoIP(sourceIP, destIP, protoNo, len(buf) + dlen))
@@ -204,7 +204,10 @@ func (gh *Header) Write(
 	csum = csumDone(csum)
 	csumUint16ToBytes(csum, buf[6:8])
 
-	return buf, gh.Data, nil
+	// Write data
+	copy(buf[dataOffset:], gh.Data)
+
+	return buf, nil
 }
 
 func writeOptions(opts []Option, buf []byte, Type byte) {

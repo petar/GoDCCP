@@ -10,12 +10,19 @@ import (
 
 // Conn 
 type Conn struct {
+	id
 	socket
 	hc headerConn
 }
 
+type id struct {
+	SourcePort, DestPort uint16
+	SourceAddr, DestAddr []byte
+}
+
 type socket struct {
 	sync.Mutex
+
 	RTT		uint64	// Round-trip time
 
 	ISS		uint64	// Initial Sequence number Sent

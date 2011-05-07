@@ -2,7 +2,7 @@
 * THINK: DCCP uses source/dest port to identify flow. We use mux-layer. Reconcile?
 * THINK: Is the handshake common to both half-connections or not?
 
-* Rename GenericHeader
+* Header.Write() also writes data
 
 * Add new interface for flow{} so that Read does not take a []byte
 	* This same interface should be used for the service that the DCCP-layer

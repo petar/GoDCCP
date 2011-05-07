@@ -30,13 +30,10 @@ var testHeaders = []*Header{
 
 func TestReadWrite(t *testing.T) {
 	for _, gh := range testHeaders {
-		h, d, err := gh.Write([]byte{1,2,3,4}, []byte{5,6,7,8}, 34, false)
+		hd, err := gh.Write([]byte{1,2,3,4}, []byte{5,6,7,8}, 34, false)
 		if err != nil {
 			t.Errorf("write error: %s", err)
 		}
-		hd := make([]byte, len(h) + len(d))
-		copy(hd, h)
-		copy(hd[len(h):], d)
 		gh2, err := ReadHeader(hd, []byte{1,2,3,4}, []byte{5,6,7,8}, 34, false)
 		if err != nil {
 			t.Errorf("read error: %s", err)
