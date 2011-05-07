@@ -18,6 +18,7 @@ type BlockConn interface {
 }
 
 type HeaderConn interface {
+	MaxFootprint() int
 	ReadHeader() (h *Header, err os.Error)
 	WriteHeader(h *Header) (err os.Error)
 	Close() os.Error

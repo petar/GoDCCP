@@ -35,23 +35,6 @@ type Header struct {
 				// Error text (in Reset pkts)
 }
 
-var (
-	ErrAlign         = os.NewError("align")
-	ErrSize          = os.NewError("size")
-	ErrSemantic      = os.NewError("semantic")
-	ErrSyntax        = os.NewError("syntax")
-	ErrNumeric       = os.NewError("numeric")
-	ErrOption        = os.NewError("option")
-	ErrOptionsTooBig = os.NewError("options too big")
-	ErrOversize      = os.NewError("over size")
-	ErrCsCov         = os.NewError("cscov")
-	ErrChecksum      = os.NewError("checksum")
-	ErrIPFormat      = os.NewError("ip format")
-	ErrUnknownType   = os.NewError("unknown packet type")
-	ErrUnsupported   = os.NewError("unsupported")
-	ErrProto         = os.NewError("protocol error")
-)
-
 // Packet types. Stored in the Type field of the generic header.
 // Receivers MUST ignore any packets with reserved type.  That is,
 // packets with reserved type MUST NOT be processed, and they MUST

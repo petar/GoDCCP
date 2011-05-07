@@ -1,41 +1,12 @@
-// Copyright 2010 GoDCCP Authors. All rights reserved.
-// Use of this source code is governed by a 
-// license that can be found in the LICENSE file.
-
-package dccp
-
-import (
-	"rand"
-)
-
-// Endpoint logic for a single Half-connection
 type Endpoint struct {
-	phy		Physical
-	flowid		FlowID
 
 	RTT		uint64	// Round-trip time
-
-	ISS		uint64	// Initial Sequence number Sent
-	ISR		uint64	// Initial Sequence number Received
-	GSS		uint64	// Greatest Sequence number Sent
-				//	The greatest SeqNo of a packet sent by this endpoint
-	GSR		uint64	// Greatest Sequence number Received (consequently, sent as AckNo back)
-				//	The greatest SeqNo of a packet received by the other endpoint
-	GAR		uint64	// Greatest Acknowledgement number Received
-
-	OSR		uint64	// First OPEN Sequence number Received
-
-	SWBF		uint64	// Sequence Window/B Feature
-	SWAF		uint64	// Sequence Window/A Feature
-
 	MPS		uint32	// Maximum Packet Size
 				// The MPS is influenced by the
 				// maximum packet size allowed by the current congestion control
 				// mechanism (CCMPS), the maximum packet size supported by the path's
 				// links (PMTU, the Path Maximum Transmission Unit) [RFC1191], and the
 				// lengths of the IP and DCCP headers.
-
-	State		int
 	ServiceCode	uint32
 }
 
@@ -45,19 +16,6 @@ type Endpoint struct {
 //      (*) No feature negitation mechanisms are implemented
 //		(*) Send NDP Count feature is always ON
 //		(*) Allow Short Sequence Numbers feature is always OFF
-
-// The nine possible states are as follows.  They are listed in increasing order.
-const (
-	CLOSED   = iota
-	LISTEN   = _
-	REQUEST  = _
-	RESPOND  = _
-	PARTOPEN = _
-	OPEN     = _
-	CLOSEREQ = _
-	CLOSING  = _
-	TIMEWAIT = _
-)
 
 const (
 	// Sequence Window Feature constants
@@ -82,29 +40,9 @@ func NewEndpoint(phy physicalFlow) *Endpoint {
 	}
 }
 
-func (e *Endpoint) send(buf []byte) os.Error { return e.phy.Send(buf, e.flowID) }
-
-func pickInitialSeqNo() uint64 { return uint64(rand.Int63()) & 0xffffff }
-
-func maxu64(x,y uint64) uint64 {
-	if x > y {
-		return x
-	}
-	return y
-}
 // XXX: In theory, long lived connections may wrap around the AckNo/SeqNo space
 // in which case maxu64() should not be used below. This will never happen however
 // if we are using 48-bit numbers exclusively
-
-// SWL and SWH
-func (e *Endpoint) SeqNoWindowLowAndHigh() (SWL uint64, SWH uint64) {
-	return maxu64(e.GSR + 1 - e.SWBF/4, e.ISR), e.GSR + (3*e.SWBF)/4
-}
-
-// AWL and AWH
-func (e *Endpoint) AckNoWindowLowAndHigh() (AWL uint64, AWH uint64) {
-	return maxu64(e.GSS + 1 - e.SWAF, e.ISS), e.GSS
-}
 
 func (e *Endpoint) IsSeqNoValid(h *GenericHeader) bool {
 	swl, swh := e.SeqNoWindowLowHigh()

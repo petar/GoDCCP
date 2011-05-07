@@ -4,25 +4,22 @@
 
 package dccp
 
-import (
-	"os"
-)
+import "os"
 
-// If endpoint is in TIMEWAIT, it must perform a Reset sequence
-// Implements the second half of Step 2, Section 8.5
-func (c *Conn) readInTIMEWAIT(h *Header) os.Error {
-	if h.Type == Reset {
-		return
-	}
+// newAbnormalReset() generates a new Reset header, according to Section 8.3.1
+func (c *Conn) newAbnormalReset(h *Header) *Header {
 	var seqno uint64 = 0
 	if h.HasAckNo() {
 		seqno = h.AckNo+1
 	}
-	?
-	g := NewResetHeader(ResetNoConnection, c.id.SourcePort, c.id.DestPort, seqno, h.SeqNo)
-	hdr, err := g.Write(c.id.SourceAddr, c.id.DestAddr, AnyProto, false)
-	if err != nil {
-		return err
+	return NewResetHeader(ResetNoConnection, c.id.SourcePort, c.id.DestPort, seqno, h.SeqNo)
+}
+
+// If socket is in TIMEWAIT, it must perform a Reset sequence.
+// Implements the second half of Step 2, Section 8.5
+func (c *Conn) processTIMEWAIT(h *Header) os.Error {
+	if h.Type == Reset {
+		return ErrDrop
 	}
-	return c.inject(hdr)
+	return c.inject(c.newAbnormalReset(h))
 }

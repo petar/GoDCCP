@@ -15,7 +15,14 @@ servicecode.go		[DONE]		Service codes and their string representation
 
 --- Connection logic
 
-conn.go			[]		Conn wraps the two DCCP endpoints
+conn.go			[]		Main type for a DCCP connection/socket
+socket.go		[]		Data-structure for DCCP socket variables
+conn-inject.go		[]		Rate-limited packet injection
+conn-read.go		[DONE]		Incoming packet read loop
+conn-timewait.go	[DONE]		Response logic in TIMEWAIT state, Step 2
+conn-listen.go		[]		Response logic in LISTEN state, Step 3
+conn-respond.go		[]		Response logic in RESPOND state, Step 11
+
 dial.go			[]
 listener.go		[]
 endlogic-loop.go	[]

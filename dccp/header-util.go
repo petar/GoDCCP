@@ -9,15 +9,15 @@ import "os"
 func (h *Header) HasAckNo() bool { return getAckNoSubheaderSize(h.Type, h.X) > 0 }
 
 func (h *Header) GetNDPCount() (int, os.Error) {
-	?
+	panic("¿i?")
 }
 
 func (h *Header) SetNDPCount(k int) {
-	?
+	panic("¿i?")
 }
 
 // NewResetHeader() creates a new Reset header
-func NewResetHeader(ResetCode int, SourcePort, DestPort uint16, SeqNo, AckNo uint64) *Header {
+func NewResetHeader(ResetCode uint32, SourcePort, DestPort uint16, SeqNo, AckNo uint64) *Header {
 	return &Header{
 		SourcePort:  SourcePort,
 		DestPort:    DestPort,

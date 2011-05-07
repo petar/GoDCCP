@@ -1,3 +1,6 @@
+Section 8.5
+===========
 
-Step 1: implemented in ReadHeader()
-Step 2: half 
+Step 1: [DONE] implemented in ReadHeader()
+Step 2: [HALF] impl'd the TIMEWAIT part of this step
+Step 3: [DONE] impl'd LISTEN

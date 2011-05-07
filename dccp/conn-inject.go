@@ -8,8 +8,8 @@ import (
 	"os"
 )
 
-// inject() blocks until the block can be sent while respecting
+// inject() blocks until the header can be sent while respecting
 // whatever rate-limiting policy is in use
-func (c *Conn) inject(block []byte) os.Error {
-	??
+func (c *Conn) inject(h *Header) os.Error {
+	panic("¿i?")
 }

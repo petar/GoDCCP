@@ -8,6 +8,7 @@ GOFILES=\
 	flow.go\
 	checksum.go\
 	header.go\
+	header-util.go\
 	read.go\
 	options.go\
 	wire.go\
@@ -19,6 +20,13 @@ GOFILES=\
 	signal.go\
 	servicecode.go\
 	block.go\
+	err.go\
+	socket.go\
+	conn.go\
+	conn-inject.go\
+	conn-timewait.go\
+	conn-listen.go\
+	conn-respond.go\
 	#dccp.go\
 	#switch.go\
 	#dial.go\
