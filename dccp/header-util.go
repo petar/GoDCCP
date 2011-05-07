@@ -6,19 +6,19 @@ package dccp
 
 import "os"
 
-func (h *GenericHeader) HasAckNo() bool { return getAckNoSubheaderSize(h.Type, h.X) > 0 }
+func (h *Header) HasAckNo() bool { return getAckNoSubheaderSize(h.Type, h.X) > 0 }
 
-func (h *GenericHeader) GetNDPCount() (int, os.Error) {
+func (h *Header) GetNDPCount() (int, os.Error) {
 	?
 }
 
-func (h *GenericHeader) SetNDPCount(k int) {
+func (h *Header) SetNDPCount(k int) {
 	?
 }
 
 // NewResetHeader() creates a new Reset header
-func NewResetHeader(ResetCode int, SourcePort, DestPort uint16, SeqNo, AckNo uint64) *GenericHeader {
-	return &GenericHeader{
+func NewResetHeader(ResetCode int, SourcePort, DestPort uint16, SeqNo, AckNo uint64) *Header {
+	return &Header{
 		SourcePort:  SourcePort,
 		DestPort:    DestPort,
 		CsCov:       CsCovAllData,

@@ -36,7 +36,7 @@ const (
 )
 
 // muxHeader{} is an internal data structure that carries a parsed switch packet,
-// which contains a flow ID and a generic DCCP header
+// which contains a flow ID and a DCCP header
 type muxHeader struct {
 	Msg    *muxMsg
 	Cargo  []byte

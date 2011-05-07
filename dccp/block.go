@@ -16,3 +16,9 @@ type BlockConn interface {
 	WriteBlock(block []byte) (err os.Error)
 	Close() os.Error
 }
+
+type HeaderConn interface {
+	ReadHeader() (h *Header, err os.Error)
+	WriteHeader(h *Header) (err os.Error)
+	Close() os.Error
+}

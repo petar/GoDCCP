@@ -9,8 +9,8 @@ import (
 	"testing"
 )
 
-var testHeaders = []*GenericHeader{
-	&GenericHeader{
+var testHeaders = []*Header{
+	&Header{
 		SourcePort:   33,
 		DestPort:     77,
 		CCVal:        1,
@@ -37,7 +37,7 @@ func TestReadWrite(t *testing.T) {
 		hd := make([]byte, len(h) + len(d))
 		copy(hd, h)
 		copy(hd[len(h):], d)
-		gh2, err := ReadGenericHeader(hd, []byte{1,2,3,4}, []byte{5,6,7,8}, 34, false)
+		gh2, err := ReadHeader(hd, []byte{1,2,3,4}, []byte{5,6,7,8}, 34, false)
 		if err != nil {
 			t.Errorf("read error: %s", err)
 		}

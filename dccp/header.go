@@ -17,7 +17,7 @@ import "os"
 // (2) Options and Padding
 // (3) Application Data
 
-type GenericHeader struct {
+type Header struct {
 	SourcePort    uint16	// Sender port
 	DestPort      uint16	// Receiver port
 	CCVal         byte	// Used by the HC-Sender to transmit 4-bit values

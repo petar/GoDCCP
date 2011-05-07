@@ -20,11 +20,11 @@ func verifyIPAndProto(sourceIP, destIP []byte, protoNo byte) os.Error {
 	return nil
 }
 
-func ReadGenericHeader(
+func ReadHeader(
 		buf []byte, 
 		sourceIP, destIP []byte, 
 		protoNo byte,
-		allowShortSeqNoFeature bool) (header *GenericHeader, err os.Error) {
+		allowShortSeqNoFeature bool) (header *Header, err os.Error) {
 
 	err = verifyIPAndProto(sourceIP, destIP, protoNo)
 	if err != nil {
@@ -34,7 +34,7 @@ func ReadGenericHeader(
 	if len(buf) < 12 {
 		return nil, ErrSize
 	}
-	gh := &GenericHeader{}
+	gh := &Header{}
 	k := 0
 
 	// Read (1a) Generic Header

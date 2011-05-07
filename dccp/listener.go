@@ -35,7 +35,7 @@ func (l *Listener) loop() {
 
 // readAndSwitch() reads an incoming packet and sends it over to
 // its Conn{} destination if any, or returns it otherwise
-func (l *listener) readAndSwitch() (h *GenericHeader, err os.Error) {
+func (l *listener) readAndSwitch() (h *Header, err os.Error) {
 	h, err = read(l.phy)
 	if err != nil {
 		return 
@@ -44,8 +44,8 @@ func (l *listener) readAndSwitch() (h *GenericHeader, err os.Error) {
 }
 
 // read() reads the next buffer of data from the link layer
-// and tries to parse it into a valid GenericHeader{}
-func read(r Reader) (*GenericHeader, os.Error) {
+// and tries to parse it into a valid Header{}
+func read(r Reader) (*Header, os.Error) {
 
 	// Read packet from physical layer
 	buf, phyFlowID, err := r.Read()
@@ -53,7 +53,7 @@ func read(r Reader) (*GenericHeader, os.Error) {
 		return nil, err
 	}
 	// Parse generic header
-	h, err := ReadGenericHeader(buf, zeroPhyFlowID.SourceAddr, zeroPhyFlowID.DestAddr, AnyProto, false)
+	h, err := ReadHeader(buf, zeroPhyFlowID.SourceAddr, zeroPhyFlowID.DestAddr, AnyProto, false)
 	if err != nil {
 		return nil, err
 	}

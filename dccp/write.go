@@ -40,7 +40,7 @@ func (opt *Option) getFootprint() (int, os.Error) {
 // getOptionsFootprint() returns the size of the options part of the header,
 // while not including any space for options whose type is not compatible with
 // the type of the header
-func (gh *GenericHeader) getOptionsFootprint() (int, os.Error) {
+func (gh *Header) getOptionsFootprint() (int, os.Error) {
 	if gh.Options == nil {
 		return 0, nil
 	}
@@ -65,7 +65,7 @@ func (gh *GenericHeader) getOptionsFootprint() (int, os.Error) {
 }
 
 // getHeaderFootprint() returns the size of the wire-format packet header (excluding app data)
-func (gh *GenericHeader) getHeaderFootprint(allowShortSeqNoFeature bool) (int, os.Error) {
+func (gh *Header) getHeaderFootprint(allowShortSeqNoFeature bool) (int, os.Error) {
 
 	// Check that X and Type are compatible
 	if !areTypeAndXCompatible(gh.Type, gh.X, allowShortSeqNoFeature) {
@@ -91,8 +91,8 @@ func (gh *GenericHeader) getHeaderFootprint(allowShortSeqNoFeature bool) (int, o
 
 // Write() writes the DCCP header to two return buffers.
 // The first one is the header part, and the second one is the data
-// part which is simply the slice GenericHeader.Data
-func (gh *GenericHeader) Write(
+// part which is simply the slice Header.Data
+func (gh *Header) Write(
 		sourceIP, destIP []byte, 
 		protoNo byte,
 		allowShortSeqNoFeature bool) (header,data []byte, err os.Error) {
