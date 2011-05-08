@@ -67,6 +67,7 @@ func (s *socket) SetGSS(v uint64) { s.GSS = v }
 
 func (s *socket) GetGSR() uint64 { return s.GSR }
 func (s *socket) SetGSR(v uint64) { s.GSR = v }
+func (s *socket) UpdateGSR(v uint64) { s.GSR = maxu64(s.GSR, v) }
 
 func (s *socket) GetGAR() uint64 { return s.GAR }
 func (s *socket) SetGAR(v uint64) { s.GAR = v }
@@ -80,17 +81,17 @@ func maxu64(x,y uint64) uint64 {
 
 // TODO: Address the last paragraph of Section 7.5.1 regarding SWL,AWL calculation
 
-// GetSWL_SWH() computes SWL and SWH, see Section 7.5.1
-func (s *socket) GetSWL_SWH() (SWL uint64, SWH uint64) {
+// GetSWLH() computes SWL and SWH, see Section 7.5.1
+func (s *socket) GetSWLH() (SWL uint64, SWH uint64) {
 	return maxu64(s.GSR + 1 - s.SWBF/4, s.ISR), s.GSR + (3*s.SWBF)/4
 }
 
-// GetAWL_AWH() computes AWL and AWH, see Section 7.5.1
-func (s *socket) GetAWL_AWH() (AWL uint64, AWH uint64) {
+// GetAWLH() computes AWL and AWH, see Section 7.5.1
+func (s *socket) GetAWLH() (AWL uint64, AWH uint64) {
 	return maxu64(s.GSS + 1 - s.SWAF, s.ISS), s.GSS
 }
 
 func (s *socket) InAckWindow(x uint64) bool {
-	awl, awh := s.GetAWL_AWH()
+	awl, awh := s.GetAWLH()
 	return awl <= x && x <= awh
 }

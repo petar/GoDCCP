@@ -5,6 +5,7 @@
 package dccp
 
 import (
+	"log"
 	"os"
 	"time"
 )
@@ -70,6 +71,24 @@ func (c *Conn) processREQUEST(h *Header) os.Error {
 		panic("unreach")
 	}
 	return c.inject(c.newReset(ResetPacketError))
+}
+
+// If header is Sync or SyncAck
+// Implements Step 5, Section 8.5
+func (c *Conn) processSync(h *Header) os.Error {
+	if h.Type != Sync && h.Type != SyncAck {
+		return ErrDrop
+	}
+
+	c.slk.Lock()
+	defer c.slk.Unlock()
+
+	swl, _ := c.socket.GetSWLH()
+	if c.socket.InAckWindow(h.AckNo) && h.SeqNo >= swl {
+		c.socket.UpdateGSR(h.SeqNo)
+		return nil
+	}
+	return ErrDrop
 }
 
 // Process Reset headers
@@ -156,10 +175,17 @@ func (c *Conn) processPARTOPEN(h *Header) os.Error {
 		c.inject(c.newAck())
 		return nil
 	}
-	// Otherwise, expect Ack, DataAck, Data
-	c.slk.Lock()
-	c.socket.SetOSR(h.SeqNo)
-	c.socket.SetState(OPEN)
-	c.slk.Unlock()
-	return nil
+	// Otherwise,
+	// The client leaves the PARTOPEN state for OPEN when it receives a
+	// valid packet other than DCCP-Response, DCCP-Reset, or DCCP-Sync from
+	// the server.
+	if h.Type != Response && h.Type != Reset && h.Type != Sync {
+		c.slk.Lock()
+		c.socket.SetOSR(h.SeqNo)
+		c.socket.SetState(OPEN)
+		c.slk.Unlock()
+		return nil
+	}
+	log.Printf("processPARTOPEN, unexpected packet type: %d\n", h.Type)
+	return ErrDrop
 }
