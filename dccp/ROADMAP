@@ -21,7 +21,10 @@ conn-inject.go		[]		Rate-limited packet injection
 conn-read.go		[DONE]		Incoming packet read loop
 conn-timewait.go	[DONE]		Response logic in TIMEWAIT state, Step 2
 conn-listen.go		[]		Response logic in LISTEN state, Step 3
+conn-request.go		[]		Response logic in REQUEST state, Step 4
+conn-reset.go		[]		Response logic in RESPOND state, Step 9
 conn-respond.go		[]		Response logic in RESPOND state, Step 11
+conn-seqack.go		[]		Logic for maintaining sequence and acknowledgement numbers
 
 dial.go			[]
 listener.go		[]

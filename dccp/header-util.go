@@ -17,15 +17,24 @@ func (h *Header) SetNDPCount(k int) {
 }
 
 // NewResetHeader() creates a new Reset header
-func NewResetHeader(ResetCode uint32, SourcePort, DestPort uint16, SeqNo, AckNo uint64) *Header {
+func NewResetHeader(ResetCode uint32, SourcePort, DestPort uint16) *Header {
 	return &Header{
 		SourcePort:  SourcePort,
 		DestPort:    DestPort,
 		CsCov:       CsCovAllData,
 		Type:        Reset,
 		X:           true,
-		SeqNo:       SeqNo,
-		AckNo:       AckNo,
 		ServiceCode: ResetCode,
+	}
+}
+
+// NewAckHeader() creates a new Ack header
+func NewAckHeader(SourcePort, DestPort uint16) *Header {
+	return &Header{
+		SourcePort:  SourcePort,
+		DestPort:    DestPort,
+		CsCov:       CsCovAllData,
+		Type:        Ack,
+		X:           true,
 	}
 }

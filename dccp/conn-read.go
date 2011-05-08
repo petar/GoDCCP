@@ -21,12 +21,14 @@ func (c *Conn) readHeader() (h *Header, err os.Error) {
 func (c *Conn) state() {
 }
 
+// XXX: Maybe this loop can lock on socket on behalf of all functions called inside of it.
 func (c *Conn) readLoop() {
 	for {
 		h, err := e.readHeader()
 		if err != nil {
 			continue // drop packets that are unsupported
 		}
+		??? must update counters
 		c.slk.Lock()
 		state = c.socket.GetState()
 		s.slk.Unlock()

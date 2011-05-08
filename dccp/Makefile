@@ -24,9 +24,8 @@ GOFILES=\
 	socket.go\
 	conn.go\
 	conn-inject.go\
-	conn-timewait.go\
-	conn-listen.go\
-	conn-respond.go\
+	conn-process.go\
+	conn-seqack.go\
 	#dccp.go\
 	#switch.go\
 	#dial.go\

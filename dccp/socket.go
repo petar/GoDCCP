@@ -27,6 +27,10 @@ type socket struct {
 	State	int
 }
 
+const (
+	MSL = 2*60e9	// 2 mins in nanoseconds
+)
+
 // The nine possible states of a DCCP socket.  Listed in increasing order:
 const (
 	CLOSED = iota
@@ -39,6 +43,8 @@ const (
 	CLOSING
 	TIMEWAIT
 )
+
+func (s *socket) GetMSL() int64 { return MSL }
 
 func (s *socket) GetState() int { return s.State }
 
@@ -53,12 +59,16 @@ func (s *socket) ChooseISS() uint64 {
 
 func (s *socket) SetISR(v uint64) { s.ISR = v }
 
+func (s *socket) GetOSR() uint64 { return s.OSR }
 func (s *socket) SetOSR(v uint64) { s.OSR = v }
 
+func (s *socket) GetGSS() uint64 { return s.GSS }
 func (s *socket) SetGSS(v uint64) { s.GSS = v }
 
+func (s *socket) GetGSR() uint64 { return s.GSR }
 func (s *socket) SetGSR(v uint64) { s.GSR = v }
 
+func (s *socket) GetGAR() uint64 { return s.GAR }
 func (s *socket) SetGAR(v uint64) { s.GAR = v }
 
 func maxu64(x,y uint64) uint64 {
@@ -68,12 +78,19 @@ func maxu64(x,y uint64) uint64 {
 	return y
 }
 
-// GetSeqNoWindowLowAndHigh() computes SWL and SWH, see Section 7.5.1
-func (s *socket) GetSeqNoWindowLowAndHigh() (SWL uint64, SWH uint64) {
+// TODO: Address the last paragraph of Section 7.5.1 regarding SWL,AWL calculation
+
+// GetSWL_SWH() computes SWL and SWH, see Section 7.5.1
+func (s *socket) GetSWL_SWH() (SWL uint64, SWH uint64) {
 	return maxu64(s.GSR + 1 - s.SWBF/4, s.ISR), s.GSR + (3*s.SWBF)/4
 }
 
-// GetAckNoWindowLowAndHigh() computes AWL and AWH, see Section 7.5.1
-func (s *socket) GetAckNoWindowLowAndHigh() (AWL uint64, AWH uint64) {
+// GetAWL_AWH() computes AWL and AWH, see Section 7.5.1
+func (s *socket) GetAWL_AWH() (AWL uint64, AWH uint64) {
 	return maxu64(s.GSS + 1 - s.SWAF, s.ISS), s.GSS
+}
+
+func (s *socket) InAckWindow(x uint64) bool {
+	awl, awh := s.GetAWL_AWH()
+	return awl <= x && x <= awh
 }
