@@ -3566,7 +3566,7 @@ RFC 4340      Datagram Congestion Control Protocol (DCCP)     March 2006
    optional DCCP-CloseReq packet, a DCCP-Close packet, and a DCCP-Reset
    packet.  The server moves from the OPEN state, possibly through the
    CLOSEREQ state, to CLOSED; the client moves from OPEN through CLOSING
-   to TIMEWAIT, and after 2MSL wait time (4 minutes) to CLOSED.
+   to MSL, and after 2MSL wait time (4 minutes) to CLOSED.
 
    The sequence DCCP-CloseReq, DCCP-Close, DCCP-Reset is used when the
    server decides to close the connection but doesn't want to hold

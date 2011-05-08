@@ -81,11 +81,10 @@ func (c *Conn) processReset(h *Header) os.Error {
 
 	c.slk.Lock()
 	c.socket.SetState(TIMEWAIT)
-	msl := c.socket.GetMSL()
 	c.slk.Unlock()
 
 	go func() {
-		time.Sleep(2*msl)
+		time.Sleep(2*MSL)
 		c.kill()
 	}()
 	return nil
@@ -105,14 +104,39 @@ func (c *Conn) processREQUEST2(h *Header) os.Error {
 	
 	// PARTOPEN means send an Ack, don't send Data packets, retransmit Acks
 	// periodically, and always include any Init Cookie from the Response 
-	// (Init Cookie's are not supported yet.)
+	// (Init Cookies are not supported yet.)
 
-	// Start PARTOPEN timer
+	// Start PARTOPEN timer, according to Section 8.1.5
 	defer go func() {
-		???
+		// The preferred mechanism would be a roughly 200-millisecond timer, set
+		// every time a packet is transmitted in PARTOPEN.  If this timer goes
+		// off and the client is still in PARTOPEN, the client generates another
+		// DCCP-Ack and backs off the timer.  If the client remains in PARTOPEN
+		// for more than 4MSL (8 minutes), it SHOULD reset the connection with
+		// Reset Code 2, "Aborted".
+		b := newBackOff(PARTOPEN_BACKOFF_FIRST, PARTOPEN_BACKOFF_MAX)
+		for {
+			e := b.Sleep()
+			c.slk.Lock()
+			state := c.socket.GetState()
+			c.slk.Unlock()
+			if state != PARTOPEN {
+				break
+			}
+			if e != nil {
+				c.abort()
+				break
+			}
+			c.inject(c.newAck())
+		}
 	}()
 
 	return c.processPARTOPEN(h)
+}
+
+// abort() resets the connection with Reset Code 2, "Aborted"
+func (c *Conn) abort() os.Error {
+	?
 }
 
 // If socket is in RESPOND, 
@@ -132,12 +156,10 @@ func (c *Conn) processPARTOPEN(h *Header) os.Error {
 		c.inject(c.newAck())
 		return nil
 	}
-	if h.Type != Response {
-		c.slk.Lock()
-		c.socket.SetOSR(h.SeqNo)
-		c.socket.SetState(OPEN)
-		c.slk.Unlock()
-		return nil
-	}
-	panic("unreach")
+	// Otherwise, expect Ack, DataAck, Data
+	c.slk.Lock()
+	c.socket.SetOSR(h.SeqNo)
+	c.socket.SetState(OPEN)
+	c.slk.Unlock()
+	return nil
 }

@@ -26,6 +26,7 @@ GOFILES=\
 	conn-inject.go\
 	conn-process.go\
 	conn-seqack.go\
+	backoff.go\
 	#dccp.go\
 	#switch.go\
 	#dial.go\

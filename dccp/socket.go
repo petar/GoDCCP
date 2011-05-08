@@ -29,6 +29,8 @@ type socket struct {
 
 const (
 	MSL = 2*60e9	// 2 mins in nanoseconds
+	PARTOPEN_BACKOFF_FIRST = 200e6 // 200 miliseconds in nanoseconds, Section 8.1.5
+	PARTOPEN_BACKOFF_MAX = 4*MSL   // 8 mins in nanoseconds, Section 8.1.5
 )
 
 // The nine possible states of a DCCP socket.  Listed in increasing order:
@@ -43,8 +45,6 @@ const (
 	CLOSING
 	TIMEWAIT
 )
-
-func (s *socket) GetMSL() int64 { return MSL }
 
 func (s *socket) GetState() int { return s.State }
 
