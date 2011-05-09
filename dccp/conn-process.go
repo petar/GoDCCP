@@ -226,7 +226,7 @@ func (c *Conn) step10_ProcessREQUEST2(h *Header) os.Error {
 		}
 	}()
 
-	return c.processPARTOPEN(h)
+	return c.step12_ProcessPARTOPEN(h)
 }
 
 // abort() resets the connection with Reset Code 2, "Aborted"
@@ -268,17 +268,22 @@ func (c *Conn) newAck() *Header {
 	return c.TakeSeqAck(NewAckHeader(c.id.SourcePort, c.id.DestPort))
 }
 
-// If socket is in PARTOPEN
-// Implements Step 12, Section 8.5
-func (c *Conn) processPARTOPEN(h *Header) os.Error {
+// Step 12, Section 8.5: Process PARTOPEN state
+func (c *Conn) step12_ProcessPARTOPEN(h *Header) os.Error {
+	c.slk.Lock()
+	defer c.slk.Unlock()
+	if c.socket.GetState() != PARTOPEN {
+		return nil
+	}
+
 	if h.Type == Response {
 		c.inject(c.newAck())
 		return nil
 	}
 	// Otherwise,
-	// The client leaves the PARTOPEN state for OPEN when it receives a
-	// valid packet other than DCCP-Response, DCCP-Reset, or DCCP-Sync from
-	// the server.
+	// (Section 8.1.5) The client leaves the PARTOPEN state for OPEN when it
+	// receives a valid packet other than DCCP-Response, DCCP-Reset, or
+	// DCCP-Sync from the server.
 	if h.Type != Response && h.Type != Reset && h.Type != Sync {
 		c.slk.Lock()
 		c.socket.SetOSR(h.SeqNo)
@@ -286,6 +291,51 @@ func (c *Conn) processPARTOPEN(h *Header) os.Error {
 		c.slk.Unlock()
 		return nil
 	}
-	log.Printf("processPARTOPEN, unexpected packet type: %d\n", h.Type)
+	log.Printf("Step12: unexpected packet type: %d\n", h.Type)
 	return ErrDrop
+}
+
+// Step 13, Section 8.5: Process CloseReq
+func (c *Conn) step13_ProcessCloseReq(h *Header) os.Error {
+	c.slk.Lock()
+	defer c.slk.Unlock()
+
+	if h.Type == CloseReq && c.socket.GetState() < CLOSEREQ {
+		// Generate Close
+		??
+		c.socket.SetState(CLOSING)
+		// Set CLOSING timer
+		??
+	}
+
+	return nil
+}
+
+// Step 14, Section 8.5: Process Close
+func (c *Conn) step14_ProcessClose(h *Header) os.Error {
+	if h.Type == Close {
+		// Generate Reset(Closed)
+		??
+		// Tear down connection
+		??
+		return ErrDrop
+	}
+	return nil
+}
+
+// Step 15, Section 8.5: Process Sync
+func (c *Conn) step15_ProcessSync(h *Header) os.Error {
+	if h.Type == Sync {
+		// Generate SyncAck
+		??
+	}
+	return nil
+}
+
+// Step 16, Section 8.5: Process Data
+func (c *Conn) step16_ProcessData(h *Header) os.Error {
+	// At this point any application data on P can be passed to the
+	// application, except that the application MUST NOT receive data from
+	// more than one Request or Response
+	??
 }
