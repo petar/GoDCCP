@@ -28,6 +28,7 @@ type Header struct {
 	AckNo         uint64	// 48-bit if X=1
 	ServiceCode   uint32	// ServiceCode: Applicaton level service (in Req,Resp pkts)
 				// ResetCode: Reason for reset (in Reset pkts)
+	XXXX Maybe there should be separate field for ResetCode
 	Reset         []byte	// ResetData: Additional reset info (in Reset pkts)
 	Options       []Option  // Used for feature negotiation, padding, mandatory flags
 	Data          []byte	// Application data (in Req, Resp, Data, DataAck pkts) 

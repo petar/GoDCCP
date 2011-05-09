@@ -47,3 +47,14 @@ func NewSyncHeader(SourcePort, DestPort uint16) *Header {
 		X:           true,
 	}
 }
+
+// NewResponseHeader() creates a new Response header
+func NewResponseHeader(serviceCode uint32, sourcePort, destPort uint16) *Header {
+	return &Header{
+		SourcePort:  sourcePort,
+		DestPort:    destPort,
+		Type:        Response,
+		X:           true,
+		ServiceCode: serviceCode,
+	}
+}

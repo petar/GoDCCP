@@ -22,6 +22,7 @@ func (c *Conn) state() {
 }
 
 // XXX: Maybe this loop can lock on socket on behalf of all functions called inside of it.
+// XXX: See if calls from one step to another mess with the global call sequence in here
 func (c *Conn) readLoop() {
 	for {
 		h, err := e.readHeader()

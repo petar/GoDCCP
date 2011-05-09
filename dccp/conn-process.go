@@ -52,7 +52,7 @@ func (c *Conn) processLISTEN(h *Header) os.Error {
 	c.socket.SetGSR(h.SeqNo)
 	c.slk.Unlock()
 
-	return c.processRESPOND(h)
+	return c.step11_ProcessRESPOND(h)
 }
 
 // If socket is in REQUEST
@@ -69,9 +69,9 @@ func (c *Conn) processREQUEST(h *Header) os.Error {
 
 		switch h.Type {
 		case Response:
-			return c.processREQUEST2(h)
+			return c.step10_ProcessREQUEST2(h)
 		case Reset:
-			return c.processReset(h)
+			return c.step9_ProcessReset(h)
 		}
 		panic("unreach")
 	}
@@ -160,12 +160,19 @@ func (c *Conn) step7_CheckUnexpectedTypes(h *Header) os.Error {
 	return nil
 }
 
-// Process Reset headers
-// Implements Step 9, Section 8.5
-func (c *Conn) processReset(h *Header) os.Error {
-	panic("¿i?")
+// Step 8, Section 8.5: Process options and mark acknowledgeable
+func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) os.Error {
+	// We don't support any options yet
 
-	// XXX c.teardown()
+	// Mark packet as acknowledgeable (in Ack Vector terms, Received or Received ECN Marked)
+	XX Not implemented yet
+}
+
+// Step 9, Section 8.5: Process Reset
+func (c *Conn) step9_ProcessReset(h *Header) os.Error {
+	
+	X?X c.teardown()
+	panic("¿i?")
 
 	c.slk.Lock()
 	c.socket.SetState(TIMEWAIT)
@@ -175,15 +182,15 @@ func (c *Conn) processReset(h *Header) os.Error {
 		time.Sleep(2*MSL)
 		c.kill()
 	}()
-	return nil
+	return ErrDrop
 }
 
 func (c *Conn) kill() {
 	panic("¿i?")
 }
 
-// Implements Step 10, Section 8.5
-func (c *Conn) processREQUEST2(h *Header) os.Error {
+// Step 10, Section 8.5: Process REQUEST state (second part)
+func (c *Conn) step10_ProcessREQUEST2(h *Header) os.Error {
 
 	// Move to PARTOPEN state
 	c.slk.Lock()
@@ -227,10 +234,34 @@ func (c *Conn) abort() os.Error {
 	?
 }
 
-// If socket is in RESPOND, 
-// Implements Step 11, Section 8.5
-func (c *Conn) processRESPOND(h *Header) os.Error {
-	panic("¿i?")
+// newResponse() generates a new Response header
+func (c *Conn) newResponse(serviceCode uint32) *Header { 
+	return c.TakeSeqAck(NewResponseHeader(serviceCode, c.id.SourcePort, c.id.DestPort))
+}
+
+// Step 11, Section 8.5: Process RESPOND state
+func (c *Conn) step11_ProcessRESPOND(h *Header) os.Error {
+	c.slk.Lock()
+	defer c.slk.Unlock()
+
+	if c.socket.GetState() == RESPOND {
+		if h.Type == Request {
+			// Send Response, possibly containing Init Cookie
+			// (But we don't support Init Cookies yet.)
+			if c.socket.GetGSR() != h.SeqNo {
+				log.Panic("DCCP RESPOND: GSR != h.SeqNo\n")
+			}
+			XXX should we also be saving this ServiceCode to the socket state ??
+			c.inject(c.newResponse(h.ServiceCode))
+			// If Init Cookie was sent,
+			//    Destroy S and return
+			// (Again, Init Cookies not supported.)
+		} else {
+			c.socket.SetOSR(h.SeqNo)
+			c.socket.SetState(OPEN)
+		}
+	}
+	return nil
 }
 
 func (c *Conn) newAck() *Header {
