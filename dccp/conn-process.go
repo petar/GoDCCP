@@ -121,8 +121,6 @@ func (c *Conn) step6_CheckSeqNo(h *Header) os.Error {
 		if h.Type != Sync {
 			if hasAckNo {
 				c.socket.UpdateGAR(h.AckNo)
-			} else {
-				log.Printf("Step6: expecting ack no\n")
 			}
 		}
 		return nil
@@ -134,10 +132,32 @@ func (c *Conn) step6_CheckSeqNo(h *Header) os.Error {
 			// Send Sync packet acknowledging P.seqno
 			g.AckNo = h.SeqNo	
 		}
-		defer c.inject(g) // Use defer to perform this after the 'defer c.slk.Unlock()'
+		c.inject(g)
 		return ErrDrop
 	}
 	panic("unreach")
+}
+
+// Step 7, Section 8.5: Check for unexpected packet types
+func (c *Conn) step7_CheckUnexpectedTypes(h *Header) os.Error {
+	c.slk.Lock()
+	isServer := c.socket.IsServer()
+	isClient := !isServer
+	state := c.socket.GetState()
+	osr := c.socket.GetOSR()
+	c.slk.Unlock()
+	if (isServer && h.Type == CloseReq)
+		|| (isServer && h.Type == Response)
+		|| (isClient && h.Type == Request)
+		|| (state >= OPEN && h.Type == Request && h.SeqNo >= osr)
+		|| (state >= OPEN && h.Type == Response && h.SeqNo >= osr)
+		|| (state == RESPOND && h.Type == Data) {
+			g := c.newSync()
+			g.AckNo = h.SeqNo	
+			c.inject(g)
+			return ErrDrop
+		}
+	return nil
 }
 
 // Process Reset headers

@@ -46,6 +46,10 @@ const (
 	TIMEWAIT
 )
 
+func (s *socket) IsServer() bool {
+	?
+}
+
 func (s *socket) GetState() int { return s.State }
 
 func (s *socket) SetState(v int) { s.State = v }
