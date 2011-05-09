@@ -33,8 +33,17 @@ func NewAckHeader(SourcePort, DestPort uint16) *Header {
 	return &Header{
 		SourcePort:  SourcePort,
 		DestPort:    DestPort,
-		CsCov:       CsCovAllData,
 		Type:        Ack,
+		X:           true,
+	}
+}
+
+// NewSyncHeader() creates a new Sync header
+func NewSyncHeader(SourcePort, DestPort uint16) *Header {
+	return &Header{
+		SourcePort:  SourcePort,
+		DestPort:    DestPort,
+		Type:        Sync,
 		X:           true,
 	}
 }

@@ -20,6 +20,11 @@ func (c *Conn) newReset(resetCode uint32) *Header {
 	return c.TakeSeqAck(NewResetHeader(resetCode, c.id.SourcePort, c.id.DestPort))
 }
 
+// newSync() generates a new Sync header
+func (c *Conn) newSync() *Header { 
+	return c.TakeSeqAck(NewSyncHeader(c.id.SourcePort, c.id.DestPort))
+}
+
 // If socket is in TIMEWAIT, it must perform a Reset sequence.
 // Implements the second half of Step 2, Section 8.5
 func (c *Conn) processTIMEWAIT(h *Header) os.Error {
@@ -73,9 +78,8 @@ func (c *Conn) processREQUEST(h *Header) os.Error {
 	return c.inject(c.newReset(ResetPacketError))
 }
 
-// If header is Sync or SyncAck
-// Implements Step 5, Section 8.5
-func (c *Conn) processSync(h *Header) os.Error {
+// Step 5, Section 8.5: Prepare sequence numbers for Sync
+func (c *Conn) step5_PrepSeqNoForSync(h *Header) os.Error {
 	if h.Type != Sync && h.Type != SyncAck {
 		return ErrDrop
 	}
@@ -89,6 +93,51 @@ func (c *Conn) processSync(h *Header) os.Error {
 		return nil
 	}
 	return ErrDrop
+}
+
+// Step 6, Section 8.5: Check sequence numbers
+func (c *Conn) step6_CheckSeqNo(h *Header) os.Error {
+	// We don't support short sequence numbers
+	if !h.X {
+		return ErrDrop
+	}
+
+	c.slk.Lock()
+	defer c.slk.Unlock()
+
+	swl, swh := c.socket.GetSWLH()
+	awl, awh := c.socket.GetAWLH()
+	lswl, lawl := swl, awl
+
+	gsr := c.socket.GetGSR()
+	gar := c.socket.GetGAR()
+	if h.Type == CloseReq || h.Type == Close || h.Type == Reset {
+		lswl, lawl := gsr + 1, gar
+	}
+
+	hasAckNo := h.HasAckNo()
+	if (lswl <= h.SeqNo && h.SeqNo <= swh) && (!hasAckNo || (lawl <= h.AckNo && h.AckNo <= awh)) {
+		c.socket.UpdateGSR(h.SeqNo)
+		if h.Type != Sync {
+			if hasAckNo {
+				c.socket.UpdateGAR(h.AckNo)
+			} else {
+				log.Printf("Step6: expecting ack no\n")
+			}
+		}
+		return nil
+	} else {
+		var g *Header = c.newSync()
+		if h.Type == Reset {
+			// Send Sync packet acknowledging S.GSR
+		} else {
+			// Send Sync packet acknowledging P.seqno
+			g.AckNo = h.SeqNo	
+		}
+		defer c.inject(g) // Use defer to perform this after the 'defer c.slk.Unlock()'
+		return ErrDrop
+	}
+	panic("unreach")
 }
 
 // Process Reset headers

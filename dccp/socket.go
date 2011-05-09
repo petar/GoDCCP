@@ -71,6 +71,7 @@ func (s *socket) UpdateGSR(v uint64) { s.GSR = maxu64(s.GSR, v) }
 
 func (s *socket) GetGAR() uint64 { return s.GAR }
 func (s *socket) SetGAR(v uint64) { s.GAR = v }
+func (s *socket) UpdateGAR(v uint64) { s.GAR = maxu64(s.GAR, v) }
 
 func maxu64(x,y uint64) uint64 {
 	if x > y {
