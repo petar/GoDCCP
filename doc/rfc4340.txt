@@ -4689,8 +4689,8 @@ RFC 4340      Datagram Congestion Control Protocol (DCCP)     March 2006
    packets sent by DCCP A.  DCCP A sends a "Change L(Ack Ratio)" option
    to notify DCCP B of its ack ratio.  An Ack Ratio value of zero
    indicates that the relevant half-connection does not use an Ack Ratio
-   to control its acknowledgement rate.  New connections start with Ack
-   Ratio 2 for both endpoints; this Ack Ratio results in acknowledgement
+   to control its acknowledgement rate.  {{New connections start with Ack
+   Ratio 2 for both endpoints;}} this Ack Ratio results in acknowledgement
    behavior analogous to TCP's delayed acks.
 
    Ack Ratio should be treated as a guideline rather than a strict

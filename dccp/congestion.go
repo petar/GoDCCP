@@ -6,11 +6,11 @@ package dccp
 
 import "os"
 
-
-// Therefore, DCCP senders and receivers SHOULD reset their congestion state --
-// essentially restarting congestion control from "slow start" or equivalent --
-// on significant changes in the end-to-end path.
-
+// CongestionControl abstracts away the congestion control logic of a 
+// DCCP connection.
 type CongestionControl interface {
-	GetMPS() uint32		// Maximum Packet Size, CCMPS. Generally PMTU <= CCMPS
+	GetCCMPS() uint32 // Returns the Congestion Control Maximum Packet Size, CCMPS. Generally, PMTU <= CCMPS
 }
+
+const (
+)
