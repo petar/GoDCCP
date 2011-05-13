@@ -139,7 +139,8 @@ func ReadHeader(
 		gh.ServiceCode = decode4ByteUint(buf[k:k+4])
 		k += 4
 	case Reset:
-		gh.Reset = buf[k:k+4]
+		gh.ResetCode = buf[k]
+		gh.ResetData = buf[k+1:k+4]
 		k += 4
 	}
 

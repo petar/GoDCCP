@@ -9,32 +9,32 @@ import "os"
 func (h *Header) HasAckNo() bool { return getAckNoSubheaderSize(h.Type, h.X) > 0 }
 
 // NewResetHeader() creates a new Reset header
-func NewResetHeader(ResetCode uint32, SourcePort, DestPort uint16) *Header {
+func NewResetHeader(resetCode uint32, sourcePort, destPort uint16) *Header {
 	return &Header{
-		SourcePort:  SourcePort,
-		DestPort:    DestPort,
+		SourcePort:  sourcePort,
+		DestPort:    destPort,
 		CsCov:       CsCovAllData,
 		Type:        Reset,
 		X:           true,
-		ServiceCode: ResetCode,
+		ResetCode:   resetCode,
 	}
 }
 
 // NewAckHeader() creates a new Ack header
-func NewAckHeader(SourcePort, DestPort uint16) *Header {
+func NewAckHeader(sourcePort, destPort uint16) *Header {
 	return &Header{
-		SourcePort:  SourcePort,
-		DestPort:    DestPort,
+		SourcePort:  sourcePort,
+		DestPort:    destPort,
 		Type:        Ack,
 		X:           true,
 	}
 }
 
 // NewSyncHeader() creates a new Sync header
-func NewSyncHeader(SourcePort, DestPort uint16) *Header {
+func NewSyncHeader(sourcePort, destPort uint16) *Header {
 	return &Header{
-		SourcePort:  SourcePort,
-		DestPort:    DestPort,
+		SourcePort:  sourcePort,
+		DestPort:    destPort,
 		Type:        Sync,
 		X:           true,
 	}

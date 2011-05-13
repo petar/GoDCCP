@@ -177,8 +177,9 @@ func (gh *Header) Write(
 		encode4ByteUint(gh.ServiceCode, buf[k:k+4])
 		k += 4
 	case Reset:
-		n := copy(buf[k:k+4], gh.Reset)
-		for i := 0; i < 4-n; i++ {
+		buf[k] = gh.ResetCode
+		n := copy(buf[k+1:k+4], gh.ResetData)
+		for i := 0; i < 3-n; i++ {
 			buf[k+n+i] = 0
 		}
 		k += 4
