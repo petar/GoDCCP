@@ -7,8 +7,6 @@ package dccp
 // PlaceSeqAck() updates the socket registers upon
 // receiving a header from the other side.
 func (c *Conn) PlaceSeqAck(h *Header) {
-	c.slk.Lock()
-	defer c.slk.Unlock()
 
 	// Update GSR
 	gsr := c.socket.GetGSR()
@@ -22,9 +20,7 @@ func (c *Conn) PlaceSeqAck(h *Header) {
 }
 
 func (c *Conn) TakeSeqAck(h *Header) *Header {
-	c.slk.Lock()
-	defer c.slk.Unlock()
-
+	
 	seqno := c.socket.GetGSS() + 1
 	c.socket.SetGSS(seqno)
 	ackno := c.socket.GetGSR()
@@ -36,6 +32,7 @@ func (c *Conn) TakeSeqAck(h *Header) *Header {
 }
 
 func (c *Conn) TakeAbnormalSeqAck(h, inResponseTo *Header) *Header {
+
 	h.SeqNo = 0
 	if inResponseTo.HasAckNo() {
 		h.SeqNo = inResponseTo.AckNo+1

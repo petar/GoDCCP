@@ -18,43 +18,43 @@ func (c *Conn) readHeader() (h *Header, err os.Error) {
 	return h, nil
 }
 
-func (c *Conn) state() {
-}
-
 // XXX: Maybe this loop can lock on socket on behalf of all functions called inside of it.
 // XXX: See if calls from one step to another mess with the global call sequence in here
 func (c *Conn) readLoop() {
 	for {
 		h, err := e.readHeader()
 		if err != nil {
-			continue // drop packets that are unsupported
+			continue // drop packets that are unsupported. Forward compatibility
 		}
-		??? must update counters
+
 		c.slk.Lock()
-		state = c.socket.GetState()
-		s.slk.Unlock()
-		switch state {
-		case CLOSED:
-			err = c.processCLOSED(h)
-		case LISTEN:
-			err = c.processLISTEN(h)
-		case REQUEST:
-			err = c.processREQUEST(h)
-		case RESPOND:
-			err = c.processRESPOND(h)
-		case PARTOPEN:
-			err = c.processPARTOPEN(h)
-		case OPEN:
-			err = c.processOPEN(h)
-		case CLOSEREQ:
-			err = c.processCLOSEREQ(h)
-		case CLOSING:
-			err = c.processCLOSING(h)
-		case TIMEWAIT:
-			err = c.processTIMEWAIT(h)
-		default:
-			panic("invalid dccp socket state")
+		if c.step2_ProcessTIMEWAIT(h) != nil {
+			goto Done
 		}
+		if c.step3_ProcessLISTEN(h) != nil {
+			goto Done
+		}
+		if c.step4_PrepSeqNoREQUEST(h) != nil {
+			goto Done
+		}
+		if c.step5_PrepSeqNoForSync(h) != nil {
+			goto Done
+		}
+		if c.step6_CheckSeqNo(h) != nil {
+			goto Done
+		}
+		if c.step7_CheckUnexpectedTypes(h) != nil {
+			goto Done
+		}
+		if c.step8_OptionsAndMarkAckbl(h) != nil {
+			goto Done
+		}
+		if c.step9_ProcessReset(h) != nil {
+			goto Done
+		}
+		...
+	Done:
+		c.slk.Unlock()
 		// XXX: Decide if it is time to end the loop
 		???
 	}

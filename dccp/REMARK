@@ -1,3 +1,5 @@
+* Set server state of socket
+
 * Log all packet drops. Will be useful for debugging, since in lab conditions there should be few drops
 
 * THINK: DCCP uses source/dest port to identify flow. We use mux-layer. Reconcile?

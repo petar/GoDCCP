@@ -23,4 +23,5 @@ var (
 	ErrUnsupported   = os.NewError("unsupported")
 	ErrProto         = os.NewError("protocol error")
 	ErrDrop          = os.NewError("dropped")
+	ErrReset         = os.NewError("reset")
 )

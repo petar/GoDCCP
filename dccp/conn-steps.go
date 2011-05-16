@@ -25,68 +25,59 @@ func (c *Conn) newSync() *Header {
 	return c.TakeSeqAck(NewSyncHeader(c.id.SourcePort, c.id.DestPort))
 }
 
-// If socket is in TIMEWAIT, it must perform a Reset sequence.
-// Implements the second half of Step 2, Section 8.5
-func (c *Conn) processTIMEWAIT(h *Header) os.Error {
-	if h.Type == Reset {
-		return nil
-	}
-	return c.inject(c.newAbnormalReset(ResetNoConnection, h))
-}
-
-// If socket is in LISTEN, 
-// Implements Step 3, Section 8.5
-func (c *Conn) processLISTEN(h *Header) os.Error {
+// Step 2, Section 8.5: Check ports and process TIMEWAIT state
+func (c *Conn) step2_ProcessTIMEWAIT(h *Header) os.Error {
 	if h.Type == Reset {
 		return ErrDrop
 	}
-	if h.Type != Request {
-		return c.inject(c.newAbnormalReset(ResetNoConnection, h))
+	if c.socket.GetState() == TIMEWAIT {
+		c.inject(c.newAbnormalReset(ResetNoConnection, h))
+		return ErrDrop
 	}
-	c.slk.Lock()
-	c.socket.SetState(RESPOND)
-	iss := c.socket.ChooseISS()
-	c.socket.SetGAR(iss)
-
-	c.socket.SetISR(h.SeqNo)
-	c.socket.SetGSR(h.SeqNo)
-	c.slk.Unlock()
-
-	return c.step11_ProcessRESPOND(h)
+	return nil
 }
 
-// If socket is in REQUEST
-// Implements Step 4, Section 8.5
-func (c *Conn) processREQUEST(h *Header) os.Error {
-	c.slk.Lock()
-	inAckWindow := c.socket.InAckWindow(h.AckNo)
-	c.slk.Unlock()
-	if (h.Type == Response || h.Type == Reset) && inAckWindow {
-		c.slk.Lock()
-		c.socket.SetISR(h.SeqNo)
-		c.slk.Unlock()
-		c.PlaceSeqAck(h)
-
-		switch h.Type {
-		case Response:
-			return c.step10_ProcessREQUEST2(h)
-		case Reset:
-			return c.step9_ProcessReset(h)
-		}
-		panic("unreach")
+// Step 3, Section 8.5: Process LISTEN state
+func (c *Conn) step3_ProcessLISTEN(h *Header) os.Error {
+	if c.socket.GetState() != LISTEN {
+		return nil
 	}
-	return c.inject(c.newReset(ResetPacketError))
+	if h.Type == Request {
+		c.socket.SetState(RESPOND)
+		iss := c.socket.ChooseISS()
+		c.socket.SetGAR(iss)
+		c.socket.SetISR(h.SeqNo)
+		c.socket.SetGSR(h.SeqNo)
+		return nil
+	} else {
+		if h.Type != Request {
+			c.inject(c.newAbnormalReset(ResetNoConnection, h))
+		}
+		return ErrDrop
+	}
+	panic("unreach")
+}
+
+// Step 4, Section 8.5: Prepare sequence numbers in REQUEST
+func (c *Conn) step4_PrepSeqNoREQUEST(h *Header) os.Error {
+	if c.socket.GetState() != REQUEST {
+		return nil
+	}
+	inAckWindow := c.socket.InAckWindow(h.AckNo)
+	if (h.Type == Response || h.Type == Reset) && inAckWindow {
+		c.socket.SetISR(h.SeqNo)
+		c.PlaceSeqAck(h)
+		return nil
+	}
+	c.inject(c.newReset(ResetPacketError))
+	return ErrDrop
 }
 
 // Step 5, Section 8.5: Prepare sequence numbers for Sync
 func (c *Conn) step5_PrepSeqNoForSync(h *Header) os.Error {
 	if h.Type != Sync && h.Type != SyncAck {
-		return ErrDrop
+		return nil
 	}
-
-	c.slk.Lock()
-	defer c.slk.Unlock()
-
 	swl, _ := c.socket.GetSWLH()
 	if c.socket.InAckWindow(h.AckNo) && h.SeqNo >= swl {
 		c.socket.UpdateGSR(h.SeqNo)
@@ -101,9 +92,6 @@ func (c *Conn) step6_CheckSeqNo(h *Header) os.Error {
 	if !h.X {
 		return ErrDrop
 	}
-
-	c.slk.Lock()
-	defer c.slk.Unlock()
 
 	swl, swh := c.socket.GetSWLH()
 	awl, awh := c.socket.GetAWLH()
@@ -128,6 +116,7 @@ func (c *Conn) step6_CheckSeqNo(h *Header) os.Error {
 		var g *Header = c.newSync()
 		if h.Type == Reset {
 			// Send Sync packet acknowledging S.GSR
+			g.AckNo = gsr
 		} else {
 			// Send Sync packet acknowledging P.seqno
 			g.AckNo = h.SeqNo	
@@ -140,15 +129,12 @@ func (c *Conn) step6_CheckSeqNo(h *Header) os.Error {
 
 // Step 7, Section 8.5: Check for unexpected packet types
 func (c *Conn) step7_CheckUnexpectedTypes(h *Header) os.Error {
-	c.slk.Lock()
 	isServer := c.socket.IsServer()
-	isClient := !isServer
 	state := c.socket.GetState()
 	osr := c.socket.GetOSR()
-	c.slk.Unlock()
 	if (isServer && h.Type == CloseReq)
 		|| (isServer && h.Type == Response)
-		|| (isClient && h.Type == Request)
+		|| (!isServer && h.Type == Request)
 		|| (state >= OPEN && h.Type == Request && h.SeqNo >= osr)
 		|| (state >= OPEN && h.Type == Response && h.SeqNo >= osr)
 		|| (state == RESPOND && h.Type == Data) {
@@ -162,10 +148,8 @@ func (c *Conn) step7_CheckUnexpectedTypes(h *Header) os.Error {
 
 // Step 8, Section 8.5: Process options and mark acknowledgeable
 func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) os.Error {
-	// We don't support any options yet
-
-	// Mark packet as acknowledgeable (in Ack Vector terms, Received or Received ECN Marked)
-	XX Not implemented yet
+	// XXX: Implement a connection reset if OnRead returns ErrReset
+	return c.cc.OnRead(h)
 }
 
 // Step 9, Section 8.5: Process Reset
@@ -174,9 +158,7 @@ func (c *Conn) step9_ProcessReset(h *Header) os.Error {
 	X?X c.teardown()
 	panic("¿i?")
 
-	c.slk.Lock()
 	c.socket.SetState(TIMEWAIT)
-	c.slk.Unlock()
 
 	go func() {
 		time.Sleep(2*MSL)

@@ -8,8 +8,10 @@ import (
 	"os"
 )
 
-// inject() blocks until the header can be sent while respecting
-// whatever rate-limiting policy is in use
-func (c *Conn) inject(h *Header) os.Error {
+// inject() adds the packet h to the outgoing pipeline, without blocking.
+// The pipeline is flushed continuously respecting the CongestionControl's
+// rate-limiting policy.
+// REMARK: inject() is called from inside a slk.Lock()
+func (c *Conn) inject(h *Header) {
 	panic("¿i?")
 }

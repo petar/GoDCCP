@@ -13,12 +13,14 @@ type CongestionControl interface {
 	// Returns the Congestion Control Maximum Packet Size, CCMPS. Generally, PMTU <= CCMPS
 	GetCCMPS() uint32 
 
-	// Conn calls PreWrite before a packet is sent to give CongestionControl
+	// Conn calls OnWrite before a packet is sent to give CongestionControl
 	// an opportunity to add options to an outgoing packet
-	PreWrite(h *Header)
+	OnWrite(h *Header)
 
-	// Conn calls PostRead after a packet has been accepted as valid 
-	PostRead(h *Header)
+	// Conn calls OnRead after a packet has been accepted an validated
+	// If OnRead returns ErrDrop, the packet will be dropped and no further processing
+	// will occur. If if it returns ErrReset, the connection will be reset.
+	OnRead(h *Header) os.Error
 
 	// Injection ...
 }
