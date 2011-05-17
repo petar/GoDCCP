@@ -13,10 +13,19 @@ func NewResetHeader(resetCode uint32, sourcePort, destPort uint16) *Header {
 	return &Header{
 		SourcePort:  sourcePort,
 		DestPort:    destPort,
-		CsCov:       CsCovAllData,
 		Type:        Reset,
 		X:           true,
 		ResetCode:   resetCode,
+	}
+}
+
+// NewCloseHeader() creates a new Close header
+func NewCloseHeader(sourcePort, destPort uint16) *Header {
+	return &Header{
+		SourcePort:  sourcePort,
+		DestPort:    destPort,
+		Type:        Close,
+		X:           true,
 	}
 }
 
@@ -33,6 +42,16 @@ func NewAckHeader(sourcePort, destPort uint16) *Header {
 // NewSyncHeader() creates a new Sync header
 func NewSyncHeader(sourcePort, destPort uint16) *Header {
 	return &Header{
+		SourcePort:  sourcePort,
+		DestPort:    destPort,
+		Type:        Sync,
+		X:           true,
+	}
+}
+
+// NewSyncAckHeader() creates a new Sync header
+func NewSyncAckHeader(sourcePort, destPort uint16) *Header {
+	return &Header{ ??
 		SourcePort:  sourcePort,
 		DestPort:    destPort,
 		Type:        Sync,

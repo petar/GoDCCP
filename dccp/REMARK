@@ -1,3 +1,4 @@
+* What: Send NDP Count feature is always ON
 * Set server state of socket
 
 * Log all packet drops. Will be useful for debugging, since in lab conditions there should be few drops
@@ -14,3 +15,7 @@
 
 * Init Cookies (See '8.1.4. Init Cookie Option') are not supported neither on the
 client nor the server side, currently.
+
+// TODO: In theory, long lived connections may wrap around the AckNo/SeqNo space
+// in which case maxu64() should not be used below. This will never happen however
+// if we are using 48-bit numbers exclusively

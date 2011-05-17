@@ -2,40 +2,38 @@ include $(GOROOT)/src/Make.inc
 
 TARG=github.com/petar/GoDCCP/dccp
 GOFILES=\
-	label.go\
-	muxmsg.go\
-	mux.go\
-	flow.go\
+	addr.go\
+	backoff.go\
+	block.go\
+	chanlink.go\
 	checksum.go\
-	header.go\
+	conn-generate.go\
+	conn-inject.go\
+	conn-pipeline.go\
+	conn-seqack.go\
+	conn-steps.go\
+	conn.go\
+	err.go\
+	flow.go\
 	header-util.go\
-	read.go\
+	header.go\
+	label.go\
+	link.go\
+	mux.go\
+	muxmsg.go\
 	options.go\
+	read.go\
+	servicecode.go\
+	signal.go\
+	socket.go\
+	timing.go\
+	udplink.go\
 	wire.go\
 	write.go\
-	addr.go\
-	link.go\
-	udplink.go\
-	chanlink.go\
-	signal.go\
-	servicecode.go\
-	block.go\
-	err.go\
-	socket.go\
-	conn.go\
-	conn-inject.go\
-	conn-process.go\
-	conn-seqack.go\
-	backoff.go\
-	#dccp.go\
-	#switch.go\
-	#dial.go\
 	#listener.go\
-	#endlogic.go\
-	#endlogic-loop.go
-	#conn.go\
-	#header-util.go\
+	#dccp.go\
+	#dial.go\
+	#ccid3.go\
 	#congestion.go\
-	#timing.go\
 
 include $(GOROOT)/src/Make.pkg

@@ -1,9 +1,0 @@
-Section 8.5
-===========
-
-Step 1: [DONE] ReadHeader()
-Step 2: [HALF] TIMEWAIT part of this step
-Step 3: [DONE] LISTEN
-Step 4: [] REQUEST
-Step 10: [] REQUEST II
-Step12: [DONE] PARTOPEN

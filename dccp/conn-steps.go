@@ -133,8 +133,10 @@ func (c *Conn) step7_CheckUnexpectedTypes(h *Header) os.Error {
 }
 
 // Step 8, Section 8.5: Process options and mark acknowledgeable
+// Section 7.4: A received packet becomes acknowledgeable when Step 8 is reached.
 func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) os.Error {
-	// XXX: Implement a connection reset if OnRead returns ErrReset
+	// TODO: Implement a connection reset if OnRead returns ErrReset
+	// For now CongestionControl cannot advise a reset, just an ErrDrop
 	return c.cc.OnRead(h)
 }
 
@@ -152,6 +154,7 @@ func (c *Conn) step9_ProcessReset(h *Header) os.Error {
 	return ErrDrop
 }
 
+// Currently teardown us called within a slk lock
 func (c *Conn) teardown() {
 	// Notify blocked Read/Writes that the Conn is no more
 }
@@ -195,8 +198,10 @@ func (c *Conn) step10_ProcessREQUEST2(h *Header) os.Error {
 func (c *Conn) abort() {
 	c.slk.Lock()
 	defer c.slk.Unlock()
+
+	c.teardown()
 	c.socket.SetState(CLOSED)
-	c.inject(XXX)
+	c.inject(c.generateReset(ResetAborted))
 }
 
 // Step 11, Section 8.5: Process RESPOND state
@@ -240,7 +245,7 @@ func (c *Conn) step12_ProcessPARTOPEN(h *Header) os.Error {
 // Step 13, Section 8.5: Process CloseReq
 func (c *Conn) step13_ProcessCloseReq(h *Header) os.Error {
 	if h.Type == CloseReq && c.socket.GetState() < CLOSEREQ {
-		XXX // Generate Close
+		c.inject(c.generateClose())
 		c.socket.SetState(CLOSING)
 		XXX // Set CLOSING timer
 	}
@@ -250,8 +255,8 @@ func (c *Conn) step13_ProcessCloseReq(h *Header) os.Error {
 // Step 14, Section 8.5: Process Close
 func (c *Conn) step14_ProcessClose(h *Header) os.Error {
 	if h.Type == Close {
-		XXX // Generate Reset(Closed)
-		XXX // Tear down connection
+		c.teardown()
+		c.inject(c.generateReset(ResetClosed))
 		return ErrDrop
 	}
 	return nil
