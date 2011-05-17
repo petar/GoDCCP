@@ -18,8 +18,6 @@ func (c *Conn) readHeader() (h *Header, err os.Error) {
 	return h, nil
 }
 
-// XXX: Maybe this loop can lock on socket on behalf of all functions called inside of it.
-// XXX: See if calls from one step to another mess with the global call sequence in here
 func (c *Conn) readLoop() {
 	for {
 		h, err := e.readHeader()
@@ -52,10 +50,32 @@ func (c *Conn) readLoop() {
 		if c.step9_ProcessReset(h) != nil {
 			goto Done
 		}
-		...
+		if c.step10_ProcessREQUEST2(h) != nil {
+			goto Done
+		}
+		if c.step11_ProcessRESPOND(h) != nil {
+			goto Done
+		}
+		if c.step12_ProcessPARTOPEN(h) != nil {
+			goto Done
+		}
+		if c.step13_ProcessCloseReq(h) != nil {
+			goto Done
+		}
+		if c.step14_ProcessClose(h) != nil {
+			goto Done
+		}
+		if c.step15_ProcessSync(h) != nil {
+			goto Done
+		}
+		if c.step16_ProcessData(h) != nil {
+			goto Done
+		}
 	Done:
+		state := c.socket.GetState()
 		c.slk.Unlock()
-		// XXX: Decide if it is time to end the loop
-		???
+		if state == CLOSED {
+			break
+		}
 	}
 }

@@ -10,28 +10,13 @@ import (
 	"time"
 )
 
-// newAbnormalReset() generates a new out-of-sync Reset header, according to Section 8.3.1
-func (c *Conn) newAbnormalReset(resetCode uint32, h *Header) *Header {
-	return c.TakeAbnormalSeqAck(NewResetHeader(resetCode, c.id.SourcePort, c.id.DestPort), h)
-}
-
-// newReset() generates a new Reset header
-func (c *Conn) newReset(resetCode uint32) *Header {
-	return c.TakeSeqAck(NewResetHeader(resetCode, c.id.SourcePort, c.id.DestPort))
-}
-
-// newSync() generates a new Sync header
-func (c *Conn) newSync() *Header { 
-	return c.TakeSeqAck(NewSyncHeader(c.id.SourcePort, c.id.DestPort))
-}
-
 // Step 2, Section 8.5: Check ports and process TIMEWAIT state
 func (c *Conn) step2_ProcessTIMEWAIT(h *Header) os.Error {
 	if h.Type == Reset {
 		return ErrDrop
 	}
 	if c.socket.GetState() == TIMEWAIT {
-		c.inject(c.newAbnormalReset(ResetNoConnection, h))
+		c.inject(c.generateAbnormalReset(ResetNoConnection, h))
 		return ErrDrop
 	}
 	return nil
@@ -48,10 +33,11 @@ func (c *Conn) step3_ProcessLISTEN(h *Header) os.Error {
 		c.socket.SetGAR(iss)
 		c.socket.SetISR(h.SeqNo)
 		c.socket.SetGSR(h.SeqNo)
+		c.socket.SetServiceCode(h.ServiceCode)
 		return nil
 	} else {
 		if h.Type != Request {
-			c.inject(c.newAbnormalReset(ResetNoConnection, h))
+			c.inject(c.generateAbnormalReset(ResetNoConnection, h))
 		}
 		return ErrDrop
 	}
@@ -69,7 +55,7 @@ func (c *Conn) step4_PrepSeqNoREQUEST(h *Header) os.Error {
 		c.PlaceSeqAck(h)
 		return nil
 	}
-	c.inject(c.newReset(ResetPacketError))
+	c.inject(c.generateReset(ResetPacketError))
 	return ErrDrop
 }
 
@@ -113,7 +99,7 @@ func (c *Conn) step6_CheckSeqNo(h *Header) os.Error {
 		}
 		return nil
 	} else {
-		var g *Header = c.newSync()
+		var g *Header = c.generateSync()
 		if h.Type == Reset {
 			// Send Sync packet acknowledging S.GSR
 			g.AckNo = gsr
@@ -138,7 +124,7 @@ func (c *Conn) step7_CheckUnexpectedTypes(h *Header) os.Error {
 		|| (state >= OPEN && h.Type == Request && h.SeqNo >= osr)
 		|| (state >= OPEN && h.Type == Response && h.SeqNo >= osr)
 		|| (state == RESPOND && h.Type == Data) {
-			g := c.newSync()
+			g := c.generateSync()
 			g.AckNo = h.SeqNo	
 			c.inject(g)
 			return ErrDrop
@@ -154,12 +140,11 @@ func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) os.Error {
 
 // Step 9, Section 8.5: Process Reset
 func (c *Conn) step9_ProcessReset(h *Header) os.Error {
-	
-	X?X c.teardown()
-	panic("¿i?")
-
+	if h.Type != Reset {
+		return nil
+	}	
+	c.teardown()
 	c.socket.SetState(TIMEWAIT)
-
 	go func() {
 		time.Sleep(2*MSL)
 		c.kill()
@@ -167,139 +152,106 @@ func (c *Conn) step9_ProcessReset(h *Header) os.Error {
 	return ErrDrop
 }
 
+func (c *Conn) teardown() {
+	// Notify blocked Read/Writes that the Conn is no more
+}
+
 func (c *Conn) kill() {
-	panic("¿i?")
+	c.slk.Lock()
+	defer c.slk.Unlock()
+	c.soket.SetState(RIP)
 }
 
 // Step 10, Section 8.5: Process REQUEST state (second part)
 func (c *Conn) step10_ProcessREQUEST2(h *Header) os.Error {
-
-	// Move to PARTOPEN state
-	c.slk.Lock()
+	if c.socket.GetState() != REQUEST {
+		return nil
+	}
 	c.socket.SetState(PARTOPEN)
-	c.slk.Unlock()
-	
-	// PARTOPEN means send an Ack, don't send Data packets, retransmit Acks
-	// periodically, and always include any Init Cookie from the Response 
-	// (Init Cookies are not supported yet.)
 
 	// Start PARTOPEN timer, according to Section 8.1.5
-	defer go func() {
-		// The preferred mechanism would be a roughly 200-millisecond timer, set
-		// every time a packet is transmitted in PARTOPEN.  If this timer goes
-		// off and the client is still in PARTOPEN, the client generates another
-		// DCCP-Ack and backs off the timer.  If the client remains in PARTOPEN
-		// for more than 4MSL (8 minutes), it SHOULD reset the connection with
-		// Reset Code 2, "Aborted".
+	go func() {
 		b := newBackOff(PARTOPEN_BACKOFF_FIRST, PARTOPEN_BACKOFF_MAX)
 		for {
-			e := b.Sleep()
+			err := b.Sleep()
 			c.slk.Lock()
 			state := c.socket.GetState()
 			c.slk.Unlock()
 			if state != PARTOPEN {
 				break
 			}
-			if e != nil {
+			if err != nil {
 				c.abort()
 				break
 			}
-			c.inject(c.newAck())
+			c.inject(c.generateAck())
 		}
 	}()
 
-	return c.step12_ProcessPARTOPEN(h)
+	return nil
 }
 
 // abort() resets the connection with Reset Code 2, "Aborted"
-func (c *Conn) abort() os.Error {
-	?
-}
-
-// newResponse() generates a new Response header
-func (c *Conn) newResponse(serviceCode uint32) *Header { 
-	return c.TakeSeqAck(NewResponseHeader(serviceCode, c.id.SourcePort, c.id.DestPort))
+func (c *Conn) abort() {
+	c.slk.Lock()
+	defer c.slk.Unlock()
+	c.socket.SetState(CLOSED)
+	c.inject(XXX)
 }
 
 // Step 11, Section 8.5: Process RESPOND state
 func (c *Conn) step11_ProcessRESPOND(h *Header) os.Error {
-	c.slk.Lock()
-	defer c.slk.Unlock()
-
-	if c.socket.GetState() == RESPOND {
-		if h.Type == Request {
-			// Send Response, possibly containing Init Cookie
-			// (But we don't support Init Cookies yet.)
-			if c.socket.GetGSR() != h.SeqNo {
-				log.Panic("DCCP RESPOND: GSR != h.SeqNo\n")
-			}
-			XXX should we also be saving this ServiceCode to the socket state ??
-			c.inject(c.newResponse(h.ServiceCode))
-			// If Init Cookie was sent,
-			//    Destroy S and return
-			// (Again, Init Cookies not supported.)
-		} else {
-			c.socket.SetOSR(h.SeqNo)
-			c.socket.SetState(OPEN)
+	if c.socket.GetState() != RESPOND {
+		return nil
+	}
+	if h.Type == Request {
+		if c.socket.GetGSR() != h.SeqNo {
+			log.Panic("GSR != h.SeqNo")
 		}
+		serviceCode := c.socket.GetServiceCode()
+		if h.ServiceCode != serviceCode {
+			return ErrDrop
+		}
+		c.inject(c.generateResponse(serviceCode))
+	} else {
+		c.socket.SetOSR(h.SeqNo)
+		c.socket.SetState(OPEN)
 	}
 	return nil
 }
 
-func (c *Conn) newAck() *Header {
-	return c.TakeSeqAck(NewAckHeader(c.id.SourcePort, c.id.DestPort))
-}
-
 // Step 12, Section 8.5: Process PARTOPEN state
 func (c *Conn) step12_ProcessPARTOPEN(h *Header) os.Error {
-	c.slk.Lock()
-	defer c.slk.Unlock()
 	if c.socket.GetState() != PARTOPEN {
 		return nil
 	}
-
 	if h.Type == Response {
-		c.inject(c.newAck())
+		c.inject(c.generateAck())
 		return nil
 	}
-	// Otherwise,
-	// (Section 8.1.5) The client leaves the PARTOPEN state for OPEN when it
-	// receives a valid packet other than DCCP-Response, DCCP-Reset, or
-	// DCCP-Sync from the server.
 	if h.Type != Response && h.Type != Reset && h.Type != Sync {
-		c.slk.Lock()
 		c.socket.SetOSR(h.SeqNo)
 		c.socket.SetState(OPEN)
-		c.slk.Unlock()
 		return nil
 	}
-	log.Printf("Step12: unexpected packet type: %d\n", h.Type)
-	return ErrDrop
+	return nil
 }
 
 // Step 13, Section 8.5: Process CloseReq
 func (c *Conn) step13_ProcessCloseReq(h *Header) os.Error {
-	c.slk.Lock()
-	defer c.slk.Unlock()
-
 	if h.Type == CloseReq && c.socket.GetState() < CLOSEREQ {
-		// Generate Close
-		??
+		XXX // Generate Close
 		c.socket.SetState(CLOSING)
-		// Set CLOSING timer
-		??
+		XXX // Set CLOSING timer
 	}
-
 	return nil
 }
 
 // Step 14, Section 8.5: Process Close
 func (c *Conn) step14_ProcessClose(h *Header) os.Error {
 	if h.Type == Close {
-		// Generate Reset(Closed)
-		??
-		// Tear down connection
-		??
+		XXX // Generate Reset(Closed)
+		XXX // Tear down connection
 		return ErrDrop
 	}
 	return nil
@@ -308,8 +260,7 @@ func (c *Conn) step14_ProcessClose(h *Header) os.Error {
 // Step 15, Section 8.5: Process Sync
 func (c *Conn) step15_ProcessSync(h *Header) os.Error {
 	if h.Type == Sync {
-		// Generate SyncAck
-		??
+		XXX // Generate SyncAck
 	}
 	return nil
 }
@@ -319,5 +270,5 @@ func (c *Conn) step16_ProcessData(h *Header) os.Error {
 	// At this point any application data on P can be passed to the
 	// application, except that the application MUST NOT receive data from
 	// more than one Request or Response
-	??
+	XXX
 }

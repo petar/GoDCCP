@@ -62,8 +62,10 @@ func (s *socket) SetServer(v bool) { s.Server = v }
 func (s *socket) IsServer() bool   { return s.Server }
 
 func (s *socket) GetState() int { return s.State }
-
 func (s *socket) SetState(v int) { s.State = v }
+
+func (s *socket) SetServiceCode(v uint32) { s.ServiceCode = v }
+func (s *socket) GetServiceCode() uint32 { return s.ServiceCode }
 
 // ChooseISS chooses a safe Initial Sequence Number
 func (s *socket) ChooseISS() uint64 {

@@ -20,7 +20,6 @@ func (c *Conn) PlaceSeqAck(h *Header) {
 }
 
 func (c *Conn) TakeSeqAck(h *Header) *Header {
-	
 	seqno := c.socket.GetGSS() + 1
 	c.socket.SetGSS(seqno)
 	ackno := c.socket.GetGSR()
@@ -32,11 +31,11 @@ func (c *Conn) TakeSeqAck(h *Header) *Header {
 }
 
 func (c *Conn) TakeAbnormalSeqAck(h, inResponseTo *Header) *Header {
-
 	h.SeqNo = 0
 	if inResponseTo.HasAckNo() {
 		h.SeqNo = inResponseTo.AckNo+1
 	}
+	XXX // What if no AckNo
 	h.AckNo = inResponseTo.AckNo
 	return h
 }
