@@ -11,11 +11,9 @@ import (
 // Conn 
 type Conn struct {
 	id
-
+	hc HeaderConn
 	slk sync.Mutex // Protects access to socket
 	socket
-
-	hc HeaderConn
 }
 
 type id struct {

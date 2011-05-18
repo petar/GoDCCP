@@ -146,12 +146,16 @@ func (c *Conn) step9_ProcessReset(h *Header) os.Error {
 		return nil
 	}	
 	c.teardown()
+	c.gotoTIMEWAIT()
+	return ErrDrop
+}
+
+func (c *Conn) gotoTIMEWAIT() {
 	c.socket.SetState(TIMEWAIT)
 	go func() {
 		time.Sleep(2*MSL)
 		c.kill()
 	}()
-	return ErrDrop
 }
 
 // Currently teardown us called within a slk lock
@@ -174,7 +178,7 @@ func (c *Conn) step10_ProcessREQUEST2(h *Header) os.Error {
 
 	// Start PARTOPEN timer, according to Section 8.1.5
 	go func() {
-		b := newBackOff(PARTOPEN_BACKOFF_FIRST, PARTOPEN_BACKOFF_MAX)
+		b := newBackOff(PARTOPEN_BACKOFF_FIRST, PARTOPEN_BACKOFF_MAX, PARTOPEN_BACKOFF_FIRST)
 		for {
 			err := b.Sleep()
 			c.slk.Lock()
@@ -246,10 +250,35 @@ func (c *Conn) step12_ProcessPARTOPEN(h *Header) os.Error {
 func (c *Conn) step13_ProcessCloseReq(h *Header) os.Error {
 	if h.Type == CloseReq && c.socket.GetState() < CLOSEREQ {
 		c.inject(c.generateClose())
-		c.socket.SetState(CLOSING)
-		XXX // Set CLOSING timer
+		c.gotoCLOSING()
 	}
 	return nil
+}
+
+func (c *Conn) gotoCLOSING() {
+	c.socket.SetState(CLOSING)
+	go func() {
+		c.slk.Lock()
+		rtt := c.socket.GetRTT()
+		c.slk.Unlock()
+		b := newBackOff(2*rtt, CLOSING_BACKOFF_MAX, CLOSING_BACKOFF_FREQ)
+		for {
+			err := b.Sleep()
+			c.slk.Lock()
+			state := c.socket.GetState()
+			c.slk.Unlock()
+			if state != CLOSING {
+				break
+			}
+			if err != nil {
+				c.slk.Lock()
+				c.gotoTIMEWAIT()
+				c.slk.Unlock()
+				break
+			}
+			c.inject(c.generateClose())
+		}
+	}()
 }
 
 // Step 14, Section 8.5: Process Close
@@ -265,7 +294,7 @@ func (c *Conn) step14_ProcessClose(h *Header) os.Error {
 // Step 15, Section 8.5: Process Sync
 func (c *Conn) step15_ProcessSync(h *Header) os.Error {
 	if h.Type == Sync {
-		XXX // Generate SyncAck
+		c.inject(c.generateSyncAck(h))
 	}
 	return nil
 }
@@ -275,5 +304,14 @@ func (c *Conn) step16_ProcessData(h *Header) os.Error {
 	// At this point any application data on P can be passed to the
 	// application, except that the application MUST NOT receive data from
 	// more than one Request or Response
+
+	// REMARK: For now, we accept data only on Data packets
+	if h.Type != Data {
+		return nil
+	}
+
+	// DCCP-Data, DCCP-DataAck, and DCCP-Ack packets received in CLOSEREQ or
+	// CLOSING states MAY be either processed or ignored.
+
 	XXX
 }

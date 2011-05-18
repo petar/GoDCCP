@@ -12,6 +12,7 @@ GOFILES=\
 	conn-pipeline.go\
 	conn-seqack.go\
 	conn-steps.go\
+	conn-user.go\
 	conn.go\
 	err.go\
 	flow.go\

@@ -51,10 +51,10 @@ func NewSyncHeader(sourcePort, destPort uint16) *Header {
 
 // NewSyncAckHeader() creates a new Sync header
 func NewSyncAckHeader(sourcePort, destPort uint16) *Header {
-	return &Header{ ??
+	return &Header{
 		SourcePort:  sourcePort,
 		DestPort:    destPort,
-		Type:        Sync,
+		Type:        SyncAck,
 		X:           true,
 	}
 }

@@ -23,6 +23,16 @@ func (c *Conn) generateSync() *Header {
 	return c.TakeSeqAck(NewSyncHeader(c.id.SourcePort, c.id.DestPort))
 }
 
+// generateSyncAck() generates a new SyncAck header
+func (c *Conn) generateSync(inResponseTo *Header) *Header { 
+	g := c.TakeSeqAck(NewSyncHeader(c.id.SourcePort, c.id.DestPort))
+	if inResponseTo.Type != Sync {
+		panic("SyncAck without a Sync")
+	}
+	g.AckNo = h.SeqNo
+	return g
+}
+
 // generateResponse() generates a new Response header
 func (c *Conn) generateResponse(serviceCode uint32) *Header { 
 	return c.TakeSeqAck(NewResponseHeader(serviceCode, c.id.SourcePort, c.id.DestPort))

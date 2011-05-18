@@ -34,15 +34,19 @@ type socket struct {
 
 	// XXX: Not set by Conn
 	PMTU  int // Path Maximum Transmission Unit
-	CCMPS int // Congestion Control Maximum Packet Size
 	MPS   int // Maximum Packet Size = min(PMTU, CCMPS)
-	RTT   int // Round Trip Time
+
+	RTT   int64 // Round Trip Time in nanoseconds
 }
+
+XXX // RTT must be set, because of step13_ProcessCloseReq
 
 const (
 	MSL                    = 2 * 60e9 // 2 mins in nanoseconds
 	PARTOPEN_BACKOFF_FIRST = 200e6    // 200 miliseconds in nanoseconds, Section 8.1.5
 	PARTOPEN_BACKOFF_MAX   = 4 * MSL  // 8 mins in nanoseconds, Section 8.1.5
+	CLOSING_BACKOFF_FREQ   = 64e9     // Backoff frequency of CLOSING timer, 64 seconds, Section 8.3
+	CLOSING_BACKOFF_MAX    = MSL      // Maximum amount of time in CLOSING timer
 )
 
 // The nine possible states of a DCCP socket.  Listed in increasing order:
@@ -57,6 +61,9 @@ const (
 	CLOSING
 	TIMEWAIT
 )
+
+func (s *socket) GetRTT() int64 { return s.RTT }
+func (s *socket) SetRTT(v int64) { s.RTT = v }
 
 func (s *socket) SetServer(v bool) { s.Server = v }
 func (s *socket) IsServer() bool   { return s.Server }
