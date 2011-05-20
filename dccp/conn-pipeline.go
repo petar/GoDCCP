@@ -25,7 +25,7 @@ func (c *Conn) readLoop() {
 			continue // drop packets that are unsupported. Forward compatibility
 		}
 
-		c.slk.Lock()
+		c.Lock()
 		if c.step2_ProcessTIMEWAIT(h) != nil {
 			goto Done
 		}
@@ -73,7 +73,7 @@ func (c *Conn) readLoop() {
 		}
 	Done:
 		state := c.socket.GetState()
-		c.slk.Unlock()
+		c.Unlock()
 		if state == CLOSED {
 			break
 		}

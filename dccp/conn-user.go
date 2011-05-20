@@ -8,10 +8,32 @@ import (
 	"os"
 )
 
+func (c *Conn) WriteBlock(b []byte) os.Error {
+	XXX // prepare header
+	c.writeChan <- pkt
+	c.Lock()
+	defer c.Unlock()
+	if c.socket.GetState() == OPEN {
+		return nil
+	}
+	return os.EBADF
+}
+
+// ReadBlock blocks until the next packet of application data is received.
+// It returns a non-nil error only if the connection has been closed.
+func (c *Conn) ReadBlock() (b []byte, err os.Error) {
+	b, ok := <-c.readChan
+	if !ok {
+		// The connection has been closed
+		return nil, os.EBADF
+	}
+	return b, nil
+}
+
 // Close closes the connection, Section 8.3
 func (c *Conn) Close() os.Error {
-	c.slk.Lock()
-	defer c.slk.Unlock()
+	c.Lock()
+	defer c.Unlock()
 	// Check if connection already closed
 	state := c.socket.GetState()
 	if state == CLOSEREQ || state == CLOSING || state == TIMEWAIT {

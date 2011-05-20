@@ -158,14 +158,14 @@ func (c *Conn) gotoTIMEWAIT() {
 	}()
 }
 
-// Currently teardown us called within a slk lock
+// Currently teardown us called within a lock
 func (c *Conn) teardown() {
 	// Notify blocked Read/Writes that the Conn is no more
 }
 
 func (c *Conn) kill() {
-	c.slk.Lock()
-	defer c.slk.Unlock()
+	c.Lock()
+	defer c.Unlock()
 	c.soket.SetState(RIP)
 }
 
@@ -181,9 +181,9 @@ func (c *Conn) step10_ProcessREQUEST2(h *Header) os.Error {
 		b := newBackOff(PARTOPEN_BACKOFF_FIRST, PARTOPEN_BACKOFF_MAX, PARTOPEN_BACKOFF_FIRST)
 		for {
 			err := b.Sleep()
-			c.slk.Lock()
+			c.Lock()
 			state := c.socket.GetState()
-			c.slk.Unlock()
+			c.Unlock()
 			if state != PARTOPEN {
 				break
 			}
@@ -200,8 +200,8 @@ func (c *Conn) step10_ProcessREQUEST2(h *Header) os.Error {
 
 // abort() resets the connection with Reset Code 2, "Aborted"
 func (c *Conn) abort() {
-	c.slk.Lock()
-	defer c.slk.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	c.teardown()
 	c.socket.SetState(CLOSED)
@@ -258,22 +258,22 @@ func (c *Conn) step13_ProcessCloseReq(h *Header) os.Error {
 func (c *Conn) gotoCLOSING() {
 	c.socket.SetState(CLOSING)
 	go func() {
-		c.slk.Lock()
+		c.Lock()
 		rtt := c.socket.GetRTT()
-		c.slk.Unlock()
+		c.Unlock()
 		b := newBackOff(2*rtt, CLOSING_BACKOFF_MAX, CLOSING_BACKOFF_FREQ)
 		for {
 			err := b.Sleep()
-			c.slk.Lock()
+			c.Lock()
 			state := c.socket.GetState()
-			c.slk.Unlock()
+			c.Unlock()
 			if state != CLOSING {
 				break
 			}
 			if err != nil {
-				c.slk.Lock()
+				c.Lock()
 				c.gotoTIMEWAIT()
-				c.slk.Unlock()
+				c.Unlock()
 				break
 			}
 			c.inject(c.generateClose())
