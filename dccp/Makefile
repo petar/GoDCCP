@@ -13,6 +13,7 @@ GOFILES=\
 	conn-seqack.go\
 	conn-steps.go\
 	conn-user.go\
+	conn-term.go\
 	conn.go\
 	err.go\
 	flow.go\
@@ -31,6 +32,7 @@ GOFILES=\
 	udplink.go\
 	wire.go\
 	write.go\
+	mutex.go\
 	#listener.go\
 	#dccp.go\
 	#dial.go\

@@ -38,10 +38,18 @@ func (c *Conn) generateResponse(serviceCode uint32) *Header {
 	return c.TakeSeqAck(NewResponseHeader(serviceCode, c.id.SourcePort, c.id.DestPort))
 }
 
+func (c *Conn) generateClose() *Header {
+	return c.TakeSeqAck(NewCloseHeader(c.id.SourcePort, c.id.DestPort))
+}
+
 func (c *Conn) generateAck() *Header {
 	return c.TakeSeqAck(NewAckHeader(c.id.SourcePort, c.id.DestPort))
 }
 
-func (c *Conn) generateClose() *Header {
-	return c.TakeSeqAck(NewCloseHeader(c.id.SourcePort, c.id.DestPort))
+func (c *Conn) generateData(data []byte) *Header {
+	return c.TakeSeqAck(NewDataHeader(data, c.id.SourcePort, c.id.DestPort))
+}
+
+func (c *Conn) generateDataAck() *Header {
+	return c.TakeSeqAck(NewDataAckHeader(data, c.id.SourcePort, c.id.DestPort))
 }

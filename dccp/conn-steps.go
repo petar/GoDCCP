@@ -158,17 +158,6 @@ func (c *Conn) gotoTIMEWAIT() {
 	}()
 }
 
-// Currently teardown us called within a lock
-func (c *Conn) teardown() {
-	// Notify blocked Read/Writes that the Conn is no more
-}
-
-func (c *Conn) kill() {
-	c.Lock()
-	defer c.Unlock()
-	c.soket.SetState(RIP)
-}
-
 // Step 10, Section 8.5: Process REQUEST state (second part)
 func (c *Conn) step10_ProcessREQUEST2(h *Header) os.Error {
 	if c.socket.GetState() != REQUEST {
@@ -196,16 +185,6 @@ func (c *Conn) step10_ProcessREQUEST2(h *Header) os.Error {
 	}()
 
 	return nil
-}
-
-// abort() resets the connection with Reset Code 2, "Aborted"
-func (c *Conn) abort() {
-	c.Lock()
-	defer c.Unlock()
-
-	c.teardown()
-	c.socket.SetState(CLOSED)
-	c.inject(c.generateReset(ResetAborted))
 }
 
 // Step 11, Section 8.5: Process RESPOND state
@@ -305,13 +284,15 @@ func (c *Conn) step16_ProcessData(h *Header) os.Error {
 	// application, except that the application MUST NOT receive data from
 	// more than one Request or Response
 
-	// REMARK: For now, we accept data only on Data packets
-	if h.Type != Data {
+	// REMARK: For now, we accept data only on Data* packets
+	if h.Type != Data && h.Type != DataAck {
 		return nil
 	}
 
 	// DCCP-Data, DCCP-DataAck, and DCCP-Ack packets received in CLOSEREQ or
 	// CLOSING states MAY be either processed or ignored.
 
-	XXX
+	if len(h.Data) > 0 {
+		c.readApp <- h.Data
+	}
 }

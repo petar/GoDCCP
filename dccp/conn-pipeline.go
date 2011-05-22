@@ -20,6 +20,14 @@ func (c *Conn) readHeader() (h *Header, err os.Error) {
 
 func (c *Conn) readLoop() {
 	for {
+		c.Lock()
+		state := c.socket.GetState()
+		c.Unlock()
+		if state == CLOSED {
+			break
+		}
+
+		XX // This may block forever, set timeouts
 		h, err := e.readHeader()
 		if err != nil {
 			continue // drop packets that are unsupported. Forward compatibility
@@ -72,10 +80,6 @@ func (c *Conn) readLoop() {
 			goto Done
 		}
 	Done:
-		state := c.socket.GetState()
 		c.Unlock()
-		if state == CLOSED {
-			break
-		}
 	}
 }

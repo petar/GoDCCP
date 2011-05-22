@@ -22,7 +22,9 @@ type CongestionControl interface {
 	// will occur. If if it returns ErrReset, the connection will be reset.
 	OnRead(h *Header) os.Error
 
-	// Injection ...
+	// Strobe blocks until a new packet can be sent without violating the
+	// congestion control rate limit
+	Strobe()
 }
 
 const (

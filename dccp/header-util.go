@@ -8,6 +8,15 @@ import "os"
 
 func (h *Header) HasAckNo() bool { return getAckNoSubheaderSize(h.Type, h.X) > 0 }
 
+func NewHeaderSkeleton(htype byte, sourcePort, destPort uint16) *Header {
+	return &Header{
+		SourcePort:  sourcePort,
+		DestPort:    destPort,
+		Type:        htype,
+		X:           true,
+	}
+}
+
 // NewResetHeader() creates a new Reset header
 func NewResetHeader(resetCode uint32, sourcePort, destPort uint16) *Header {
 	return &Header{
@@ -36,6 +45,28 @@ func NewAckHeader(sourcePort, destPort uint16) *Header {
 		DestPort:    destPort,
 		Type:        Ack,
 		X:           true,
+	}
+}
+
+// NewDataHeader() creates a new Data header
+func NewDataHeader(data []byte, sourcePort, destPort uint16) *Header {
+	return &Header{
+		SourcePort:  sourcePort,
+		DestPort:    destPort,
+		Type:        Data,
+		X:           true,
+		Data:        data,
+	}
+}
+
+// NewDataAckHeader() creates a new DataAck header
+func NewDataAckHeader(data []byte, sourcePort, destPort uint16) *Header {
+	return &Header{
+		SourcePort:  sourcePort,
+		DestPort:    destPort,
+		Type:        DataAck,
+		X:           true,
+		Data:        data,
 	}
 }
 
