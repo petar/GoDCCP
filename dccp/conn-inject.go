@@ -25,6 +25,7 @@ func (c *Conn) inject(h *Header) {
 func (c *Conn) writeLoop() {
 	writeNonData := c.writeNonData
 	writeData := c.writeData
+Loop:
 	for {
 		c.Strobe()
 		var h *Header
@@ -32,18 +33,28 @@ func (c *Conn) writeLoop() {
 		select {
 		case h, ok = <-writeNonData:
 			if !ok {
-				break
+				// Closing writeNonData means that the Conn is done and dead
+				break Loop
 			}
-		case h, ok = <-writeData:
+		case appData, ok = <-writeData:
 			if !ok {
+				// Make a dummy channel that no-one sends to, so that the
+				// select (above) would block until something comes on writeNonData.
 				writeData = make(chan *Header)
 			} else {
 				c.Lock()
 				state := c.socket.GetState()
 				c.Unlock()
+				// Having been in OPEN guarantees that AckNo can be filled in
+				// meaningfully (below) in the DataAck packet
 				if state != OPEN {
-					h = nil
+					appData = nil
 				}
+			}
+			if len(appData) > 0 {
+				c.Lock()
+				h = c.generateDataAck(appData)
+				c.Unlock()
 			}
 		}
 		if h == nil {
@@ -52,7 +63,7 @@ func (c *Conn) writeLoop() {
 		err := c.headerConn.WriteHeader(h)
 		if err != nil {
 			c.kill()
-			break
+			break Loop
 		}
 	}
 }

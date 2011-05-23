@@ -47,6 +47,7 @@ const (
 	PARTOPEN_BACKOFF_MAX   = 4 * MSL  // 8 mins in nanoseconds, Section 8.1.5
 	CLOSING_BACKOFF_FREQ   = 64e9     // Backoff frequency of CLOSING timer, 64 seconds, Section 8.3
 	CLOSING_BACKOFF_MAX    = MSL      // Maximum amount of time in CLOSING timer
+	MAX_OPTIONS_SIZE       = 128
 )
 
 // The nine possible states of a DCCP socket.  Listed in increasing order:

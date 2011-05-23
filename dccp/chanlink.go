@@ -7,12 +7,11 @@ package dccp
 import (
 	"net"
 	"os"
-	"sync"
 )
 
 // ChanLink{} treats one side of a channel as an incoming packet link
 type ChanLink struct {
-	sync.Mutex
+	Mutex
 	in, out  chan []byte
 }
 

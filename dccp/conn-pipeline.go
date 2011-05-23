@@ -19,6 +19,11 @@ func (c *Conn) readHeader() (h *Header, err os.Error) {
 }
 
 func (c *Conn) readLoop() {
+	if err := c.hc.SetReadTimeout(); err != nil {
+		log.Printf("SetReadTimeout failed")
+		c.kill()
+		return
+	}
 	for {
 		c.Lock()
 		state := c.socket.GetState()
@@ -26,11 +31,17 @@ func (c *Conn) readLoop() {
 		if state == CLOSED {
 			break
 		}
-
-		XX // This may block forever, set timeouts
 		h, err := e.readHeader()
 		if err != nil {
-			continue // drop packets that are unsupported. Forward compatibility
+			if err != EOF && err != EBADF {
+				// Drop packets that are unsupported or if there is timeout. 
+				// Forward compatibility.
+				continue
+			} else {
+				// Die if the socket is broken
+				c.kill()
+				return
+			}
 		}
 
 		c.Lock()

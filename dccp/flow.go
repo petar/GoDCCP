@@ -7,7 +7,6 @@ package dccp
 import (
 	"net"
 	"os"
-	"sync"
 )
 
 // flow{} is a net.Conn{}
@@ -17,7 +16,7 @@ type flow struct {
 	ch       chan muxHeader
 	largest  int
 
-	sync.Mutex // protects the variables below
+	Mutex // protects the variables below
 	local     *Label
 	remote    *Label
 	lastRead  int64

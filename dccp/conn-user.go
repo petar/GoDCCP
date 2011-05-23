@@ -8,12 +8,12 @@ import (
 	"os"
 )
 
+// MaxBlockLen() returns the maximum size of a block that can be passed to WriteBlock
 func (c *Conn) MaxBlockLen() int {
-	XXX
+	return c.hc.MaxFootprint() - MAX_OPTIONS_SIZE - getFixedHeaderSize(DataAck, true) 
 }
 
 // WriteBlock blocks until the slice b is sent.
-XXX // Header creation for Data packet should be done in writeLoop
 func (c *Conn) WriteBlock(b []byte) os.Error {
 	if len(b) > c.MaxBlockLen() {
 		return ErrTooBig
@@ -24,8 +24,10 @@ func (c *Conn) WriteBlock(b []byte) os.Error {
 	if state != OPEN {
 		return os.EBADF
 	}
-	// Having been in OPEN guarantees that AckNo can be filled in meaningfully
-	c.writeData <- c.generateDataAck(b)
+	if len(b) == 0 {
+		return nil
+	}
+	c.writeData <- b
 	return nil
 }
 

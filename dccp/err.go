@@ -25,4 +25,5 @@ var (
 	ErrDrop          = os.NewError("dropped")
 	ErrReset         = os.NewError("reset")
 	ErrTooBig        = os.NewError("too big")
+	ErrTimeout       = os.NewError("timeout")
 )

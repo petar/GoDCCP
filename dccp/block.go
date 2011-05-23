@@ -15,6 +15,7 @@ type BlockConn interface {
 	ReadBlock() (block []byte, err os.Error)
 	WriteBlock(block []byte) (err os.Error)
 	Close() os.Error
+	SetReadTimeout(nsec int64) os.Error
 }
 
 type HeaderConn interface {
@@ -22,4 +23,5 @@ type HeaderConn interface {
 	ReadHeader() (h *Header, err os.Error)
 	WriteHeader(h *Header) (err os.Error)
 	Close() os.Error
+	SetReadTimeout(nsec int64) os.Error
 }

@@ -7,7 +7,6 @@ package dccp
 import (
 	"net"
 	"os"
-	"sync"
 	"time"
 )
 
@@ -20,7 +19,7 @@ import (
 //
 // Mux{} force-closes flows that have experienced no activity for 10 mins
 type Mux struct {
-	sync.Mutex
+	Mutex
 	link           Link
 	largest        int  // Max allowed block size, including mux header. Larger incoming/outgoing packets are dropped.
 	flowsLocal     map[uint64]*flow  // Active flows hashed by local label
