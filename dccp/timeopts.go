@@ -158,9 +158,9 @@ func (opt *TimestampEchoOption) GetElapsed() int64 {
 	return decodeElapsed(opt.Data[4:])
 }
 
-// GetOptionTimestampDifference() returns the smaller circular difference between t0 an t1
+// GetTimestampDiff() returns the smaller circular difference between t0 an t1
 // in nanoseconds. While note that t0 and t1 are given in 10 microsecond circular units
-func GetOptionTimestampDifference(t0, t1 uint32) int64 {
+func GetTimestampDiff(t0, t1 uint32) int64 {
 	return int64(minUint32(t0-t1, t1-t0)) * TenMicroInNano
 }
 
