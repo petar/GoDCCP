@@ -9,8 +9,9 @@ import (
 )
 
 // generateAbnormalReset() generates a new out-of-sync Reset header, according to Section 8.3.1
-func (c *Conn) generateAbnormalReset(resetCode uint32, h *Header) *Header {
-	return c.TakeAbnormalSeqAck(NewResetHeader(resetCode, c.id.SourcePort, c.id.DestPort), h)
+func (c *Conn) generateAbnormalReset(resetCode uint32, inResponseTo *Header) *Header {
+	return c.TakeAbnormalSeqAck(NewResetHeader(resetCode, c.id.SourcePort, c.id.DestPort),
+				    inResponseTo)
 }
 
 func (c *Conn) generateReset(resetCode uint32) *Header {

@@ -36,11 +36,11 @@ func (c *Conn) TakeSeqAck(h *Header) *Header {
 func (c *Conn) TakeAbnormalSeqAck(h, inResponseTo *Header) *Header {
 	c.AssertLocked()
 
-	h.SeqNo = 0
 	if inResponseTo.HasAckNo() {
 		h.SeqNo = inResponseTo.AckNo+1
+	} else {
+		h.SeqNo = 0
 	}
-	XXX // What if no AckNo
-	h.AckNo = inResponseTo.AckNo
+	h.AckNo = inResponseTo.SeqNo
 	return h
 }

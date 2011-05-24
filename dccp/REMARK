@@ -1,8 +1,9 @@
 * What: Send NDP Count feature is always ON
 * Set server state of socket
 
-*Test timeout options read/write
+* Listen protocol is in Step 2, Section 8.5
 * Cleanup generate* methods
+* Socket String() method
 
 * THINK: DCCP uses source/dest port to identify flow. We use mux-layer. Reconcile?
 
