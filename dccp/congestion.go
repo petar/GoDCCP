@@ -10,11 +10,20 @@ import "os"
 // DCCP connection.
 type CongestionControl interface {
 
+	// GetID() returns the CCID of this congestion control algorithm
+	GetID()
+
 	// GetCCMPS returns the Congestion Control Maximum Packet Size, CCMPS. Generally, PMTU <= CCMPS
 	GetCCMPS() uint32 
 
 	// GetRTT returns the Round-Trip Time as measured by this CCID
 	GetRTT() int64
+
+	// GetSeqWinA returns the Sequence Window/A Feature, see Section 7.5.1
+	GetSeqWinA() uint64
+
+	// GetSeqWinB returns the Sequence Window/B Feature, see Section 7.5.1
+	GetSeqWinB() uint64 
 
 	// Conn calls OnWrite before a packet is sent to give CongestionControl
 	// an opportunity to add CCVal and options to an outgoing packet

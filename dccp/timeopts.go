@@ -18,16 +18,19 @@ const (
 // Time values are based on a circular uint32 value at 10 microseconds granularity
 type TimestampOption Option
 
-func NewTimestampOptionNow() *TimestampOption {
-	d := make([]byte, 4)
-	// Time inside timestamps is measured in 10 microseconds granularity
-	var t uint32 = uint32(time.Nanoseconds() / TenMicroInNano) 
-	encode4ByteUint(t, d)
+func NewTimestampOption(t int64) *TimestampOption {
 	return &TimestampOption{
 		Type:      TimestampOption,
-		Data:      d,
+		Data:      encodeTimestamp(t, make([]byte, 4)),
 		Mandatory: false,
 	}
+}
+
+// d must be a 4-byte slice
+func encodeTimestamp(t int64, d []byte) []byte {
+	var t0 uint32 = uint32(t / TenMicroInNano) 
+	encode4ByteUint(t0, d)
+	return d[0:4]
 }
 
 func ValidateTimestampOption(opt *Option) *TimestampOption {
@@ -39,44 +42,11 @@ func ValidateTimestampOption(opt *Option) *TimestampOption {
 
 // GetTimestamp returns the timestamp option value in 10 microsecond circular units
 func (opt *TimestampOption) GetTimestamp() uint32 {
-	return decode4ByteUint(opt.Data)
+	return decodeTimestamp(opt.Data)
 }
 
-// TimestampEchoOption, Section 13.3
-// Time values are based on a circular uint32 value at 10 microseconds granularity
-type TimestampEchoOption Option
-
-func NewTimestampEcho(timestampOpt *Option) *TimestampEchoOption {
-	return &TimestampEcho{
-		Type:      TimestampEchoOption,
-		Data:      timestampOpt.Data,
-		Mandatory: false,
-	}
-}
-
-func ValidateTimestampEchoOption(opt *Option) *TimestampEchoOption {
-	if opt.Type != TimestampEchoOption || len(opt.Data) != 4 {
-		return nil
-	}
-	return (*TimestampEchoOption)(opt)
-}
-
-// GetTimestamp returns the timestamp echo option value in 10 microsecond circular units
-func (opt *TimestampEchoOption) GetTimestamp() uint32 {
-	return decode4ByteUint(opt.Data)
-}
-
-// GetOptionTimestampDifference() returns the smaller circular difference between t0 an t1
-// in nanoseconds. While note that t0 and t1 are given in 10 microsecond circular units
-func GetOptionTimestampDifference(t0, t1 uint32) int64 {
-	return int64(minUint32(t0-t1, t1-t0)) * TenMicroInNano
-}
-
-func minUint32(x, y uint32) uint32 {
-	if x < y {
-		return x
-	}
-	return y
+func decodeTimestamp(d []byte) uint32 {
+	return decode4ByteUint(d)
 }
 
 // ElapsedTimeOption, Section 13.2
@@ -94,26 +64,30 @@ const MaxElapsedTime = 4294967295 * TenMicroInNano // Maximum distinguishable el
 
 // The argument elapsed measures time in nanoseconds
 func NewElapsedTimeOption(elapsed int64) *ElapsedTimeOption {
-	var d []byte
+	return &ElapsedTimeOption{
+		Type:      ElapsedTimeOption,
+		Data:      encodeElapsed(elapsed, make([]byte, 4)),
+		Mandatory: false,
+	}
+}
+
+// d must be a 4-byte slice
+func encodeElapsed(elapsed int64, d []byte) []byte {
 	if elapsed >= MaxElapsedTime {
 		elapsed = MaxElapsedTime
 	}
 	if elapsed < 1e9/2 {
-		d = make([]byte, 2)
 		assert2Byte(elapsed / TenMicroInNano)
 		e := uint16(elapsed / TenMicroInNano)
 		encode2ByteUint(e, d)
+		return d[0:2]
 	} else {
-		d = make([]byte, 4)
 		assert4Byte(elapsed / TenMicroInNano)
 		e := uint32(elapsed / TenMicroInNano)
 		encode4ByteUint(e, d)
+		return d[0:4]
 	}
-	return &ElapsedTimeOption{
-		Type:      ElapsedTimeOption,
-		Data:      d,
-		Mandatory: false,
-	}
+	panic("unreach")
 }
 
 func ValidateElapsedTimeOption(opt *Option) *ElapsedTimeOption {
@@ -125,14 +99,74 @@ func ValidateElapsedTimeOption(opt *Option) *ElapsedTimeOption {
 
 // GetElapsed() returns the elapsed time value in nanoseconds
 func (opt *ElapsedTimeOption) GetElapsed() int64 {
+	return decodeElapsed(opt.Data)
+}
+
+func decodeElapsed(d []byte) int64 {
 	var t int64
-	switch len(opt.Data) {
+	switch len(d) {
 	case 2:
-		t = int64(decode2ByteUint(opt.Data))
+		t = int64(decode2ByteUint(d))
 	case 4:
-		t = int64(decode4ByteUint(opt.Data))
+		t = int64(decode4ByteUint(d))
 	default:
 		panic("unreach")
 	}
 	return t * TenMicroInNano
+}
+
+// TimestampEchoOption, Section 13.3
+// Time values are based on a circular uint32 value at 10 microseconds granularity
+type TimestampEchoOption Option
+
+// The argument elapsed is in nanoseconds.
+func NewTimestampEcho(timestampOpt *Option, elapsed int64) *TimestampEchoOption {
+	d := make([]byte, 8)
+	copy(d[0:4], timestampOpt.Data[0:4])
+	if elapsed == 0 {
+		d = d[0:4]
+	} else {
+		l := len(encodeElapsed(elapsed, d))
+		d = d[0:4+l]
+	}
+	// The size of d can be 4, 6 or 8
+	return &TimestampEcho{
+		Type:      TimestampEchoOption,
+		Data:      d,
+		Mandatory: false,
+	}
+}
+
+func ValidateTimestampEchoOption(opt *Option) *TimestampEchoOption {
+	if opt.Type != TimestampEchoOption || 
+		(len(opt.Data) != 4 && len(opt.Data) != 6 && len(opt.Data) != 8) {
+
+		return nil
+	}
+	return (*TimestampEchoOption)(opt)
+}
+
+// GetTimestamp returns the timestamp echo option value in 10 microsecond circular units
+func (opt *TimestampEchoOption) GetTimestamp() uint32 {
+	return decodeTimestamp(opt.Data[0:4])
+}
+
+func (opt *TimestampEchoOption) GetElapsed() int64 {
+	if len(opt.Data) == 4 {
+		return 0
+	}
+	return decodeElapsed(opt.Data[4:])
+}
+
+// GetOptionTimestampDifference() returns the smaller circular difference between t0 an t1
+// in nanoseconds. While note that t0 and t1 are given in 10 microsecond circular units
+func GetOptionTimestampDifference(t0, t1 uint32) int64 {
+	return int64(minUint32(t0-t1, t1-t0)) * TenMicroInNano
+}
+
+func minUint32(x, y uint32) uint32 {
+	if x < y {
+		return x
+	}
+	return y
 }
