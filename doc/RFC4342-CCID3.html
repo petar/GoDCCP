@@ -1,9 +1,153 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head profile="http://dublincore.org/documents/2008/08/04/dc-html/">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="robots" content="index,follow" />
+    <meta name="creator" content="rfcmarkup version 1.93" />
+    <link rel="schema.DC" href="http://purl.org/dc/elements/1.1/" />
+<meta name="DC.Identifier" content="urn:ietf:rfc:4342" />
+<meta name="DC.Description.Abstract" content="This document contains the profile for Congestion Control Identifier\n3, TCP-Friendly Rate Control (TFRC), in the Datagram Congestion\nControl Protocol (DCCP). CCID 3 should be used by senders that want a\nTCP-friendly sending rate, possibly with Explicit Congestion\nNotification (ECN), while minimizing abrupt rate changes. [STANDARDS-\nTRACK]" />
+<meta name="DC.Creator" content="Department, UCLA Computer Science" />
+<meta name="DC.Creator" content="Research, Microsoft" />
+<meta name="DC.Date.Issued" content="March, 2006" />
+<meta name="DC.Title" content="Profile for Datagram Congestion Control Protocol (DCCP) Congestion Control ID 3: TCP-Friendly Rate Control (TFRC)" />
 
+    <link rel="icon" href="/images/rfc.png" type="image/png" />
+    <link rel="shortcut icon" href="/images/rfc.png" type="image/png" />
+    <title>RFC 4342 - Profile for Datagram Congestion Control Protocol (DCCP) Congestion Control ID 3: TCP-Friendly Rate Control (TFRC)</title>
+    
+    
+    <style type="text/css">
+	body {
+	    margin: 0px 8px;
+            font-size: 1em;
+	}
+        h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+	    font-weight: bold;
+            line-height: 0pt;
+            display: inline;
+            white-space: pre;
+            font-family: monospace;
+            font-size: 1em;
+	    font-weight: bold;
+        }
+        pre {
+            font-size: 1em;
+            margin-top: 0px;
+            margin-bottom: 0px;
+        }
+	.pre {
+	    white-space: pre;
+	    font-family: monospace;
+	}
+	.header{
+	    font-weight: bold;
+	}
+        .newpage {
+            page-break-before: always;
+        }
+        .invisible {
+            text-decoration: none;
+            color: white;
+        }
+        @media print {
+            body {
+                font-size: 10.5pt;
+            }
+            h1, h2, h3, h4, h5, h6 {
+                font-size: 10.5pt;
+            }
+        
+            a:link, a:visited {
+                color: inherit;
+                text-decoration: none;
+            }
+            .noprint {
+                display: none;
+            }
+        }
+	@media screen {
+	    .grey, .grey a:link, .grey a:visited {
+		color: #777;
+	    }
+            .docinfo {
+                background-color: #EEE;
+            }
+            .top {
+                border-top: 7px solid #EEE;
+            }
+            .bgwhite  { background-color: white; }
+            .bgred    { background-color: #F44; }
+            .bggrey   { background-color: #666; }
+            .bgbrown  { background-color: #840; }            
+            .bgorange { background-color: #FA0; }
+            .bgyellow { background-color: #EE0; }
+            .bgmagenta{ background-color: #F4F; }
+            .bgblue   { background-color: #66F; }
+            .bgcyan   { background-color: #4DD; }
+            .bggreen  { background-color: #4F4; }
 
+            .legend   { font-size: 90%; }
+            .cplate   { font-size: 70%; border: solid grey 1px; }
+	}
+    </style>
+    <!--[if IE]>
+    <style>
+    body {
+       font-size: 13px;
+       margin: 10px 10px;
+    }
+    </style>
+    <![endif]-->
 
-
-
-
+    <script type="text/javascript"><!--
+    function addHeaderTags() {
+	var spans = document.getElementsByTagName("span");
+	for (var i=0; i < spans.length; i++) {
+	    var elem = spans[i];
+	    if (elem) {
+		var level = elem.getAttribute("class");
+                if (level == "h1" || level == "h2" || level == "h3" || level == "h4" || level == "h5" || level == "h6") {
+                    elem.innerHTML = "<"+level+">"+elem.innerHTML+"</"+level+">";		
+                }
+	    }
+	}
+    }
+    var legend_html = "Colour legend:<br />      <table>         <tr><td>Unknown:</td>          <td><span class='cplate bgwhite'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Draft:</td>            <td><span class='cplate bgred'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Informational:</td>    <td><span class='cplate bgorange'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Experimental:</td>     <td><span class='cplate bgyellow'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Best Common Practice:</td><td><span class='cplate bgmagenta'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Proposed Standard:</td><td><span class='cplate bgblue'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Draft Standard:</td>   <td><span class='cplate bgcyan'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Standard:</td>         <td><span class='cplate bggreen'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Historic:</td>         <td><span class='cplate bggrey'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Obsolete:</td>         <td><span class='cplate bgbrown'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>     </table>";
+    function showElem(id) {
+        var elem = document.getElementById(id);
+        elem.innerHTML = eval(id+"_html");
+        elem.style.visibility='visible';
+    }
+    function hideElem(id) {
+        var elem = document.getElementById(id);
+        elem.style.visibility='hidden';        
+        elem.innerHTML = "";
+    }
+    // -->
+    </script>
+</head>
+<body onload="addHeaderTags()">
+   <div style="height: 13px;">
+      <div onmouseover="this.style.cursor='pointer';"
+         onclick="showElem('legend');"
+         onmouseout="hideElem('legend')"
+	 style="height: 6px; position: absolute;"
+         class="pre noprint docinfo bgblue"
+         title="Click for colour legend." >                                                                        </div>
+      <div id="legend"
+           class="docinfo noprint pre legend"
+           style="position:absolute; top: 4px; left: 4ex; visibility:hidden; background-color: white; padding: 4px 9px 5px 7px; border: solid #345 1px; "
+           onmouseover="showElem('legend');"
+           onmouseout="hideElem('legend');">
+      </div>
+   </div>
+<span class="pre noprint docinfo top">[<a href="../html/" title="Document search and retrieval page">Docs</a>] [<a href="/rfc/rfc4342.txt" title="Plaintext version of this document">txt</a>|<a href="/pdf/rfc4342" title="PDF version of this document">pdf</a>] [<a href="draft-ietf-dccp-ccid3" title="draft-ietf-dccp-ccid3">draft-ietf-dccp-c...</a>] [<a href="/rfcdiff?difftype=--hwdiff&amp;url2=rfc4342" title="Inline diff (wdiff)">Diff1</a>] [<a href="/rfcdiff?url2=rfc4342" title="Side-by-side diff">Diff2</a>] [<a href="http://www.rfc-editor.org/errata_search.php?rfc=4342">Errata</a>]        </span><br />
+<span class="pre noprint docinfo">                                                                        </span><br />
+<span class="pre noprint docinfo">Updated by: <a href="./rfc5348">5348</a>                                       PROPOSED STANDARD</span><br />
+<span class="pre noprint docinfo">                                                            <span style='color: #C00;'>Errata Exist</span></span><br />
+<pre>
 Network Working Group                                           S. Floyd
 Request for Comments: 4342                                          ICIR
 Category: Standards Track                                      E. Kohler
@@ -13,8 +157,8 @@ Category: Standards Track                                      E. Kohler
                                                               March 2006
 
 
-        Profile for Datagram Congestion Control Protocol (DCCP)
-       Congestion Control ID 3: TCP-Friendly Rate Control (TFRC)
+        <span class="h1">Profile for Datagram Congestion Control Protocol (DCCP)</span>
+       <span class="h1">Congestion Control ID 3: TCP-Friendly Rate Control (TFRC)</span>
 
 Status of This Memo
 
@@ -38,92 +182,92 @@ Abstract
 
 Table of Contents
 
-   1. Introduction ....................................................2
-   2. Conventions .....................................................3
-   3. Usage ...........................................................3
-      3.1. Relationship with TFRC .....................................4
-      3.2. Half-Connection Example ....................................4
-   4. Connection Establishment ........................................5
-   5. Congestion Control on Data Packets ..............................5
-      5.1. Response to Idle and Application-Limited Periods ...........7
-      5.2. Response to Data Dropped and Slow Receiver .................8
-      5.3. Packet Sizes ...............................................9
-   6. Acknowledgements ................................................9
-      6.1. Loss Interval Definition ..................................10
-           6.1.1. Loss Interval Lengths ..............................12
-      6.2. Congestion Control on Acknowledgements ....................13
+   <a href="#section-1">1</a>. Introduction ....................................................<a href="#page-2">2</a>
+   <a href="#section-2">2</a>. Conventions .....................................................<a href="#page-3">3</a>
+   <a href="#section-3">3</a>. Usage ...........................................................<a href="#page-3">3</a>
+      <a href="#section-3.1">3.1</a>. Relationship with TFRC .....................................<a href="#page-4">4</a>
+      <a href="#section-3.2">3.2</a>. Half-Connection Example ....................................<a href="#page-4">4</a>
+   <a href="#section-4">4</a>. Connection Establishment ........................................<a href="#page-5">5</a>
+   <a href="#section-5">5</a>. Congestion Control on Data Packets ..............................<a href="#page-5">5</a>
+      <a href="#section-5.1">5.1</a>. Response to Idle and Application-Limited Periods ...........<a href="#page-7">7</a>
+      <a href="#section-5.2">5.2</a>. Response to Data Dropped and Slow Receiver .................<a href="#page-8">8</a>
+      <a href="#section-5.3">5.3</a>. Packet Sizes ...............................................<a href="#page-9">9</a>
+   <a href="#section-6">6</a>. Acknowledgements ................................................<a href="#page-9">9</a>
+      <a href="#section-6.1">6.1</a>. Loss Interval Definition ..................................<a href="#page-10">10</a>
+           <a href="#section-6.1.1">6.1.1</a>. Loss Interval Lengths ..............................<a href="#page-12">12</a>
+      <a href="#section-6.2">6.2</a>. Congestion Control on Acknowledgements ....................<a href="#page-13">13</a>
 
 
 
-Floyd, et al.               Standards Track                     [Page 1]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                     [Page 1]</span>
+</pre><pre class='newpage'><a name="page-2" id="page-2" href="#page-2" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
-      6.3. Acknowledgements of Acknowledgements ......................13
-      6.4. Determining Quiescence ....................................14
-   7. Explicit Congestion Notification ...............................14
-   8. Options and Features ...........................................14
-      8.1. Window Counter Value ......................................15
-      8.2. Elapsed Time Options ......................................17
-      8.3. Receive Rate Option .......................................17
-      8.4. Send Loss Event Rate Feature ..............................18
-      8.5. Loss Event Rate Option ....................................18
-      8.6. Loss Intervals Option .....................................18
-           8.6.1. Option Details .....................................19
-           8.6.2. Example ............................................20
-   9. Verifying Congestion Control Compliance with ECN ...............22
-      9.1. Verifying the ECN Nonce Echo ..............................22
+      <a href="#section-6.3">6.3</a>. Acknowledgements of Acknowledgements ......................<a href="#page-13">13</a>
+      <a href="#section-6.4">6.4</a>. Determining Quiescence ....................................<a href="#page-14">14</a>
+   <a href="#section-7">7</a>. Explicit Congestion Notification ...............................<a href="#page-14">14</a>
+   <a href="#section-8">8</a>. Options and Features ...........................................<a href="#page-14">14</a>
+      <a href="#section-8.1">8.1</a>. Window Counter Value ......................................<a href="#page-15">15</a>
+      <a href="#section-8.2">8.2</a>. Elapsed Time Options ......................................<a href="#page-17">17</a>
+      <a href="#section-8.3">8.3</a>. Receive Rate Option .......................................<a href="#page-17">17</a>
+      <a href="#section-8.4">8.4</a>. Send Loss Event Rate Feature ..............................<a href="#page-18">18</a>
+      <a href="#section-8.5">8.5</a>. Loss Event Rate Option ....................................<a href="#page-18">18</a>
+      <a href="#section-8.6">8.6</a>. Loss Intervals Option .....................................<a href="#page-18">18</a>
+           <a href="#section-8.6.1">8.6.1</a>. Option Details .....................................<a href="#page-19">19</a>
+           <a href="#section-8.6.2">8.6.2</a>. Example ............................................<a href="#page-20">20</a>
+   <a href="#section-9">9</a>. Verifying Congestion Control Compliance with ECN ...............<a href="#page-22">22</a>
+      <a href="#section-9.1">9.1</a>. Verifying the ECN Nonce Echo ..............................<a href="#page-22">22</a>
       9.2. Verifying the Reported Loss Intervals and Loss
-           Event Rate ................................................23
-   10. Implementation Issues .........................................23
-      10.1. Timestamp Usage ..........................................23
-      10.2. Determining Loss Events at the Receiver ..................24
-      10.3. Sending Feedback Packets .................................25
-   11. Security Considerations .......................................27
-   12. IANA Considerations ...........................................28
-      12.1. Reset Codes ..............................................28
-      12.2. Option Types .............................................28
-      12.3. Feature Numbers ..........................................28
-   13. Thanks ........................................................29
-   A. Appendix: Possible Future Changes to CCID 3 ....................30
-   Normative References ..............................................31
-   Informative References ............................................31
+           Event Rate ................................................<a href="#page-23">23</a>
+   <a href="#section-10">10</a>. Implementation Issues .........................................<a href="#page-23">23</a>
+      <a href="#section-10.1">10.1</a>. Timestamp Usage ..........................................<a href="#page-23">23</a>
+      <a href="#section-10.2">10.2</a>. Determining Loss Events at the Receiver ..................<a href="#page-24">24</a>
+      <a href="#section-10.3">10.3</a>. Sending Feedback Packets .................................<a href="#page-25">25</a>
+   <a href="#section-11">11</a>. Security Considerations .......................................<a href="#page-27">27</a>
+   <a href="#section-12">12</a>. IANA Considerations ...........................................<a href="#page-28">28</a>
+      <a href="#section-12.1">12.1</a>. Reset Codes ..............................................<a href="#page-28">28</a>
+      <a href="#section-12.2">12.2</a>. Option Types .............................................<a href="#page-28">28</a>
+      <a href="#section-12.3">12.3</a>. Feature Numbers ..........................................<a href="#page-28">28</a>
+   <a href="#section-13">13</a>. Thanks ........................................................<a href="#page-29">29</a>
+   <a href="#appendix-A">A</a>. Appendix: Possible Future Changes to CCID 3 ....................<a href="#page-30">30</a>
+   Normative References ..............................................<a href="#page-31">31</a>
+   Informative References ............................................<a href="#page-31">31</a>
 
 List of Tables
 
-   Table 1: DCCP CCID 3 Options ......................................14
-   Table 2: DCCP CCID 3 Feature Numbers ..............................15
+   Table 1: DCCP CCID 3 Options ......................................<a href="#page-14">14</a>
+   Table 2: DCCP CCID 3 Feature Numbers ..............................<a href="#page-15">15</a>
 
-1.  Introduction
+<span class="h2"><a name="section-1">1</a>.  Introduction</span>
 
    This document contains the profile for Congestion Control Identifier
    3, TCP-Friendly Rate Control (TFRC), in the Datagram Congestion
-   Control Protocol (DCCP) [RFC4340].  DCCP uses Congestion Control
+   Control Protocol (DCCP) [<a href="./rfc4340" title='"Datagram Congestion Control Protocol (DCCP)"'>RFC4340</a>].  DCCP uses Congestion Control
    Identifiers, or CCIDs, to specify the congestion control mechanism in
    use on a half-connection.
 
    TFRC is a receiver-based congestion control mechanism that provides a
    TCP-friendly sending rate while minimizing the abrupt rate changes
-   characteristic of TCP or of TCP-like congestion control [RFC3448].
+   characteristic of TCP or of TCP-like congestion control [<a href="./rfc3448" title='"TCP Friendly Rate Control (TFRC): Protocol Specification"'>RFC3448</a>].
    The sender's allowed sending rate is set in response to the loss
 
 
 
 
-Floyd, et al.               Standards Track                     [Page 2]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                     [Page 2]</span>
+</pre><pre class='newpage'><a name="page-3" id="page-3" href="#page-3" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
    event rate, which is typically reported by the receiver to the
-   sender.  See Section 3 for more on application requirements.
+   sender.  See <a href="#section-3">Section 3</a> for more on application requirements.
 
-2.  Conventions
+<span class="h2"><a name="section-2">2</a>.  Conventions</span>
 
    The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
    "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
-   document are to be interpreted as described in [RFC2119].
+   document are to be interpreted as described in [<a href="./rfc2119" title='"Key words for use in RFCs to Indicate Requirement Levels"'>RFC2119</a>].
 
    All multi-byte numerical quantities in CCID 3, such as arguments to
    options, are transmitted in network byte order (most significant byte
@@ -135,7 +279,7 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    endpoints sending application data and acknowledgements,
    respectively.  Since CCIDs apply at the level of half-connections, we
    abbreviate HC-Sender to "sender" and HC-Receiver to "receiver" in
-   this document.  See [RFC4340] for more discussion.
+   this document.  See [<a href="./rfc4340" title='"Datagram Congestion Control Protocol (DCCP)"'>RFC4340</a>] for more discussion.
 
    For simplicity, we say that senders send DCCP-Data packets and
    receivers send DCCP-Ack packets.  Both of these categories are meant
@@ -144,35 +288,35 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    The phrases "ECN-marked" and "marked" refer to packets marked ECN
    Congestion Experienced unless otherwise noted.
 
-   This document uses a number of variables from [RFC3448], including
+   This document uses a number of variables from [<a href="./rfc3448" title='"TCP Friendly Rate Control (TFRC): Protocol Specification"'>RFC3448</a>], including
    the following:
 
-   o  X_recv: The receive rate in bytes per second.  See [RFC3448],
-      Section 3.2.2.
+   o  X_recv: The receive rate in bytes per second.  See <a href="./rfc3448#section-3.2.2">[RFC3448],
+      Section&nbsp;3.2.2</a>.
 
-   o  s: The packet size in bytes.  See [RFC3448], Section 3.1.
+   o  s: The packet size in bytes.  See <a href="./rfc3448#section-3.1">[RFC3448], Section&nbsp;3.1</a>.
 
-   o  p: The loss event rate.  See [RFC3448], Section 3.1.
+   o  p: The loss event rate.  See <a href="./rfc3448#section-3.1">[RFC3448], Section&nbsp;3.1</a>.
 
-3.  Usage
+<span class="h2"><a name="section-3">3</a>.  Usage</span>
 
    CCID 3's TFRC congestion control is appropriate for flows that would
    prefer to minimize abrupt changes in the sending rate, including
    streaming media applications with small or moderate receiver
    buffering before playback.  TCP-like congestion control, such as that
-   of DCCP's CCID 2 [RFC4341], halves the sending rate in response to
+   of DCCP's CCID 2 [<a href="./rfc4341" title='"Profile for Datagram Congestion Control Protocol (DCCP) Congestion Control ID 2: TCP-like Congestion Control"'>RFC4341</a>], halves the sending rate in response to
    each congestion event and thus cannot provide a relatively smooth
    sending rate.
 
 
 
 
-Floyd, et al.               Standards Track                     [Page 3]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                     [Page 3]</span>
+</pre><pre class='newpage'><a name="page-4" id="page-4" href="#page-4" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
-   As explained in [RFC3448], Section 1, the penalty of having smoother
+   As explained in <a href="./rfc3448#section-1">[RFC3448], Section&nbsp;1</a>, the penalty of having smoother
    throughput than TCP while competing fairly for bandwidth with TCP is
    that the TFRC mechanism in CCID 3 responds slower to changes in
    available bandwidth than do TCP or TCP-like mechanisms.  Thus, CCID 3
@@ -186,25 +330,25 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    rate at which packets are sent.  A new CCID will be required for
    these applications.
 
-3.1.  Relationship with TFRC
+<span class="h3"><a name="section-3.1">3.1</a>.  Relationship with TFRC</span>
 
    The congestion control mechanisms described here follow the TFRC
-   mechanism standardized by the IETF [RFC3448].  Conforming CCID 3
+   mechanism standardized by the IETF [<a href="./rfc3448" title='"TCP Friendly Rate Control (TFRC): Protocol Specification"'>RFC3448</a>].  Conforming CCID 3
    implementations MAY track updates to the TCP throughput equation
    directly, as updates are standardized in the IETF, rather than wait
    for revisions of this document.  However, conforming implementations
    SHOULD wait for explicit updates to CCID 3 before implementing other
    changes to TFRC congestion control.
 
-3.2.  Half-Connection Example
+<span class="h3"><a name="section-3.2">3.2</a>.  Half-Connection Example</span>
 
    This example shows the typical progress of a half-connection using
    CCID 3's TFRC Congestion Control, not including connection initiation
    and termination.  The example is informative, not normative.
 
    1. The sender transmits DCCP-Data packets.  Its sending rate is
-      governed by the allowed transmit rate as specified in [RFC3448],
-      Section 3.2.  Each DCCP-Data packet has a sequence number and the
+      governed by the allowed transmit rate as specified in <a href="./rfc3448#section-3.2">[RFC3448],
+      Section&nbsp;3.2</a>.  Each DCCP-Data packet has a sequence number and the
       DCCP header's CCVal field contains the window counter value, which
       is used by the receiver in determining when multiple losses belong
       in a single loss event.
@@ -212,20 +356,20 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
       In the typical case of an ECN-capable half-connection, each DCCP-
       Data and DCCP-DataAck packet is sent as ECN Capable, with either
       the ECT(0) or the ECT(1) codepoint set.  The use of the ECN Nonce
-      with TFRC is described in Section 9.
+      with TFRC is described in <a href="#section-9">Section 9</a>.
 
    2. The receiver sends DCCP-Ack packets acknowledging the data packets
       at least once per round-trip time, unless the sender is sending at
       a rate of less than one packet per round-trip time, as indicated
-      by the TFRC specification ([RFC3448], Section 6).  Each DCCP-Ack
+      by the TFRC specification (<a href="./rfc3448#section-6">[RFC3448], Section&nbsp;6</a>).  Each DCCP-Ack
       packet uses a sequence number, identifies the most recent packet
 
 
 
 
-Floyd, et al.               Standards Track                     [Page 4]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                     [Page 4]</span>
+</pre><pre class='newpage'><a name="page-5" id="page-5" href="#page-5" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
       received from the sender, and includes feedback about the recent
@@ -234,27 +378,27 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    3. The sender continues sending DCCP-Data packets as controlled by
       the allowed transmit rate.  Upon receiving DCCP-Ack packets, the
       sender updates its allowed transmit rate as specified in
-      [RFC3448], Section 4.3.  This update is based on a loss event rate
+      <a href="./rfc3448#section-4.3">[RFC3448], Section&nbsp;4.3</a>.  This update is based on a loss event rate
       calculated by the sender using the receiver's loss intervals
       feedback.  If it prefers, the sender can also use a loss event
       rate calculated and reported by the receiver.
 
    4. The sender estimates round-trip times and calculates a nofeedback
-      time, as specified in [RFC3448], Section 4.4.  If no feedback is
+      time, as specified in <a href="./rfc3448#section-4.4">[RFC3448], Section&nbsp;4.4</a>.  If no feedback is
       received from the receiver in that time (at least four round-trip
       times), the sender halves its sending rate.
 
-4. Connection Establishment
+<span class="h2"><a name="section-4">4</a>. Connection Establishment</span>
 
    The client initiates the connection by using mechanisms described in
-   the DCCP specification [RFC4340].  During or after CCID 3
+   the DCCP specification [<a href="./rfc4340" title='"Datagram Congestion Control Protocol (DCCP)"'>RFC4340</a>].  During or after CCID 3
    negotiation, the client and/or server may want to negotiate the
    values of the Send Ack Vector and Send Loss Event Rate features.
 
-5. Congestion Control on Data Packets
+<span class="h2"><a name="section-5">5</a>. Congestion Control on Data Packets</span>
 
-   CCID 3 uses the congestion control mechanisms of TFRC [RFC3448].  The
-   following discussion summarizes information from [RFC3448], which
+   CCID 3 uses the congestion control mechanisms of TFRC [<a href="./rfc3448" title='"TCP Friendly Rate Control (TFRC): Protocol Specification"'>RFC3448</a>].  The
+   following discussion summarizes information from [<a href="./rfc3448" title='"TCP Friendly Rate Control (TFRC): Protocol Specification"'>RFC3448</a>], which
    should be considered normative except where specifically indicated
    otherwise.
 
@@ -265,13 +409,13 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    number of packets transmitted, weighted over the last several loss
    intervals.  This loss event rate, a round-trip time estimate, and the
    average packet size are plugged into the TCP throughput equation, as
-   specified in [RFC3448], Section 3.1.  The result is a fair transmit
+   specified in <a href="./rfc3448#section-3.1">[RFC3448], Section&nbsp;3.1</a>.  The result is a fair transmit
    rate close to what a modern TCP would achieve in the same conditions.
    CCID 3 senders are limited to this fair rate.
 
    The loss event rate itself is calculated in CCID 3 using recent loss
    interval lengths reported by the receiver.  Loss intervals are
-   precisely defined in Section 6.1.  In summary, a loss interval is up
+   precisely defined in <a href="#section-6.1">Section 6.1</a>.  In summary, a loss interval is up
    to 1 RTT of possibly lost or ECN-marked data packets, followed by an
    arbitrary number of non-dropped, non-marked data packets.  Thus, long
    loss intervals represent low congestion rates.  The CCID 3 Loss
@@ -279,13 +423,13 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
 
 
-Floyd, et al.               Standards Track                     [Page 5]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                     [Page 5]</span>
+</pre><pre class='newpage'><a name="page-6" id="page-6" href="#page-6" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
-   Intervals option is used to report loss interval lengths; see Section
-   8.6.
+   Intervals option is used to report loss interval lengths; see <a href="#section-   ">Section</a>
+   <a href="#section-   ">8.6</a>.
 
    Other Congestion Control Mechanisms
 
@@ -295,18 +439,18 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    sender uses the loss event rate to calculate its allowed sending
    rate.
 
-   [RFC3448], Section 4, specifies an initial sending rate of one packet
+   <a href="./rfc3448#section-4">[RFC3448], Section&nbsp;4</a>, specifies an initial sending rate of one packet
    per round-trip time (RTT) as follows: The sender initializes the
    allowed sending rate to one packet per second.  As soon as a feedback
    packet is received from the receiver, the sender has a measurement of
    the round-trip time and then sets the initial allowed sending rate to
    one packet per RTT.  However, while the initial TCP window used to be
-   one segment, [RFC2581] allows an initial TCP window of two segments,
-   and [RFC3390] allows an initial TCP window of three or four segments
-   (up to 4380 bytes).  [RFC3390] gives an upper bound on the initial
+   one segment, [<a href="./rfc2581" title='"TCP Congestion Control"'>RFC2581</a>] allows an initial TCP window of two segments,
+   and [<a href="./rfc3390" title='"Increasing TCP&amp;#39;s Initial Window"'>RFC3390</a>] allows an initial TCP window of three or four segments
+   (up to 4380 bytes).  [<a href="./rfc3390" title='"Increasing TCP&amp;#39;s Initial Window"'>RFC3390</a>] gives an upper bound on the initial
    window of min(4*MSS, max(2*MSS, 4380 bytes)).
 
-   Therefore, in contrast to [RFC3448], the initial CCID 3 sending rate
+   Therefore, in contrast to [<a href="./rfc3448" title='"TCP Friendly Rate Control (TFRC): Protocol Specification"'>RFC3448</a>], the initial CCID 3 sending rate
    is allowed to be at least two packets per RTT, and at most four
    packets per RTT, depending on the packet size.  The initial rate is
    only allowed to be three or four packets per RTT when, in terms of
@@ -314,13 +458,13 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
    The sender's measurement of the round-trip time uses the Elapsed Time
    and/or Timestamp Echo option contained in feedback packets, as
-   described in Section 8.2.  The Elapsed Time option is required, while
+   described in <a href="#section-8.2">Section 8.2</a>.  The Elapsed Time option is required, while
    the Timestamp Echo option is not.  The sender maintains an average
    round-trip time heavily weighted on the most recent measurements.
 
    Each DCCP-Data packet contains a sequence number.  Each DCCP-Data
-   packet also contains a window counter value, as described in Section
-   8.1.  The window counter is generally incremented by one every
+   packet also contains a window counter value, as described in <a href="#section-   ">Section</a>
+   <a href="#section-   ">8.1</a>.  The window counter is generally incremented by one every
    quarter round-trip time.  The receiver uses it as a coarse-grained
    timestamp to determine when a packet loss should be considered part
    of an existing loss interval and when it must begin a new loss
@@ -329,15 +473,15 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    Because TFRC is rate-based instead of window-based, and because
    feedback packets can be dropped in the network, the sender needs some
    mechanism for reducing its sending rate in the absence of positive
-   feedback from the receiver.  As described in Section 6, the receiver
+   feedback from the receiver.  As described in <a href="#section-6">Section 6</a>, the receiver
    sends feedback packets roughly once per round-trip time.  As
-   specified in [RFC3448], Section 4.3, the sender sets a nofeedback
+   specified in <a href="./rfc3448#section-4.3">[RFC3448], Section&nbsp;4.3</a>, the sender sets a nofeedback
 
 
 
-Floyd, et al.               Standards Track                     [Page 6]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                     [Page 6]</span>
+</pre><pre class='newpage'><a name="page-7" id="page-7" href="#page-7" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
    timer to at least four round-trip times, or to twice the interval
@@ -365,15 +509,15 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    time.  This may be less than the nominal fair rate if, for example,
    the application is sending less than its fair share.
 
-5.1.  Response to Idle and Application-Limited Periods
+<span class="h3"><a name="section-5.1">5.1</a>.  Response to Idle and Application-Limited Periods</span>
 
    One consequence of the nofeedback timer is that the sender reduces
    the allowed sending rate when the sender has been idle for a
-   significant period of time.  In [RFC3448], Section 4.4, the allowed
+   significant period of time.  In <a href="./rfc3448#section-4.4">[RFC3448], Section&nbsp;4.4</a>, the allowed
    sending rate is never reduced to fewer than two packets per round-
    trip time as the result of an idle period.  CCID 3 revises this to
-   take into account the larger initial windows allowed by [RFC3390]:
-   the allowed sending rate is never reduced to less than the [RFC3390]
+   take into account the larger initial windows allowed by [<a href="./rfc3390" title='"Increasing TCP&amp;#39;s Initial Window"'>RFC3390</a>]:
+   the allowed sending rate is never reduced to less than the [<a href="./rfc3390" title='"Increasing TCP&amp;#39;s Initial Window"'>RFC3390</a>]
    initial sending rate as the result of an idle period.  If the allowed
    sending rate is less than the initial sending rate upon entry to the
    idle period, then it will still be less than the initial sending rate
@@ -391,12 +535,12 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
 
 
-Floyd, et al.               Standards Track                     [Page 7]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                     [Page 7]</span>
+</pre><pre class='newpage'><a name="page-8" id="page-8" href="#page-8" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
-5.2.  Response to Data Dropped and Slow Receiver
+<span class="h3"><a name="section-5.2">5.2</a>.  Response to Data Dropped and Slow Receiver</span>
 
    DCCP's Data Dropped option lets a receiver declare that a packet was
    dropped at the end host before delivery to the application -- for
@@ -404,7 +548,7 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    Receiver option lets a receiver declare that it is having trouble
    keeping up with the sender's packets, although nothing has yet been
    dropped.  CCID 3 senders respond to these options as described in
-   [RFC4340], with the following further clarifications.
+   [<a href="./rfc4340" title='"Datagram Congestion Control Protocol (DCCP)"'>RFC4340</a>], with the following further clarifications.
 
    o  Drop Code 2 ("receive buffer drop").  The allowed sending rate is
       reduced by one packet per RTT for each packet newly acknowledged
@@ -415,10 +559,10 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
       respond to non-network-congestion events, such as those implied by
       Data Dropped and Slow Receiver options, by adjusting X_recv, the
       receive rate reported by the receiver in Receive Rate options (see
-      Section 8.3).  The CCID 3 sender's allowed sending rate is limited
+      <a href="#section-8.3">Section 8.3</a>).  The CCID 3 sender's allowed sending rate is limited
       to at most twice the receive rate reported by the receiver via the
       "min(..., 2*X_recv)" clause in TFRC's throughput calculations
-      ([RFC3448], Section 4.3).  When the sender receives one or more
+      (<a href="./rfc3448#section-4.3">[RFC3448], Section&nbsp;4.3</a>).  When the sender receives one or more
       Data Dropped and Slow Receiver options, the sender adjusts X_recv
       as follows:
 
@@ -429,7 +573,7 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
          Dropped and Slow Receiver options.  If the sender receives a
          Slow Receiver option, which requests that the sender not
          increase its sending rate for roughly a round-trip time
-         [RFC4340], then X_drop should be set to X_inrecv.  Similarly,
+         [<a href="./rfc4340" title='"Datagram Congestion Control Protocol (DCCP)"'>RFC4340</a>], then X_drop should be set to X_inrecv.  Similarly,
          if the sender receives a Data Dropped option indicating, for
          example, that three packets were dropped with Drop Code 2, then
          the upper bound on the sending rate will be decreased by at
@@ -447,17 +591,17 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
 
 
-Floyd, et al.               Standards Track                     [Page 8]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                     [Page 8]</span>
+</pre><pre class='newpage'><a name="page-9" id="page-9" href="#page-9" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
       the round-trip time after that, which is appropriate for this
       non-network-congestion feedback.  This procedure MUST only be used
-      for those Drop Codes not related to corruption (see [RFC4340]).
+      for those Drop Codes not related to corruption (see [<a href="./rfc4340" title='"Datagram Congestion Control Protocol (DCCP)"'>RFC4340</a>]).
       Currently, this is limited to Drop Codes 0, 1, and 2.
 
-5.3.  Packet Sizes
+<span class="h3"><a name="section-5.3">5.3</a>.  Packet Sizes</span>
 
    CCID 3 is intended for applications that use a fixed packet size, and
    that vary their sending rate in packets per second in response to
@@ -471,7 +615,7 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    The packet size s is used in the TCP throughput equation.  A CCID 3
    implementation MAY calculate s as the segment size averaged over
    multiple round trip times -- for example, over the most recent four
-   loss intervals, for loss intervals as defined in Section 6.1.
+   loss intervals, for loss intervals as defined in <a href="#section-6.1">Section 6.1</a>.
    Alternately, a CCID 3 implementation MAY use the Maximum Packet Size
    to derive s.  In this case, s is set to the Maximum Segment Size
    (MSS), the maximum size in bytes for the data segment, not including
@@ -486,14 +630,14 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    rate, then switch to large packets to take advantage of the fast
    rate.  (Preliminary simulations indicate that applications may not be
    able to increase their overall transfer rates this way, so it is not
-   clear that this manipulation will occur in practice [V03].)
+   clear that this manipulation will occur in practice [<a href="#ref-V03">V03</a>].)
 
-6.  Acknowledgements
+<span class="h2"><a name="section-6">6</a>.  Acknowledgements</span>
 
    The receiver sends a feedback packet to the sender roughly once per
    round-trip time, if the sender is sending packets that frequently.
    This rate is determined by the TFRC protocol as specified in
-   [RFC3448], Section 6.
+   <a href="./rfc3448#section-6">[RFC3448], Section&nbsp;6</a>.
 
    Each feedback packet contains an Acknowledgement Number, which equals
    the greatest valid sequence number received so far on this
@@ -503,49 +647,49 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
 
 
-Floyd, et al.               Standards Track                     [Page 9]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                     [Page 9]</span>
+</pre><pre class='newpage'><a name="page-10" id="page-10" href="#page-10" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
    1. An Elapsed Time and/or Timestamp Echo option specifying the amount
       of time elapsed since the arrival at the receiver of the packet
       whose sequence number appears in the Acknowledgement Number field.
-      These options are described in [RFC4340], Section 13.
+      These options are described in <a href="./rfc4340#section-13">[RFC4340], Section&nbsp;13</a>.
 
-   2. A Receive Rate option, defined in Section 8.3, specifying the rate
+   2. A Receive Rate option, defined in <a href="#section-8.3">Section 8.3</a>, specifying the rate
       at which data was received since the last DCCP-Ack was sent.
 
-   3. A Loss Intervals option, defined in Section 8.6, specifying the
+   3. A Loss Intervals option, defined in <a href="#section-8.6">Section 8.6</a>, specifying the
       most recent loss intervals experienced by the receiver.  (The
       definition of a loss interval is provided below.)  From Loss
       Intervals, the sender can easily calculate the loss event rate p
-      using the procedure described in [RFC3448], Section 5.4.
+      using the procedure described in <a href="./rfc3448#section-5.4">[RFC3448], Section&nbsp;5.4</a>.
 
    Acknowledgements not containing at least these three options are not
    considered feedback packets.
 
    The receiver MAY also include other options concerning the loss event
    rate, including Loss Event Rate, which gives the loss event rate
-   calculated by the receiver (Section 8.5), and DCCP's generic Ack
+   calculated by the receiver (<a href="#section-8.5">Section 8.5</a>), and DCCP's generic Ack
    Vector option, which reports the specific sequence numbers of any
-   lost or marked packets ([RFC4340], Section 11.4).  Ack Vector is not
+   lost or marked packets (<a href="./rfc4340#section-11.4">[RFC4340], Section&nbsp;11.4</a>).  Ack Vector is not
    required by CCID 3's congestion control mechanisms: the Loss
    Intervals option provides all the information needed to manage the
    transmit rate and probabilistically verify receiver feedback.
    However, Ack Vector may be useful for applications that need to
    determine exactly which packets were lost.  The receiver MAY also
    include other acknowledgement-related options, such as DCCP's Data
-   Dropped option ([RFC4340], Section 11.7).
+   Dropped option (<a href="./rfc4340#section-11.7">[RFC4340], Section&nbsp;11.7</a>).
 
    If the HC-Receiver is also sending data packets to the HC-Sender,
    then it MAY piggyback acknowledgement information on those data
    packets more frequently than TFRC's specified acknowledgement rate
    allows.
 
-6.1.  Loss Interval Definition
+<span class="h3"><a name="section-6.1">6.1</a>.  Loss Interval Definition</span>
 
-   As described in [RFC3448], Section 5.2, a loss interval begins with a
+   As described in <a href="./rfc3448#section-5.2">[RFC3448], Section&nbsp;5.2</a>, a loss interval begins with a
    lost or ECN-marked data packet; continues with at most one round-trip
    time's worth of packets that may or may not be lost or marked; and
    completes with an arbitrarily long series of non-dropped, non-marked
@@ -559,13 +703,13 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
 
 
-Floyd, et al.               Standards Track                    [Page 10]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                    [Page 10]</span>
+</pre><pre class='newpage'><a name="page-11" id="page-11" href="#page-11" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
            Lossy Part
-            <= 1 RTT   __________ Lossless Part __________
+            &lt;= 1 RTT   __________ Lossless Part __________
           /          \/                                   \
           *----*--*--*-------------------------------------
           ^    ^  ^  ^
@@ -575,16 +719,16 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    first interval below:
 
           Lossy Part   Lossy Part
-           <= 1 RTT     <= 1 RTT   _____ Lossless Part _____
+           &lt;= 1 RTT     &lt;= 1 RTT   _____ Lossless Part _____
          /          \/           \/                         \
          *----*--*--***--------*-*---------------------------
          ^    ^  ^  ^^^        ^ ^
          \_ Int. 1 _/\_____________ Interval 2 _____________/
 
-   As in [RFC3448], Section 5.2, the length of the lossy part MUST be
+   As in <a href="./rfc3448#section-5.2">[RFC3448], Section&nbsp;5.2</a>, the length of the lossy part MUST be
    less than or equal to 1 RTT.  CCID 3 uses window counter values, not
    receive times, to determine whether multiple packets occurred in the
-   same RTT and thus belong to the same loss event; see Section 10.2.  A
+   same RTT and thus belong to the same loss event; see <a href="#section-10.2">Section 10.2</a>.  A
    loss interval whose lossy part lasts for more than 1 RTT, or whose
    lossless part contains a dropped or marked data packet, is invalid.
 
@@ -593,10 +737,10 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    to NDUPACK of the most recent sequence numbers (including the
    sequence numbers of any holes) might temporarily not be part of any
    loss interval while the implementation waits to see whether a hole
-   will be filled.  See [RFC3448], Section 5.1, and [RFC2581], Section
-   3.2, for further discussion of NDUPACK.
+   will be filled.  See <a href="./rfc3448#section-5.1">[RFC3448], Section&nbsp;5.1</a>, and [<a href="./rfc2581" title='"TCP Congestion Control"'>RFC2581</a>], <a href="#section-   ">Section</a>
+   <a href="#section-   ">3.2</a>, for further discussion of NDUPACK.
 
-   As specified by [RFC3448], Section 5, all loss intervals except the
+   As specified by <a href="./rfc3448#section-5">[RFC3448], Section&nbsp;5</a>, all loss intervals except the
    first begin with a lost or marked data packet, and all loss intervals
    are as long as possible, subject to the validity constraints above.
 
@@ -607,22 +751,22 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    the absence of better information, a receiver MUST conservatively
    assume that every lost packet was a data packet and thus must occur
    in some lossy part.  DCCP's NDP Count option can help the receiver
-   determine whether a particular packet contained data; see [RFC4340],
-   Section 7.7.
+   determine whether a particular packet contained data; see <a href="./rfc4340#section-7.7">[RFC4340],
+   Section&nbsp;7.7</a>.
 
 
 
 
 
 
-Floyd, et al.               Standards Track                    [Page 11]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                    [Page 11]</span>
+</pre><pre class='newpage'><a name="page-12" id="page-12" href="#page-12" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
-6.1.1.  Loss Interval Lengths
+<span class="h4"><a name="section-6.1.1">6.1.1</a>.  Loss Interval Lengths</span>
 
-   [RFC3448] defines the TFRC congestion control mechanism in terms of a
+   [<a name="ref-RFC3448" id="ref-RFC3448">RFC3448</a>] defines the TFRC congestion control mechanism in terms of a
    one-way transfer of data, with data packets going from the sender to
    the receiver and feedback packets going from the receiver back to the
    sender.  However, CCID 3 applies in a context of two half-
@@ -646,7 +790,7 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    there is no preceding interval, then the predecessor to the half-
    connection's initial sequence number).  The interval's data length,
    however, is the number used in TFRC's loss event rate calculation, as
-   defined in [RFC3448], Section 5, and is calculated as follows.
+   defined in <a href="./rfc3448#section-5">[RFC3448], Section&nbsp;5</a>, and is calculated as follows.
 
    For all loss intervals except the first, the data length equals the
    sequence length minus the number of non-data packets the sender
@@ -663,7 +807,7 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    Count option.
 
    The first loss interval's data length is undefined until the first
-   loss event.  [RFC3448], Section 6.3.1 specifies how the first loss
+   loss event.  <a href="./rfc3448#section-6.3.1">[RFC3448], Section&nbsp;6.3.1</a> specifies how the first loss
    interval's data length is calculated once the first loss event has
    occurred; this calculation uses X_recv, the most recent receive rate,
    as input.  Until this first loss event, the loss event rate is zero,
@@ -671,9 +815,9 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
 
 
-Floyd, et al.               Standards Track                    [Page 12]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                    [Page 12]</span>
+</pre><pre class='newpage'><a name="page-13" id="page-13" href="#page-13" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
    as is the data length reported for the interval in the Loss Intervals
@@ -694,15 +838,15 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    with the previous loss interval, resulting in a larger allowed
    transmit rate.
 
-6.2.  Congestion Control on Acknowledgements
+<span class="h3"><a name="section-6.2">6.2</a>.  Congestion Control on Acknowledgements</span>
 
    The rate and timing for generating acknowledgements is determined by
-   the TFRC algorithm ([RFC3448], Section 6).  The sending rate for
+   the TFRC algorithm (<a href="./rfc3448#section-6">[RFC3448], Section&nbsp;6</a>).  The sending rate for
    acknowledgements is relatively low -- roughly once per round-trip
    time -- so there is no need for explicit congestion control on
    acknowledgements.
 
-6.3.  Acknowledgements of Acknowledgements
+<span class="h3"><a name="section-6.3">6.3</a>.  Acknowledgements of Acknowledgements</span>
 
    TFRC acknowledgements don't generally need to be reliable, so the
    sender generally need not acknowledge the receiver's
@@ -727,19 +871,19 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
 
 
-Floyd, et al.               Standards Track                    [Page 13]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                    [Page 13]</span>
+</pre><pre class='newpage'><a name="page-14" id="page-14" href="#page-14" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
    Loss Intervals option is bounded in size (and receiver state), so
    acks-of-acks are not required.
 
-6.4.  Determining Quiescence
+<span class="h3"><a name="section-6.4">6.4</a>.  Determining Quiescence</span>
 
    This section describes how a CCID 3 receiver determines that the
    corresponding sender is not sending any data and therefore has gone
-   quiescent.  See [RFC4340], Section 11.1, for general information on
+   quiescent.  See <a href="./rfc4340#section-11.1">[RFC4340], Section&nbsp;11.1</a>, for general information on
    quiescence.
 
    Let T equal the greater of 0.2 seconds and two round-trip times.  (A
@@ -748,20 +892,20 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    has gone quiescent after T seconds have passed without receiving any
    additional data from the sender.
 
-7.  Explicit Congestion Notification
+<span class="h2"><a name="section-7">7</a>.  Explicit Congestion Notification</span>
 
-   CCID 3 supports Explicit Congestion Notification (ECN) [RFC3168].  In
+   CCID 3 supports Explicit Congestion Notification (ECN) [<a href="./rfc3168" title='"The Addition of Explicit Congestion Notification (ECN) to IP"'>RFC3168</a>].  In
    the typical case of an ECN-capable half-connection (where the
    receiver's ECN Incapable feature is set to zero), the sender will use
-   the ECN Nonce for its data packets, as specified in [RFC4340],
-   Section 12.2.  Information about the ECN Nonce MUST be returned by
+   the ECN Nonce for its data packets, as specified in <a href="./rfc4340#section-12.2">[RFC4340],
+   Section&nbsp;12.2</a>.  Information about the ECN Nonce MUST be returned by
    the receiver using the Loss Intervals option, and any Ack Vector
    options MUST include the ECN Nonce Sum.  The sender MAY maintain a
    table with the ECN nonce sum for each packet and use this information
    to probabilistically verify the ECN nonce sums returned in Loss
-   Intervals or Ack Vector options.  Section 9 describes this further.
+   Intervals or Ack Vector options.  <a href="#section-9">Section 9</a> describes this further.
 
-8.  Options and Features
+<span class="h2"><a name="section-8">8</a>.  Options and Features</span>
 
    CCID 3 can make use of DCCP's Ack Vector, Timestamp, Timestamp Echo,
    and Elapsed Time options, and its Send Ack Vector and ECN Incapable
@@ -783,9 +927,9 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
 
 
-Floyd, et al.               Standards Track                    [Page 14]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                    [Page 14]</span>
+</pre><pre class='newpage'><a name="page-15" id="page-15" href="#page-15" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
    The "DCCP-Data?" column indicates that all currently defined CCID 3-
@@ -803,24 +947,24 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
                    Table 2: DCCP CCID 3 Feature Numbers
 
-   The column meanings are described in [RFC4340], Table 4.  "Rec'n
+   The column meanings are described in [<a href="./rfc4340" title='"Datagram Congestion Control Protocol (DCCP)"'>RFC4340</a>], Table 4.  "Rec'n
    Rule" defines the feature's reconciliation rule, where "SP" means
    server-priority.  "Req'd" specifies whether every CCID 3
    implementation MUST understand a feature; Send Loss Event Rate is
-   optional, in that it behaves like an extension ([RFC4340], Section
-   15).
+   optional, in that it behaves like an extension ([<a href="./rfc4340" title='"Datagram Congestion Control Protocol (DCCP)"'>RFC4340</a>], <a href="#section-   ">Section</a>
+   <a href="#section-   ">15</a>).
 
-8.1.  Window Counter Value
+<span class="h3"><a name="section-8.1">8.1</a>.  Window Counter Value</span>
 
    The data sender stores a 4-bit window counter value in the DCCP
    generic header's CCVal field on every data packet it sends.  This
    value is set to 0 at the beginning of the transmission and generally
    increased by 1 every quarter of a round-trip time, as described in
-   [RFC3448], Section 3.2.1.  Window counters use circular arithmetic
-   modulo 16 for all operations, including comparisons; see [RFC4340],
-   Section 3.1, for more information on circular arithmetic.  For
+   <a href="./rfc3448#section-3.2.1">[RFC3448], Section&nbsp;3.2.1</a>.  Window counters use circular arithmetic
+   modulo 16 for all operations, including comparisons; see <a href="./rfc4340#section-3.1">[RFC4340],
+   Section&nbsp;3.1</a>, for more information on circular arithmetic.  For
    reference, the DCCP generic header is as follows.  (The diagram is
-   repeated from [RFC4340], Section 5.1, which also shows the generic
+   repeated from <a href="./rfc4340#section-5.1">[RFC4340], Section&nbsp;5.1</a>, which also shows the generic
    header with a 24-bit Sequence Number field.)
 
      0                   1                   2                   3
@@ -839,9 +983,9 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
 
 
-Floyd, et al.               Standards Track                    [Page 15]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                    [Page 15]</span>
+</pre><pre class='newpage'><a name="page-16" id="page-16" href="#page-16" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
    The CCVal field has enough space to express 4 round-trip times at
@@ -858,7 +1002,7 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    like this:
 
       Let quarter_RTTs = floor((current_time - last_WC_time) / (RTT/4)).
-      If quarter_RTTs > 0, then:
+      If quarter_RTTs &gt; 0, then:
          Set last_WC := (last_WC + min(quarter_RTTs, 5)) mod 16.
          Set last_WC_time := current_time.
       Set the packet header's CCVal field to last_WC.
@@ -888,16 +1032,16 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    Concretely, say that the following packets arrived:
 
    Time:       T1  T2  T3 T4  T5           T6  T7   T8  T9
-          ------*---*---*-*----*------------*---*----*--*---->
+          ------*---*---*-*----*------------*---*----*--*----&gt;
    CCVal:      K-1 K-1  K K   K+1          K+3 K+4  K+3 K+4
 
 
 
 
 
-Floyd, et al.               Standards Track                    [Page 16]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                    [Page 16]</span>
+</pre><pre class='newpage'><a name="page-17" id="page-17" href="#page-17" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
    Then T7 - T3, the difference between the receive times of the first
@@ -910,7 +1054,7 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    by 5.  Explicit RTT measurement techniques, such as Timestamp and
    Timestamp Echo, should be used in that case.
 
-8.2.  Elapsed Time Options
+<span class="h3"><a name="section-8.2">8.2</a>.  Elapsed Time Options</span>
 
    The data receiver MUST include an elapsed time value on every
    required acknowledgement.  This helps the sender distinguish between
@@ -922,9 +1066,9 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    Ack was sent) included a Timestamp option, then the receiver SHOULD
    include the corresponding Timestamp Echo option, with Elapsed Time
    value, as well.  All of these option types are defined in the main
-   DCCP specification [RFC4340].
+   DCCP specification [<a href="./rfc4340" title='"Datagram Congestion Control Protocol (DCCP)"'>RFC4340</a>].
 
-8.3.  Receive Rate Option
+<span class="h3"><a name="section-8.3">8.3</a>.  Receive Rate Option</span>
 
    +--------+--------+--------+--------+--------+--------+
    |11000010|00000110|            Receive Rate           |
@@ -938,7 +1082,7 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    t to the larger of the estimated round-trip time and the time since
    the last Receive Rate option was sent.  (Received data packets'
    window counters can be used to produce a suitable RTT estimate, as
-   described in Section 8.1.)  The receive rate then equals the number
+   described in <a href="#section-8.1">Section 8.1</a>.)  The receive rate then equals the number
    of data bytes received in the most recent t seconds, divided by t.
 
    Receive Rate options MUST NOT be sent on DCCP-Data packets, and any
@@ -951,12 +1095,12 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
 
 
-Floyd, et al.               Standards Track                    [Page 17]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                    [Page 17]</span>
+</pre><pre class='newpage'><a name="page-18" id="page-18" href="#page-18" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
-8.4.  Send Loss Event Rate Feature
+<span class="h3"><a name="section-8.4">8.4</a>.  Send Loss Event Rate Feature</span>
 
    The Send Loss Event Rate feature lets CCID 3 endpoints negotiate
    whether the receiver MUST provide Loss Event Rate options on its
@@ -971,7 +1115,7 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    Event Rate/B is zero.  Values of two or more are reserved.  A CCID 3
    half-connection starts with Send Loss Event Rate equal to zero.
 
-8.5.  Loss Event Rate Option
+<span class="h3"><a name="section-8.5">8.5</a>.  Loss Event Rate Option</span>
 
    +--------+--------+--------+--------+--------+--------+
    |11000000|00000110|          Loss Event Rate          |
@@ -986,18 +1130,18 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    loss event has exactly one data packet loss, the loss event rate is
    the same as the data packet drop rate.
 
-   See [RFC3448], Section 5, for a normative calculation of loss event
+   See <a href="./rfc3448#section-5">[RFC3448], Section&nbsp;5</a>, for a normative calculation of loss event
    rate.  Before any losses have occurred, when the loss event rate is
    zero, the Loss Event Rate option value is set to
    "11111111111111111111111111111111" in binary (or, equivalently, to
    2^32 - 1).  The loss event rate calculation uses loss interval data
-   lengths, as defined in Section 6.1.1.
+   lengths, as defined in <a href="#section-6.1.1">Section 6.1.1</a>.
 
    Loss Event Rate options MUST NOT be sent on DCCP-Data packets, and
    any Loss Event Rate options on received DCCP-Data packets MUST be
    ignored.
 
-8.6.  Loss Intervals Option
+<span class="h3"><a name="section-8.6">8.6</a>.  Loss Intervals Option</span>
 
    +--------+--------+--------+--------...--------+--------+---
    |11000001| Length |  Skip  |   Loss Interval   | More Loss
@@ -1007,9 +1151,9 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
 
 
-Floyd, et al.               Standards Track                    [Page 18]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                    [Page 18]</span>
+</pre><pre class='newpage'><a name="page-19" id="page-19" href="#page-19" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
    Each 9-byte Loss Interval contains three fields, as follows:
@@ -1022,7 +1166,7 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
           3 bytes            3 bytes             3 bytes
 
    The receiver reports its observed loss intervals using a Loss
-   Intervals option.  Section 6.1 defines loss intervals.  This option
+   Intervals option.  <a href="#section-6.1">Section 6.1</a> defines loss intervals.  This option
    MUST be sent by the data receiver on all required acknowledgements.
    The option reports up to 28 loss intervals seen by the receiver,
    although TFRC currently uses at most the latest 9 of these.  This
@@ -1044,7 +1188,7 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    Loss Intervals options MUST NOT be sent on DCCP-Data packets, and any
    Loss Intervals options on received DCCP-Data packets MUST be ignored.
 
-8.6.1.  Option Details
+<span class="h4"><a name="section-8.6.1">8.6.1</a>.  Option Details</span>
 
    The Loss Intervals option contains information about one to 28
    consecutive loss intervals, always including the most recent loss
@@ -1063,13 +1207,13 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
 
 
-Floyd, et al.               Standards Track                    [Page 19]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                    [Page 19]</span>
+</pre><pre class='newpage'><a name="page-20" id="page-20" href="#page-20" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
-   The NINTERVAL parameter is equal to "n" as defined in [RFC3448],
-   Section 5.4.
+   The NINTERVAL parameter is equal to "n" as defined in <a href="./rfc3448#section-5.4">[RFC3448],
+   Section&nbsp;5.4</a>.
 
    Loss interval sequence numbers are delta encoded starting from the
    Acknowledgement Number.  Therefore, Loss Intervals options MUST NOT
@@ -1109,9 +1253,9 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    contribute to the ECN Nonce Echo.
 
    Finally, Data Length, a 24-bit number, specifies the loss interval's
-   data length, as defined in Section 6.1.1.
+   data length, as defined in <a href="#section-6.1.1">Section 6.1.1</a>.
 
-8.6.2.  Example
+<span class="h4"><a name="section-8.6.2">8.6.2</a>.  Example</span>
 
    Consider the following sequence of packets, where "-" represents a
    safely delivered packet and "*" represents a lost or marked packet.
@@ -1119,9 +1263,9 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
 
 
-Floyd, et al.               Standards Track                    [Page 20]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                    [Page 20]</span>
+</pre><pre class='newpage'><a name="page-21" id="page-21" href="#page-21" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
    Sequence
@@ -1175,9 +1319,9 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
 
 
-Floyd, et al.               Standards Track                    [Page 21]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                    [Page 21]</span>
+</pre><pre class='newpage'><a name="page-22" id="page-22" href="#page-22" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
    0,0,8, 0,0,1, 0,0,8
@@ -1192,7 +1336,7 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
        connection; otherwise, a data length greater than the sequence
        length would be invalid.)
 
-9.  Verifying Congestion Control Compliance with ECN
+<span class="h2"><a name="section-9">9</a>.  Verifying Congestion Control Compliance with ECN</span>
 
    The sender can use Loss Intervals options' ECN Nonce Echoes (and
    possibly any Ack Vectors' ECN Nonce Echoes) to probabilistically
@@ -1204,11 +1348,11 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    Vector information.  This is not as robust or non-intrusive as the
    verification provided by the ECN Nonce, however.
 
-9.1.  Verifying the ECN Nonce Echo
+<span class="h3"><a name="section-9.1">9.1</a>.  Verifying the ECN Nonce Echo</span>
 
    To verify the ECN Nonce Echo included with a Loss Intervals option,
    the sender maintains a table with the ECN nonce sum for each data
-   packet.  As defined in [RFC3540], the nonce sum for sequence number S
+   packet.  As defined in [<a href="./rfc3540" title='"Robust Explicit Congestion Notification (ECN) Signaling with Nonces"'>RFC3540</a>], the nonce sum for sequence number S
    is the one-bit sum (exclusive-or, or parity) of data packet nonces
    over the sequence number range [I,S], where I is the initial sequence
    number.  Let NonceSum(S) represent this nonce sum for sequence number
@@ -1231,9 +1375,9 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
 
 
-Floyd, et al.               Standards Track                    [Page 22]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                    [Page 22]</span>
+</pre><pre class='newpage'><a name="page-23" id="page-23" href="#page-23" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
    received non-marked; the sender just adds up the nonces for those
@@ -1251,7 +1395,7 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    ECN Nonce Echoes for data packets only.  Thus, different nonce sum
    tables are required to verify the two options.
 
-9.2.  Verifying the Reported Loss Intervals and Loss Event Rate
+<span class="h3"><a name="section-9.2">9.2</a>.  Verifying the Reported Loss Intervals and Loss Event Rate</span>
 
    Besides probabilistically verifying the ECN Nonce Echoes reported by
    the receiver, the sender may also verify the loss intervals and any
@@ -1276,9 +1420,9 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    the loss event rate.  These kinds of differences SHOULD NOT be
    misinterpreted as attempted receiver misbehavior.
 
-10.  Implementation Issues
+<span class="h2"><a name="section-10">10</a>.  Implementation Issues</span>
 
-10.1.  Timestamp Usage
+<span class="h3"><a name="section-10.1">10.1</a>.  Timestamp Usage</span>
 
    CCID 3 data packets need not carry Timestamp options.  The sender can
    store the times at which recent packets were sent; the
@@ -1287,9 +1431,9 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
 
 
-Floyd, et al.               Standards Track                    [Page 23]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                    [Page 23]</span>
+</pre><pre class='newpage'><a name="page-24" id="page-24" href="#page-24" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
    compute the round trip time.  Alternatively, the sender MAY include
@@ -1298,7 +1442,7 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    the sender to calculate round-trip times without storing sent
    packets' timestamps at all.
 
-10.2.  Determining Loss Events at the Receiver
+<span class="h3"><a name="section-10.2">10.2</a>.  Determining Loss Events at the Receiver</span>
 
    The window counter is used by the receiver to determine whether
    multiple lost packets belong to the same loss event.  The sender
@@ -1307,10 +1451,10 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    counter to determine when two lost packets belong to the same loss
    event.
 
-   [RFC3448], Section 3.2.1 specifies that each data packet contains a
+   <a href="./rfc3448#section-3.2.1">[RFC3448], Section&nbsp;3.2.1</a> specifies that each data packet contains a
    timestamp and gives as an alternative implementation a "timestamp"
    that is incremented every quarter of an RTT, as is the window counter
-   in CCID 3.  However, [RFC3448], Section 5.2 on "Translation from Loss
+   in CCID 3.  However, <a href="./rfc3448#section-5.2">[RFC3448], Section&nbsp;5.2</a> on "Translation from Loss
    History to Loss Events" is written in terms of timestamps, not in
    terms of window counters.  In this section, we give a procedure for
    the translation from loss history to loss events that is explicitly
@@ -1318,19 +1462,19 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
    To determine whether two lost packets with sequence numbers X and Y
    belong to different loss events, the receiver proceeds as follows.
-   Assume Y > X in circular sequence space.
+   Assume Y &gt; X in circular sequence space.
 
    o  Let X_prev be the greatest valid sequence number received with
-      X_prev < X.
+      X_prev &lt; X.
 
    o  Let Y_prev be the greatest valid sequence number received with
-      Y_prev < Y.
+      Y_prev &lt; Y.
 
    o  Given a sequence number N, let C(N) be the window counter value
       associated with that packet.
 
    o  Packets X and Y belong to different loss events if there exists a
-      packet with sequence number S so that X_prev < S <= Y_prev, and
+      packet with sequence number S so that X_prev &lt; S &lt;= Y_prev, and
       the distance from C(X_prev) to C(S) is greater than 4.  (The
       distance is the number D so that C(X_prev) + D = C(S) (mod
       WCTRMAX), where WCTRMAX is the maximum value for the window
@@ -1343,9 +1487,9 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
 
 
-Floyd, et al.               Standards Track                    [Page 24]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                    [Page 24]</span>
+</pre><pre class='newpage'><a name="page-25" id="page-25" href="#page-25" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
       window counter space wrapped completely between X and Y.  When
@@ -1386,22 +1530,22 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    attempting to verify that a flow used conforming end-to-end
    congestion control.
 
-10.3.  Sending Feedback Packets
+<span class="h3"><a name="section-10.3">10.3</a>.  Sending Feedback Packets</span>
 
-   [RFC3448], Sections 6.1 and 6.2 specify that the TFRC receiver must
+   [<a href="./rfc3448" title='"TCP Friendly Rate Control (TFRC): Protocol Specification"'>RFC3448</a>], Sections <a href="#section-6.1">6.1</a> and <a href="#section-6.2">6.2</a> specify that the TFRC receiver must
    send a feedback packet when a newly calculated loss event rate p is
    greater than its previous value.  CCID 3 follows this rule.
 
-   In addition, [RFC3448], Section 6.2, specifies that the receiver use
+   In addition, <a href="./rfc3448#section-6.2">[RFC3448], Section&nbsp;6.2</a>, specifies that the receiver use
    a feedback timer to decide when to send additional feedback packets.
    If the feedback timer expires and data packets have been received
    since the previous feedback was sent, then the receiver sends a
 
 
 
-Floyd, et al.               Standards Track                    [Page 25]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                    [Page 25]</span>
+</pre><pre class='newpage'><a name="page-26" id="page-26" href="#page-26" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
    feedback packet.  When the feedback timer expires, the receiver
@@ -1455,9 +1599,9 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
 
 
-Floyd, et al.               Standards Track                    [Page 26]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                    [Page 26]</span>
+</pre><pre class='newpage'><a name="page-27" id="page-27" href="#page-27" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
            3:  Feedback message B is sent.
@@ -1489,15 +1633,15 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
    For implementors who wish to implement a feedback timer for the data
    receiver, we suggest estimating the round-trip time from the most
-   recent data packet, as described in Section 8.1.  We note that this
+   recent data packet, as described in <a href="#section-8.1">Section 8.1</a>.  We note that this
    procedure does not work when the inter-packet sending times are
    greater than the RTT.
 
-11.  Security Considerations
+<span class="h2"><a name="section-11">11</a>.  Security Considerations</span>
 
-   Security considerations for DCCP have been discussed in [RFC4340],
+   Security considerations for DCCP have been discussed in [<a href="./rfc4340" title='"Datagram Congestion Control Protocol (DCCP)"'>RFC4340</a>],
    and security considerations for TFRC have been discussed in
-   [RFC3448], Section 9.  The security considerations for TFRC include
+   <a href="./rfc3448#section-9">[RFC3448], Section&nbsp;9</a>.  The security considerations for TFRC include
    the need to protect against spoofed feedback and the need to protect
    the congestion control mechanisms against incorrect information from
    the receiver.
@@ -1505,35 +1649,35 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    In this document, we have extensively discussed the mechanisms the
    sender can use to verify the information sent by the receiver.  When
    ECN is used, the receiver returns ECN Nonce information to the
-   sender.  When ECN is not used, then, as Section 9 shows, the sender
+   sender.  When ECN is not used, then, as <a href="#section-9">Section 9</a> shows, the sender
    could still use various techniques that might catch the receiver in
 
 
 
 
-Floyd, et al.               Standards Track                    [Page 27]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                    [Page 27]</span>
+</pre><pre class='newpage'><a name="page-28" id="page-28" href="#page-28" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
    an error in reporting congestion, but this is not as robust or non-
    intrusive as the verification provided by the ECN Nonce.
 
-12.  IANA Considerations
+<span class="h2"><a name="section-12">12</a>.  IANA Considerations</span>
 
    This specification defines the value 3 in the DCCP CCID namespace
-   managed by IANA.  This assignment is also mentioned in [RFC4340].
+   managed by IANA.  This assignment is also mentioned in [<a href="./rfc4340" title='"Datagram Congestion Control Protocol (DCCP)"'>RFC4340</a>].
 
    CCID 3 also introduces three sets of numbers whose values should be
    allocated by IANA; namely, CCID 3-specific Reset Codes, option types,
    and feature numbers.  These ranges will prevent any future CCID 3-
    specific allocations from polluting DCCP's corresponding global
-   namespaces; see [RFC4340], Section 10.3.  However, we note that this
+   namespaces; see <a href="./rfc4340#section-10.3">[RFC4340], Section&nbsp;10.3</a>.  However, we note that this
    document makes no particular allocations from the Reset Code range,
-   except for experimental and testing use [RFC3692].  We refer to the
-   Standards Action policy outlined in [RFC2434].
+   except for experimental and testing use [<a href="./rfc3692" title='"Assigning Experimental and Testing Numbers Considered Useful"'>RFC3692</a>].  We refer to the
+   Standards Action policy outlined in [<a href="./rfc2434" title='"Guidelines for Writing an IANA Considerations Section in RFCs"'>RFC2434</a>].
 
-12.1.  Reset Codes
+<span class="h3"><a name="section-12.1">12.1</a>.  Reset Codes</span>
 
    Each entry in the DCCP CCID 3 Reset Code registry contains a CCID 3-
    specific Reset Code, which is a number in the range 128-255; a short
@@ -1544,13 +1688,13 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    allocated with the Standards Action policy, which requires IESG
    review and approval and standards-track IETF RFC publication.
 
-12.2.  Option Types
+<span class="h3"><a name="section-12.2">12.2</a>.  Option Types</span>
 
    Each entry in the DCCP CCID 3 option type registry contains a CCID
    3-specific option type, which is a number in the range 128-255; the
    name of the option, such as "Loss Intervals"; and a reference to the
    RFC defining the option type.  The registry is initially populated
-   using the values in Table 1, in Section 8.  This document allocates
+   using the values in Table 1, in <a href="#section-8">Section 8</a>.  This document allocates
    option types 192-194, and option types 184-190 and 248-254 are
    permanently reserved for experimental and testing use.  The remaining
    option types -- 128-183, 191, 195-247, and 255 -- are currently
@@ -1558,7 +1702,7 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    which requires IESG review and approval and standards-track IETF RFC
    publication.
 
-12.3.  Feature Numbers
+<span class="h3"><a name="section-12.3">12.3</a>.  Feature Numbers</span>
 
    Each entry in the DCCP CCID 3 feature number registry contains a CCID
    3-specific feature number, which is a number in the range 128-255;
@@ -1567,12 +1711,12 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
 
 
-Floyd, et al.               Standards Track                    [Page 28]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                    [Page 28]</span>
+</pre><pre class='newpage'><a name="page-29" id="page-29" href="#page-29" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
-   initially populated using the values in Table 2, in Section 8.  This
+   initially populated using the values in Table 2, in <a href="#section-8">Section 8</a>.  This
    document allocates feature number 192, and feature numbers 184-190
    and 248-254 are permanently reserved for experimental and testing
    use.  The remaining feature numbers -- 128-183, 191, 193-247, and 255
@@ -1580,7 +1724,7 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
    Action policy, which requires IESG review and approval and
    standards-track IETF RFC publication.
 
-13.  Thanks
+<span class="h2"><a name="section-13">13</a>.  Thanks</span>
 
    We thank Mark Handley for his help in defining CCID 3.  We also thank
    Mark Allman, Aaron Falk, Ladan Gharai, Sara Karlberg, Greg Minshall,
@@ -1623,19 +1767,19 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
 
 
-Floyd, et al.               Standards Track                    [Page 29]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                    [Page 29]</span>
+</pre><pre class='newpage'><a name="page-30" id="page-30" href="#page-30" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
-A.  Appendix: Possible Future Changes to CCID 3
+<span class="h1"><a name="appendix-A">A</a>.  Appendix: Possible Future Changes to CCID 3</span>
 
    There are a number of cases where the behavior of TFRC as specified
-   in [RFC3448] does not match the desires of possible users of DCCP.
+   in [<a href="./rfc3448" title='"TCP Friendly Rate Control (TFRC): Protocol Specification"'>RFC3448</a>] does not match the desires of possible users of DCCP.
    These include the following:
 
    1. The initial sending rate of at most four packets per RTT, as
-      specified in [RFC3390].
+      specified in [<a href="./rfc3390" title='"Increasing TCP&amp;#39;s Initial Window"'>RFC3390</a>].
 
    2. The receiver's sending of an acknowledgement for every data packet
       received, when the receiver receives at a rate less than one
@@ -1650,9 +1794,9 @@ A.  Appendix: Possible Future Changes to CCID 3
       period of four round-trip times (possibly down to the initial
       sending rate of two to four packets per round-trip time).
 
-   5. The response function used in [RFC3448], Section 3.1, which does
+   5. The response function used in <a href="./rfc3448#section-3.1">[RFC3448], Section&nbsp;3.1</a>, which does
       not closely match the behavior of TCP in environments with high
-      packet drop rates [RFC3714].
+      packet drop rates [<a href="./rfc3714" title='"IAB Concerns Regarding Congestion Control for Voice Traffic in the Internet"'>RFC3714</a>].
 
    One suggestion for higher initial sending rates is an initial sending
    rate of up to eight small packets per RTT, when the total packet
@@ -1661,7 +1805,7 @@ A.  Appendix: Possible Future Changes to CCID 3
    back-to-back as they would be in TCP, an initial sending rate of
    eight small packets per RTT with TFRC-based congestion control would
    be considerably milder than the impact of an initial window of eight
-   small packets sent back-to-back in TCP.  As Section 5.1 describes,
+   small packets sent back-to-back in TCP.  As <a href="#section-5.1">Section 5.1</a> describes,
    the initial sending rate also serves as a lower bound for reductions
    of the allowed sending rate during an idle period.
 
@@ -1679,9 +1823,9 @@ A.  Appendix: Possible Future Changes to CCID 3
 
 
 
-Floyd, et al.               Standards Track                    [Page 30]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                    [Page 30]</span>
+</pre><pre class='newpage'><a name="page-31" id="page-31" href="#page-31" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
    Research and engineering will be needed to investigate the pros and
@@ -1692,40 +1836,40 @@ RFC 4342                    DCCP CCID3 TFRC                   March 2006
 
 Normative References
 
-   [RFC2119]      Bradner, S., "Key words for use in RFCs to Indicate
-                  Requirement Levels", BCP 14, RFC 2119, March 1997.
+   [<a name="ref-RFC2119" id="ref-RFC2119">RFC2119</a>]      Bradner, S., "Key words for use in RFCs to Indicate
+                  Requirement Levels", <a href="./bcp14">BCP 14</a>, <a href="./rfc2119">RFC 2119</a>, March 1997.
 
-   [RFC2434]      Narten, T. and H. Alvestrand, "Guidelines for Writing
-                  an IANA Considerations Section in RFCs", BCP 26, RFC
-                  2434, October 1998.
+   [<a name="ref-RFC2434" id="ref-RFC2434">RFC2434</a>]      Narten, T. and H. Alvestrand, "Guidelines for Writing
+                  an IANA Considerations Section in RFCs", <a href="./bcp26">BCP 26</a>, <a href="./rfc2434">RFC</a>
+                  <a href="./rfc2434">2434</a>, October 1998.
 
-   [RFC2581]      Allman, M., Paxson, V., and W. Stevens, "TCP
-                  Congestion Control", RFC 2581, April 1999.
+   [<a name="ref-RFC2581" id="ref-RFC2581">RFC2581</a>]      Allman, M., Paxson, V., and W. Stevens, "TCP
+                  Congestion Control", <a href="./rfc2581">RFC 2581</a>, April 1999.
 
-   [RFC3168]      Ramakrishnan, K., Floyd, S., and D. Black, "The
+   [<a name="ref-RFC3168" id="ref-RFC3168">RFC3168</a>]      Ramakrishnan, K., Floyd, S., and D. Black, "The
                   Addition of Explicit Congestion Notification (ECN) to
-                  IP", RFC 3168, September 2001.
+                  IP", <a href="./rfc3168">RFC 3168</a>, September 2001.
 
-   [RFC3390]      Allman, M., Floyd, S., and C. Partridge, "Increasing
-                  TCP's Initial Window", RFC 3390, October 2002.
+   [<a name="ref-RFC3390" id="ref-RFC3390">RFC3390</a>]      Allman, M., Floyd, S., and C. Partridge, "Increasing
+                  TCP's Initial Window", <a href="./rfc3390">RFC 3390</a>, October 2002.
 
-   [RFC3448]      Handley, M., Floyd, S., Padhye, J., and J. Widmer,
+   [<a name="ref-RFC3448" id="ref-RFC3448">RFC3448</a>]      Handley, M., Floyd, S., Padhye, J., and J. Widmer,
                   "TCP Friendly Rate Control (TFRC): Protocol
-                  Specification", RFC 3448, January 2003.
+                  Specification", <a href="./rfc3448">RFC 3448</a>, January 2003.
 
-   [RFC3692]      Narten, T., "Assigning Experimental and Testing
-                  Numbers Considered Useful", BCP 82, RFC 3692, January
+   [<a name="ref-RFC3692" id="ref-RFC3692">RFC3692</a>]      Narten, T., "Assigning Experimental and Testing
+                  Numbers Considered Useful", <a href="./bcp82">BCP 82</a>, <a href="./rfc3692">RFC 3692</a>, January
                   2004.
 
-   [RFC4340]      Kohler, E., Handley, M., and S. Floyd, "Datagram
-                  Congestion Control Protocol (DCCP)", RFC 4340, March
+   [<a name="ref-RFC4340" id="ref-RFC4340">RFC4340</a>]      Kohler, E., Handley, M., and S. Floyd, "Datagram
+                  Congestion Control Protocol (DCCP)", <a href="./rfc4340">RFC 4340</a>, March
                   2006.
 
 Informative References
 
-   [RFC3540]      Spring, N., Wetherall, D., and D. Ely, "Robust
+   [<a name="ref-RFC3540" id="ref-RFC3540">RFC3540</a>]      Spring, N., Wetherall, D., and D. Ely, "Robust
                   Explicit Congestion Notification (ECN) Signaling with
-                  Nonces", RFC 3540, June 2003.
+                  Nonces", <a href="./rfc3540">RFC 3540</a>, June 2003.
 
 
 
@@ -1735,21 +1879,21 @@ Informative References
 
 
 
-Floyd, et al.               Standards Track                    [Page 31]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                    [Page 31]</span>
+</pre><pre class='newpage'><a name="page-32" id="page-32" href="#page-32" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
-   [RFC3714]      Floyd, S. and J. Kempf, "IAB Concerns Regarding
+   [<a name="ref-RFC3714" id="ref-RFC3714">RFC3714</a>]      Floyd, S. and J. Kempf, "IAB Concerns Regarding
                   Congestion Control for Voice Traffic in the Internet",
-                  RFC 3714, March 2004.
+                  <a href="./rfc3714">RFC 3714</a>, March 2004.
 
-   [RFC4341]      Floyd, S. and E. Kohler, "Profile for Datagram
+   [<a name="ref-RFC4341" id="ref-RFC4341">RFC4341</a>]      Floyd, S. and E. Kohler, "Profile for Datagram
                   Congestion Control Protocol (DCCP) Congestion Control
-                  ID 2: TCP-like Congestion Control", RFC 4341, March
+                  ID 2: TCP-like Congestion Control", <a href="./rfc4341">RFC 4341</a>, March
                   2006.
 
-   [V03]          Arun Venkataramani, August 2003.  Citation for
+   [<a name="ref-V03" id="ref-V03">V03</a>]          Arun Venkataramani, August 2003.  Citation for
                   acknowledgement purposes only.
 
 Authors' Addresses
@@ -1791,9 +1935,9 @@ Authors' Addresses
 
 
 
-Floyd, et al.               Standards Track                    [Page 32]
-
-RFC 4342                    DCCP CCID3 TFRC                   March 2006
+<span class="grey">Floyd, et al.               Standards Track                    [Page 32]</span>
+</pre><pre class='newpage'><a name="page-33" id="page-33" href="#page-33" class="invisible"> </a>
+<span class="grey"><a href="./rfc4342">RFC 4342</a>                    DCCP CCID3 TFRC                   March 2006</span>
 
 
 Full Copyright Statement
@@ -1801,7 +1945,7 @@ Full Copyright Statement
    Copyright (C) The Internet Society (2006).
 
    This document is subject to the rights, licenses and restrictions
-   contained in BCP 78, and except as set forth therein, the authors
+   contained in <a href="./bcp78">BCP 78</a>, and except as set forth therein, the authors
    retain all their rights.
 
    This document and the information contained herein are provided on an
@@ -1821,14 +1965,14 @@ Intellectual Property
    might or might not be available; nor does it represent that it has
    made any independent effort to identify any such rights.  Information
    on the procedures with respect to rights in RFC documents can be
-   found in BCP 78 and BCP 79.
+   found in <a href="./bcp78">BCP 78</a> and <a href="./bcp79">BCP 79</a>.
 
    Copies of IPR disclosures made to the IETF Secretariat and any
    assurances of licenses to be made available, or the result of an
    attempt made to obtain a general license or permission for the use of
    such proprietary rights by implementers or users of this
    specification can be obtained from the IETF on-line IPR repository at
-   http://www.ietf.org/ipr.
+   <a href="http://www.ietf.org/ipr">http://www.ietf.org/ipr</a>.
 
    The IETF invites any interested party to bring to its attention any
    copyrights, patents or patent applications, or other proprietary
@@ -1848,4 +1992,10 @@ Acknowledgement
 
 
 Floyd, et al.               Standards Track                    [Page 33]
-
+</pre><pre class='newpage'>
+
+</pre><br />
+<span class="noprint"><small><small>Html markup produced by rfcmarkup 1.93, available from
+<a href="http://tools.ietf.org/tools/rfcmarkup/">http://tools.ietf.org/tools/rfcmarkup/</a>
+</small></small></span>
+</body></html>

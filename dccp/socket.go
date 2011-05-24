@@ -20,11 +20,10 @@ type socket struct {
 	GSR uint64 // Greatest valid Sequence number Received (consequently, sent as AckNo back)
 	GAR uint64 // Greatest valid Acknowledgement number Received on a non-Sync; initialized to S.ISS
 
-	// XXX: Not set by Conn
 	CCIDA byte // CCID in use for the A-to-B half-connection, Section 10
 	CCIDB byte // CCID in use for the B-to-A half-connection, Section 10
 
-	// XXX: Not set by Conn
+	// XXX: Must be set
 	SWBF uint64 // Sequence Window/B Feature, see Section 7.5.1
 	SWAF uint64 // Sequence Window/A Feature, see Section 7.5.1
 
@@ -36,13 +35,13 @@ type socket struct {
 	PMTU  int // Path Maximum Transmission Unit
 	MPS   int // Maximum Packet Size = min(PMTU, CCMPS)
 
+	// XXX: Must be set by CCID
 	RTT   int64 // Round Trip Time in nanoseconds
 }
 
-XXX // RTT must be set, because of step13_ProcessCloseReq
-
 const (
-	MSL                    = 2 * 60e9 // 2 mins in nanoseconds
+	RTT_DEFAULT            = 2e8      // 0.2 sec, default Round-Trip Time when no measurement is available
+	MSL                    = 2 * 60e9 // 2 mins in nanoseconds, Maximum Segment Lifetime, Section 3.4
 	PARTOPEN_BACKOFF_FIRST = 200e6    // 200 miliseconds in nanoseconds, Section 8.1.5
 	PARTOPEN_BACKOFF_MAX   = 4 * MSL  // 8 mins in nanoseconds, Section 8.1.5
 	CLOSING_BACKOFF_FREQ   = 64e9     // Backoff frequency of CLOSING timer, 64 seconds, Section 8.3

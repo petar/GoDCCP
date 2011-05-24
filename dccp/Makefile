@@ -33,6 +33,7 @@ GOFILES=\
 	wire.go\
 	write.go\
 	mutex.go\
+	timeopts.go\
 	#listener.go\
 	#dccp.go\
 	#dial.go\

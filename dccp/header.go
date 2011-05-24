@@ -20,7 +20,7 @@ import "os"
 type Header struct {
 	SourcePort    uint16	// Sender port
 	DestPort      uint16	// Receiver port
-	CCVal         byte	// Used by the HC-Sender to transmit 4-bit values
+	CCVal         byte	// Used by the HC-Sender's CCID to transmit 4-bit values
 	CsCov         byte	// Specifies the parts of packet covered by the checksum
 	Type          byte	// Packet type: Data, Ack, Sync, etc.
 	X             bool	// Extended seq numbers: generally always true (for us)

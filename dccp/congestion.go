@@ -10,17 +10,22 @@ import "os"
 // DCCP connection.
 type CongestionControl interface {
 
-	// Returns the Congestion Control Maximum Packet Size, CCMPS. Generally, PMTU <= CCMPS
+	// GetCCMPS returns the Congestion Control Maximum Packet Size, CCMPS. Generally, PMTU <= CCMPS
 	GetCCMPS() uint32 
 
+	// GetRTT returns the Round-Trip Time as measured by this CCID
+	GetRTT() int64
+
 	// Conn calls OnWrite before a packet is sent to give CongestionControl
-	// an opportunity to add options to an outgoing packet
-	OnWrite(h *Header)
+	// an opportunity to add CCVal and options to an outgoing packet
+	OnWrite(htype byte, x bool, seqno uint64) (ccval byte, options []Option)
 
 	// Conn calls OnRead after a packet has been accepted an validated
 	// If OnRead returns ErrDrop, the packet will be dropped and no further processing
 	// will occur. If if it returns ErrReset, the connection will be reset.
-	OnRead(h *Header) os.Error
+	// TODO: ErrReset behavior is not implemented. ErrReset should wrap the Reset Code to be
+	// used.
+	OnRead(htype byte, x bool, seqno uint64, ccval byte, options []Option) os.Error
 
 	// Strobe blocks until a new packet can be sent without violating the
 	// congestion control rate limit
@@ -30,5 +35,5 @@ type CongestionControl interface {
 const (
 	CCID2 = 2 // TCP-like Congestion Control, RFC 4341
 	CCID3 = 3 // TCP-Friendly Rate Control (TFRC), RFC 4342
-	CCIDPlain = 8	// Simple constant-rate control for testing purposes
+	CCID_PETAR = 7 // Simple constant-rate control for testing purposes
 )

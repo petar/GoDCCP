@@ -4,11 +4,17 @@
 
 package dccp
 
-import "os"
+import (
+	"log"
+	"os"
+)
 
 func (c *Conn) readHeader() (h *Header, err os.Error) {
 	h, err = c.hc.ReadHeader()
 	if err != nil {
+		if err != ErrTimeout {
+			log.Printf("dropping\n")
+		}
 		return nil, err
 	}
 	// We don't support non-extended (short) SeqNo's 
@@ -35,7 +41,7 @@ func (c *Conn) readLoop() {
 		if err != nil {
 			if err != EOF && err != EBADF {
 				// Drop packets that are unsupported or if there is timeout. 
-				// Forward compatibility.
+				// Intended for forward compatibility.
 				continue
 			} else {
 				// Die if the socket is broken

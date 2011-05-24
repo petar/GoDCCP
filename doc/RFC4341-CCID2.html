@@ -1,9 +1,151 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head profile="http://dublincore.org/documents/2008/08/04/dc-html/">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="robots" content="index,follow" />
+    <meta name="creator" content="rfcmarkup version 1.93" />
+    <link rel="schema.DC" href="http://purl.org/dc/elements/1.1/" />
+<meta name="DC.Description.Abstract" content="This document contains the profile for Congestion Control Identifier 2\n(CCID 2), TCP-like Congestion Control, in the Datagram Congestion\nControl Protocol (DCCP). CCID 2 should be used by senders who would\nlike to take advantage of the available bandwidth in an environment\nwith rapidly changing conditions, and who are able to adapt to the\nabrupt changes in the congestion window typical of TCP\x27s Additive\nIncrease Multiplicative Decrease (AIMD) congestion control.\n[STANDARDS-TRACK]" />
+<meta name="DC.Identifier" content="urn:ietf:rfc:4341" />
+<meta name="DC.Date.Issued" content="March, 2006" />
+<meta name="DC.Title" content="Profile for Datagram Congestion Control Protocol (DCCP) Congestion Control ID 2: TCP-like Congestion Control" />
 
+    <link rel="icon" href="/images/rfc.png" type="image/png" />
+    <link rel="shortcut icon" href="/images/rfc.png" type="image/png" />
+    <title>RFC 4341 - Profile for Datagram Congestion Control Protocol (DCCP) Congestion Control ID 2: TCP-like Congestion Control</title>
+    
+    
+    <style type="text/css">
+	body {
+	    margin: 0px 8px;
+            font-size: 1em;
+	}
+        h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+	    font-weight: bold;
+            line-height: 0pt;
+            display: inline;
+            white-space: pre;
+            font-family: monospace;
+            font-size: 1em;
+	    font-weight: bold;
+        }
+        pre {
+            font-size: 1em;
+            margin-top: 0px;
+            margin-bottom: 0px;
+        }
+	.pre {
+	    white-space: pre;
+	    font-family: monospace;
+	}
+	.header{
+	    font-weight: bold;
+	}
+        .newpage {
+            page-break-before: always;
+        }
+        .invisible {
+            text-decoration: none;
+            color: white;
+        }
+        @media print {
+            body {
+                font-size: 10.5pt;
+            }
+            h1, h2, h3, h4, h5, h6 {
+                font-size: 10.5pt;
+            }
+        
+            a:link, a:visited {
+                color: inherit;
+                text-decoration: none;
+            }
+            .noprint {
+                display: none;
+            }
+        }
+	@media screen {
+	    .grey, .grey a:link, .grey a:visited {
+		color: #777;
+	    }
+            .docinfo {
+                background-color: #EEE;
+            }
+            .top {
+                border-top: 7px solid #EEE;
+            }
+            .bgwhite  { background-color: white; }
+            .bgred    { background-color: #F44; }
+            .bggrey   { background-color: #666; }
+            .bgbrown  { background-color: #840; }            
+            .bgorange { background-color: #FA0; }
+            .bgyellow { background-color: #EE0; }
+            .bgmagenta{ background-color: #F4F; }
+            .bgblue   { background-color: #66F; }
+            .bgcyan   { background-color: #4DD; }
+            .bggreen  { background-color: #4F4; }
 
+            .legend   { font-size: 90%; }
+            .cplate   { font-size: 70%; border: solid grey 1px; }
+	}
+    </style>
+    <!--[if IE]>
+    <style>
+    body {
+       font-size: 13px;
+       margin: 10px 10px;
+    }
+    </style>
+    <![endif]-->
 
-
-
-
+    <script type="text/javascript"><!--
+    function addHeaderTags() {
+	var spans = document.getElementsByTagName("span");
+	for (var i=0; i < spans.length; i++) {
+	    var elem = spans[i];
+	    if (elem) {
+		var level = elem.getAttribute("class");
+                if (level == "h1" || level == "h2" || level == "h3" || level == "h4" || level == "h5" || level == "h6") {
+                    elem.innerHTML = "<"+level+">"+elem.innerHTML+"</"+level+">";		
+                }
+	    }
+	}
+    }
+    var legend_html = "Colour legend:<br />      <table>         <tr><td>Unknown:</td>          <td><span class='cplate bgwhite'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Draft:</td>            <td><span class='cplate bgred'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Informational:</td>    <td><span class='cplate bgorange'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Experimental:</td>     <td><span class='cplate bgyellow'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Best Common Practice:</td><td><span class='cplate bgmagenta'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Proposed Standard:</td><td><span class='cplate bgblue'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Draft Standard:</td>   <td><span class='cplate bgcyan'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Standard:</td>         <td><span class='cplate bggreen'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Historic:</td>         <td><span class='cplate bggrey'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Obsolete:</td>         <td><span class='cplate bgbrown'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>     </table>";
+    function showElem(id) {
+        var elem = document.getElementById(id);
+        elem.innerHTML = eval(id+"_html");
+        elem.style.visibility='visible';
+    }
+    function hideElem(id) {
+        var elem = document.getElementById(id);
+        elem.style.visibility='hidden';        
+        elem.innerHTML = "";
+    }
+    // -->
+    </script>
+</head>
+<body onload="addHeaderTags()">
+   <div style="height: 13px;">
+      <div onmouseover="this.style.cursor='pointer';"
+         onclick="showElem('legend');"
+         onmouseout="hideElem('legend')"
+	 style="height: 6px; position: absolute;"
+         class="pre noprint docinfo bgblue"
+         title="Click for colour legend." >                                                                        </div>
+      <div id="legend"
+           class="docinfo noprint pre legend"
+           style="position:absolute; top: 4px; left: 4ex; visibility:hidden; background-color: white; padding: 4px 9px 5px 7px; border: solid #345 1px; "
+           onmouseover="showElem('legend');"
+           onmouseout="hideElem('legend');">
+      </div>
+   </div>
+<span class="pre noprint docinfo top">[<a href="../html/" title="Document search and retrieval page">Docs</a>] [<a href="/rfc/rfc4341.txt" title="Plaintext version of this document">txt</a>|<a href="/pdf/rfc4341" title="PDF version of this document">pdf</a>] [<a href="draft-ietf-dccp-ccid2" title="draft-ietf-dccp-ccid2">draft-ietf-dccp-c...</a>] [<a href="/rfcdiff?difftype=--hwdiff&amp;url2=rfc4341" title="Inline diff (wdiff)">Diff1</a>] [<a href="/rfcdiff?url2=rfc4341" title="Side-by-side diff">Diff2</a>]                 </span><br />
+<span class="pre noprint docinfo">                                                                        </span><br />
+<span class="pre noprint docinfo">                                                       PROPOSED STANDARD</span><br />
+<span class="pre noprint docinfo">                                                                        </span><br />
+<pre>
 Network Working Group                                           S. Floyd
 Request for Comments: 4341                                          ICIR
 Category: Standards Track                                      E. Kohler
@@ -11,8 +153,8 @@ Category: Standards Track                                      E. Kohler
                                                               March 2006
 
 
-        Profile for Datagram Congestion Control Protocol (DCCP)
-          Congestion Control ID 2: TCP-like Congestion Control
+        <span class="h1">Profile for Datagram Congestion Control Protocol (DCCP)</span>
+          <span class="h1">Congestion Control ID 2: TCP-like Congestion Control</span>
 
 Status of This Memo
 
@@ -38,67 +180,67 @@ Abstract
 
 Table of Contents
 
-   1. Introduction ....................................................2
-   2. Conventions and Notation ........................................2
-   3. Usage ...........................................................3
-      3.1. Relationship with TCP ......................................3
-      3.2. Half-Connection Example ....................................4
-   4. Connection Establishment ........................................5
-   5. Congestion Control on Data Packets ..............................5
-      5.1. Response to Idle and Application-Limited Periods ...........8
-      5.2. Response to Data Dropped and Slow Receiver .................8
-      5.3. Packet Size ................................................8
-   6. Acknowledgements ................................................9
-      6.1. Congestion Control on Acknowledgements .....................9
-           6.1.1. Detecting Lost and Marked Acknowledgements .........10
+   <a href="#section-1">1</a>. Introduction ....................................................<a href="#page-2">2</a>
+   <a href="#section-2">2</a>. Conventions and Notation ........................................<a href="#page-2">2</a>
+   <a href="#section-3">3</a>. Usage ...........................................................<a href="#page-3">3</a>
+      <a href="#section-3.1">3.1</a>. Relationship with TCP ......................................<a href="#page-3">3</a>
+      <a href="#section-3.2">3.2</a>. Half-Connection Example ....................................<a href="#page-4">4</a>
+   <a href="#section-4">4</a>. Connection Establishment ........................................<a href="#page-5">5</a>
+   <a href="#section-5">5</a>. Congestion Control on Data Packets ..............................<a href="#page-5">5</a>
+      <a href="#section-5.1">5.1</a>. Response to Idle and Application-Limited Periods ...........<a href="#page-8">8</a>
+      <a href="#section-5.2">5.2</a>. Response to Data Dropped and Slow Receiver .................<a href="#page-8">8</a>
+      <a href="#section-5.3">5.3</a>. Packet Size ................................................<a href="#page-8">8</a>
+   <a href="#section-6">6</a>. Acknowledgements ................................................<a href="#page-9">9</a>
+      <a href="#section-6.1">6.1</a>. Congestion Control on Acknowledgements .....................<a href="#page-9">9</a>
+           <a href="#section-6.1.1">6.1.1</a>. Detecting Lost and Marked Acknowledgements .........<a href="#page-10">10</a>
 
 
 
 
-Floyd & Kohler              Standards Track                     [Page 1]
-
-RFC 4341                       DCCP CCID2                     March 2006
+<span class="grey">Floyd &amp; Kohler              Standards Track                     [Page 1]</span>
+</pre><pre class='newpage'><a name="page-2" id="page-2" href="#page-2" class="invisible"> </a>
+<span class="grey"><a href="./rfc4341">RFC 4341</a>                       DCCP CCID2                     March 2006</span>
 
 
-           6.1.2. Changing Ack Ratio .................................10
-      6.2. Acknowledgements of Acknowledgements ......................11
-           6.2.1. Determining Quiescence .............................12
-   7. Explicit Congestion Notification ...............................12
-   8. Options and Features ...........................................12
-   9. Security Considerations ........................................13
-   10. IANA Considerations ...........................................13
-      10.1. Reset Codes ..............................................13
-      10.2. Option Types .............................................13
-      10.3. Feature Numbers ..........................................14
-   11. Thanks ........................................................14
-   A.  Appendix: Derivation of Ack Ratio Decrease ....................15
-   B.  Appendix: Cost of Loss Inference Mistakes to Ack Ratio ........15
-   Normative References ..............................................17
-   Informative References ............................................18
+           <a href="#section-6.1.2">6.1.2</a>. Changing Ack Ratio .................................<a href="#page-10">10</a>
+      <a href="#section-6.2">6.2</a>. Acknowledgements of Acknowledgements ......................<a href="#page-11">11</a>
+           <a href="#section-6.2.1">6.2.1</a>. Determining Quiescence .............................<a href="#page-12">12</a>
+   <a href="#section-7">7</a>. Explicit Congestion Notification ...............................<a href="#page-12">12</a>
+   <a href="#section-8">8</a>. Options and Features ...........................................<a href="#page-12">12</a>
+   <a href="#section-9">9</a>. Security Considerations ........................................<a href="#page-13">13</a>
+   <a href="#section-10">10</a>. IANA Considerations ...........................................<a href="#page-13">13</a>
+      <a href="#section-10.1">10.1</a>. Reset Codes ..............................................<a href="#page-13">13</a>
+      <a href="#section-10.2">10.2</a>. Option Types .............................................<a href="#page-13">13</a>
+      <a href="#section-10.3">10.3</a>. Feature Numbers ..........................................<a href="#page-14">14</a>
+   <a href="#section-11">11</a>. Thanks ........................................................<a href="#page-14">14</a>
+   <a href="#appendix-A">A</a>.  Appendix: Derivation of Ack Ratio Decrease ....................<a href="#page-15">15</a>
+   <a href="#appendix-B">B</a>.  Appendix: Cost of Loss Inference Mistakes to Ack Ratio ........<a href="#page-15">15</a>
+   Normative References ..............................................<a href="#page-17">17</a>
+   Informative References ............................................<a href="#page-18">18</a>
 
-1.  Introduction
+<span class="h2"><a name="section-1">1</a>.  Introduction</span>
 
    This document contains the profile for Congestion Control Identifier
    2 (CCID 2), TCP-like Congestion Control, in the Datagram Congestion
-   Control Protocol (DCCP) [RFC4340].  DCCP uses Congestion Control
+   Control Protocol (DCCP) [<a href="./rfc4340" title='"Datagram Congestion Control Protocol (DCCP)"'>RFC4340</a>].  DCCP uses Congestion Control
    Identifiers, or CCIDs, to specify the congestion control mechanism in
    use on a half-connection.
 
    The TCP-like Congestion Control CCID sends data using a close variant
    of TCP's congestion control mechanisms, incorporating a variant of
-   selective acknowledgements (SACK) [RFC2018, RFC3517].  CCID 2 is
+   selective acknowledgements (SACK) [RFC2018, <a href="./rfc3517">RFC3517</a>].  CCID 2 is
    suitable for senders who can adapt to the abrupt changes in
    congestion window typical of TCP's Additive Increase Multiplicative
    Decrease (AIMD) congestion control, and particularly useful for
    senders who would like to take advantage of the available bandwidth
-   in an environment with rapidly changing conditions.  See Section 3
+   in an environment with rapidly changing conditions.  See <a href="#section-3">Section 3</a>
    for more on application requirements.
 
-2.  Conventions and Notation
+<span class="h2"><a name="section-2">2</a>.  Conventions and Notation</span>
 
    The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
    "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
-   document are to be interpreted as described in [RFC2119].
+   document are to be interpreted as described in [<a href="./rfc2119" title='"Key words for use in RFCs to Indicate Requirement Levels"'>RFC2119</a>].
 
    A DCCP half-connection consists of the application data sent by one
    endpoint and the corresponding acknowledgements sent by the other
@@ -106,14 +248,14 @@ RFC 4341                       DCCP CCID2                     March 2006
    endpoints sending application data and acknowledgements,
    respectively.  Since CCIDs apply at the level of half-connections, we
    abbreviate HC-Sender to "sender" and HC-Receiver to "receiver" in
-   this document.  See [RFC4340] for more discussion.
+   this document.  See [<a href="./rfc4340" title='"Datagram Congestion Control Protocol (DCCP)"'>RFC4340</a>] for more discussion.
 
 
 
 
-Floyd & Kohler              Standards Track                     [Page 2]
-
-RFC 4341                       DCCP CCID2                     March 2006
+<span class="grey">Floyd &amp; Kohler              Standards Track                     [Page 2]</span>
+</pre><pre class='newpage'><a name="page-3" id="page-3" href="#page-3" class="invisible"> </a>
+<span class="grey"><a href="./rfc4341">RFC 4341</a>                       DCCP CCID2                     March 2006</span>
 
 
    For simplicity, we say that senders send DCCP-Data packets and
@@ -123,7 +265,7 @@ RFC 4341                       DCCP CCID2                     March 2006
    The phrases "ECN-marked" and "marked" refer to packets marked ECN
    Congestion Experienced unless otherwise noted.
 
-3.  Usage
+<span class="h2"><a name="section-3">3</a>.  Usage</span>
 
    CCID 2, TCP-like Congestion Control, is appropriate for DCCP flows
    that would like to receive as much bandwidth as possible over the
@@ -134,7 +276,7 @@ RFC 4341                       DCCP CCID2                     March 2006
 
    Applications that simply need to transfer as much data as possible in
    as short a time as possible should use CCID 2.  This contrasts with
-   CCID 3, TCP-Friendly Rate Control (TFRC) [RFC4342], which is
+   CCID 3, TCP-Friendly Rate Control (TFRC) [<a href="./rfc4342" title='"Profile for Datagram Congestion Control Protocol (DCCP) Congestion Control ID 3: TCP-Friendly Rate Control (TFRC)"'>RFC4342</a>], which is
    appropriate for flows that would prefer to minimize abrupt changes in
    the sending rate.  For example, CCID 2 is recommended over CCID 3 for
    streaming media applications that buffer a considerable amount of
@@ -155,21 +297,21 @@ RFC 4341                       DCCP CCID2                     March 2006
    congestion control over those of newer congestion control mechanisms,
    which haven't yet met the test of widespread Internet deployment.
 
-3.1.  Relationship with TCP
+<span class="h3"><a name="section-3.1">3.1</a>.  Relationship with TCP</span>
 
    The congestion control mechanisms described here closely follow
    mechanisms standardized by the IETF for use in SACK-based TCP, and we
-   rely partially on existing TCP documentation, such as [RFC793],
-   [RFC2581], [RFC3465], and [RFC3517].  TCP congestion control
+   rely partially on existing TCP documentation, such as [<a href="./rfc793" title='"Transmission Control Protocol"'>RFC793</a>],
+   [<a href="./rfc2581" title='"TCP Congestion Control"'>RFC2581</a>], [<a href="./rfc3465" title='"TCP Congestion Control with Appropriate Byte Counting (ABC)"'>RFC3465</a>], and [<a href="./rfc3517" title='"A Conservative Selective Acknowledgment (SACK)-based Loss Recovery Algorithm for TCP"'>RFC3517</a>].  TCP congestion control
    continues to evolve, but CCID 2 implementations SHOULD wait for
    explicit updates to CCID 2 rather than track TCP's evolution
    directly.
 
 
 
-Floyd & Kohler              Standards Track                     [Page 3]
-
-RFC 4341                       DCCP CCID2                     March 2006
+<span class="grey">Floyd &amp; Kohler              Standards Track                     [Page 3]</span>
+</pre><pre class='newpage'><a name="page-4" id="page-4" href="#page-4" class="invisible"> </a>
+<span class="grey"><a href="./rfc4341">RFC 4341</a>                       DCCP CCID2                     March 2006</span>
 
 
    Differences between CCID 2 and straight TCP congestion control
@@ -186,7 +328,7 @@ RFC 4341                       DCCP CCID2                     March 2006
       congestion control mechanisms that distinguish retransmissions
       from new packets have been redesigned for the DCCP context.
 
-3.2.  Half-Connection Example
+<span class="h3"><a name="section-3.2">3.2</a>.  Half-Connection Example</span>
 
    This example shows the typical progress of a half-connection using
    CCID 2's TCP-like Congestion Control, not including connection
@@ -203,7 +345,7 @@ RFC 4341                       DCCP CCID2                     March 2006
       Assuming that the half-connection is Explicit Congestion
       Notification (ECN) capable (the ECN Incapable feature is zero, the
       default), each DCCP-Data packet is sent as ECN Capable with either
-      the ECT(0) or the ECT(1) codepoint set, as described in [RFC3540].
+      the ECT(0) or the ECT(1) codepoint set, as described in [<a href="./rfc3540" title='"Robust Explicit Congestion Notification (ECN) Signaling with Nonces"'>RFC3540</a>].
 
    2. The receiver sends a DCCP-Ack packet acknowledging the data
       packets for every Ack Ratio data packets transmitted by the
@@ -223,9 +365,9 @@ RFC 4341                       DCCP CCID2                     March 2006
 
 
 
-Floyd & Kohler              Standards Track                     [Page 4]
-
-RFC 4341                       DCCP CCID2                     March 2006
+<span class="grey">Floyd &amp; Kohler              Standards Track                     [Page 4]</span>
+</pre><pre class='newpage'><a name="page-5" id="page-5" href="#page-5" class="invisible"> </a>
+<span class="grey"><a href="./rfc4341">RFC 4341</a>                       DCCP CCID2                     March 2006</span>
 
 
    3. The sender continues sending DCCP-Data packets as controlled by
@@ -256,7 +398,7 @@ RFC 4341                       DCCP CCID2                     March 2006
       sender has been limited by the congestion window and no feedback
       has been received from the receiver.
 
-4.  Connection Establishment
+<span class="h2"><a name="section-4">4</a>.  Connection Establishment</span>
 
    Use of the Ack Vector is MANDATORY on CCID 2 half-connections, so the
    sender MUST send a "Change R(Send Ack Vector, 1)" option to the
@@ -265,10 +407,10 @@ RFC 4341                       DCCP CCID2                     March 2006
    Vector, 1)" from the receiver, except that it MAY send data on DCCP-
    Request packets.
 
-5.  Congestion Control on Data Packets
+<span class="h2"><a name="section-5">5</a>.  Congestion Control on Data Packets</span>
 
    CCID 2's congestion control mechanisms are based on those for SACK-
-   based TCP [RFC3517], since the Ack Vector provides all the
+   based TCP [<a href="./rfc3517" title='"A Conservative Selective Acknowledgment (SACK)-based Loss Recovery Algorithm for TCP"'>RFC3517</a>], since the Ack Vector provides all the
    information that might be transmitted in SACK options.
 
    A CCID 2 data sender maintains three integer parameters measured in
@@ -279,9 +421,9 @@ RFC 4341                       DCCP CCID2                     March 2006
 
 
 
-Floyd & Kohler              Standards Track                     [Page 5]
-
-RFC 4341                       DCCP CCID2                     March 2006
+<span class="grey">Floyd &amp; Kohler              Standards Track                     [Page 5]</span>
+</pre><pre class='newpage'><a name="page-6" id="page-6" href="#page-6" class="invisible"> </a>
+<span class="grey"><a href="./rfc4341">RFC 4341</a>                       DCCP CCID2                     March 2006</span>
 
 
    1. The congestion window "cwnd", which equals the maximum number of
@@ -300,8 +442,8 @@ RFC 4341                       DCCP CCID2                     March 2006
    are measured in packets, not bytes.  The rest of this section
    provides more specific guidance.
 
-   The sender MAY send a data packet when pipe < cwnd but MUST NOT send
-   a data packet when pipe >= cwnd.  Every data packet sent increases
+   The sender MAY send a data packet when pipe &lt; cwnd but MUST NOT send
+   a data packet when pipe &gt;= cwnd.  Every data packet sent increases
    pipe by 1.
 
    The sender reduces pipe as it infers that data packets have left the
@@ -328,16 +470,16 @@ RFC 4341                       DCCP CCID2                     March 2006
       window of packets is lost.  The sender estimates the round-trip
       time at most once per window of data and uses the TCP algorithms
       for maintaining the average round-trip time, mean deviation, and
-      timeout value [RFC2988].  (If more than one measurement per
+      timeout value [<a href="./rfc2988" title='"Computing TCP&amp;#39;s Retransmission Timer"'>RFC2988</a>].  (If more than one measurement per
       round-trip time was used for these calculations, then the weights
       of the averagers would have to be adjusted to ensure that the
       average round-trip time is effectively derived from measurements
 
 
 
-Floyd & Kohler              Standards Track                     [Page 6]
-
-RFC 4341                       DCCP CCID2                     March 2006
+<span class="grey">Floyd &amp; Kohler              Standards Track                     [Page 6]</span>
+</pre><pre class='newpage'><a name="page-7" id="page-7" href="#page-7" class="invisible"> </a>
+<span class="grey"><a href="./rfc4341">RFC 4341</a>                       DCCP CCID2                     March 2006</span>
 
 
       over multiple round-trip times.)  Because DCCP does not retransmit
@@ -371,18 +513,18 @@ RFC 4341                       DCCP CCID2                     March 2006
    down, except that cwnd is never less than one and ssthresh is never
    less than two.
 
-   When cwnd < ssthresh, meaning that the sender is in slow-start, the
+   When cwnd &lt; ssthresh, meaning that the sender is in slow-start, the
    congestion window is increased by one packet for every two newly
    acknowledged data packets with Ack Vector State 0 (not ECN-marked),
    up to a maximum of Ack Ratio/2 packets per acknowledgement.  This is
-   a modified form of Appropriate Byte Counting [RFC3465] that is
+   a modified form of Appropriate Byte Counting [<a href="./rfc3465" title='"TCP Congestion Control with Appropriate Byte Counting (ABC)"'>RFC3465</a>] that is
    consistent with TCP's current standard (which does not include byte
    counting), but allows CCID 2 to increase as aggressively as TCP when
    CCID 2's Ack Ratio is greater than the default value of two.  When
-   cwnd >= ssthresh, the congestion window is increased by one packet
+   cwnd &gt;= ssthresh, the congestion window is increased by one packet
    for every window of data acknowledged without lost or marked packets.
    The cwnd parameter is initialized to at most four packets for new
-   connections, following the rules from [RFC3390]; the ssthresh
+   connections, following the rules from [<a href="./rfc3390" title='"Increasing TCP&amp;#39;s Initial Window"'>RFC3390</a>]; the ssthresh
    parameter is initialized to an arbitrarily high value.
 
    Senders MAY use a form of rate-based pacing when sending multiple
@@ -391,12 +533,12 @@ RFC 4341                       DCCP CCID2                     March 2006
 
 
 
-Floyd & Kohler              Standards Track                     [Page 7]
-
-RFC 4341                       DCCP CCID2                     March 2006
+<span class="grey">Floyd &amp; Kohler              Standards Track                     [Page 7]</span>
+</pre><pre class='newpage'><a name="page-8" id="page-8" href="#page-8" class="invisible"> </a>
+<span class="grey"><a href="./rfc4341">RFC 4341</a>                       DCCP CCID2                     March 2006</span>
 
 
-5.1.  Response to Idle and Application-Limited Periods
+<span class="h3"><a name="section-5.1">5.1</a>.  Response to Idle and Application-Limited Periods</span>
 
    CCID 2 is designed to follow TCP's congestion control mechanisms to
    the extent possible, but TCP does not have complete standardization
@@ -405,9 +547,9 @@ RFC 4341                       DCCP CCID2                     March 2006
    rate is less than that allowed by cwnd).  This section is a brief
    guide to the standards for TCP in this area.
 
-   For idle periods, [RFC2581] recommends that the TCP sender SHOULD
+   For idle periods, [<a href="./rfc2581" title='"TCP Congestion Control"'>RFC2581</a>] recommends that the TCP sender SHOULD
    slow-start after an idle period, where an idle period is defined as a
-   period exceeding the timeout interval.  [RFC2861], currently
+   period exceeding the timeout interval.  [<a href="./rfc2861" title='"TCP Congestion Window Validation"'>RFC2861</a>], currently
    Experimental, suggests a slightly more moderate mechanism where the
    congestion window is halved for every round-trip time that the sender
    has remained idle.
@@ -416,11 +558,11 @@ RFC 4341                       DCCP CCID2                     March 2006
    congestion window during an application-limited period.  In
    particular, it is possible for TCP's congestion window to grow quite
    large during a long uncongested period when the sender is application
-   limited, sending at a low rate.  [RFC2861] essentially suggests that
+   limited, sending at a low rate.  [<a href="./rfc2861" title='"TCP Congestion Window Validation"'>RFC2861</a>] essentially suggests that
    TCP's congestion window not be increased during application-limited
    periods when the congestion window is not being fully utilized.
 
-5.2.  Response to Data Dropped and Slow Receiver
+<span class="h3"><a name="section-5.2">5.2</a>.  Response to Data Dropped and Slow Receiver</span>
 
    DCCP's Data Dropped option lets a receiver declare that a packet was
    dropped at the end host before delivery to the application -- for
@@ -428,7 +570,7 @@ RFC 4341                       DCCP CCID2                     March 2006
    Slow Receiver option lets a receiver declare that it is having
    trouble keeping up with the sender's packets, although nothing has
    yet been dropped.  CCID 2 senders respond to these options as
-   described in [RFC4340], with the following further clarifications.
+   described in [<a href="./rfc4340" title='"Datagram Congestion Control Protocol (DCCP)"'>RFC4340</a>], with the following further clarifications.
 
    o  Drop Code 2 ("receive buffer drop").  The congestion window "cwnd"
       is reduced by one for each packet newly acknowledged as Drop Code
@@ -437,7 +579,7 @@ RFC 4341                       DCCP CCID2                     March 2006
    o  Exiting slow start.  The sender MUST exit slow start whenever it
       receives a relevant Data Dropped or Slow Receiver option.
 
-5.3.  Packet Size
+<span class="h3"><a name="section-5.3">5.3</a>.  Packet Size</span>
 
    CCID 2 is optimized for applications that generally use a fixed
    packet size and vary their sending rate in packets per second in
@@ -447,9 +589,9 @@ RFC 4341                       DCCP CCID2                     March 2006
 
 
 
-Floyd & Kohler              Standards Track                     [Page 8]
-
-RFC 4341                       DCCP CCID2                     March 2006
+<span class="grey">Floyd &amp; Kohler              Standards Track                     [Page 8]</span>
+</pre><pre class='newpage'><a name="page-9" id="page-9" href="#page-9" class="invisible"> </a>
+<span class="grey"><a href="./rfc4341">RFC 4341</a>                       DCCP CCID2                     March 2006</span>
 
 
    CCID 2 maintains a congestion window in packets and does not increase
@@ -464,16 +606,16 @@ RFC 4341                       DCCP CCID2                     March 2006
    rate, then switch to large packets to take advantage of the fast
    rate.  (Preliminary simulations indicate that applications may not be
    able to increase their overall transfer rates this way, so it is not
-   clear that this manipulation will occur in practice [V03].)
+   clear that this manipulation will occur in practice [<a href="#ref-V03">V03</a>].)
 
-6.  Acknowledgements
+<span class="h2"><a name="section-6">6</a>.  Acknowledgements</span>
 
    CCID 2 acknowledgements are generally paced by the sender's data
    packets.  Each required acknowledgement MUST contain Ack Vector
    options that declare exactly which packets arrived and whether those
    packets were ECN-marked.  Acknowledgement data in the Ack Vector
    options SHOULD generally cover the receiver's entire Acknowledgement
-   Window; see [RFC4340], Section 11.4.2.  Any Data Dropped options
+   Window; see <a href="./rfc4340#section-11.4.2">[RFC4340], Section&nbsp;11.4.2</a>.  Any Data Dropped options
    SHOULD likewise cover the receiver's entire Acknowledgement Window.
 
    CCID 2 senders use DCCP's Ack Ratio feature to influence the rate at
@@ -484,14 +626,14 @@ RFC 4341                       DCCP CCID2                     March 2006
    just tries to avoid congestion collapse, and to be somewhat better
    than TCP is in the presence of a high packet loss or mark rate on the
    reverse path.  The default Ack Ratio is two, and CCID 2 with this Ack
-   Ratio behaves like TCP with delayed acks.  [RFC4340], Section 11.3,
+   Ratio behaves like TCP with delayed acks.  <a href="./rfc4340#section-11.3">[RFC4340], Section&nbsp;11.3</a>,
    describes the Ack Ratio in more detail, including its relationship to
    acknowledgement pacing and DCCP-DataAck packets.  This document's
-   Section 6.1.1 describes how a CCID 2 sender detects lost or marked
-   acknowledgements, and Section 6.1.2 describes how it changes the Ack
+   <a href="#section-6.1.1">Section 6.1.1</a> describes how a CCID 2 sender detects lost or marked
+   acknowledgements, and <a href="#section-6.1.2">Section 6.1.2</a> describes how it changes the Ack
    Ratio.
 
-6.1.  Congestion Control on Acknowledgements
+<span class="h3"><a name="section-6.1">6.1</a>.  Congestion Control on Acknowledgements</span>
 
    When Ack Ratio is R, the receiver sends one DCCP-Ack packet per R
    data packets, more or less.  Since the sender sends cwnd data packets
@@ -503,9 +645,9 @@ RFC 4341                       DCCP CCID2                     March 2006
 
 
 
-Floyd & Kohler              Standards Track                     [Page 9]
-
-RFC 4341                       DCCP CCID2                     March 2006
+<span class="grey">Floyd &amp; Kohler              Standards Track                     [Page 9]</span>
+</pre><pre class='newpage'><a name="page-10" id="page-10" href="#page-10" class="invisible"> </a>
+<span class="grey"><a href="./rfc4341">RFC 4341</a>                       DCCP CCID2                     March 2006</span>
 
 
    marked DCCP-Ack), the sender halves the acknowledgement rate by
@@ -513,7 +655,7 @@ RFC 4341                       DCCP CCID2                     March 2006
    event, it additively increases the acknowledgement rate through
    gradual decreases in Ack Ratio.
 
-6.1.1.  Detecting Lost and Marked Acknowledgements
+<span class="h4"><a name="section-6.1.1">6.1.1</a>.  Detecting Lost and Marked Acknowledgements</span>
 
    All packets from the receiver contain sequence numbers, so the sender
    can detect both losses and marks on the receiver's packets.  The
@@ -542,7 +684,7 @@ RFC 4341                       DCCP CCID2                     March 2006
    independent of Ack Ratio SHOULD NOT reduce its DCCP-Ack
    acknowledgement rate due to losses or marks on its data packets.
 
-6.1.2.  Changing Ack Ratio
+<span class="h4"><a name="section-6.1.2">6.1.2</a>.  Changing Ack Ratio</span>
 
    Ack Ratio always meets three constraints: (1) Ack Ratio is an
    integer.  (2) Ack Ratio does not exceed cwnd/2, rounded up, except
@@ -553,15 +695,15 @@ RFC 4341                       DCCP CCID2                     March 2006
    For each congestion window of data with lost or marked DCCP-Ack
    packets, Ack Ratio is doubled; and for each cwnd/(R^2 - R)
    consecutive congestion windows of data with no lost or marked DCCP-
-   Ack packets, Ack Ratio is decreased by 1.  (See Appendix A for the
+   Ack packets, Ack Ratio is decreased by 1.  (See <a href="#appendix-A">Appendix A</a> for the
    derivation.)  Changes in Ack Ratio are signalled through feature
-   negotiation; see [RFC4340], Section 11.3.
+   negotiation; see <a href="./rfc4340#section-11.3">[RFC4340], Section&nbsp;11.3</a>.
 
 
 
-Floyd & Kohler              Standards Track                    [Page 10]
-
-RFC 4341                       DCCP CCID2                     March 2006
+<span class="grey">Floyd &amp; Kohler              Standards Track                    [Page 10]</span>
+</pre><pre class='newpage'><a name="page-11" id="page-11" href="#page-11" class="invisible"> </a>
+<span class="grey"><a href="./rfc4341">RFC 4341</a>                       DCCP CCID2                     March 2006</span>
 
 
    For a constant congestion window, this gives an Ack sending rate that
@@ -590,7 +732,7 @@ RFC 4341                       DCCP CCID2                     March 2006
    sending rate on the forward path, which reduces the rate on the
    reverse path as well.
 
-6.2.  Acknowledgements of Acknowledgements
+<span class="h3"><a name="section-6.2">6.2</a>.  Acknowledgements of Acknowledgements</span>
 
    An active sender DCCP A MUST occasionally acknowledge its peer DCCP
    B's acknowledgements so that DCCP B can free up Ack Vector state.
@@ -615,22 +757,22 @@ RFC 4341                       DCCP CCID2                     March 2006
 
 
 
-Floyd & Kohler              Standards Track                    [Page 11]
-
-RFC 4341                       DCCP CCID2                     March 2006
+<span class="grey">Floyd &amp; Kohler              Standards Track                    [Page 11]</span>
+</pre><pre class='newpage'><a name="page-12" id="page-12" href="#page-12" class="invisible"> </a>
+<span class="grey"><a href="./rfc4341">RFC 4341</a>                       DCCP CCID2                     March 2006</span>
 
 
-6.2.1.  Determining Quiescence
+<span class="h4"><a name="section-6.2.1">6.2.1</a>.  Determining Quiescence</span>
 
    This section describes how a CCID 2 receiver determines that the
    corresponding sender is not sending any data and therefore has gone
-   quiescent.  See [RFC4340], Section 11.1, for general information on
+   quiescent.  See <a href="./rfc4340#section-11.1">[RFC4340], Section&nbsp;11.1</a>, for general information on
    quiescence.
 
    Let T equal the greater of 0.2 seconds and two round-trip times.
    (The receiver may know the round-trip time in its role as the sender
    for the other half-connection.  If it does not, it should use a
-   default RTT of 0.2 seconds, as described in [RFC4340], Section 3.4.)
+   default RTT of 0.2 seconds, as described in <a href="./rfc4340#section-3.4">[RFC4340], Section&nbsp;3.4</a>.)
    Once the sender acknowledges the receiver's Ack Vectors and the
    sender has not sent additional data for at least T seconds, the
    receiver can infer that the sender is quiescent.  More precisely, the
@@ -639,18 +781,18 @@ RFC 4341                       DCCP CCID2                     March 2006
    when the sender has acknowledged receiver Ack Vectors covering all
    data packets received at the receiver.
 
-7.  Explicit Congestion Notification
+<span class="h2"><a name="section-7">7</a>.  Explicit Congestion Notification</span>
 
-   CCID 2 supports Explicit Congestion Notification (ECN) [RFC3168].
+   CCID 2 supports Explicit Congestion Notification (ECN) [<a href="./rfc3168" title='"The Addition of Explicit Congestion Notification (ECN) to IP"'>RFC3168</a>].
    The sender will use the ECN Nonce for data packets, and the receiver
-   will echo those nonces in its Ack Vectors, as specified in [RFC4340],
-   Section 12.2.  Information about marked packets is also returned in
+   will echo those nonces in its Ack Vectors, as specified in <a href="./rfc4340#section-12.2">[RFC4340],
+   Section&nbsp;12.2</a>.  Information about marked packets is also returned in
    the Ack Vector.  Because the information in the Ack Vector is
    reliably transferred, DCCP does not need the TCP flags of ECN-Echo
    and Congestion Window Reduced.
 
    For unmarked data packets, the receiver computes the ECN Nonce Echo
-   as in [RFC3540] and returns it as part of its Ack Vector options.
+   as in [<a href="./rfc3540" title='"Robust Explicit Congestion Notification (ECN) Signaling with Nonces"'>RFC3540</a>] and returns it as part of its Ack Vector options.
    The sender SHOULD check these ECN Nonce Echoes against the expected
    values, thus protecting against the accidental or malicious
    concealment of marked packets.
@@ -662,7 +804,7 @@ RFC 4341                       DCCP CCID2                     March 2006
    sender, and because the sender does not have much motivation for
    lying about the mark rate on acknowledgements.
 
-8.  Options and Features
+<span class="h2"><a name="section-8">8</a>.  Options and Features</span>
 
    DCCP's Ack Vector option, and its ECN Capable, Ack Ratio, and Send
    Ack Vector features, are relevant for CCID 2.
@@ -671,36 +813,36 @@ RFC 4341                       DCCP CCID2                     March 2006
 
 
 
-Floyd & Kohler              Standards Track                    [Page 12]
-
-RFC 4341                       DCCP CCID2                     March 2006
+<span class="grey">Floyd &amp; Kohler              Standards Track                    [Page 12]</span>
+</pre><pre class='newpage'><a name="page-13" id="page-13" href="#page-13" class="invisible"> </a>
+<span class="grey"><a href="./rfc4341">RFC 4341</a>                       DCCP CCID2                     March 2006</span>
 
 
-9.  Security Considerations
+<span class="h2"><a name="section-9">9</a>.  Security Considerations</span>
 
-   Security considerations for DCCP have been discussed in [RFC4340],
-   and security considerations for TCP have been discussed in [RFC2581].
+   Security considerations for DCCP have been discussed in [<a href="./rfc4340" title='"Datagram Congestion Control Protocol (DCCP)"'>RFC4340</a>],
+   and security considerations for TCP have been discussed in [<a href="./rfc2581" title='"TCP Congestion Control"'>RFC2581</a>].
 
-   [RFC2581] discusses ways in which an attacker could impair the
+   [<a name="ref-RFC2581" id="ref-RFC2581">RFC2581</a>] discusses ways in which an attacker could impair the
    performance of a TCP connection by dropping packets, or by forging
    extra duplicate acknowledgements or acknowledgements for new data.
    We are not aware of any new security considerations created by this
    document in its use of TCP-like congestion control.
 
-10.  IANA Considerations
+<span class="h2"><a name="section-10">10</a>.  IANA Considerations</span>
 
    This specification defines the value 2 in the DCCP CCID namespace
-   managed by IANA.  This assignment is also mentioned in [RFC4340].
+   managed by IANA.  This assignment is also mentioned in [<a href="./rfc4340" title='"Datagram Congestion Control Protocol (DCCP)"'>RFC4340</a>].
    CCID 2 also introduces three sets of numbers whose values should be
    allocated by IANA; namely, CCID 2-specific Reset Codes, option types,
    and feature numbers.  These ranges will prevent any future CCID
    2-specific allocations from polluting DCCP's corresponding global
-   namespaces; see [RFC4340], Section 10.3.  However, this document
+   namespaces; see <a href="./rfc4340#section-10.3">[RFC4340], Section&nbsp;10.3</a>.  However, this document
    makes no particular allocations from any range, except for
-   experimental and testing use [RFC3692].  We refer to the Standards
-   Action policy outlined in [RFC2434].
+   experimental and testing use [<a href="./rfc3692" title='"Assigning Experimental and Testing Numbers Considered Useful"'>RFC3692</a>].  We refer to the Standards
+   Action policy outlined in [<a href="./rfc2434" title='"Guidelines for Writing an IANA Considerations Section in RFCs"'>RFC2434</a>].
 
-10.1.  Reset Codes
+<span class="h3"><a name="section-10.1">10.1</a>.  Reset Codes</span>
 
    Each entry in the DCCP CCID 2 Reset Code registry contains a CCID
    2-specific Reset Code, which is a number in the range 128-255; a
@@ -712,7 +854,7 @@ RFC 4341                       DCCP CCID2                     March 2006
    requires IESG review and approval and standards-track IETF RFC
    publication.
 
-10.2.  Option Types
+<span class="h3"><a name="section-10.2">10.2</a>.  Option Types</span>
 
    Each entry in the DCCP CCID 2 option type registry contains a CCID
    2-specific option type, which is a number in the range 128-255; the
@@ -727,12 +869,12 @@ RFC 4341                       DCCP CCID2                     March 2006
 
 
 
-Floyd & Kohler              Standards Track                    [Page 13]
-
-RFC 4341                       DCCP CCID2                     March 2006
+<span class="grey">Floyd &amp; Kohler              Standards Track                    [Page 13]</span>
+</pre><pre class='newpage'><a name="page-14" id="page-14" href="#page-14" class="invisible"> </a>
+<span class="grey"><a href="./rfc4341">RFC 4341</a>                       DCCP CCID2                     March 2006</span>
 
 
-10.3.  Feature Numbers
+<span class="h3"><a name="section-10.3">10.3</a>.  Feature Numbers</span>
 
    Each entry in the DCCP CCID 2 feature number registry contains a CCID
    2-specific feature number, which is a number in the range 128-255;
@@ -743,7 +885,7 @@ RFC 4341                       DCCP CCID2                     March 2006
    should be allocated with the Standards Action policy, which requires
    IESG review and approval and standards-track IETF RFC publication.
 
-11.  Thanks
+<span class="h2"><a name="section-11">11</a>.  Thanks</span>
 
    We thank Mark Handley and Jitendra Padhye for their help in defining
    CCID 2.  We also thank Mark Allman, Aaron Falk, Nils-Erik Mattsson,
@@ -783,15 +925,15 @@ RFC 4341                       DCCP CCID2                     March 2006
 
 
 
-Floyd & Kohler              Standards Track                    [Page 14]
-
-RFC 4341                       DCCP CCID2                     March 2006
+<span class="grey">Floyd &amp; Kohler              Standards Track                    [Page 14]</span>
+</pre><pre class='newpage'><a name="page-15" id="page-15" href="#page-15" class="invisible"> </a>
+<span class="grey"><a href="./rfc4341">RFC 4341</a>                       DCCP CCID2                     March 2006</span>
 
 
-A.  Appendix: Derivation of Ack Ratio Decrease
+<span class="h1"><a name="appendix-A">A</a>.  Appendix: Derivation of Ack Ratio Decrease</span>
 
    This section justifies the algorithm for increasing and decreasing
-   the Ack Ratio given in Section 6.1.2.
+   the Ack Ratio given in <a href="#section-6.1.2">Section 6.1.2</a>.
 
    The congestion avoidance phase of TCP halves the cwnd for every
    window with congestion.  Similarly, CCID 2 doubles Ack Ratio for
@@ -826,9 +968,9 @@ A.  Appendix: Derivation of Ack Ratio Decrease
          (W/R) + K = W/(R-1), so
                  K = W/(R-1) - W/R = W/(R^2 - R).
 
-B.  Appendix: Cost of Loss Inference Mistakes to Ack Ratio
+<span class="h1"><a name="appendix-B">B</a>.  Appendix: Cost of Loss Inference Mistakes to Ack Ratio</span>
 
-   As discussed in Section 6.1.1, the sender often cannot determine
+   As discussed in <a href="#section-6.1.1">Section 6.1.1</a>, the sender often cannot determine
    whether lost packets carried data.  This hinders its ability to
    separate non-data loss events from other loss events.  In the absence
    of better information, the sender assumes, for the purpose of Ack
@@ -839,9 +981,9 @@ B.  Appendix: Cost of Loss Inference Mistakes to Ack Ratio
 
 
 
-Floyd & Kohler              Standards Track                    [Page 15]
-
-RFC 4341                       DCCP CCID2                     March 2006
+<span class="grey">Floyd &amp; Kohler              Standards Track                    [Page 15]</span>
+</pre><pre class='newpage'><a name="page-16" id="page-16" href="#page-16" class="invisible"> </a>
+<span class="grey"><a href="./rfc4341">RFC 4341</a>                       DCCP CCID2                     March 2006</span>
 
 
    acknowledgements are reliable -- but acknowledgement information will
@@ -895,9 +1037,9 @@ RFC 4341                       DCCP CCID2                     March 2006
 
 
 
-Floyd & Kohler              Standards Track                    [Page 16]
-
-RFC 4341                       DCCP CCID2                     March 2006
+<span class="grey">Floyd &amp; Kohler              Standards Track                    [Page 16]</span>
+</pre><pre class='newpage'><a name="page-17" id="page-17" href="#page-17" class="invisible"> </a>
+<span class="grey"><a href="./rfc4341">RFC 4341</a>                       DCCP CCID2                     March 2006</span>
 
 
    Assume that when DCCP A correctly counts non-data losses, Ack Ratio
@@ -905,7 +1047,7 @@ RFC 4341                       DCCP CCID2                     March 2006
    sending rate of D packets per second.  Then when DCCP A incorrectly
    counts data losses as non-data losses, the sending rate for the
    B-to-A data traffic is still D pps, but the reduced sending rate for
-   the B-to-A acknowledgement traffic is f*D pps, with f < 1.  Let the
+   the B-to-A acknowledgement traffic is f*D pps, with f &lt; 1.  Let the
    packet loss rate be p.  The sender incorrectly estimates the non-data
    loss rate as (pD+pfD)/fD, or, equivalently, as p(1 + 1/f).  Because
    the congestion control mechanism for acknowledgement traffic is
@@ -928,72 +1070,72 @@ RFC 4341                       DCCP CCID2                     March 2006
 
 Normative References
 
-   [RFC793]       Postel, J., "Transmission Control Protocol", STD 7,
-                  RFC 793, September 1981.
+   [<a name="ref-RFC793" id="ref-RFC793">RFC793</a>]       Postel, J., "Transmission Control Protocol", STD 7,
+                  <a href="./rfc793">RFC 793</a>, September 1981.
 
-   [RFC2018]      Mathis, M., Mahdavi, J., Floyd, S., and A. Romanow,
-                  "TCP Selective Acknowledgement Options", RFC 2018,
+   [<a name="ref-RFC2018" id="ref-RFC2018">RFC2018</a>]      Mathis, M., Mahdavi, J., Floyd, S., and A. Romanow,
+                  "TCP Selective Acknowledgement Options", <a href="./rfc2018">RFC 2018</a>,
                   October 1996.
 
-   [RFC2119]      Bradner, S., "Key words for use in RFCs to Indicate
-                  Requirement Levels", BCP 14, RFC 2119, March 1997.
+   [<a name="ref-RFC2119" id="ref-RFC2119">RFC2119</a>]      Bradner, S., "Key words for use in RFCs to Indicate
+                  Requirement Levels", <a href="./bcp14">BCP 14</a>, <a href="./rfc2119">RFC 2119</a>, March 1997.
 
-   [RFC2434]      Narten, T. and H. Alvestrand, "Guidelines for Writing
-                  an IANA Considerations Section in RFCs", BCP 26, RFC
-                  2434, October 1998.
+   [<a name="ref-RFC2434" id="ref-RFC2434">RFC2434</a>]      Narten, T. and H. Alvestrand, "Guidelines for Writing
+                  an IANA Considerations Section in RFCs", <a href="./bcp26">BCP 26</a>, <a href="./rfc2434">RFC</a>
+                  <a href="./rfc2434">2434</a>, October 1998.
 
-   [RFC2581]      Allman, M., Paxson, V., and W. Stevens, "TCP
-                  Congestion Control", RFC 2581, April 1999.
+   [<a name="ref-RFC2581" id="ref-RFC2581">RFC2581</a>]      Allman, M., Paxson, V., and W. Stevens, "TCP
+                  Congestion Control", <a href="./rfc2581">RFC 2581</a>, April 1999.
 
-   [RFC2988]      Paxson, V. and M. Allman, "Computing TCP's
-                  Retransmission Timer", RFC 2988, November 2000.
-
-
+   [<a name="ref-RFC2988" id="ref-RFC2988">RFC2988</a>]      Paxson, V. and M. Allman, "Computing TCP's
+                  Retransmission Timer", <a href="./rfc2988">RFC 2988</a>, November 2000.
 
 
-Floyd & Kohler              Standards Track                    [Page 17]
-
-RFC 4341                       DCCP CCID2                     March 2006
 
 
-   [RFC3168]      Ramakrishnan, K., Floyd, S., and D. Black, "The
+<span class="grey">Floyd &amp; Kohler              Standards Track                    [Page 17]</span>
+</pre><pre class='newpage'><a name="page-18" id="page-18" href="#page-18" class="invisible"> </a>
+<span class="grey"><a href="./rfc4341">RFC 4341</a>                       DCCP CCID2                     March 2006</span>
+
+
+   [<a name="ref-RFC3168" id="ref-RFC3168">RFC3168</a>]      Ramakrishnan, K., Floyd, S., and D. Black, "The
                   Addition of Explicit Congestion Notification (ECN) to
-                  IP", RFC 3168, September 2001.
+                  IP", <a href="./rfc3168">RFC 3168</a>, September 2001.
 
-   [RFC3390]      Allman, M., Floyd, S., and C. Partridge, "Increasing
-                  TCP's Initial Window", RFC 3390, October 2002.
+   [<a name="ref-RFC3390" id="ref-RFC3390">RFC3390</a>]      Allman, M., Floyd, S., and C. Partridge, "Increasing
+                  TCP's Initial Window", <a href="./rfc3390">RFC 3390</a>, October 2002.
 
-   [RFC3517]      Blanton, E., Allman, M., Fall, K., and L. Wang, "A
+   [<a name="ref-RFC3517" id="ref-RFC3517">RFC3517</a>]      Blanton, E., Allman, M., Fall, K., and L. Wang, "A
                   Conservative Selective Acknowledgment (SACK)-based
-                  Loss Recovery Algorithm for TCP", RFC 3517, April
+                  Loss Recovery Algorithm for TCP", <a href="./rfc3517">RFC 3517</a>, April
                   2003.
 
-   [RFC3692]      Narten, T., "Assigning Experimental and Testing
-                  Numbers Considered Useful", BCP 82, RFC 3692, January
+   [<a name="ref-RFC3692" id="ref-RFC3692">RFC3692</a>]      Narten, T., "Assigning Experimental and Testing
+                  Numbers Considered Useful", <a href="./bcp82">BCP 82</a>, <a href="./rfc3692">RFC 3692</a>, January
                   2004.
 
-   [RFC4340]      Kohler, E., Handley, M., and S. Floyd, "Datagram
-                  Congestion Control Protocol (DCCP)", RFC 4340, March
+   [<a name="ref-RFC4340" id="ref-RFC4340">RFC4340</a>]      Kohler, E., Handley, M., and S. Floyd, "Datagram
+                  Congestion Control Protocol (DCCP)", <a href="./rfc4340">RFC 4340</a>, March
                   2006.
 
 Informative References
 
-   [RFC2861]      Handley, M., Padhye, J., and S. Floyd, "TCP Congestion
-                  Window Validation", RFC 2861, June 2000.
+   [<a name="ref-RFC2861" id="ref-RFC2861">RFC2861</a>]      Handley, M., Padhye, J., and S. Floyd, "TCP Congestion
+                  Window Validation", <a href="./rfc2861">RFC 2861</a>, June 2000.
 
-   [RFC3465]      Allman, M., "TCP Congestion Control with Appropriate
-                  Byte Counting (ABC)", RFC 3465, February 2003.
+   [<a name="ref-RFC3465" id="ref-RFC3465">RFC3465</a>]      Allman, M., "TCP Congestion Control with Appropriate
+                  Byte Counting (ABC)", <a href="./rfc3465">RFC 3465</a>, February 2003.
 
-   [RFC3540]      Spring, N., Wetherall, D., and D. Ely, "Robust
+   [<a name="ref-RFC3540" id="ref-RFC3540">RFC3540</a>]      Spring, N., Wetherall, D., and D. Ely, "Robust
                   Explicit Congestion Notification (ECN) Signaling with
-                  Nonces", RFC 3540, June 2003.
+                  Nonces", <a href="./rfc3540">RFC 3540</a>, June 2003.
 
-   [RFC4342]      Floyd, S., Kohler, E., and J. Padhye, "Profile for
+   [<a name="ref-RFC4342" id="ref-RFC4342">RFC4342</a>]      Floyd, S., Kohler, E., and J. Padhye, "Profile for
                   Datagram Congestion Control Protocol (DCCP) Congestion
-                  Control ID 3: TCP-Friendly Rate Control (TFRC)", RFC
-                  4342, March 2006.
+                  Control ID 3: TCP-Friendly Rate Control (TFRC)", <a href="./rfc4342">RFC</a>
+                  <a href="./rfc4342">4342</a>, March 2006.
 
-   [V03]          Arun Venkataramani, August 2003.  Citation for
+   [<a name="ref-V03" id="ref-V03">V03</a>]          Arun Venkataramani, August 2003.  Citation for
                   acknowledgement purposes only.
 
 
@@ -1007,9 +1149,9 @@ Informative References
 
 
 
-Floyd & Kohler              Standards Track                    [Page 18]
-
-RFC 4341                       DCCP CCID2                     March 2006
+<span class="grey">Floyd &amp; Kohler              Standards Track                    [Page 18]</span>
+</pre><pre class='newpage'><a name="page-19" id="page-19" href="#page-19" class="invisible"> </a>
+<span class="grey"><a href="./rfc4341">RFC 4341</a>                       DCCP CCID2                     March 2006</span>
 
 
 Authors' Addresses
@@ -1063,9 +1205,9 @@ Authors' Addresses
 
 
 
-Floyd & Kohler              Standards Track                    [Page 19]
-
-RFC 4341                       DCCP CCID2                     March 2006
+<span class="grey">Floyd &amp; Kohler              Standards Track                    [Page 19]</span>
+</pre><pre class='newpage'><a name="page-20" id="page-20" href="#page-20" class="invisible"> </a>
+<span class="grey"><a href="./rfc4341">RFC 4341</a>                       DCCP CCID2                     March 2006</span>
 
 
 Full Copyright Statement
@@ -1073,7 +1215,7 @@ Full Copyright Statement
    Copyright (C) The Internet Society (2006).
 
    This document is subject to the rights, licenses and restrictions
-   contained in BCP 78, and except as set forth therein, the authors
+   contained in <a href="./bcp78">BCP 78</a>, and except as set forth therein, the authors
    retain all their rights.
 
    This document and the information contained herein are provided on an
@@ -1093,14 +1235,14 @@ Intellectual Property
    might or might not be available; nor does it represent that it has
    made any independent effort to identify any such rights.  Information
    on the procedures with respect to rights in RFC documents can be
-   found in BCP 78 and BCP 79.
+   found in <a href="./bcp78">BCP 78</a> and <a href="./bcp79">BCP 79</a>.
 
    Copies of IPR disclosures made to the IETF Secretariat and any
    assurances of licenses to be made available, or the result of an
    attempt made to obtain a general license or permission for the use of
    such proprietary rights by implementers or users of this
    specification can be obtained from the IETF on-line IPR repository at
-   http://www.ietf.org/ipr.
+   <a href="http://www.ietf.org/ipr">http://www.ietf.org/ipr</a>.
 
    The IETF invites any interested party to bring to its attention any
    copyrights, patents or patent applications, or other proprietary
@@ -1119,5 +1261,11 @@ Acknowledgement
 
 
 
-Floyd & Kohler              Standards Track                    [Page 20]
-
+Floyd &amp; Kohler              Standards Track                    [Page 20]
+</pre><pre class='newpage'>
+
+</pre><br />
+<span class="noprint"><small><small>Html markup produced by rfcmarkup 1.93, available from
+<a href="http://tools.ietf.org/tools/rfcmarkup/">http://tools.ietf.org/tools/rfcmarkup/</a>
+</small></small></span>
+</body></html>

@@ -1,0 +1,422 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+   "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>RFC Errata Report</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+
+<script src="scripts/validate_rfcsearch.js" type="text/javascript">
+</script>
+
+<link rel="stylesheet" href="style/rfc-editor.css" type="text/css" />
+</head>
+<body>
+    <table border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td height="87" valign="top" width="677">
+               <hr>
+               <a href="http://www.rfc-editor.org/errata.php">
+                  <img src="IMAGES2/header_rfcerrata.gif" 
+                       alt="errata logo graphic" class="islink">
+               </a>
+            </td>
+          </tr>
+         <tr valign="top">
+         <td valign="top" width="677">
+          <hr>
+         </td>
+        </tbody>
+     </table>
+
+        <noscript>
+           <p class="warning">
+These pages are designed to work with JavaScript enabled. Please
+enable JavaScript for this site.
+           </p>
+        </noscript>
+<!--
+create_adv_search_form: $criteria=
+array(3) {
+  ["presentation"]=>
+  string(7) "records"
+  ["rfc"]=>
+  string(4) "4340"
+  ["rec_status"]=>
+  string(3) "all"
+}
+
+$action=errata_search.php
+$for_edit=
+-->
+
+<form method="get" id="query" action="errata_search.php" onsubmit="return validateRFCSearchForm(this);">
+  <table class="search">
+     <tr class="sbar">
+       <th colspan="4">Errata Search</th>
+     </tr>
+     <tr class="ibar">
+       <td class="search_label_bold" colspan="2">
+         <label for="rfc"><abbr>RFC</abbr> Number:</label>
+         <input type="text" id="rfc" name="rfc" size="4" maxlength="4" value="4340" />
+        </td>
+       <td  class="search_label_bold" colspan="2">
+         <label for="eid">Errata <abbr>ID</abbr>:</label>
+         <input type="text" id="eid" name="eid" size="4" maxlength="4" />
+       </td>
+     </tr>
+    <tr><td colspan="4">&nbsp;</td></tr>
+     <tr class="ibar">
+       <td style="text-decoration: underline;">Source of <abbr>RFC</abbr></td>
+
+       <td>&nbsp;</td>       <td><label for="rec_status">Status:</label></td>
+       <td class="userdata">
+           <select name="rec_status" id="rec_status"><!-- rec_status key in $criteria: all -->
+             <option value="15">All/Any</option>
+<option value="0" >Verified+Reported</option>             <option value="1">Verified</option>
+             <option value="2">Reported</option>
+             <option value="3">Held for Document Update</option>
+             <option value="9">Rejected</option>
+           </select>
+       </td>
+     </tr>
+     <tr class="ibar">
+       <td><label for="area_acronym">Area Acronym:</label></td>
+       <td class="userdata">
+           <select name="area_acronym" id="area_acronym"><option value="" selected="selected">All/Any</option>
+             <option value="app">app</option>
+             <option value="gen">gen</option>
+             <option value="int">int</option>
+             <option value="ops">ops</option>
+             <option value="rai">rai</option>
+             <option value="rtg">rtg</option>
+             <option value="sec">sec</option>
+             <option value="tsv">tsv</option>
+            </select>
+       </td>
+       <td>
+          <label for="errata_type">Type:</label>
+       </td>
+       <td class="userdata">
+           <select name="errata_type" id="errata_type">
+             <option value="" selected="selected">All/Any</option>             <option value=1>Editorial</option>
+             <option value=2>Technical</option>
+           </select>
+        </td>
+     </tr>
+     <tr class="ibar">
+       <td>
+          <label for="wg_acronym">WG Acronym:</label>
+       </td>
+       <td class="userdata">
+          <input id="wg_acronym" size="6" type="text" name="wg_acronym" maxlength="10" />
+         </td>
+       <td>
+          <label for="submitter_name">Submitter Name:</label>
+       </td>
+       <td class="userdata">
+          <input id="submitter_name" size="20" type="text" name="submitter_name" maxlength="60" />
+       </td>
+     </tr>
+     <tr class="ibar">
+       <td>
+          <label for="stream_name">Other:</label>
+       </td>
+       <td class="userdata">
+          <select name="stream_name" id="stream_name"><option value="" selected="selected">All/Any</option>
+            <option value="IAB">IAB</option>
+            <option value="INDEPENDENT">INDEPENDENT</option>
+            <option value="IRTF">IRTF</option>
+            <option value="Legacy">Legacy</option>
+          </select>
+       </td>
+       <td>
+          <label for="submit_date">Date Submitted:</label>
+       </td>
+       <td class="userdata">
+          <input id="submit_date" size="8" type="text" name="submit_date" maxlength="10" />
+       </td>
+     </tr>
+     <tr class="sbar">
+       <td colspan="4">
+         <div>
+        Summary Table<input type="radio" name="presentation"  id="presentationT" value="table">
+        Full Records<input type="radio" name="presentation"  id="presentationR" checked="on" value="records">
+         </div>
+         <input type="submit" value="Search" />
+         <input type="button" value="Reset Fields" onclick="return clearAdvSearchForm(document.forms.query);" />
+       </td>
+     </tr>
+  </table>
+</form>
+<script type="text/javascript">
+<!--
+          document.forms.query.rfc.focus();
+//-->
+</script>
+<!-- 
+<h4>errata_adv_lookup driver</h4>
+<pre>$criteria:
+array(3) {
+  ["presentation"]=>
+  string(7) "records"
+  ["rfc"]=>
+  string(4) "4340"
+  ["rec_status"]=>
+  string(3) "all"
+}
+
+</pre> -->
+<!-- found_count: $count_query=
+string(478) "SELECT e.errata_id
+FROM errata e, errata_type_codes t , errata_status_codes s,
+           working_group w, area a, 
+           `index` i left join area_assignments n on i.internal_key = n.fk_index
+      WHERE e.`doc-id` = i.`doc-id` AND 
+            e.type_id=t.errata_type_id AND 
+            e.status_id=s.errata_status_id AND
+            i.source = w.wg_name AND
+            (a.area_name = w.area_name OR n.fk_area = a.area_id) AND e.`doc-id` = 'RFC4340' GROUP BY e.errata_id"
+
+-->
+<p>Found 3 records.</p>
+<!-- <pre>query_verified: $query=
+SELECT e.`doc-id`, errata_id, title, `pub-date`,errata_type_code,
+             errata_status_code, submit_date, posted_date, verifier_id,
+             verifier_name, verifier_email, submitter_name, submitter_email,
+             orig_text, correct_text, e.notes, section, rs_code, e.insert_date,
+             e.update_date, conv_format_check, i.source,
+             submit_date, submitter_name, section
+      FROM errata e, errata_type_codes t , errata_status_codes s,
+           working_group w, area a, 
+           `index` i left join area_assignments n on i.internal_key = n.fk_index
+      WHERE e.`doc-id` = i.`doc-id` AND 
+            e.type_id=t.errata_type_id AND 
+            e.status_id=s.errata_status_id AND
+            i.source = w.wg_name AND
+            (a.area_name = w.area_name OR n.fk_area = a.area_id) AND e.`doc-id` = 'RFC4340' AND e.status_id = 1 GROUP BY errata_id ORDER BY i.`doc-id`, e.type_id DESC
+</pre> -->
+<h2>Status: <a href="status_type_desc.html">Verified</a> (3)</h2>
+<h2><a href="http://www.rfc-editor.org/rfc/rfc4340.txt"target="_blank">RFC4340</a>, "Datagram Congestion Control Protocol (DCCP)", March 2006</h2>
+<a href="source_desc.html">Source of RFC</a>: dccp (tsv)<br />
+<p>
+Errata ID: 974<br /><br />
+<b>Status: Verified<br />
+Type: Technical<br />
+</b><br />
+Reported By: Eddie Kohler<br />
+Date Reported: 2006-07-11<br />
+</p>
+<p>Section 6.6.4 says:
+</p>
+<pre class="rfctext">
+[text below should be added to the end of the section]
+</pre>
+<p>It should say:</p>
+<pre class="rfctext">
+   FGSR and FGSS values always satisfy FGSR &lt;= GSR and FGSS &lt;= GSS,
+   where GSR and GSS are the Greatest Sequence Numbers Received by and
+   Sent from this endpoint.  These constraints MUST be enforced even
+   when GSR and GSS wrap, as they might in a long connection.
+   Implementations SHOULD thus check FGSR and FGSS after every packet
+   received or sent, as follows.  (Wmax is the maximum allowed value for
+   the Sequence Window feature; see Section 7.5.2.)
+
+         If FGSR &gt; GSR, then FGSR := GSR - Wmax.
+         If FGSS &gt; GSS, then FGSS := GSS - Wmax.
+
+   Alternate implementations that correctly handle sequence number
+   wrapping are also acceptable.
+</pre>
+<p>Notes:</p>
+<p class="simpleindent">
+One technical omission has been found concerning the FGSR and FGSS<br />
+variables used to detect reordering of feature negotiation options.  We<br />
+suggest adding the above paragraph to the end of Section 6.6.4, on Page<br />
+42.<br />
+<br />
+via Alfred Hoenes<br />
+<br />
+from pending
+</p>
+<hr />
+<p>
+Errata ID: 1049<br /><br />
+<b>Status: Verified<br />
+Type: Technical<br />
+</b><br />
+Reported By: Sally Floyd<br />
+Date Reported: 2007-09-01<br />
+</p>
+<p>Section 6.6.8 says:
+</p>
+<pre class="rfctext">
+      The Ack
+      Ratio feature takes two-byte, non-zero integer values, so a
+      &quot;Change L(Ack Ratio, 0)&quot; option is never valid.
+</pre>
+<p>It should say:</p>
+<pre class="rfctext">
+      The Sequence Window feature takes six-byte, non-zero integer
+      values, with a minimum valid value of 32, so a &quot;Change
+      L(Sequence Window, 0)&quot; option is never valid.
+</pre>
+<p>Notes:</p>
+<p class="simpleindent">
+reported by Gerrit Renker
+</p>
+<hr />
+<p>
+Errata ID: 980<br /><br />
+<b>Status: Verified<br />
+Type: Editorial<br />
+</b><br />
+Reported By: Eddie Kohler<br />
+Date Reported: 2006-07-11<br />
+</p>
+<p>&nbsp;</p>
+<pre class="rfctext">
+In Section 6.6.4, Page 41, it says:
+
+              (Change and/or Confirm).  This value is initialized to
+              ISR - 1.
+
+It should say:
+
+              (Change and/or Confirm).  This value is initialized to
+              ISR - 1, where ISR is the Initial Sequence Number Received
+              from the other endpoint.  (ISR and other sequence number
+              variables are defined in Section 7.1.)
+
+In Section 6.6.4, Page 41, it says:
+
+              reordering.  FGSS is initialized to ISS.
+
+It should say:
+
+              reordering.  FGSS is initialized to ISS, the Initial
+              Sequence Number Sent by this endpoint.
+
+
+In Section 7.5.2, Page 49, it says:
+
+    getting out sync after bursts of loss,
+
+It should say:
+
+    getting out of sync after bursts of loss,
+
+
+In Section 8.1.2, Page 60, it says:
+
+            intepreting the four-character result as a 32-bit big-endian
+
+It should say:
+
+            interpreting the four-character result as a 32-bit big-endian
+
+
+In Appendix A, Page 116, it says:
+
+    right to left.  The implementation maintains five variables, aside
+
+It should say:
+
+    right to left.  The implementation maintains four variables, aside
+
+And it says:
+
+       acknowledged in the buffer.  This corresponds to the &quot;head&quot;
+
+It should say:
+
+       acknowledged in the buffer.  This corresponds to the &quot;buf_head&quot;
+
+On Page 117, it says:
+
+    Ack Vector, it remembers four variables:
+
+It should say:
+
+    Ack Vector, it remembers five variables:
+
+
+In Section A.3, Page 121, it says:
+
+    HC-Sender packet 3, so the HC-Sender has now received HC-Receiver's
+
+It should say:
+
+    HC-Sender packet 3, so the HC-Sender has now received the HC-Receiver's
+
+
+In Section A.4, Page 122, it says:
+
+    a single acknowledgement number tells HC-Receiver how much ack
+
+It should say:
+
+    a single acknowledgement number tells the HC-Receiver how much ack
+
+</pre>
+<p>Notes:</p>
+<p class="simpleindent">
+via Alfred Hoenes<br />
+<br />
+from pending
+</p>
+<hr />
+<!-- <pre>query_reported: $query=
+SELECT e.`doc-id`, errata_id, title, `pub-date`,errata_type_code,
+             errata_status_code, submit_date, posted_date, verifier_id,
+             verifier_name, verifier_email, submitter_name, submitter_email,
+             orig_text, correct_text, e.notes, section, rs_code, e.insert_date,
+             e.update_date, conv_format_check, i.source,
+             submit_date, submitter_name, section
+      FROM errata e, errata_type_codes t , errata_status_codes s,
+           working_group w, area a, 
+           `index` i left join area_assignments n on i.internal_key = n.fk_index
+      WHERE e.`doc-id` = i.`doc-id` AND 
+            e.type_id=t.errata_type_id AND 
+            e.status_id=s.errata_status_id AND
+            i.source = w.wg_name AND
+            (a.area_name = w.area_name OR n.fk_area = a.area_id) AND e.`doc-id` = 'RFC4340' AND e.status_id = 2 GROUP BY errata_id ORDER BY i.`doc-id`, e.type_id DESC
+</pre> -->
+<!-- <p>No records found for status Reported.</p> -->
+<!-- <pre>query_held: $query=
+SELECT e.`doc-id`, errata_id, title, `pub-date`,errata_type_code,
+             errata_status_code, submit_date, posted_date, verifier_id,
+             verifier_name, verifier_email, submitter_name, submitter_email,
+             orig_text, correct_text, e.notes, section, rs_code, e.insert_date,
+             e.update_date, conv_format_check, i.source,
+             submit_date, submitter_name, section
+      FROM errata e, errata_type_codes t , errata_status_codes s,
+           working_group w, area a, 
+           `index` i left join area_assignments n on i.internal_key = n.fk_index
+      WHERE e.`doc-id` = i.`doc-id` AND 
+            e.type_id=t.errata_type_id AND 
+            e.status_id=s.errata_status_id AND
+            i.source = w.wg_name AND
+            (a.area_name = w.area_name OR n.fk_area = a.area_id) AND e.`doc-id` = 'RFC4340' AND e.status_id = 3 GROUP BY errata_id ORDER BY i.`doc-id`, e.type_id DESC
+</pre> -->
+<!-- <p>No records found for status Held for Document Update.</p> -->
+<!-- <pre>query_rejected: $query=
+SELECT e.`doc-id`, errata_id, title, `pub-date`,errata_type_code,
+             errata_status_code, submit_date, posted_date, verifier_id,
+             verifier_name, verifier_email, submitter_name, submitter_email,
+             orig_text, correct_text, e.notes, section, rs_code, e.insert_date,
+             e.update_date, conv_format_check, i.source,
+             submit_date, submitter_name, section
+      FROM errata e, errata_type_codes t , errata_status_codes s,
+           working_group w, area a, 
+           `index` i left join area_assignments n on i.internal_key = n.fk_index
+      WHERE e.`doc-id` = i.`doc-id` AND 
+            e.type_id=t.errata_type_id AND 
+            e.status_id=s.errata_status_id AND
+            i.source = w.wg_name AND
+            (a.area_name = w.area_name OR n.fk_area = a.area_id) AND e.`doc-id` = 'RFC4340' AND e.status_id = 9 GROUP BY errata_id ORDER BY i.`doc-id`, e.type_id DESC
+</pre> -->
+<!-- <p>No records found for status Rejected.</p> -->
+
+</body>
+</html>
