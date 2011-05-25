@@ -4,7 +4,11 @@
 
 package dccp
 
-import "rand"
+import (
+	"bytes"
+	"fmt"
+	"rand"
+)
 
 // socket is a data structure, maintaining the DCCP socket variables.
 // socket's methods are not re-entrant
@@ -24,8 +28,8 @@ type socket struct {
 	CCIDB byte // CCID in use for the B-to-A half-connection, Section 10
 
 	// XXX: Must be set
-	SWBF uint64 // Sequence Window/B Feature, see Section 7.5.1
 	SWAF uint64 // Sequence Window/A Feature, see Section 7.5.1
+	SWBF uint64 // Sequence Window/B Feature, see Section 7.5.1
 
 	State       int
 	Server      bool   // True if the endpoint is a server, false if it is a client
@@ -37,6 +41,14 @@ type socket struct {
 
 	// XXX: Must be set by CCID
 	RTT   int64 // Round Trip Time in nanoseconds
+}
+
+func (s *socket) String() string {
+	var w bytes.Buffer
+	fmt.Fprintf(&w, "State=%s:%s %s, ISS=%d, ISR=%d, OSR=%d, GSS=%d, GSR=%d, GAR=%d, SWAF=%d, SWBF=%d, RTT=%d",
+		StateString(s.State), ServerString(s.Server), ServiceCodeString(s.ServiceCode),
+		s.ISS, s.ISR, s.OSR, s.GSS, s.GSR, s.GAR, s.SWAF, s.SWBF, s.RTT)
+	return string(w.Bytes())
 }
 
 const (
@@ -61,6 +73,38 @@ const (
 	CLOSING
 	TIMEWAIT
 )
+
+func StateString(state int) string {
+	switch {
+	case CLOSED:
+		return "CLOSED"
+	case LISTEN:
+		return "LISTEN"
+	case REQUEST:
+		return "REQUEST"
+	case RESPOND:
+		return "RESPOND"
+	case PARTOPEN:
+		return "PARTOPEN"
+	case OPEN:
+		return "OPEN"
+	case CLOSEREQ:
+		return "CLOSEREQ"
+	case CLOSING:
+		return "CLOSING"
+	case TIMEWAIT:
+		return "TIMEWAIT"
+	default:
+		panic("unreach")
+	}
+}
+
+func ServerString(isServer bool) string {
+	if isServer {
+		return "Server"
+	}
+	return "Client"
+}
 
 func (s *socket) GetRTT() int64 { return s.RTT }
 func (s *socket) SetRTT(v int64) { s.RTT = v }

@@ -3,7 +3,6 @@
 
 * Listen protocol is in Step 2, Section 8.5
 * Cleanup generate* methods
-* Socket String() method
 
 * THINK: DCCP uses source/dest port to identify flow. We use mux-layer. Reconcile?
 
