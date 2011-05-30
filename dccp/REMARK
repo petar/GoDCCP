@@ -3,6 +3,7 @@
 
 * Listen protocol is in Step 2, Section 8.5
 * Cleanup generate* methods
+* test CCID3 opts
 
 * THINK: DCCP uses source/dest port to identify flow. We use mux-layer. Reconcile?
 

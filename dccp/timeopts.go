@@ -6,7 +6,6 @@ package dccp
 
 import (
 	"os"
-	"time"
 )
 
 const (
@@ -16,33 +15,34 @@ const (
 
 // TimestampOption, Section 13.1
 // Time values are based on a circular uint32 value at 10 microseconds granularity
-type TimestampOption Option
-
-func NewTimestampOption(t int64) *TimestampOption {
-	return &TimestampOption{
-		Type:      TimestampOption,
-		Data:      encodeTimestamp(t, make([]byte, 4)),
-		Mandatory: false,
-	}
+type TimestampOption struct {
+	// Timestamp is given in 10 microsecond circular units
+	Timestamp uint32
 }
 
+func (opt *TimestampOption) Encode() (*Option, os.Error) {
+	return &Option{
+		Type:      OptionTimestamp,
+		Data:      encodeTimestamp(opt.Timestamp, make([]byte, 4)),
+		Mandatory: false,
+	}, nil
+}
+
+// Time2Timestamp converts a nanosecond absolute time into 
+// uint32-circular 10 microsecond granularity time
+func Time2Timestamp(t int64) uint32 { return uint32(t / TenMicroInNano) }
+
 // d must be a 4-byte slice
-func encodeTimestamp(t int64, d []byte) []byte {
-	var t0 uint32 = uint32(t / TenMicroInNano) 
-	encode4ByteUint(t0, d)
+func encodeTimestamp(t uint32, d []byte) []byte {
+	encode4ByteUint(t, d)
 	return d[0:4]
 }
 
-func ValidateTimestampOption(opt *Option) *TimestampOption {
-	if opt.Type != TimestampOption || len(opt.Data) != 4 {
+func DecodeTimestampOption(opt *Option) *TimestampOption {
+	if opt.Type != OptionTimestamp || len(opt.Data) != 4 {
 		return nil
 	}
-	return (*TimestampOption)(opt)
-}
-
-// GetTimestamp returns the timestamp option value in 10 microsecond circular units
-func (opt *TimestampOption) GetTimestamp() uint32 {
-	return decodeTimestamp(opt.Data)
+	return &TimestampOption{ Timestamp: decodeTimestamp(opt.Data[0:4]) }
 }
 
 func decodeTimestamp(d []byte) uint32 {
@@ -58,17 +58,19 @@ func decodeTimestamp(d []byte) uint32 {
 // The option data, Elapsed Time, represents an estimated lower bound on the amount of time
 // elapsed since the packet being acknowledged was received, with units of hundredths of
 // milliseconds (10 microseconds granularity).
-type ElapsedTimeOption Option
+type ElapsedTimeOption struct {
+	// Elapsed measures time in nanoseconds
+	Elapsed int64
+}
 
 const MaxElapsedTime = 4294967295 * TenMicroInNano // Maximum distinguishable elapsed time in nanoseconds
 
-// The argument elapsed measures time in nanoseconds
-func NewElapsedTimeOption(elapsed int64) *ElapsedTimeOption {
-	return &ElapsedTimeOption{
-		Type:      ElapsedTimeOption,
-		Data:      encodeElapsed(elapsed, make([]byte, 4)),
+func (opt *ElapsedTimeOption) Encode() (*Option, os.Error) {
+	return &Option{
+		Type:      OptionElapsedTime,
+		Data:      encodeElapsed(opt.Elapsed, make([]byte, 4)),
 		Mandatory: false,
-	}
+	}, nil
 }
 
 // d must be a 4-byte slice
@@ -77,32 +79,31 @@ func encodeElapsed(elapsed int64, d []byte) []byte {
 		elapsed = MaxElapsedTime
 	}
 	if elapsed < 1e9/2 {
-		assert2Byte(elapsed / TenMicroInNano)
-		e := uint16(elapsed / TenMicroInNano)
-		encode2ByteUint(e, d)
+		assertFitsIn2Bytes(uint64(elapsed / TenMicroInNano))
+		encode2ByteUint(uint16(elapsed / TenMicroInNano), d)
 		return d[0:2]
 	} else {
-		assert4Byte(elapsed / TenMicroInNano)
-		e := uint32(elapsed / TenMicroInNano)
-		encode4ByteUint(e, d)
+		assertFitsIn4Bytes(uint64(elapsed / TenMicroInNano))
+		encode4ByteUint(uint32(elapsed / TenMicroInNano), d)
 		return d[0:4]
 	}
 	panic("unreach")
 }
 
-func ValidateElapsedTimeOption(opt *Option) *ElapsedTimeOption {
-	if opt.Type != ElapsedTimeOption || (len(opt.Data) != 2 && len(opt.Data) != 4) {
+func DecodeElapsedTimeOption(opt *Option) *ElapsedTimeOption {
+	if opt.Type != OptionElapsedTime || (len(opt.Data) != 2 && len(opt.Data) != 4) {
 		return nil
 	}
-	return (*ElapsedTimeOption)(opt)
+	elapsed, err := decodeElapsed(opt.Data)
+	if err != nil {
+		return nil
+	}
+	return &ElapsedTimeOption{
+		Elapsed: elapsed,
+	}
 }
 
-// GetElapsed() returns the elapsed time value in nanoseconds
-func (opt *ElapsedTimeOption) GetElapsed() int64 {
-	return decodeElapsed(opt.Data)
-}
-
-func decodeElapsed(d []byte) int64 {
+func decodeElapsed(d []byte) (int64, os.Error) {
 	var t int64
 	switch len(d) {
 	case 2:
@@ -110,52 +111,55 @@ func decodeElapsed(d []byte) int64 {
 	case 4:
 		t = int64(decode4ByteUint(d))
 	default:
-		panic("unreach")
+		return 0, ErrSize
 	}
-	return t * TenMicroInNano
+	return t * TenMicroInNano, nil
 }
 
 // TimestampEchoOption, Section 13.3
 // Time values are based on a circular uint32 value at 10 microseconds granularity
-type TimestampEchoOption Option
+type TimestampEchoOption struct {
+	// The timestamp echo option value in 10 microsecond circular units
+	Timestamp uint32
+	// The elapsed time in nanoseconds
+	Elapsed   int64
+}
 
-// The argument elapsed is in nanoseconds.
-func NewTimestampEcho(timestampOpt *Option, elapsed int64) *TimestampEchoOption {
+func (opt *TimestampEchoOption) Encode() (*Option, os.Error) {
 	d := make([]byte, 8)
-	copy(d[0:4], timestampOpt.Data[0:4])
-	if elapsed == 0 {
+	encodeTimestamp(opt.Timestamp, d[0:4])
+	if opt.Elapsed == 0 {
 		d = d[0:4]
 	} else {
-		l := len(encodeElapsed(elapsed, d))
+		l := len(encodeElapsed(opt.Elapsed, d[4:]))
 		d = d[0:4+l]
 	}
 	// The size of d can be 4, 6 or 8
-	return &TimestampEcho{
-		Type:      TimestampEchoOption,
+	return &Option{
+		Type:      OptionTimestampEcho,
 		Data:      d,
 		Mandatory: false,
-	}
+	}, nil
 }
 
-func ValidateTimestampEchoOption(opt *Option) *TimestampEchoOption {
-	if opt.Type != TimestampEchoOption || 
+func DecodeTimestampEchoOption(opt *Option) *TimestampEchoOption {
+	if opt.Type != OptionTimestampEcho || 
 		(len(opt.Data) != 4 && len(opt.Data) != 6 && len(opt.Data) != 8) {
 
 		return nil
 	}
-	return (*TimestampEchoOption)(opt)
-}
-
-// GetTimestamp returns the timestamp echo option value in 10 microsecond circular units
-func (opt *TimestampEchoOption) GetTimestamp() uint32 {
-	return decodeTimestamp(opt.Data[0:4])
-}
-
-func (opt *TimestampEchoOption) GetElapsed() int64 {
-	if len(opt.Data) == 4 {
-		return 0
+	var elapsed int64
+	if len(opt.Data) > 4 {
+		var err os.Error
+		elapsed, err = decodeElapsed(opt.Data[4:])
+		if err != nil {
+			return nil
+		}
 	}
-	return decodeElapsed(opt.Data[4:])
+	return &TimestampEchoOption{
+		Timestamp: decodeTimestamp(opt.Data[0:4]),
+		Elapsed: elapsed,
+	}
 }
 
 // GetTimestampDiff() returns the smaller circular difference between t0 an t1
