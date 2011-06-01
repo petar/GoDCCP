@@ -27,7 +27,6 @@ type socket struct {
 	CCIDA byte // CCID in use for the A-to-B half-connection, Section 10
 	CCIDB byte // CCID in use for the B-to-A half-connection, Section 10
 
-	// XXX: Must be set
 	SWAF uint64 // Sequence Window/A Feature, see Section 7.5.1
 	SWBF uint64 // Sequence Window/B Feature, see Section 7.5.1
 
@@ -35,11 +34,9 @@ type socket struct {
 	Server      bool   // True if the endpoint is a server, false if it is a client
 	ServiceCode uint32 // The service code of this connection
 
-	// XXX: Not set by Conn
-	PMTU  int // Path Maximum Transmission Unit
-	MPS   int // Maximum Packet Size = min(PMTU, CCMPS)
+	PMTU  uint32 // Path Maximum Transmission Unit
+	CCMPS uint32 // Congestion Control Maximum Packet Size
 
-	// XXX: Must be set by CCID
 	RTT   int64 // Round Trip Time in nanoseconds
 }
 
@@ -106,6 +103,14 @@ func ServerString(isServer bool) string {
 	return "Client"
 }
 
+func (s *socket) GetMPS() uint32 { return minUint32(s.CCMPS, s.PMTU) }
+
+func (s *socket) GetPMTU() uint32 { return s.PMTU }
+func (s *socket) SetPMTU(v uint32) { s.PMTU = v }
+
+func (s *socket) GetCCMPS() uint32 { return s.CCMPS }
+func (s *socket) SetCCMPS(v uint32) { s.CCMPS = v }
+
 func (s *socket) GetRTT() int64 { return s.RTT }
 func (s *socket) SetRTT(v int64) { s.RTT = v }
 
@@ -149,6 +154,10 @@ func maxu64(x, y uint64) uint64 {
 }
 
 // TODO: Address the last paragraph of Section 7.5.1 regarding SWL,AWL calculation
+
+func (s *socket) SetSWABF(swaf, swbf uint64) {
+	s.SWAF, s.SWBF = swaf, swbf
+}
 
 // GetSWLH() computes SWL and SWH, see Section 7.5.1
 func (s *socket) GetSWLH() (SWL uint64, SWH uint64) {

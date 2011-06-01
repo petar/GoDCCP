@@ -39,8 +39,8 @@ func newFlow(addr net.Addr, m *Mux, ch chan muxHeader, largest int, local, remot
 	}
 }
 
-// MaxBlockLen returns the largest size of read/write block
-func (f *flow) MaxBlockLen() int { return f.largest }
+// GetMTU returns the largest size of read/write block
+func (f *flow) GetMTU() int { return f.largest }
 
 // LastRead() returns the timestamp of the last successful read operation
 func (f *flow) LastReadTime() int64 {

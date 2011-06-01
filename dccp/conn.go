@@ -11,7 +11,7 @@ import (
 type Conn struct {
 	id
 	hc HeaderConn
-	CongestionControl
+	cc CongestionControl
 	Mutex // Protects access to socket
 	socket
 	readApp      chan []byte  // readLoop() sends application data to Read()

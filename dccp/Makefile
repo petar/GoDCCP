@@ -33,11 +33,12 @@ GOFILES=\
 	wire.go\
 	write.go\
 	mutex.go\
-	timeopts.go\
+	timeopt.go\
+	cc.go\
+	ccid3opt.go\
 	#listener.go\
 	#dccp.go\
 	#dial.go\
 	#ccid3.go\
-	#congestion.go\
 
 include $(GOROOT)/src/Make.pkg

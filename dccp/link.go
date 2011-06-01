@@ -13,7 +13,7 @@ import (
 // Link{} is an abstract interface to a physical connection-less packet layer which sends and
 // receives packets
 type Link interface {
-	MaxBlockLen() int	// Writes smaller than this are guaranteed to be sent whole
+	GetMTU() int	// Writes smaller than this are guaranteed to be sent whole
 	ReadFrom(buf []byte) (n int, addr net.Addr, err os.Error)	// Receive next packet of data
 	WriteTo(buf []byte, addr net.Addr) (n int, err os.Error)	// Send a packet of data. Partial writes allowed
 	io.Closer

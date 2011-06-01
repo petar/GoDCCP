@@ -51,6 +51,7 @@ func (c *Conn) readLoop() {
 		}
 
 		c.Lock()
+		c.updateSocketCongestionControl()
 		if c.step2_ProcessTIMEWAIT(h) != nil {
 			goto Done
 		}
@@ -99,4 +100,17 @@ func (c *Conn) readLoop() {
 	Done:
 		c.Unlock()
 	}
+}
+
+func (c *conn) updateSocketCongestionControl() {
+	c.AssertLocked()
+	swaf, swbf := c.cc.GetSWABF()
+	c.socket.SetSWABF(swaf, swbf)
+	c.socket.SetRTT(c.cc.GetRTT())
+	c.socket.SetCCMPS(c.cc.GetCCMPS())
+}
+
+func (c *conn) updateSocketLink() {
+	c.AssertLocked()
+	c.socket.SetPMTU(c.hc.GetMTU())
 }

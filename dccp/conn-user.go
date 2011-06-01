@@ -8,14 +8,23 @@ import (
 	"os"
 )
 
-// MaxBlockLen() returns the maximum size of a block that can be passed to WriteBlock
-func (c *Conn) MaxBlockLen() int {
-	return c.hc.MaxFootprint() - MAX_OPTIONS_SIZE - getFixedHeaderSize(DataAck, true) 
+// This is an approximate upper bound on the size of options that are
+// allowed on a Data or DataAck packet. See isOptionValidForType.
+const maxDataOptionSize = 24
+
+// GetMTU() returns the maximum size of an application-level data block that can be passed
+// to WriteBlock This is an informative number. Packets are sent anyway, but they may be
+// dropped by the link layer or a router.
+func (c *Conn) GetMTU() int {
+	c.Lock()
+	defer c.Unlock()
+	c.updateSocketLink()
+	return c.socket.GetMPS() - maxDataOptionSize - getFixedHeaderSize(DataAck, true) 
 }
 
 // WriteBlock blocks until the slice b is sent.
 func (c *Conn) WriteBlock(b []byte) os.Error {
-	if len(b) > c.MaxBlockLen() {
+	if len(b) > c.GetMTU() {
 		return ErrTooBig
 	}
 	c.Lock()
