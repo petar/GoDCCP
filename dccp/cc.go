@@ -39,7 +39,7 @@ type CongestionControl interface {
 }
 
 const (
-	CCID2 = 2 // TCP-like Congestion Control, RFC 4341
-	CCID3 = 3 // TCP-Friendly Rate Control (TFRC), RFC 4342
+	CCID2      = 2 // TCP-like Congestion Control, RFC 4341
+	CCID3      = 3 // TCP-Friendly Rate Control (TFRC), RFC 4342
 	CCID_PETAR = 7 // Simple constant-rate control for testing purposes
 )

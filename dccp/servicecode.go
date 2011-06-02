@@ -36,9 +36,9 @@ func isASCIIServiceCodeChar(c byte) bool {
 
 func serviceCodeToSlice(u uint32) []byte {
 	p := make([]byte, 4)
-	p[0] = byte(u >> 3*8)
-	p[1] = byte((u >> 2*8) & 0xff)
-	p[2] = byte((u >> 1*8) & 0xff)
+	p[0] = byte(u >> 3 * 8)
+	p[1] = byte((u >> 2 * 8) & 0xff)
+	p[2] = byte((u >> 1 * 8) & 0xff)
 	p[3] = byte(u & 0xff)
 	return p
 }
@@ -57,11 +57,11 @@ func sliceToServiceCode(p []byte) uint32 {
 
 // TODO: Implement additional string representations according to '8.1.2. Service Codes'
 
-func ServiceCodeString(code uint32) string { 
+func ServiceCodeString(code uint32) string {
 	return "SC:" + string(serviceCodeToSlice(code))
 }
 
-func ParseServiceCode(p []byte) (uint32, os.Error) { 
+func ParseServiceCode(p []byte) (uint32, os.Error) {
 	if len(p) != 7 {
 		return 0, ErrSyntax
 	}

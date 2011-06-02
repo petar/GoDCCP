@@ -42,7 +42,7 @@ func DecodeTimestampOption(opt *Option) *TimestampOption {
 	if opt.Type != OptionTimestamp || len(opt.Data) != 4 {
 		return nil
 	}
-	return &TimestampOption{ Timestamp: decodeTimestamp(opt.Data[0:4]) }
+	return &TimestampOption{Timestamp: decodeTimestamp(opt.Data[0:4])}
 }
 
 func decodeTimestamp(d []byte) uint32 {
@@ -80,11 +80,11 @@ func encodeElapsed(elapsed int64, d []byte) []byte {
 	}
 	if elapsed < 1e9/2 {
 		assertFitsIn2Bytes(uint64(elapsed / TenMicroInNano))
-		encode2ByteUint(uint16(elapsed / TenMicroInNano), d)
+		encode2ByteUint(uint16(elapsed/TenMicroInNano), d)
 		return d[0:2]
 	} else {
 		assertFitsIn4Bytes(uint64(elapsed / TenMicroInNano))
-		encode4ByteUint(uint32(elapsed / TenMicroInNano), d)
+		encode4ByteUint(uint32(elapsed/TenMicroInNano), d)
 		return d[0:4]
 	}
 	panic("unreach")
@@ -122,7 +122,7 @@ type TimestampEchoOption struct {
 	// The timestamp echo option value in 10 microsecond circular units
 	Timestamp uint32
 	// The elapsed time in nanoseconds
-	Elapsed   int64
+	Elapsed int64
 }
 
 func (opt *TimestampEchoOption) Encode() (*Option, os.Error) {
@@ -132,7 +132,7 @@ func (opt *TimestampEchoOption) Encode() (*Option, os.Error) {
 		d = d[0:4]
 	} else {
 		l := len(encodeElapsed(opt.Elapsed, d[4:]))
-		d = d[0:4+l]
+		d = d[0 : 4+l]
 	}
 	// The size of d can be 4, 6 or 8
 	return &Option{
@@ -143,7 +143,7 @@ func (opt *TimestampEchoOption) Encode() (*Option, os.Error) {
 }
 
 func DecodeTimestampEchoOption(opt *Option) *TimestampEchoOption {
-	if opt.Type != OptionTimestampEcho || 
+	if opt.Type != OptionTimestampEcho ||
 		(len(opt.Data) != 4 && len(opt.Data) != 6 && len(opt.Data) != 8) {
 
 		return nil
@@ -158,12 +158,12 @@ func DecodeTimestampEchoOption(opt *Option) *TimestampEchoOption {
 	}
 	return &TimestampEchoOption{
 		Timestamp: decodeTimestamp(opt.Data[0:4]),
-		Elapsed: elapsed,
+		Elapsed:   elapsed,
 	}
 }
 
-// GetTimestampDiff() returns the smaller circular difference between t0 an t1
-// in nanoseconds. While note that t0 and t1 are given in 10 microsecond circular units
+// GetTimestampDiff() returns the circular difference between t0 an t1 in nanoseconds. Note
+// that t0 and t1 are themselves given in 10 microsecond circular units
 func GetTimestampDiff(t0, t1 uint32) int64 {
 	return int64(minUint32(t0-t1, t1-t0)) * TenMicroInNano
 }

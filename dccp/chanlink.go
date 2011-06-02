@@ -12,13 +12,13 @@ import (
 // ChanLink{} treats one side of a channel as an incoming packet link
 type ChanLink struct {
 	Mutex
-	in, out  chan []byte
+	in, out chan []byte
 }
 
-func NewChanPipe() (p,q *ChanLink) {
+func NewChanPipe() (p, q *ChanLink) {
 	c0 := make(chan []byte)
 	c1 := make(chan []byte)
-	return &ChanLink{ in: c0, out: c1 }, &ChanLink{ in: c1, out: c0 }
+	return &ChanLink{in: c0, out: c1}, &ChanLink{in: c1, out: c0}
 }
 
 func (l *ChanLink) GetMTU() int { return 1500 }

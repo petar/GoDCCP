@@ -29,9 +29,9 @@ func (opt *Option) getFootprint() (int, os.Error) {
 		mopt = 1
 	}
 	if opt.Data == nil {
-		return mopt + 2, nil  // Option Type byte + Option Len byte
+		return mopt + 2, nil // Option Type byte + Option Len byte
 	}
-	if len(opt.Data) > (255-2) {
+	if len(opt.Data) > (255 - 2) {
 		return 0, ErrOption
 	}
 	return mopt + 2 + len(opt.Data), nil
@@ -58,7 +58,7 @@ func (gh *Header) getOptionsFootprint() (int, os.Error) {
 		}
 		r += s
 	}
-	if r % 4 != 0 {
+	if r%4 != 0 {
 		r += 4 - (r % 4)
 	}
 	return r, nil
@@ -92,11 +92,10 @@ func (gh *Header) getHeaderFootprint(allowShortSeqNoFeature bool) (int, os.Error
 // Write() writes the DCCP header to two return buffers.
 // The first one is the header part, and the second one is the data
 // part which simply equals the slice Header.Data
-func (gh *Header) Write(
-		sourceIP, destIP []byte, 
-		protoNo byte,
-		allowShortSeqNoFeature bool) (header []byte, err os.Error) {
-	
+func (gh *Header) Write(sourceIP, destIP []byte,
+protoNo byte,
+allowShortSeqNoFeature bool) (header []byte, err os.Error) {
+
 	err = verifyIPAndProto(sourceIP, destIP, protoNo)
 	if err != nil {
 		return nil, err
@@ -106,7 +105,7 @@ func (gh *Header) Write(
 	if err != nil {
 		return nil, err
 	}
-	buf := make([]byte, dataOffset + len(gh.Data))
+	buf := make([]byte, dataOffset+len(gh.Data))
 
 	k := 0
 
@@ -118,7 +117,7 @@ func (gh *Header) Write(
 	k += 2
 
 	// Write app data offset
-	encode1ByteUint(byte(dataOffset >> 2), buf[k:k+1])
+	encode1ByteUint(byte(dataOffset>>2), buf[k:k+1])
 	k += 1
 
 	// Write CCVal
@@ -198,7 +197,7 @@ func (gh *Header) Write(
 		return nil, err
 	}
 	csum := csumSum(buf[0:dataOffset])
-	csum = csumAdd(csum, csumPseudoIP(sourceIP, destIP, protoNo, len(buf) + dlen))
+	csum = csumAdd(csum, csumPseudoIP(sourceIP, destIP, protoNo, len(buf)+dlen))
 	if appCov > 0 {
 		csum = csumAdd(csum, csumSum(gh.Data[0:appCov]))
 	}
@@ -212,7 +211,7 @@ func (gh *Header) Write(
 }
 
 func writeOptions(opts []Option, buf []byte, Type byte) {
-	if len(buf) & 0x3 != 0 {
+	if len(buf)&0x3 != 0 {
 		panic("logic")
 	}
 	k := 0
@@ -242,7 +241,7 @@ func writeOptions(opts []Option, buf []byte, Type byte) {
 		}
 		k += len(opt.Data)
 	}
-	if len(buf) - k >= 4 {
+	if len(buf)-k >= 4 {
 		panic("opt padding len")
 	}
 	for i := 0; i < len(buf)-k; i++ {

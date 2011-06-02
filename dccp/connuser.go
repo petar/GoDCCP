@@ -19,7 +19,7 @@ func (c *Conn) GetMTU() int {
 	c.Lock()
 	defer c.Unlock()
 	c.updateSocketLink()
-	return c.socket.GetMPS() - maxDataOptionSize - getFixedHeaderSize(DataAck, true) 
+	return int(c.socket.GetMPS()) - maxDataOptionSize - getFixedHeaderSize(DataAck, true)
 }
 
 // WriteBlock blocks until the slice b is sent.

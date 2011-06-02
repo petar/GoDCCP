@@ -10,7 +10,8 @@ import "os"
 type muxMsg struct {
 	Source, Sink *Label
 }
-const muxMsgFootprint = 2*labelFootprint;
+
+const muxMsgFootprint = 2 * labelFootprint
 
 // readMuxMsg() decodes a muxMsg{} from wire format
 func readMuxMsg(p []byte) (msg *muxMsg, n int, err os.Error) {
@@ -22,7 +23,7 @@ func readMuxMsg(p []byte) (msg *muxMsg, n int, err os.Error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	return &muxMsg{source, dest}, n0+n1, nil
+	return &muxMsg{source, dest}, n0 + n1, nil
 }
 
 // Write() encodes the muxMsg{} to p@ in wire format
@@ -35,5 +36,5 @@ func (msg *muxMsg) Write(p []byte) (n int, err os.Error) {
 	if err != nil {
 		return 0, err
 	}
-	return n0+n1, nil
+	return n0 + n1, nil
 }

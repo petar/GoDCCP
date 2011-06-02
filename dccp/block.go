@@ -12,7 +12,7 @@ import (
 // of indivisible blocks of data. 
 type BlockConn interface {
 	// GetMTU returns th he largest allowable block size (for read and write). The MTU may vary.
-	GetMTU() int	
+	GetMTU() int
 
 	ReadBlock() (block []byte, err os.Error)
 
@@ -29,6 +29,7 @@ type HeaderConn interface {
 	// byte size of the header's wire-format footprint.
 	GetMTU() int
 
+	// os.EAGAIN is returned in the event of timeout.
 	ReadHeader() (h *Header, err os.Error)
 
 	// WriteHeader can return ErrTooBig, if the wire-format of h exceeds the MTU

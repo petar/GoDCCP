@@ -25,7 +25,7 @@ func (c *Conn) readHeader() (h *Header, err os.Error) {
 }
 
 func (c *Conn) readLoop() {
-	if err := c.hc.SetReadTimeout(); err != nil {
+	if err := c.hc.SetReadTimeout(MSL); err != nil {
 		log.Printf("SetReadTimeout failed")
 		c.kill()
 		return
@@ -37,14 +37,15 @@ func (c *Conn) readLoop() {
 		if state == CLOSED {
 			break
 		}
-		h, err := e.readHeader()
+		h, err := c.readHeader()
 		if err != nil {
-			if err != EOF && err != EBADF {
+			_, protoError := err.(ProtoError)
+			if protoError || err == os.EAGAIN {
 				// Drop packets that are unsupported or if there is timeout. 
 				// Intended for forward compatibility.
 				continue
 			} else {
-				// Die if the socket is broken
+				// Die if the underlying link is broken
 				c.kill()
 				return
 			}
@@ -102,7 +103,7 @@ func (c *Conn) readLoop() {
 	}
 }
 
-func (c *conn) updateSocketCongestionControl() {
+func (c *Conn) updateSocketCongestionControl() {
 	c.AssertLocked()
 	swaf, swbf := c.cc.GetSWABF()
 	c.socket.SetSWABF(swaf, swbf)
@@ -110,7 +111,7 @@ func (c *conn) updateSocketCongestionControl() {
 	c.socket.SetCCMPS(c.cc.GetCCMPS())
 }
 
-func (c *conn) updateSocketLink() {
+func (c *Conn) updateSocketLink() {
 	c.AssertLocked()
-	c.socket.SetPMTU(c.hc.GetMTU())
+	c.socket.SetPMTU(uint32(c.hc.GetMTU()))
 }

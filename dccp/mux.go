@@ -20,16 +20,17 @@ import (
 // Mux{} force-closes flows that have experienced no activity for 10 mins
 type Mux struct {
 	Mutex
-	link           Link
-	largest        int  // Max allowed block size, including mux header. Larger incoming/outgoing packets are dropped.
-	flowsLocal     map[uint64]*flow  // Active flows hashed by local label
-	flowsRemote    map[uint64]*flow
-	lingerLocal    map[uint64]int64  // Local labels of recently-closed flows mapped to time of closure
-	lingerRemote   map[uint64]int64
-	acceptChan     chan *flow
+	link         Link
+	largest      int              // Max allowed block size, including mux header. Larger incoming/outgoing packets are dropped.
+	flowsLocal   map[uint64]*flow // Active flows hashed by local label
+	flowsRemote  map[uint64]*flow
+	lingerLocal  map[uint64]int64 // Local labels of recently-closed flows mapped to time of closure
+	lingerRemote map[uint64]int64
+	acceptChan   chan *flow
 }
+
 const (
-       	MuxLingerTime = 60e9  // 1 min in nanoseconds
+	MuxLingerTime = 60e9  // 1 min in nanoseconds
 	MuxExpireTime = 600e9 // 10 min in nanoseconds
 	MuxReadSafety = 5
 )
@@ -37,13 +38,13 @@ const (
 // muxHeader{} is an internal data structure that carries a parsed switch packet,
 // which contains a flow ID and a DCCP header
 type muxHeader struct {
-	Msg    *muxMsg
-	Cargo  []byte
+	Msg   *muxMsg
+	Cargo []byte
 }
 
 func NewMux(link Link, largest int) *Mux {
-	m := &Mux{ 
-		link:         link, 
+	m := &Mux{
+		link:         link,
 		largest:      largest,
 		flowsLocal:   make(map[uint64]*flow),
 		flowsRemote:  make(map[uint64]*flow),
@@ -68,7 +69,7 @@ func (m *Mux) readLoop() {
 		}
 
 		// Read incoming packet
-		buf := make([]byte, m.largest + MuxReadSafety)
+		buf := make([]byte, m.largest+MuxReadSafety)
 		n, addr, err := link.ReadFrom(buf)
 		if err != nil {
 			break
@@ -273,12 +274,12 @@ func (m *Mux) expireLingeringLoop() {
 		now := m.Now()
 		m.Lock()
 		for h, t := range m.lingerLocal {
-			if now - t >= MuxLingerTime {
+			if now-t >= MuxLingerTime {
 				m.lingerLocal[h] = 0, false
 			}
 		}
 		for h, t := range m.lingerRemote {
-			if now - t >= MuxLingerTime {
+			if now-t >= MuxLingerTime {
 				m.lingerRemote[h] = 0, false
 			}
 		}
@@ -309,7 +310,7 @@ func (m *Mux) del(local *Label, remote *Label) {
 func (m *Mux) cargoMaxLen() int { return m.largest - muxMsgFootprint }
 
 func (m *Mux) write(msg *muxMsg, block []byte, addr net.Addr) os.Error {
-	if muxMsgFootprint + len(block) > m.largest {
+	if muxMsgFootprint+len(block) > m.largest {
 		return os.NewError("block too big")
 	}
 	m.Lock()
@@ -319,18 +320,18 @@ func (m *Mux) write(msg *muxMsg, block []byte, addr net.Addr) os.Error {
 		return os.EBADF
 	}
 
-	buf := make([]byte, muxMsgFootprint + len(block))
+	buf := make([]byte, muxMsgFootprint+len(block))
 	msg.Write(buf)
 	copy(buf[muxMsgFootprint:], block)
-	
+
 	n, err := link.WriteTo(buf, addr)
-	if n != muxMsgFootprint + len(block) {
+	if n != muxMsgFootprint+len(block) {
 		panic("block divided")
 	}
 	return err
 }
 
-func max(i,j int) int {
+func max(i, j int) int {
 	if i > j {
 		return i
 	}

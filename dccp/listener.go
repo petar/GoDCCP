@@ -4,9 +4,11 @@
 
 package dccp
 
+/*
 import (
 	"net"
 )
+
 
 // Listener{} takes care of listening for incoming connections.
 // It handles the LISTEN state.
@@ -82,7 +84,7 @@ func (l *Listener) Accept() (c Conn, err os.Error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 }
 
 func (l *Listener) Close() os.Error {
@@ -91,3 +93,5 @@ func (l *Listener) Close() os.Error {
 }
 
 func (l *Listener) Addr() net.Addr { return DefaultAddr }
+
+*/

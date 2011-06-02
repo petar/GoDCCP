@@ -11,30 +11,30 @@ import (
 
 var testHeaders = []*Header{
 	&Header{
-		SourcePort:   33,
-		DestPort:     77,
-		CCVal:        1,
-		CsCov:        3,
-		Type:         Ack,
-		X:            true,
-		SeqNo:        0x0000334455667788,
-		AckNo:        0x0000112233445566,
-		ServiceCode:  0,
-		Reset:        nil,
-		Options:      []Option{
+		SourcePort:  33,
+		DestPort:    77,
+		CCVal:       1,
+		CsCov:       3,
+		Type:        Ack,
+		X:           true,
+		SeqNo:       0x0000334455667788,
+		AckNo:       0x0000112233445566,
+		ServiceCode: 0,
+		Reset:       nil,
+		Options: []Option{
 			Option{OptionSlowReceiver, nil, true},
 		},
-		Data:         []byte{1,2,3,0,4,5,6,7,8,9},
+		Data: []byte{1, 2, 3, 0, 4, 5, 6, 7, 8, 9},
 	},
 }
 
 func TestReadWrite(t *testing.T) {
 	for _, gh := range testHeaders {
-		hd, err := gh.Write([]byte{1,2,3,4}, []byte{5,6,7,8}, 34, false)
+		hd, err := gh.Write([]byte{1, 2, 3, 4}, []byte{5, 6, 7, 8}, 34, false)
 		if err != nil {
 			t.Errorf("write error: %s", err)
 		}
-		gh2, err := ReadHeader(hd, []byte{1,2,3,4}, []byte{5,6,7,8}, 34, false)
+		gh2, err := ReadHeader(hd, []byte{1, 2, 3, 4}, []byte{5, 6, 7, 8}, 34, false)
 		if err != nil {
 			t.Errorf("read error: %s", err)
 		}

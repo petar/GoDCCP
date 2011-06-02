@@ -13,23 +13,23 @@ import (
 
 // backOff{}
 type backOff struct {
-	sleep       int64	// Duration of next sleep interval
-	lifetime    int64	// Total lifetime so far
-	maxLifetime int64	// Maximum time the backoff mechanism stays alive
-	backoffFreq int64	// Backoff period. The sleep duration backs off approximately every b nanoseconds
-	lastBackoff int64	// Last time the sleep interval was backed off, relative to the starting time
+	sleep       int64 // Duration of next sleep interval
+	lifetime    int64 // Total lifetime so far
+	maxLifetime int64 // Maximum time the backoff mechanism stays alive
+	backoffFreq int64 // Backoff period. The sleep duration backs off approximately every b nanoseconds
+	lastBackoff int64 // Last time the sleep interval was backed off, relative to the starting time
 }
 
 // newBackoff() creates a new back-off timer whose first wait 
 // period is d1 nanoseconds. Consecutive periods back off exponentially
 // up to a maximum of dmax nanoseconds in total (over all periods).
 func newBackOff(firstSleep, maxLifetime, backoffFreq int64) *backOff {
-	return &backoff{ 
-		sleep:       firstSleep, 
-		lifetime:    0, 
-		maxLifetime: maxLifetime, 
-		backoffFreq: backoffFreq, 
-		lastBackoff: 0, 
+	return &backOff{
+		sleep:       firstSleep,
+		lifetime:    0,
+		maxLifetime: maxLifetime,
+		backoffFreq: backoffFreq,
+		lastBackoff: 0,
 	}
 }
 
@@ -42,8 +42,8 @@ func (b *backOff) Sleep() os.Error {
 	}
 	time.Sleep(b.sleep)
 	b.lifetime += b.sleep
-	if b.lifetime - b.lastBackoff >= b.backoffFreq {
-		b.sleep = (4*b.sleep) / 3
+	if b.lifetime-b.lastBackoff >= b.backoffFreq {
+		b.sleep = (4 * b.sleep) / 3
 		b.lastBackoff = b.lifetime
 	}
 	return nil

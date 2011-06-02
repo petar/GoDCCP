@@ -14,17 +14,16 @@ func verifyIPAndProto(sourceIP, destIP []byte, protoNo byte) os.Error {
 	if sourceIP == nil || destIP == nil {
 		return ErrIPFormat
 	}
-	if !((len(sourceIP) == 4 && len(destIP)==4) || (len(sourceIP)==16 && len(destIP)==16)) {
+	if !((len(sourceIP) == 4 && len(destIP) == 4) || (len(sourceIP) == 16 && len(destIP) == 16)) {
 		return ErrIPFormat
 	}
 	return nil
 }
 
-func ReadHeader(
-		buf []byte, 
-		sourceIP, destIP []byte, 
-		protoNo byte,
-		allowShortSeqNoFeature bool) (header *Header, err os.Error) {
+func ReadHeader(buf []byte,
+	sourceIP, destIP []byte,
+	protoNo byte,
+	allowShortSeqNoFeature bool) (header *Header, err os.Error) {
 
 	err = verifyIPAndProto(sourceIP, destIP, protoNo)
 	if err != nil {
@@ -39,10 +38,10 @@ func ReadHeader(
 
 	// Read (1a) Generic Header
 
-	gh.SourcePort = decode2ByteUint(buf[k:k+2])
+	gh.SourcePort = decode2ByteUint(buf[k : k+2])
 	k += 2
 
-	gh.DestPort = decode2ByteUint(buf[k:k+2])
+	gh.DestPort = decode2ByteUint(buf[k : k+2])
 	k += 2
 
 	// Compute the Data Offset in bytes
@@ -75,14 +74,14 @@ func ReadHeader(
 	if !areTypeAndXCompatible(gh.Type, gh.X, allowShortSeqNoFeature) {
 		return nil, ErrSemantic
 	}
-	
+
 	// Check Data Offset bounds
 	if dataOffset < getFixedHeaderSize(gh.Type, gh.X) || dataOffset > len(buf) {
 		return nil, ErrNumeric
 	}
 
 	// Verify checksum
-	appCov, err := getChecksumAppCoverage(gh.CsCov, len(buf) - dataOffset)
+	appCov, err := getChecksumAppCoverage(gh.CsCov, len(buf)-dataOffset)
 	if err != nil {
 		return nil, err
 	}
@@ -97,15 +96,15 @@ func ReadHeader(
 	// Read SeqNo
 	switch gh.X {
 	case false:
-		gh.SeqNo = uint64(decode3ByteUint(buf[k:k+3]))
+		gh.SeqNo = uint64(decode3ByteUint(buf[k : k+3]))
 		k += 3
 	case true:
-		padding := decode1ByteUint(buf[k:k+1])
+		padding := decode1ByteUint(buf[k : k+1])
 		k += 1
 		if padding != 0 {
 			return nil, ErrNumeric
 		}
-		gh.SeqNo = decode6ByteUint(buf[k:k+6])
+		gh.SeqNo = decode6ByteUint(buf[k : k+6])
 		k += 6
 	}
 
@@ -114,20 +113,20 @@ func ReadHeader(
 	switch getAckNoSubheaderSize(gh.Type, gh.X) {
 	case 0:
 	case 4:
-		padding := decode1ByteUint(buf[k:k+1])
+		padding := decode1ByteUint(buf[k : k+1])
 		k += 1
 		if padding != 0 {
 			return nil, ErrNumeric
 		}
-		gh.AckNo = uint64(decode3ByteUint(buf[k:k+3]))
+		gh.AckNo = uint64(decode3ByteUint(buf[k : k+3]))
 		k += 3
 	case 8:
-		padding := decode2ByteUint(buf[k:k+2])
+		padding := decode2ByteUint(buf[k : k+2])
 		k += 2
 		if padding != 0 {
 			return nil, ErrNumeric
 		}
-		gh.AckNo = decode6ByteUint(buf[k:k+6])
+		gh.AckNo = decode6ByteUint(buf[k : k+6])
 		k += 6
 	default:
 		panic("unreach")
@@ -136,11 +135,11 @@ func ReadHeader(
 	// Read (1c) Code Subheader: Service Code, or Reset Code and Reset Data fields
 	switch gh.Type {
 	case Request, Response:
-		gh.ServiceCode = decode4ByteUint(buf[k:k+4])
+		gh.ServiceCode = decode4ByteUint(buf[k : k+4])
 		k += 4
 	case Reset:
 		gh.ResetCode = buf[k]
-		gh.ResetData = buf[k+1:k+4]
+		gh.ResetData = buf[k+1 : k+4]
 		k += 4
 	}
 
@@ -162,7 +161,7 @@ func ReadHeader(
 }
 
 func readOptions(buf []byte) ([]Option, os.Error) {
-	if len(buf) & 0x3 != 0 {
+	if len(buf)&0x3 != 0 {
 		return nil, ErrAlign
 	}
 
@@ -189,14 +188,14 @@ func readOptions(buf []byte) ([]Option, os.Error) {
 		if l < 2 || k+l-2 > len(buf) {
 			break
 		}
-		
+
 		opts[j].Type = t
-		opts[j].Data = buf[k:k+l-2]
-		k += l-2
+		opts[j].Data = buf[k : k+l-2]
+		k += l - 2
 		j += 1
 
 	}
-	
+
 	return opts[0:j], nil
 }
 

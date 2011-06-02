@@ -86,7 +86,7 @@ func (c *Conn) step6_CheckSeqNo(h *Header) os.Error {
 	gsr := c.socket.GetGSR()
 	gar := c.socket.GetGAR()
 	if h.Type == CloseReq || h.Type == Close || h.Type == Reset {
-		lswl, lawl := gsr + 1, gar
+		lswl, lawl = gsr+1, gar
 	}
 
 	hasAckNo := h.HasAckNo()
@@ -105,7 +105,7 @@ func (c *Conn) step6_CheckSeqNo(h *Header) os.Error {
 			g.AckNo = gsr
 		} else {
 			// Send Sync packet acknowledging P.seqno
-			g.AckNo = h.SeqNo	
+			g.AckNo = h.SeqNo
 		}
 		c.inject(g)
 		return ErrDrop
@@ -118,17 +118,17 @@ func (c *Conn) step7_CheckUnexpectedTypes(h *Header) os.Error {
 	isServer := c.socket.IsServer()
 	state := c.socket.GetState()
 	osr := c.socket.GetOSR()
-	if (isServer && h.Type == CloseReq)
-		|| (isServer && h.Type == Response)
-		|| (!isServer && h.Type == Request)
-		|| (state >= OPEN && h.Type == Request && h.SeqNo >= osr)
-		|| (state >= OPEN && h.Type == Response && h.SeqNo >= osr)
-		|| (state == RESPOND && h.Type == Data) {
-			g := c.generateSync()
-			g.AckNo = h.SeqNo	
-			c.inject(g)
-			return ErrDrop
-		}
+	if (isServer && h.Type == CloseReq) ||
+		(isServer && h.Type == Response) ||
+		(!isServer && h.Type == Request) ||
+		(state >= OPEN && h.Type == Request && h.SeqNo >= osr) ||
+		(state >= OPEN && h.Type == Response && h.SeqNo >= osr) ||
+		(state == RESPOND && h.Type == Data) {
+		g := c.generateSync()
+		g.AckNo = h.SeqNo
+		c.inject(g)
+		return ErrDrop
+	}
 	return nil
 }
 
@@ -138,15 +138,15 @@ func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) os.Error {
 	// TODO: Implement a connection reset if OnRead returns ErrReset
 	// For now CongestionControl cannot advise a reset, just an ErrDrop
 	defer c.updateSocketCongestionControl()
-	return c.cc.OnRead(h)
+	return c.cc.OnRead(h.Type, h.X, h.SeqNo, h.CCVal, h.Options)
 }
 
 // Step 9, Section 8.5: Process Reset
 func (c *Conn) step9_ProcessReset(h *Header) os.Error {
 	if h.Type != Reset {
 		return nil
-	}	
-	c.teardown()
+	}
+	c.teardownUser()
 	c.gotoTIMEWAIT()
 	return ErrDrop
 }
@@ -154,7 +154,7 @@ func (c *Conn) step9_ProcessReset(h *Header) os.Error {
 func (c *Conn) gotoTIMEWAIT() {
 	c.socket.SetState(TIMEWAIT)
 	go func() {
-		time.Sleep(2*MSL)
+		time.Sleep(2 * MSL)
 		c.kill()
 	}()
 }
@@ -264,8 +264,9 @@ func (c *Conn) gotoCLOSING() {
 // Step 14, Section 8.5: Process Close
 func (c *Conn) step14_ProcessClose(h *Header) os.Error {
 	if h.Type == Close {
-		c.teardown()
+		c.teardownUser()
 		c.inject(c.generateReset(ResetClosed))
+		c.teardownWriteLoop()
 		return ErrDrop
 	}
 	return nil
@@ -296,4 +297,6 @@ func (c *Conn) step16_ProcessData(h *Header) os.Error {
 	if len(h.Data) > 0 {
 		c.readApp <- h.Data
 	}
+
+	return nil
 }

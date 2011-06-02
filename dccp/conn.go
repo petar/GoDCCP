@@ -4,14 +4,13 @@
 
 package dccp
 
-import (
-)
+import ()
 
 // Conn 
 type Conn struct {
 	id
-	hc HeaderConn
-	cc CongestionControl
+	hc    HeaderConn
+	cc    CongestionControl
 	Mutex // Protects access to socket
 	socket
 	readApp      chan []byte  // readLoop() sends application data to Read()
@@ -33,12 +32,14 @@ func newConnServer() *Conn {
 	// Currently, CCID is not negotiated, rather both sides use the same
 	c.socket.SetCCIDA(CCID_PETAR)
 	c.socket.SetCCIDB(CCID_PETAR)
-	c.socket.SetRTT(RTT_DEFAULT)
+	c.updateSocketLink()
+	c.updateSocketCongestionControl()
 	go c.writeLoop()
 	go c.readLoop()
 	return c
 }
-
+/*
 func newConnClient() *Conn {
 	XXX
 }
+*/

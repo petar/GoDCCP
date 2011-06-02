@@ -37,7 +37,7 @@ type socket struct {
 	PMTU  uint32 // Path Maximum Transmission Unit
 	CCMPS uint32 // Congestion Control Maximum Packet Size
 
-	RTT   int64 // Round Trip Time in nanoseconds
+	RTT int64 // Round Trip Time in nanoseconds
 }
 
 func (s *socket) String() string {
@@ -72,7 +72,7 @@ const (
 )
 
 func StateString(state int) string {
-	switch {
+	switch state {
 	case CLOSED:
 		return "CLOSED"
 	case LISTEN:
@@ -91,9 +91,8 @@ func StateString(state int) string {
 		return "CLOSING"
 	case TIMEWAIT:
 		return "TIMEWAIT"
-	default:
-		panic("unreach")
 	}
+	panic("unreach")
 }
 
 func ServerString(isServer bool) string {
@@ -103,25 +102,28 @@ func ServerString(isServer bool) string {
 	return "Client"
 }
 
+func (s *socket) SetCCIDA(v byte) { s.CCIDA = v }
+func (s *socket) SetCCIDB(v byte) { s.CCIDB = v }
+
 func (s *socket) GetMPS() uint32 { return minUint32(s.CCMPS, s.PMTU) }
 
-func (s *socket) GetPMTU() uint32 { return s.PMTU }
+func (s *socket) GetPMTU() uint32  { return s.PMTU }
 func (s *socket) SetPMTU(v uint32) { s.PMTU = v }
 
-func (s *socket) GetCCMPS() uint32 { return s.CCMPS }
+func (s *socket) GetCCMPS() uint32  { return s.CCMPS }
 func (s *socket) SetCCMPS(v uint32) { s.CCMPS = v }
 
-func (s *socket) GetRTT() int64 { return s.RTT }
+func (s *socket) GetRTT() int64  { return s.RTT }
 func (s *socket) SetRTT(v int64) { s.RTT = v }
 
 func (s *socket) SetServer(v bool) { s.Server = v }
 func (s *socket) IsServer() bool   { return s.Server }
 
-func (s *socket) GetState() int { return s.State }
+func (s *socket) GetState() int  { return s.State }
 func (s *socket) SetState(v int) { s.State = v }
 
 func (s *socket) SetServiceCode(v uint32) { s.ServiceCode = v }
-func (s *socket) GetServiceCode() uint32 { return s.ServiceCode }
+func (s *socket) GetServiceCode() uint32  { return s.ServiceCode }
 
 // ChooseISS chooses a safe Initial Sequence Number
 func (s *socket) ChooseISS() uint64 {

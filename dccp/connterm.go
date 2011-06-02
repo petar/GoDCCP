@@ -17,7 +17,7 @@ func (c *Conn) abort() {
 // kill() kills the connection immediately and not gracefully
 func (c *Conn) kill() {
 	c.Lock()
-	c.soket.SetState(CLOSED)
+	c.socket.SetState(CLOSED)
 	c.Unlock()
 	c.teardownUser()
 	c.teardownWriteLoop()

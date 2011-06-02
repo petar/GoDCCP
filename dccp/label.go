@@ -18,6 +18,7 @@ type Label struct {
 	data [LabelLen]byte
 	h    uint64
 }
+
 const LabelLen = 16
 
 var (
@@ -62,7 +63,7 @@ func ChooseLabel() *Label {
 func (label *Label) Hash() uint64 { return label.h }
 
 // Equal() performs a deep check for equality with q@
-func (label *Label) Equal(q *Label) bool { 
+func (label *Label) Equal(q *Label) bool {
 	for i := 0; i < LabelLen; i++ {
 		if label.data[i] != q.data[i] {
 			return false
@@ -104,8 +105,8 @@ func (label *Label) String() string {
 	}
 	var w bytes.Buffer
 	for i, b := range label.data {
-		if i % 2 == 0 && i > 0 {
-			w.WriteByte('`');
+		if i%2 == 0 && i > 0 {
+			w.WriteByte('`')
 		}
 		w.WriteString(btox(b))
 	}
@@ -116,7 +117,7 @@ func (label *Label) Address() string { return label.String() }
 
 // ParseLabel() parses and creates a new label from the string representation in s@
 func ParseLabel(s string) (label *Label, n int, err os.Error) {
-	l := LabelLen*2 + LabelLen/2 - 1 
+	l := LabelLen*2 + LabelLen/2 - 1
 	if len(s) < l {
 		return nil, 0, os.NewError("bad string label len")
 	}
@@ -124,14 +125,14 @@ func ParseLabel(s string) (label *Label, n int, err os.Error) {
 	label = &Label{}
 	k := 0
 	for i := 0; i < LabelLen; {
-		if i % 2 == 0 && i > 0 {
+		if i%2 == 0 && i > 0 {
 			if s[i] != '`' {
 				return nil, 0, os.NewError("missing label dot")
 			}
 			i++
 			continue
 		}
-		b, err := xtob(s[i:i+2])
+		b, err := xtob(s[i : i+2])
 		if err != nil {
 			return nil, 0, err
 		}
@@ -147,11 +148,12 @@ func ParseLabel(s string) (label *Label, n int, err os.Error) {
 }
 
 const xalpha = "0123456789abcdef"
+
 func btox(b byte) string {
 	r := make([]byte, 2)
-	r[1] = xalpha[b & 0xf]
+	r[1] = xalpha[b&0xf]
 	b >>= 4
-	r[0] = xalpha[b & 0xf]
+	r[0] = xalpha[b&0xf]
 	return string(r)
 }
 

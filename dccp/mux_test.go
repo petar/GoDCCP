@@ -18,8 +18,8 @@ type endToEnd struct {
 	done  chan int
 }
 
-func newEndToEnd(t *testing.T, alink,dlink Link, addr net.Addr, nc int) *endToEnd { 
-	return &endToEnd{ t, alink, dlink, addr, nc, make(chan int) } 
+func newEndToEnd(t *testing.T, alink, dlink Link, addr net.Addr, nc int) *endToEnd {
+	return &endToEnd{t, alink, dlink, addr, nc, make(chan int)}
 }
 
 func (ee *endToEnd) acceptLoop(link Link) {

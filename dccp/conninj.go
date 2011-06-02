@@ -4,10 +4,6 @@
 
 package dccp
 
-import (
-	"os"
-)
-
 // inject() adds the packet h to the outgoing non-Data pipeline, without blocking.
 // The pipeline is flushed continuously respecting the CongestionControl's
 // rate-limiting policy.
@@ -27,9 +23,10 @@ func (c *Conn) writeLoop() {
 	writeData := c.writeData
 Loop:
 	for {
-		c.Strobe()
+		c.cc.Strobe()
 		var h *Header
 		var ok bool
+		var appData []byte
 		select {
 		case h, ok = <-writeNonData:
 			if !ok {
@@ -40,7 +37,7 @@ Loop:
 			if !ok {
 				// Make a dummy channel that no-one sends to, so that the
 				// select (above) would block until something comes on writeNonData.
-				writeData = make(chan *Header)
+				writeData = make(chan []byte)
 			} else {
 				c.Lock()
 				state := c.socket.GetState()
@@ -60,7 +57,7 @@ Loop:
 		if h == nil {
 			continue
 		}
-		err := c.headerConn.WriteHeader(h)
+		err := c.hc.WriteHeader(h)
 		if err != nil {
 			c.kill()
 			break Loop

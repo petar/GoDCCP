@@ -6,25 +6,33 @@ package dccp
 
 import "os"
 
+// ProtoError is a type that wraps all DCCP-specific errors.
+// It is utilized to distinguish these errors from others, using type checks.
+type ProtoError string
+
+func (e ProtoError) String() string  { return string(e) }
+
+func NewError(s string) os.Error { return ProtoError(s) }
+
 // TODO: Annotate each error with the circumstances that can cause it
 var (
-	ErrAlign         = os.NewError("align")
-	ErrSize          = os.NewError("size")
-	ErrSemantic      = os.NewError("semantic")
-	ErrSyntax        = os.NewError("syntax")
-	ErrNumeric       = os.NewError("numeric")
-	ErrOption        = os.NewError("option")
-	ErrOptionsTooBig = os.NewError("options too big")
-	ErrOversize      = os.NewError("over size")
-	ErrCsCov         = os.NewError("cscov")
-	ErrChecksum      = os.NewError("checksum")
-	ErrIPFormat      = os.NewError("ip format")
-	ErrUnknownType   = os.NewError("unknown packet type")
-	ErrUnsupported   = os.NewError("unsupported")
-	ErrProto         = os.NewError("protocol error")
-	ErrDrop          = os.NewError("dropped")
-	ErrReset         = os.NewError("reset")
-	ErrTooBig        = os.NewError("too big")
-	ErrTimeout       = os.NewError("timeout")
-	ErrOverflow      = os.NewError("overflow")
+	ErrAlign         = NewError("align")
+	ErrSize          = NewError("size")
+	ErrSemantic      = NewError("semantic")
+	ErrSyntax        = NewError("syntax")
+	ErrNumeric       = NewError("numeric")
+	ErrOption        = NewError("option")
+	ErrOptionsTooBig = NewError("options too big")
+	ErrOversize      = NewError("over size")
+	ErrCsCov         = NewError("cscov")
+	ErrChecksum      = NewError("checksum")
+	ErrIPFormat      = NewError("ip format")
+	ErrUnknownType   = NewError("unknown packet type")
+	ErrUnsupported   = NewError("unsupported")
+	ErrProto         = NewError("protocol error")
+	ErrDrop          = NewError("dropped")
+	ErrReset         = NewError("reset")
+	ErrTooBig        = NewError("too big")
+	ErrTimeout       = NewError("timeout")
+	ErrOverflow      = NewError("overflow")
 )

@@ -32,7 +32,7 @@ const (
 )
 
 func isOptionReserved(optionType byte) bool {
-	return (optionType >= 3 && optionType <= 31) || 
+	return (optionType >= 3 && optionType <= 31) ||
 		(optionType >= 45 && optionType <= 127)
 }
 
