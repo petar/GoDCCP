@@ -10,22 +10,30 @@ import (
 )
 
 const (
-	K                         = 10
-	NanoTestRange             = 9223372036854775807 / 10
-	TimestampDeltaRangeInNano = 210010010 * TenMicroInNano
+	K              = 20
+	TimestampRange = 2^31 / 10
+	ElapsedRange   = 210010010
 )
 
 func TestTimestampOption(t *testing.T) {
 	for i := 0; i < K; i++ {
-		t0 := rand.Int63n(NanoTestRange)
-		delta := rand.Int63n(TimestampDeltaRangeInNano)
+		t0 := uint32(rand.Int31n(TimestampRange))
+		delta := uint32(rand.Int31n(ElapsedRange))
 		t1 := t0 + delta
-		opt0 := NewTimestampOption(t0)
-		opt1 := NewTimestampOption(t1)
-		opt0_ := ValidateTimestampOption(opt0)
-		opt1_ := ValidateTimestampOption(opt1)
-		t0_ := opt0_.GetTimestamp()
-		t1_ := opt1_.GetTimestamp()
+		opt0 := &TimestampOption{t0}
+		opt1 := &TimestampOption{t1}
+		opt0_, err1 := opt0.Encode()
+		opt1_, err2 := opt1.Encode()
+		if err1 != nil || err2 != nil {
+			t.Fatalf("error encoding timestamp option")
+		}
+		opt0 = DecodeTimestampOption(opt0_)
+		opt1 = DecodeTimestampOption(opt1_)
+		if opt0 == nil || opt1 == nil {
+			t.Fatalf("decoding timestamp error")
+		}
+		t0_ := opt0.Timestamp
+		t1_ := opt1.Timestamp
 		delta_ := GetTimestampDiff(t0_, t1_)
 		if delta != delta_ {
 			t.Errorf("Expecting %d, got %d", delta, delta_)
@@ -35,10 +43,17 @@ func TestTimestampOption(t *testing.T) {
 
 func TestElapsedTimeOption(t *testing.T) {
 	for i := 0; i < K; i++ {
-		e := rand.Int63n(NanoTestRange)
-		opt := NewElapsedTimeOption(e)
-		opt_ := ValidateElapsedTimeOption(opt)
-		e_ := opt_.GetElapsed()
+		e := uint32(rand.Int31n(TimestampRange))
+		opt := &ElapsedTimeOption{e}
+		opt_, err := opt.Encode()
+		if err != nil {
+			t.Fatalf("error encoding elapsed time option")
+		}
+		opt = DecodeElapsedTimeOption(opt_)
+		if opt == nil {
+			t.Fatalf("error decoding elapsed time option")
+		}
+		e_ := opt.Elapsed
 		if e != e_ {
 			t.Errorf("Expecting %d, got %d", e, e_)
 		}
@@ -47,29 +62,34 @@ func TestElapsedTimeOption(t *testing.T) {
 
 func TestTimestampEchoOption(t *testing.T) {
 	for i := 0; i < K; i++ {
-		t0 := rand.Int63n(NanoTestRange)
-		delta := rand.Int63n(TimestampDeltaRangeInNano)
+		t0 := uint32(rand.Int31n(TimestampRange))
+		delta := uint32(rand.Int31n(ElapsedRange))
 		t1 := t0 + delta
-		opt0 := NewTimestampOption(t0)
-		opt1 := NewTimestampOption(t1)
+		e0 := uint32(rand.Int31n(TimestampRange))
+		e1 := uint32(rand.Int31n(TimestampRange))
+		ech0 := &TimestampEchoOption{t0, e0}
+		ech1 := &TimestampEchoOption{t1, e1}
 
-		e0 := rand.Int63n(NanoTestRange)
-		e1 := rand.Int63n(NanoTestRange)
-		ech0 := NewTimestampEchoOption(opt0, e0)
-		ech1 := NewTimestampEchoOption(opt1, e1)
-
-		ech0_ := ValidateTimestampOption(ech0)
-		ech1_ := ValidateTimestampOption(ech1)
-		t0_ := ech0_.GetTimestamp()
-		t1_ := ech1_.GetTimestamp()
+		ech0_, err1 := ech0.Encode()
+		ech1_, err2 := ech1.Encode()
+		if err1 != nil || err2 != nil {
+			t.Fatalf("encoding timstamp echo option")
+		}
+		ech0 = DecodeTimestampEchoOption(ech0_)
+		ech1 = DecodeTimestampEchoOption(ech1_)
+		if ech0 == nil || ech1 == nil {
+			t.Fatalf("decoding timestamp echo option")
+		}
+		t0_ := ech0.Timestamp
+		t1_ := ech1.Timestamp
 
 		delta_ := GetTimestampDiff(t0_, t1_)
 		if delta != delta_ {
 			t.Errorf("delta: expecting %d, got %d", delta, delta_)
 		}
 
-		e0_ := ech0_.GetElapsed()
-		e1_ := ech1_.GetElapsed()
+		e0_ := ech0.Elapsed
+		e1_ := ech1.Elapsed
 		if e0 != e0_ {
 			t.Errorf("e0: expecting %d, got %d", e0, e0_)
 		}

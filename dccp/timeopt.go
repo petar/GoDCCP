@@ -10,7 +10,7 @@ import (
 
 const (
 	TenMicroInNano = 1e4 // 10 microseconds in nanoseconds
-	OneInTenMicro  = 1e5 // 1 seconds in ten microsecond units
+	OneSecInTenMicro  = 1e5 // 1 seconds in ten microsecond units
 )
 
 // TimestampOption, Section 13.1
@@ -28,9 +28,9 @@ func (opt *TimestampOption) Encode() (*Option, os.Error) {
 	}, nil
 }
 
-// Time2Timestamp converts a nanosecond absolute time into 
+// ToTenMicroTime converts a nanosecond absolute time into 
 // uint32-circular 10 microsecond granularity time
-func Time2Timestamp(t int64) uint32 { return uint32(t / TenMicroInNano) }
+func ToTenMicroTime(t int64) uint32 { return uint32(t / TenMicroInNano) }
 
 // d must be a 4-byte slice
 func encodeTimestamp(t uint32, d []byte) []byte {
@@ -60,10 +60,10 @@ func decodeTimestamp(d []byte) uint32 {
 // milliseconds (10 microseconds granularity).
 type ElapsedTimeOption struct {
 	// Elapsed measures time in nanoseconds
-	Elapsed int64
+	Elapsed uint32
 }
 
-const MaxElapsedTime = 4294967295 * TenMicroInNano // Maximum distinguishable elapsed time in nanoseconds
+const MaxElapsedTime = 4294967295 // Maximum distinguishable elapsed time in ten microsecond units
 
 func (opt *ElapsedTimeOption) Encode() (*Option, os.Error) {
 	return &Option{
@@ -74,17 +74,16 @@ func (opt *ElapsedTimeOption) Encode() (*Option, os.Error) {
 }
 
 // d must be a 4-byte slice
-func encodeElapsed(elapsed int64, d []byte) []byte {
+func encodeElapsed(elapsed uint32, d []byte) []byte {
 	if elapsed >= MaxElapsedTime {
 		elapsed = MaxElapsedTime
 	}
-	if elapsed < 1e9/2 {
-		assertFitsIn2Bytes(uint64(elapsed / TenMicroInNano))
-		encode2ByteUint(uint16(elapsed/TenMicroInNano), d)
+	if elapsed < OneSecInTenMicro/2 {
+		assertFitsIn2Bytes(uint64(elapsed))
+		encode2ByteUint(uint16(elapsed), d[0:2])
 		return d[0:2]
 	} else {
-		assertFitsIn4Bytes(uint64(elapsed / TenMicroInNano))
-		encode4ByteUint(uint32(elapsed/TenMicroInNano), d)
+		encode4ByteUint(elapsed, d)
 		return d[0:4]
 	}
 	panic("unreach")
@@ -103,17 +102,17 @@ func DecodeElapsedTimeOption(opt *Option) *ElapsedTimeOption {
 	}
 }
 
-func decodeElapsed(d []byte) (int64, os.Error) {
-	var t int64
+func decodeElapsed(d []byte) (uint32, os.Error) {
+	var t uint32
 	switch len(d) {
 	case 2:
-		t = int64(decode2ByteUint(d))
+		t = uint32(decode2ByteUint(d))
 	case 4:
-		t = int64(decode4ByteUint(d))
+		t = decode4ByteUint(d)
 	default:
 		return 0, ErrSize
 	}
-	return t * TenMicroInNano, nil
+	return t, nil
 }
 
 // TimestampEchoOption, Section 13.3
@@ -122,7 +121,7 @@ type TimestampEchoOption struct {
 	// The timestamp echo option value in 10 microsecond circular units
 	Timestamp uint32
 	// The elapsed time in nanoseconds
-	Elapsed int64
+	Elapsed   uint32
 }
 
 func (opt *TimestampEchoOption) Encode() (*Option, os.Error) {
@@ -132,7 +131,7 @@ func (opt *TimestampEchoOption) Encode() (*Option, os.Error) {
 		d = d[0:4]
 	} else {
 		l := len(encodeElapsed(opt.Elapsed, d[4:]))
-		d = d[0 : 4+l]
+		d = d[0:4+l]
 	}
 	// The size of d can be 4, 6 or 8
 	return &Option{
@@ -148,7 +147,7 @@ func DecodeTimestampEchoOption(opt *Option) *TimestampEchoOption {
 
 		return nil
 	}
-	var elapsed int64
+	var elapsed uint32
 	if len(opt.Data) > 4 {
 		var err os.Error
 		elapsed, err = decodeElapsed(opt.Data[4:])
@@ -164,9 +163,7 @@ func DecodeTimestampEchoOption(opt *Option) *TimestampEchoOption {
 
 // GetTimestampDiff() returns the circular difference between t0 an t1 in nanoseconds. Note
 // that t0 and t1 are themselves given in 10 microsecond circular units
-func GetTimestampDiff(t0, t1 uint32) int64 {
-	return int64(minUint32(t0-t1, t1-t0)) * TenMicroInNano
-}
+func GetTimestampDiff(t0, t1 uint32) uint32 { return minUint32(t0-t1, t1-t0) }
 
 func minUint32(x, y uint32) uint32 {
 	if x < y {

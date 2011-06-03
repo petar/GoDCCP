@@ -93,8 +93,8 @@ func (gh *Header) getHeaderFootprint(allowShortSeqNoFeature bool) (int, os.Error
 // The first one is the header part, and the second one is the data
 // part which simply equals the slice Header.Data
 func (gh *Header) Write(sourceIP, destIP []byte,
-protoNo byte,
-allowShortSeqNoFeature bool) (header []byte, err os.Error) {
+	protoNo byte,
+	allowShortSeqNoFeature bool) (header []byte, err os.Error) {
 
 	err = verifyIPAndProto(sourceIP, destIP, protoNo)
 	if err != nil {
@@ -179,7 +179,7 @@ allowShortSeqNoFeature bool) (header []byte, err os.Error) {
 		buf[k] = gh.ResetCode
 		n := copy(buf[k+1:k+4], gh.ResetData)
 		for i := 0; i < 3-n; i++ {
-			buf[k+n+i] = 0
+			buf[k+1+n+i] = 0
 		}
 		k += 4
 	}
@@ -188,16 +188,13 @@ allowShortSeqNoFeature bool) (header []byte, err os.Error) {
 	writeOptions(gh.Options, buf[k:dataOffset], gh.Type)
 
 	// Write checksum
-	dlen := 0
-	if gh.Data != nil {
-		dlen = len(gh.Data)
-	}
+	dlen := len(gh.Data)
 	appCov, err := getChecksumAppCoverage(gh.CsCov, dlen)
 	if err != nil {
 		return nil, err
 	}
 	csum := csumSum(buf[0:dataOffset])
-	csum = csumAdd(csum, csumPseudoIP(sourceIP, destIP, protoNo, len(buf)+dlen))
+	csum = csumAdd(csum, csumPseudoIP(sourceIP, destIP, protoNo, len(buf)))
 	if appCov > 0 {
 		csum = csumAdd(csum, csumSum(gh.Data[0:appCov]))
 	}

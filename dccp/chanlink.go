@@ -23,6 +23,10 @@ func NewChanPipe() (p, q *ChanLink) {
 
 func (l *ChanLink) GetMTU() int { return 1500 }
 
+func (l *ChanLink) SetReadTimeout(nsec int64) os.Error {
+	return nil
+}
+
 func (l *ChanLink) ReadFrom(buf []byte) (n int, addr net.Addr, err os.Error) {
 	l.Lock()
 	in := l.in

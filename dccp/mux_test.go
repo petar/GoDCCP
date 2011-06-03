@@ -33,7 +33,7 @@ func (ee *endToEnd) acceptLoop(link Link) {
 		if err != nil {
 			ee.t.Fatalf("accept %s", c, err)
 		}
-		go func(c net.Conn) {
+		go func(c BlockConn) {
 			i := int(readUint32(ee.t, c))
 
 			// Expect to read the number i i-times
@@ -62,7 +62,7 @@ func (ee *endToEnd) acceptLoop(link Link) {
 
 func (ee *endToEnd) dialLoop(link Link) {
 
-	m := newMux(link, link.GetMTU())
+	m := NewMux(link, link.GetMTU())
 
 	// Dial connections
 	gg := make(chan int)
@@ -97,28 +97,24 @@ func (ee *endToEnd) dialLoop(link Link) {
 	}
 }
 
-func readUint32(t *testing.T, c net.Conn) uint32 {
-	p := make([]byte, 400)
-	n, err := c.Read(p)
+func readUint32(t *testing.T, c BlockConn) uint32 {
+	p, err := c.ReadBlock()
 	if err != nil {
 		t.Fatalf("read: %s", err)
 	}
-	if n != 4 {
-		t.Fatalf("read size: %d != 4", n)
+	if len(p) != 4 {
+		t.Fatalf("read size: %d != 4", len(p))
 	}
 	// fmt.Printf("  %s ···> %v\n", c.(*flow).String(), p[:4])
 	return decode4ByteUint(p[:4])
 }
 
-func writeUint32(t *testing.T, c net.Conn, u uint32) {
+func writeUint32(t *testing.T, c BlockConn, u uint32) {
 	p := make([]byte, 4)
 	encode4ByteUint(u, p)
-	n, err := c.Write(p)
+	err := c.WriteBlock(p)
 	if err != nil {
 		t.Fatalf("write: %s", err)
-	}
-	if n != 4 {
-		t.Fatalf("write·size: %d != 4", n)
 	}
 	// fmt.Printf("  %s <··· %v\n", c.(*flow).String(), p)
 }
