@@ -26,7 +26,7 @@ type BlockConn interface {
 
 type HeaderConn interface {
 	// GetMTU() returns the Maximum Transmission Unit size. This is the maximum
-	// byte size of the header's wire-format footprint.
+	// byte size of the header and app data wire-format footprint.
 	GetMTU() int
 
 	// os.EAGAIN is returned in the event of timeout.
@@ -38,3 +38,40 @@ type HeaderConn interface {
 	Close() os.Error
 	SetReadTimeout(nsec int64) os.Error
 }
+
+// NewHeaderOverBlockConn creates a HeaderConn on top of a BlockConn
+func NewHeaderOverBlockConn(bc BlockConn, localIP, remoteIP []byte) HeaderConn {
+	return &headerOverBlock{
+		localIP:  localIP,
+		remoteIP: remoteIP,
+		bc:       bc,
+	}
+}
+
+type headerOverBlock struct {
+	localIP, remoteIP []byte
+	bc BlockConn
+}
+
+
+func (hob *headerOverBlock) GetMTU() int { return hob.bc.GetMTU() }
+
+func (hob *headerOverBlock) ReadHeader() (h *Header, err os.Error) {
+	p, err := hob.bc.ReadBlock()
+	if err != nil {
+		return nil, err
+	}
+	return ReadHeader(p, hob.remoteIP, hob.localIP, AnyProto, false)
+}
+
+func (hob *headerOverBlock) WriteHeader(h *Header) (err os.Error) {
+	p, err := h.Write(hob.localIP, hob.remoteIP, AnyProto, false)
+	if err != nil {
+		return err
+	}
+	return hob.bc.WriteBlock(p)
+}
+
+func (hob *headerOverBlock) Close() os.Error { return hob.bc.Close() }
+
+func (hob *headerOverBlock) SetReadTimeout(nsec int64) os.Error { return hob.bc.SetReadTimeout(nsec) }
