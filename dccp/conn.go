@@ -54,7 +54,7 @@ func newConnClient(hc HeaderConn, cc CongestionControl, serviceCode uint32) *Con
 
 	c.Lock()
 	c.socket.SetState(REQUEST)
-	c.socket.SetServiceCode(h.ServiceCode)
+	c.socket.SetServiceCode(serviceCode)
 	iss := c.socket.ChooseISS()
 	c.socket.SetGAR(iss)  // ???
 	c.inject(c.generateRequest(serviceCode))
