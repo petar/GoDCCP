@@ -12,10 +12,10 @@ import (
 
 // flow{} is a BlockConn
 type flow struct {
-	addr    net.Addr
-	m       *Mux
-	ch      chan muxHeader
-	largest int
+	addr net.Addr
+	m    *Mux
+	ch   chan muxHeader
+	mtu  int
 
 	Mutex       // protects the variables below
 	local       *Label
@@ -27,8 +27,12 @@ type flow struct {
 	rlk Mutex // synchronizes calls to Read()
 }
 
-func newFlow(addr net.Addr, m *Mux, ch chan muxHeader, largest int, local, remote *Label) *flow {
-	now := m.Now()
+// addr is the Link-level address of the remote.
+// local and remote are logical labels that are associated with each endpoint 
+// of the connection. The remote label is not known until a packet is received
+// from the other side.
+func newFlow(addr net.Addr, m *Mux, ch chan muxHeader, mtu int, local, remote *Label) *flow {
+	now := time.Nanoseconds()
 	return &flow{
 		addr:        addr,
 		local:       local,
@@ -38,12 +42,12 @@ func newFlow(addr net.Addr, m *Mux, ch chan muxHeader, largest int, local, remot
 		readTimeout: 0,
 		m:           m,
 		ch:          ch,
-		largest:     largest,
+		mtu:         mtu,
 	}
 }
 
 // GetMTU returns the largest size of read/write block
-func (f *flow) GetMTU() int { return f.largest }
+func (f *flow) GetMTU() int { return f.mtu }
 
 // SetReadTimeout implements net.Conn.SetReadTimeout
 func (f *flow) SetReadTimeout(nsec int64) os.Error {
@@ -84,12 +88,14 @@ func (f *flow) getRemote() *Label {
 	defer f.Unlock()
 	return f.remote
 }
+func (f *flow) RemoteLabel() Bytes { return f.getRemote() }
 
 func (f *flow) getLocal() *Label {
 	f.Lock()
 	defer f.Unlock()
 	return f.local
 }
+func (f *flow) LocalLabel() Bytes { return f.getLocal() }
 
 func (f *flow) String() string {
 	return f.getLocal().String() + "--" + f.getRemote().String()
@@ -105,7 +111,7 @@ func (f *flow) WriteBlock(block []byte) os.Error {
 	err := m.write(&muxMsg{f.getLocal(), f.getRemote()}, block, f.addr)
 	if err != nil {
 		f.Lock()
-		f.lastWrite = m.Now()
+		f.lastWrite = time.Nanoseconds()
 		f.Unlock()
 	}
 	return err
@@ -143,9 +149,7 @@ func (f *flow) ReadBlock() (block []byte, err os.Error) {
 	}
 
 	f.Lock()
-	if f.m != nil {
-		f.lastRead = f.m.Now()
-	}
+	f.lastRead = time.Nanoseconds()
 	f.Unlock()
 
 	return header.Cargo, nil

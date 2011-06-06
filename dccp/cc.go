@@ -11,7 +11,7 @@ import "os"
 type CongestionControl interface {
 
 	// GetID() returns the CCID of this congestion control algorithm
-	GetID()
+	GetID() byte
 
 	// GetCCMPS returns the Congestion Control Maximum Packet Size, CCMPS. Generally, PMTU <= CCMPS
 	GetCCMPS() uint32
@@ -38,8 +38,9 @@ type CongestionControl interface {
 	Strobe()
 }
 
+type NewCongestionControlFunc func() CongestionControl
+
 const (
 	CCID2      = 2 // TCP-like Congestion Control, RFC 4341
 	CCID3      = 3 // TCP-Friendly Rate Control (TFRC), RFC 4342
-	CCID_PETAR = 7 // Simple constant-rate control for testing purposes
 )

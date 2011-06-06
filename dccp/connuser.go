@@ -69,3 +69,11 @@ func (c *Conn) Close() os.Error {
 	c.Unlock()
 	return nil
 }
+
+func (c *Conn) LocalLabel() Bytes { return c.hc.LocalLabel() }
+
+func (c *Conn) RemoteLabel() Bytes { return c.hc.RemoteLabel() }
+
+func (c *Conn) SetReadTimeout(nsec int64) os.Error {
+	panic("un")
+}

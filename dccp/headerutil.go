@@ -6,20 +6,16 @@ package dccp
 
 func (h *Header) HasAckNo() bool { return getAckNoSubheaderSize(h.Type, h.X) > 0 }
 
-func NewHeaderSkeleton(htype byte, sourcePort, destPort uint16) *Header {
+func NewHeaderSkeleton(htype byte) *Header {
 	return &Header{
-		SourcePort: sourcePort,
-		DestPort:   destPort,
 		Type:       htype,
 		X:          true,
 	}
 }
 
 // NewResetHeader() creates a new Reset header
-func NewResetHeader(resetCode byte, sourcePort, destPort uint16) *Header {
+func NewResetHeader(resetCode byte) *Header {
 	return &Header{
-		SourcePort: sourcePort,
-		DestPort:   destPort,
 		Type:       Reset,
 		X:          true,
 		ResetCode:  resetCode,
@@ -27,30 +23,24 @@ func NewResetHeader(resetCode byte, sourcePort, destPort uint16) *Header {
 }
 
 // NewCloseHeader() creates a new Close header
-func NewCloseHeader(sourcePort, destPort uint16) *Header {
+func NewCloseHeader() *Header {
 	return &Header{
-		SourcePort: sourcePort,
-		DestPort:   destPort,
 		Type:       Close,
 		X:          true,
 	}
 }
 
 // NewAckHeader() creates a new Ack header
-func NewAckHeader(sourcePort, destPort uint16) *Header {
+func NewAckHeader() *Header {
 	return &Header{
-		SourcePort: sourcePort,
-		DestPort:   destPort,
 		Type:       Ack,
 		X:          true,
 	}
 }
 
 // NewDataHeader() creates a new Data header
-func NewDataHeader(data []byte, sourcePort, destPort uint16) *Header {
+func NewDataHeader(data []byte) *Header {
 	return &Header{
-		SourcePort: sourcePort,
-		DestPort:   destPort,
 		Type:       Data,
 		X:          true,
 		Data:       data,
@@ -58,10 +48,8 @@ func NewDataHeader(data []byte, sourcePort, destPort uint16) *Header {
 }
 
 // NewDataAckHeader() creates a new DataAck header
-func NewDataAckHeader(data []byte, sourcePort, destPort uint16) *Header {
+func NewDataAckHeader(data []byte) *Header {
 	return &Header{
-		SourcePort: sourcePort,
-		DestPort:   destPort,
 		Type:       DataAck,
 		X:          true,
 		Data:       data,
@@ -69,30 +57,33 @@ func NewDataAckHeader(data []byte, sourcePort, destPort uint16) *Header {
 }
 
 // NewSyncHeader() creates a new Sync header
-func NewSyncHeader(sourcePort, destPort uint16) *Header {
+func NewSyncHeader() *Header {
 	return &Header{
-		SourcePort: sourcePort,
-		DestPort:   destPort,
 		Type:       Sync,
 		X:          true,
 	}
 }
 
 // NewSyncAckHeader() creates a new Sync header
-func NewSyncAckHeader(sourcePort, destPort uint16) *Header {
+func NewSyncAckHeader() *Header {
 	return &Header{
-		SourcePort: sourcePort,
-		DestPort:   destPort,
 		Type:       SyncAck,
 		X:          true,
 	}
 }
 
-// NewResponseHeader() creates a new Response header
-func NewResponseHeader(serviceCode uint32, sourcePort, destPort uint16) *Header {
+// NewRequestHeader() creates a new Request header
+func NewRequestHeader(serviceCode uint32) *Header {
 	return &Header{
-		SourcePort:  sourcePort,
-		DestPort:    destPort,
+		Type:        Request,
+		X:           true,
+		ServiceCode: serviceCode,
+	}
+}
+
+// NewResponseHeader() creates a new Response header
+func NewResponseHeader(serviceCode uint32) *Header {
+	return &Header{
 		Type:        Response,
 		X:           true,
 		ServiceCode: serviceCode,

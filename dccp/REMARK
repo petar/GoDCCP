@@ -2,8 +2,12 @@
 * Set server state of socket
 
 * Listen protocol is in Step 2, Section 8.5
-* Cleanup generate* methods
 * test CCID3 opts
+
+* Const CCID
+* Reliable transport
+* CCID3
+* Conn.SetReadTimeout
 
 * THINK: DCCP uses source/dest port to identify flow. We use mux-layer. Reconcile?
 

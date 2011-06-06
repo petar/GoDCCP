@@ -10,18 +10,17 @@ import (
 	"time"
 )
 
-// Mux{} is a thin protocol layer that works on top of a connection-less packet layer, like UDP.
-// Mux{} multiplexes packets into flows. A flow is a point-to-point connection, which has no
+// Mux is a thin protocol layer that works on top of a connection-less packet layer, like UDP.
+// Mux multiplexes packets into flows. A flow is a point-to-point connection, which has no
 // congestion or reliability mechanism.
 //
-// Mux{} implements a mechanism for dropping packets that linger (are received) for up to
+// Mux implements a mechanism for dropping packets that linger (are received) for up to
 // one minute after their respective flow has been closed.
 //
-// Mux{} force-closes flows that have experienced no activity for 10 mins
+// Mux force-closes flows that have experienced no activity for 10 mins
 type Mux struct {
 	Mutex
 	link         Link
-	largest      int              // Max allowed block size, including mux header. Larger incoming/outgoing packets are dropped.
 	flowsLocal   map[uint64]*flow // Active flows hashed by local label
 	flowsRemote  map[uint64]*flow
 	lingerLocal  map[uint64]int64 // Local labels of recently-closed flows mapped to time of closure
@@ -35,17 +34,17 @@ const (
 	MuxReadSafety = 5
 )
 
-// muxHeader{} is an internal data structure that carries a parsed switch packet,
+// muxHeader is an internal data structure that carries a parsed switch packet,
 // which contains a flow ID and a DCCP header
 type muxHeader struct {
 	Msg   *muxMsg
 	Cargo []byte
 }
 
-func NewMux(link Link, largest int) *Mux {
+// NewMux creates a new Mux object, using the connection-less packet interface link
+func NewMux(link Link) *Mux {
 	m := &Mux{
 		link:         link,
-		largest:      largest,
 		flowsLocal:   make(map[uint64]*flow),
 		flowsRemote:  make(map[uint64]*flow),
 		lingerLocal:  make(map[uint64]int64),
@@ -56,6 +55,47 @@ func NewMux(link Link, largest int) *Mux {
 	go m.expireLingeringLoop()
 	go m.expireLoop()
 	return m
+}
+
+// Accept() returns the first incoming flow request
+func (m *Mux) Accept() (c BlockConn, err os.Error) {
+	f, ok := <-m.acceptChan
+	if !ok {
+		return nil, os.EBADF
+	}
+	return f, nil
+}
+
+// Dial opens a packet-based connection to the Link-layer addr
+func (m *Mux) Dial(addr net.Addr) (c BlockConn, err os.Error) {
+	ch := make(chan muxHeader)
+	local := ChooseLabel()
+	f := newFlow(addr, m, ch, m.cargoMaxLen(), local, nil)
+
+	m.Lock()
+	m.flowsLocal[local.Hash()] = f
+	m.Unlock()
+
+	return f, nil
+}
+
+// Close() closes the mux and signals all outstanding connections
+// that it is time to terminate
+func (m *Mux) Close() os.Error {
+	m.Lock()
+	link := m.link
+	m.link = nil
+	for _, f := range m.flowsLocal {
+		f.foreclose()
+	}
+	for _, f := range m.flowsRemote {
+		f.foreclose()
+	}
+	m.Unlock()
+	if link == nil {
+		return os.EBADF
+	}
+	return link.Close()
 }
 
 func (m *Mux) readLoop() {
@@ -69,7 +109,7 @@ func (m *Mux) readLoop() {
 		}
 
 		// Read incoming packet
-		buf := make([]byte, m.largest+MuxReadSafety)
+		buf := make([]byte, m.link.GetMTU() + MuxReadSafety)
 		n, addr, err := link.ReadFrom(buf)
 		if err != nil {
 			break
@@ -170,15 +210,6 @@ func readMuxHeader(p []byte) (msg *muxMsg, cargo []byte, err os.Error) {
 	return msg, cargo, nil
 }
 
-// Accept() returns the first incoming flow request
-func (m *Mux) Accept() (c BlockConn, err os.Error) {
-	f, ok := <-m.acceptChan
-	if !ok {
-		return nil, os.EBADF
-	}
-	return f, nil
-}
-
 // findLocal() checks if there already exists a flow corresponding to the given local label
 func (m *Mux) findLocal(local *Label) *flow {
 	if local == nil {
@@ -201,18 +232,6 @@ func (m *Mux) findRemote(remote *Label) *flow {
 	return m.flowsRemote[remote.Hash()]
 }
 
-func (m *Mux) Dial(addr net.Addr) (c BlockConn, err os.Error) {
-	ch := make(chan muxHeader)
-	local := ChooseLabel()
-	f := newFlow(addr, m, ch, m.cargoMaxLen(), local, nil)
-
-	m.Lock()
-	m.flowsLocal[local.Hash()] = f
-	m.Unlock()
-
-	return f, nil
-}
-
 // expireLoop() force-closes flows that have been inactive for more than 10 min
 func (m *Mux) expireLoop() {
 	for {
@@ -226,7 +245,7 @@ func (m *Mux) expireLoop() {
 			break
 		}
 
-		now := m.Now()
+		now := time.Nanoseconds()
 		m.Lock()
 		// All active flows have local labels, so it's enough to iterate just flowsLocal[]
 		for _, f := range m.flowsLocal {
@@ -271,7 +290,7 @@ func (m *Mux) expireLingeringLoop() {
 			break
 		}
 
-		now := m.Now()
+		now := time.Nanoseconds()
 		m.Lock()
 		for h, t := range m.lingerLocal {
 			if now-t >= MuxLingerTime {
@@ -292,7 +311,7 @@ func (m *Mux) del(local *Label, remote *Label) {
 	m.Lock()
 	defer m.Unlock()
 
-	now := m.Now()
+	now := time.Nanoseconds()
 	if local != nil {
 		m.flowsLocal[local.Hash()] = nil, false
 		if _, alreadyClosed := m.lingerLocal[local.Hash()]; !alreadyClosed {
@@ -307,12 +326,9 @@ func (m *Mux) del(local *Label, remote *Label) {
 	}
 }
 
-func (m *Mux) cargoMaxLen() int { return m.largest - muxMsgFootprint }
+func (m *Mux) cargoMaxLen() int { return m.link.GetMTU() - muxMsgFootprint }
 
 func (m *Mux) write(msg *muxMsg, block []byte, addr net.Addr) os.Error {
-	if muxMsgFootprint+len(block) > m.largest {
-		return os.NewError("block too big")
-	}
 	m.Lock()
 	link := m.link
 	m.Unlock()
@@ -337,25 +353,3 @@ func max(i, j int) int {
 	}
 	return j
 }
-
-// Close() closes the mux and signals all outstanding connections
-// that it is time to terminate
-func (m *Mux) Close() os.Error {
-	m.Lock()
-	link := m.link
-	m.link = nil
-	for _, f := range m.flowsLocal {
-		f.foreclose()
-	}
-	for _, f := range m.flowsRemote {
-		f.foreclose()
-	}
-	m.Unlock()
-	if link == nil {
-		return os.EBADF
-	}
-	return link.Close()
-}
-
-// Now() returns the current time in nanoseconds
-func (m *Mux) Now() int64 { return time.Nanoseconds() }
