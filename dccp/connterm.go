@@ -4,15 +4,18 @@
 
 package dccp
 
-// abort() resets the connection with Reset Code 2, "Aborted"
-func (c *Conn) abort() {
+// abortWith() resets the connection with Reset Code resetCode
+func (c *Conn) abortWith(resetCode byte) {
 	c.Lock()
 	c.socket.SetState(CLOSED)
 	c.Unlock()
-	c.inject(c.generateReset(ResetAborted))
+	c.inject(c.generateReset(resetCode))
 	c.teardownUser()
 	c.teardownWriteLoop()
 }
+
+// abort() resets the connection with Reset Code 2, "Aborted"
+func (c *Conn) abort() { c.abortWith(ResetAborted) }
 
 // kill() kills the connection immediately and not gracefully
 func (c *Conn) kill() {

@@ -177,6 +177,7 @@ func (c *Conn) step10_ProcessREQUEST2(h *Header) os.Error {
 			if state != PARTOPEN {
 				break
 			}
+			// If the back-off timer has reached maximum wait. End the connection.
 			if err != nil {
 				c.abort()
 				break

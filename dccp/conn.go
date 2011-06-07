@@ -49,6 +49,12 @@ func newConnServer(hc HeaderConn, cc CongestionControl) *Conn {
 	return c
 }
 
+const (
+	REQUEST_BACKOFF_FIRST = 1e9 // Initial re-send period for client Request resends, in nanoseconds
+	REQUEST_BACKOFF_MAX   = 2*60e9 // Request re-sends quit after 2 mins, in nanoseconds
+	REQUEST_BACKOFF_FREQ  = 20e9 // Back-off Request resend every 20 mins, in nanoseconds
+)
+
 func newConnClient(hc HeaderConn, cc CongestionControl, serviceCode uint32) *Conn {
 	c := newConn(hc, cc)
 
@@ -60,19 +66,25 @@ func newConnClient(hc HeaderConn, cc CongestionControl, serviceCode uint32) *Con
 	c.inject(c.generateRequest(serviceCode))
 	c.Unlock()
 
-	// Exponential backoff if not response
-
-	// A client in the REQUEST state SHOULD use an exponential-backoff timer to send new
-	// DCCP-Request packets if no response is received.  The first retransmission should occur
-	// after approximately one second, backing off to not less than one packet every 64 seconds;
-	// Each new DCCP-Request MUST increment the Sequence Number by one and MUST contain the same
-	// Service Code and application data as the original DCCP-Request.
-
-	// A client MAY give up on its DCCP-Requests after some time (3 minutes, for example).  When
-	// it does, it SHOULD send a DCCP-Reset packet to the server with Reset Code 2, "Aborted",
-	// to clean up state in case one or more of the Requests actually arrived.  A client in
-	// REQUEST state has never received an initial sequence number from its peer, so the
-	// DCCP-Reset's Acknowledgement Number MUST be set to zero.
+	// Resend Request using exponential backoff, if no response
+	go func() {
+		b := newBackOff(REQUEST_BACKOFF_FIRST, REQUEST_BACKOFF_MAX, REQUEST_BACKOFF_FREQ)
+		for {
+			err := b.Sleep()
+			c.Lock()
+			state := c.socket.GetState()
+			c.Unlock()
+			if state != REQUEST {
+				break
+			}
+			// If the back-off timer has reached maximum wait, quit trying
+			if err != nil {
+				c.abort()
+				break
+			}
+			c.inject(c.generateRequest(serviceCode))
+		}
+	}()
 
 	go c.writeLoop()
 	go c.readLoop()
