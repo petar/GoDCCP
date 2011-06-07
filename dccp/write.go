@@ -148,7 +148,10 @@ func (gh *Header) Write(sourceIP, destIP []byte,
 	case true:
 		buf[k] = 0
 		k += 1 // skip over Reserved
-		encode6ByteUint(gh.SeqNo, buf[k:k+6])
+		if gh.SeqNo < 0 {
+			panic("seqno < 0")
+		}
+		encode6ByteUint(uint64(gh.SeqNo), buf[k:k+6])
 		k += 6
 	}
 
@@ -164,7 +167,10 @@ func (gh *Header) Write(sourceIP, destIP []byte,
 	case 8:
 		buf[k], buf[k+1] = 0, 0
 		k += 2 // Skip over Reserved
-		encode6ByteUint(gh.AckNo, buf[k:k+6])
+		if gh.AckNo < 0 {
+			panic("ackno < 0")
+		}
+		encode6ByteUint(uint64(gh.AckNo), buf[k:k+6])
 		k += 6
 	default:
 		panic("unreach")

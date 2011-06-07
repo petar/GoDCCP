@@ -11,24 +11,21 @@ func (c *Conn) PlaceSeqAck(h *Header) {
 
 	// Update GSR
 	gsr := c.socket.GetGSR()
-	c.socket.SetGSR(maxu64(gsr, h.SeqNo))
+	c.socket.SetGSR(max64(gsr, h.SeqNo))
 
 	// Update GAR
 	if h.HasAckNo() {
 		gar := c.socket.GetGAR()
-		c.socket.SetGAR(maxu64(gar, h.AckNo))
+		c.socket.SetGAR(max64(gar, h.AckNo))
 	}
 }
 
 func (c *Conn) TakeSeqAck(h *Header) *Header {
 	c.AssertLocked()
 
-	seqno := c.socket.GetGSS() + 1
-	c.socket.SetGSS(seqno)
-	ackno := c.socket.GetGSR()
-
-	h.SeqNo = seqno
-	h.AckNo = ackno
+	h.SeqNo = max64(c.socket.GetISS(), c.socket.GetGSS() + 1)
+	c.socket.SetGSS(h.SeqNo)
+	h.AckNo = c.socket.GetGSR()
 
 	return h
 }

@@ -4,6 +4,7 @@
 * Listen protocol is in Step 2, Section 8.5
 * test CCID3 opts
 
+* Send Ack's in response to a Response, rather than DataAck's, since there may no be app data
 * Const CCID
 * Reliable transport
 * CCID3

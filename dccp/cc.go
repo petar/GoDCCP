@@ -14,24 +14,24 @@ type CongestionControl interface {
 	GetID() byte
 
 	// GetCCMPS returns the Congestion Control Maximum Packet Size, CCMPS. Generally, PMTU <= CCMPS
-	GetCCMPS() uint32
+	GetCCMPS() int32
 
 	// GetRTT returns the Round-Trip Time as measured by this CCID
 	GetRTT() int64
 
 	// GetSWABF returns the Sequence Window/A and Window/B Feature, see Section 7.5.1
-	GetSWABF() (swaf uint64, swbf uint64)
+	GetSWABF() (swaf int64, swbf int64)
 
 	// Conn calls OnWrite before a packet is sent to give CongestionControl
 	// an opportunity to add CCVal and options to an outgoing packet
-	OnWrite(htype byte, x bool, seqno uint64) (ccval byte, options []Option)
+	OnWrite(htype byte, x bool, seqno int64) (ccval byte, options []Option)
 
 	// Conn calls OnRead after a packet has been accepted an validated
 	// If OnRead returns ErrDrop, the packet will be dropped and no further processing
 	// will occur. If if it returns ErrReset, the connection will be reset.
 	// TODO: ErrReset behavior is not implemented. ErrReset should wrap the Reset Code to be
 	// used.
-	OnRead(htype byte, x bool, seqno uint64, ccval byte, options []Option) os.Error
+	OnRead(htype byte, x bool, seqno int64, ccval byte, options []Option) os.Error
 
 	// Strobe blocks until a new packet can be sent without violating the
 	// congestion control rate limit

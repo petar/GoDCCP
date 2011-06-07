@@ -24,8 +24,8 @@ type Header struct {
 	CsCov       byte     // Specifies the parts of packet covered by the checksum
 	Type        byte     // Packet type: Data, Ack, Sync, etc.
 	X           bool     // Extended seq numbers: generally always true (for us)
-	SeqNo       uint64   // 48-bit if X=1
-	AckNo       uint64   // 48-bit if X=1
+	SeqNo       int64    // 48-bit if X=1
+	AckNo       int64    // 48-bit if X=1
 	ServiceCode uint32   // ServiceCode: Applicaton level service (in Req,Resp pkts)
 	ResetCode   byte     // ResetCode: Reason for reset (in Reset pkts)
 	ResetData   []byte   // ResetData: Additional reset info (in Reset pkts)

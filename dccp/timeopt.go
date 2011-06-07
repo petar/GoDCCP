@@ -163,9 +163,9 @@ func DecodeTimestampEchoOption(opt *Option) *TimestampEchoOption {
 
 // GetTimestampDiff() returns the circular difference between t0 an t1 in nanoseconds. Note
 // that t0 and t1 are themselves given in 10 microsecond circular units
-func GetTimestampDiff(t0, t1 uint32) uint32 { return minUint32(t0-t1, t1-t0) }
+func GetTimestampDiff(t0, t1 uint32) uint32 { return minu32(t0-t1, t1-t0) }
 
-func minUint32(x, y uint32) uint32 {
+func minu32(x, y uint32) uint32 {
 	if x < y {
 		return x
 	}

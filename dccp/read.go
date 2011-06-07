@@ -96,7 +96,7 @@ func ReadHeader(buf []byte,
 	// Read SeqNo
 	switch gh.X {
 	case false:
-		gh.SeqNo = uint64(decode3ByteUint(buf[k : k+3]))
+		gh.SeqNo = int64(decode3ByteUint(buf[k : k+3]))
 		k += 3
 	case true:
 		padding := decode1ByteUint(buf[k : k+1])
@@ -104,7 +104,7 @@ func ReadHeader(buf []byte,
 		if padding != 0 {
 			return nil, ErrNumeric
 		}
-		gh.SeqNo = decode6ByteUint(buf[k : k+6])
+		gh.SeqNo = int64(decode6ByteUint(buf[k : k+6]))
 		k += 6
 	}
 
@@ -118,7 +118,7 @@ func ReadHeader(buf []byte,
 		if padding != 0 {
 			return nil, ErrNumeric
 		}
-		gh.AckNo = uint64(decode3ByteUint(buf[k : k+3]))
+		gh.AckNo = int64(decode3ByteUint(buf[k : k+3]))
 		k += 3
 	case 8:
 		padding := decode2ByteUint(buf[k : k+2])
@@ -126,7 +126,7 @@ func ReadHeader(buf []byte,
 		if padding != 0 {
 			return nil, ErrNumeric
 		}
-		gh.AckNo = decode6ByteUint(buf[k : k+6])
+		gh.AckNo = int64(decode6ByteUint(buf[k : k+6]))
 		k += 6
 	default:
 		panic("unreach")

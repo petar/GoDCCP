@@ -113,5 +113,5 @@ func (c *Conn) updateSocketCongestionControl() {
 
 func (c *Conn) updateSocketLink() {
 	c.AssertLocked()
-	c.socket.SetPMTU(uint32(c.hc.GetMTU()))
+	c.socket.SetPMTU(int32(c.hc.GetMTU()))
 }
