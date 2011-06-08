@@ -12,6 +12,7 @@ GOFILES=\
 	chanlink.go\
 	checksum.go\
 	conn.go\
+	conndbg.go\
 	conngen.go\
 	conninj.go\
 	connpipe.go\
@@ -19,6 +20,7 @@ GOFILES=\
 	connsteps.go\
 	connterm.go\
 	connuser.go\
+	ctrlc.go\
 	dccp.go\
 	dial.go\
 	err.go\
@@ -34,7 +36,6 @@ GOFILES=\
 	options.go\
 	read.go\
 	servicecode.go\
-	signal.go\
 	socket.go\
 	string.go\
 	timeopt.go\

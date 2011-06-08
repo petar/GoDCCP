@@ -11,50 +11,54 @@ import (
 )
 
 func (h *Header) String() string {
+	x := 0
+	if h.X {
+		x = 1
+	}
 	var w bytes.Buffer
 	switch h.Type {
 	case Request:
 		fmt.Fprintf(&w, "T:%s X:%d SeqNo:%d SC:%d ··· SP:%2d DP:%2d",
-			typeToString(h.Type), h.X, h.SeqNo, h.ServiceCode,
+			typeString(h.Type), x, h.SeqNo, h.ServiceCode,
 			h.SourcePort, h.DestPort)
 	case Response:
 		fmt.Fprintf(&w, "T:%s X:%d SeqNo:%d AckNo:%d SC:%d ··· SP:%2d DP:%2d",
-			typeToString(h.Type), h.X, h.SeqNo, h.AckNo, h.ServiceCode,
+			typeString(h.Type), x, h.SeqNo, h.AckNo, h.ServiceCode,
 			h.SourcePort, h.DestPort)
 	case Data:
 		fmt.Fprintf(&w, "T:%s X:%d SeqNo:%d ··· #D:%d",
-			typeToString(h.Type), h.X, h.SeqNo,
+			typeString(h.Type), x, h.SeqNo,
 			len(h.Data))
 	case Ack:
 		fmt.Fprintf(&w, "T:%s X:%d SeqNo:%d AckNo:%d",
-			typeToString(h.Type), h.X, h.SeqNo, h.AckNo)
+			typeString(h.Type), x, h.SeqNo, h.AckNo)
 	case DataAck:
 		fmt.Fprintf(&w, "T:%s X:%d SeqNo:%d AckNo:%d ··· #D:%d",
-			typeToString(h.Type), h.X, h.SeqNo, h.AckNo,
+			typeString(h.Type), x, h.SeqNo, h.AckNo,
 			len(h.Data))
 	case CloseReq:
 		fmt.Fprintf(&w, "T:%s X:%d SeqNo:%d AckNo:%d",
-			typeToString(h.Type), h.X, h.SeqNo, h.AckNo)
+			typeString(h.Type), x, h.SeqNo, h.AckNo)
 	case Close:
 		fmt.Fprintf(&w, "T:%s X:%d SeqNo:%d AckNo:%d",
-			typeToString(h.Type), h.X, h.SeqNo, h.AckNo)
+			typeString(h.Type), x, h.SeqNo, h.AckNo)
 	case Reset:
 		fmt.Fprintf(&w, "T:%s X:%d SeqNo:%d AckNo:%d ··· RC: %s #RD:%d",
-			typeToString(h.Type), h.X, h.SeqNo, h.AckNo,
-			resetCodeToString(h.ResetCode), len(h.ResetData))
+			typeString(h.Type), x, h.SeqNo, h.AckNo,
+			resetCodeString(h.ResetCode), len(h.ResetData))
 	case Sync:
 		fmt.Fprintf(&w, "T:%s X:%d SeqNo:%d AckNo:%d",
-			typeToString(h.Type), h.X, h.SeqNo, h.AckNo)
+			typeString(h.Type), x, h.SeqNo, h.AckNo)
 	case SyncAck:
 		fmt.Fprintf(&w, "T:%s X:%d SeqNo:%d AckNo:%d",
-			typeToString(h.Type), h.X, h.SeqNo, h.AckNo)
+			typeString(h.Type), x, h.SeqNo, h.AckNo)
 	default:
 		panic("unknown packet type")
 	}
 	return string(w.Bytes())
 }
 
-func typeToString(typ byte) string {
+func typeString(typ byte) string {
 	switch typ {
 	case Request:
 		return "Request"
@@ -80,7 +84,7 @@ func typeToString(typ byte) string {
 	panic("un")
 }
 
-func resetCodeToString(resetCode byte) string {
+func resetCodeString(resetCode byte) string {
 	switch resetCode {
 	case ResetUnspecified:
 		return "Unspecified"

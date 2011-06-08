@@ -9,12 +9,12 @@ import (
 	"os/signal"
 )
 
-// InstallCtrlC() installs a Ctrl-C signal handler that panics
-func InstallCtrlC() {
+// InstallCtrlCPanic installs a Ctrl-C signal handler that panics
+func InstallCtrlCPanic() {
 	go func() {
 		for s := range signal.Incoming {
 			if s == signal.Signal(signal.SIGINT) {
-				log.Printf("signal interruption: %s\n", s)
+				log.Printf("ctrl-c interruption: %s\n", s)
 				panic("ctrl-c")
 			}
 		}

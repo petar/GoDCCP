@@ -69,7 +69,7 @@ func NewHeaderOverBlockConn(bc BlockConn) HeaderConn {
 }
 
 type headerOverBlock struct {
-	bc BlockConn
+	bc   BlockConn
 }
 
 func (hob *headerOverBlock) GetMTU() int { return hob.bc.GetMTU() }

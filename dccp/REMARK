@@ -1,6 +1,11 @@
 
+* fold stack traces into files
+* print packet read/write inside conn
+* print conn state inside conn
+* pick names for conn's
 
 * test connection establishment
+	* Server perceives first Request packet as out-of-sync in Step 6
 * Reliable transport
 * test reliable transport (simulated drops)
 * CCID3
@@ -10,3 +15,5 @@
 // TODO: In theory, long lived connections may wrap around the AckNo/SeqNo space
 // in which case maxu64() should not be used below. This will never happen however
 // if we are using 48-bit numbers exclusively
+
+* How many go-routines per connection?
