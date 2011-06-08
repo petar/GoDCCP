@@ -10,10 +10,9 @@ import (
 )
 
 func (c *Conn) shortID() string {
+	c.AssertLocked()
 	var w bytes.Buffer
-	c.Lock()
 	isServer := c.socket.IsServer()
-	c.Unlock()
 	p := c.hc.LocalLabel().Bytes()
 	if isServer {
 		fmt.Fprintf(&w, "S·%2x", p[0])
@@ -26,14 +25,30 @@ func (c *Conn) shortID() string {
 func (c *Conn) logState() {
 	c.Lock()
 	state := c.socket.GetState()
+	id := c.shortID()
 	c.Unlock()
-	fmt.Printf("%s—%s\n", c.shortID(), StateString(state))
+	fmt.Printf("%s—%s\n", id, StateString(state))
 }
 
 func (c *Conn) logReadHeader(h *Header) {
-	fmt.Printf("%s/R %s\n", c.shortID(), h.String())
+	c.Lock()
+	state := c.socket.GetState()
+	id := c.shortID()
+	c.Unlock()
+	fmt.Printf("%s/R/%s —— %s\n", id, StateString(state), h.String())
 }
 
 func (c *Conn) logWriteHeader(h *Header) {
-	fmt.Printf("%s/W %s\n", c.shortID(), h.String())
+	c.Lock()
+	state := c.socket.GetState()
+	id := c.shortID()
+	c.Unlock()
+	fmt.Printf("%s/W/%s —— %s\n", id, StateString(state), h.String())
+}
+
+func (c *Conn) logWriteHeaderLocked(h *Header) {
+	c.AssertLocked()
+	state := c.socket.GetState()
+	id := c.shortID()
+	fmt.Printf("%s/W/%s —— %s\n", id, StateString(state), h.String())
 }

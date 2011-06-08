@@ -43,6 +43,7 @@ func newConnServer(hc HeaderConn, cc CongestionControl) *Conn {
 	c := newConn(hc, cc)
 
 	c.Lock()
+	c.socket.SetServer(true)
 	c.socket.SetState(LISTEN)
 	c.Unlock()
 
@@ -61,6 +62,7 @@ func newConnClient(hc HeaderConn, cc CongestionControl, serviceCode uint32) *Con
 	c := newConn(hc, cc)
 
 	c.Lock()
+	c.socket.SetServer(false)
 	c.socket.SetState(REQUEST)
 	c.socket.SetServiceCode(serviceCode)
 	iss := c.socket.ChooseISS()

@@ -12,11 +12,12 @@ import (
 
 func main() {
 	InstallCtrlCPanic()
+	defer SavePanicTrace()
 	defer func() { chan int(nil) <- 1 }()
 
 	// Install stacks
 	linka, linkb := NewChanPipe()
-	newcc := NewConstRateControlFunc(10)
+	newcc := NewConstRateControlFunc(4)
 	stacka, stackb := NewStack(linka, newcc), NewStack(linkb, newcc)
 
 	// Establish connection

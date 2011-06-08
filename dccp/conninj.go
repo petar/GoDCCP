@@ -13,6 +13,7 @@ func (c *Conn) inject(h *Header) {
 	if h == nil {
 		panic("injecting nil header")
 	}
+	c.logWriteHeaderLocked(h)
 	c.writeNonData <- h
 }
 

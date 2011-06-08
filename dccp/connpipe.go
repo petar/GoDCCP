@@ -50,6 +50,7 @@ func (c *Conn) readLoop() {
 				return
 			}
 		}
+		c.logReadHeader(h)
 
 		c.Lock()
 		c.updateSocketCongestionControl()
