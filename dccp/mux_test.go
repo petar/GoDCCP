@@ -24,7 +24,7 @@ func newEndToEnd(t *testing.T, alink, dlink Link, addr net.Addr, nc int) *endToE
 
 func (ee *endToEnd) acceptLoop(link Link) {
 
-	m := NewMux(link, link.GetMTU())
+	m := NewMux(link)
 
 	// Accept connections
 	gg := make(chan int)
@@ -62,7 +62,7 @@ func (ee *endToEnd) acceptLoop(link Link) {
 
 func (ee *endToEnd) dialLoop(link Link) {
 
-	m := NewMux(link, link.GetMTU())
+	m := NewMux(link)
 
 	// Dial connections
 	gg := make(chan int)

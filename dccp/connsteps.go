@@ -182,7 +182,9 @@ func (c *Conn) step10_ProcessREQUEST2(h *Header) os.Error {
 				c.abort()
 				break
 			}
+			c.Lock()
 			c.inject(c.generateAck())
+			c.Unlock()
 		}
 	}()
 
@@ -257,7 +259,9 @@ func (c *Conn) gotoCLOSING() {
 				c.Unlock()
 				break
 			}
+			c.Lock()
 			c.inject(c.generateClose())
+			c.Unlock()
 		}
 	}()
 }

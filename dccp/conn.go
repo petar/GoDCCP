@@ -84,7 +84,9 @@ func newConnClient(hc HeaderConn, cc CongestionControl, serviceCode uint32) *Con
 				c.abort()
 				break
 			}
+			c.Lock()
 			c.inject(c.generateRequest(serviceCode))
+			c.Unlock()
 		}
 	}()
 

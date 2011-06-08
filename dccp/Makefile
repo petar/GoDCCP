@@ -36,6 +36,7 @@ GOFILES=\
 	servicecode.go\
 	signal.go\
 	socket.go\
+	string.go\
 	timeopt.go\
 	udplink.go\
 	wire.go\
