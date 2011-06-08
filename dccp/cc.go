@@ -10,6 +10,12 @@ import "os"
 // DCCP connection.
 type CongestionControl interface {
 
+	// Start tells the Congestion Control that it is being put in use.
+	// This method is handy since CC is generally time-sensitive, and so having
+	// an indication of "start" allows the CC to distinguish between its creation
+	// time and the time when it actually starts being utilized.
+	Start()
+
 	// GetID() returns the CCID of this congestion control algorithm
 	GetID() byte
 
@@ -35,7 +41,10 @@ type CongestionControl interface {
 
 	// Strobe blocks until a new packet can be sent without violating the
 	// congestion control rate limit
-	Strobe()
+	Strobe() os.Error
+
+	// Close terminates the congestion control when it is not needed any longer
+	Close() os.Error
 }
 
 type NewCongestionControlFunc func() CongestionControl

@@ -6,6 +6,7 @@ GOFILES=\
 	backoff.go\
 	block.go\
 	cc.go\
+	ccconst.go\
 	ccid3.go\
 	ccid3opt.go\
 	chanlink.go\

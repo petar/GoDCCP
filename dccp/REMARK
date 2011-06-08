@@ -1,9 +1,10 @@
 
-* test CCID3 opts
 
-* Const CCID
+* test connection establishment
 * Reliable transport
+* test reliable transport (simulated drops)
 * CCID3
+* test CCID3 opts
 * Conn.SetReadTimeout
 
 // TODO: In theory, long lived connections may wrap around the AckNo/SeqNo space

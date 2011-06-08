@@ -34,6 +34,8 @@ func newConn(hc HeaderConn, cc CongestionControl) *Conn {
 	c.updateSocketCongestionControl()
 	c.Unlock()
 
+	cc.Start()
+
 	return c
 }
 

@@ -23,7 +23,9 @@ func (c *Conn) writeLoop() {
 	writeData := c.writeData
 Loop:
 	for {
-		c.cc.Strobe()
+		if c.cc.Strobe() != nil {
+			panic("broken congestion control")
+		}
 		var h *Header
 		var ok bool
 		var appData []byte
@@ -63,4 +65,6 @@ Loop:
 			break Loop
 		}
 	}
+	// Close the congestion control here when it won't be needed any longer
+	c.cc.Close()
 }
