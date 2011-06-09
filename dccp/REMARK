@@ -1,16 +1,17 @@
 
-* fold stack traces into files
-* print packet read/write inside conn
-* print conn state inside conn
-* pick names for conn's
-
+* add goto_ functions for all state transitions
 * test connection establishment
 	* Server perceives first Request packet as out-of-sync in Step 6
+	* Ensure every state has a timeout exit
+* Should CC have a mechanism for saying: Things have been quiet for too long
+
 * Reliable transport
 * test reliable transport (simulated drops)
 * CCID3
 * test CCID3 opts
 * Conn.SetReadTimeout
+
+* add monitor-type output for the dccp stack
 
 // TODO: In theory, long lived connections may wrap around the AckNo/SeqNo space
 // in which case maxu64() should not be used below. This will never happen however

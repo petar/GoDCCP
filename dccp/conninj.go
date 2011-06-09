@@ -62,7 +62,7 @@ Loop:
 		}
 		err := c.hc.WriteHeader(h)
 		if err != nil {
-			c.kill()
+			c.abortQuietly()
 			break Loop
 		}
 	}

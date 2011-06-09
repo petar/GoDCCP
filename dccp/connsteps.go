@@ -7,19 +7,19 @@ package dccp
 import (
 	"log"
 	"os"
-	"time"
 )
 
 // Step 2, Section 8.5: Check ports and process TIMEWAIT state
 func (c *Conn) step2_ProcessTIMEWAIT(h *Header) os.Error {
-	if h.Type == Reset {
-		return ErrDrop
+	if c.socket.GetState() != TIMEWAIT {
+		return nil
 	}
-	if c.socket.GetState() == TIMEWAIT {
+	if h.Type != Reset {
+		// In TIMEWAIT, the conn keeps responding with Reset until
+		// TIMEWAIT ends as scheduled by gotoTIMEWAIT
 		c.inject(c.generateAbnormalReset(ResetNoConnection, h))
-		return ErrDrop
 	}
-	return nil
+	return ErrDrop
 }
 
 // Step 3, Section 8.5: Process LISTEN state
@@ -33,15 +33,18 @@ func (c *Conn) step3_ProcessLISTEN(h *Header) os.Error {
 		c.socket.SetGAR(iss)
 		c.socket.SetISR(h.SeqNo)
 		c.socket.SetGSR(h.SeqNo)
+		// TODO: To be more prudent, set service code only if it is currently 0,
+		// otherwise check that h.ServiceCode matches socket service code
 		c.socket.SetServiceCode(h.ServiceCode)
 		return nil
-	} else {
-		if h.Type != Request {
-			c.inject(c.generateAbnormalReset(ResetNoConnection, h))
-		}
-		return ErrDrop
 	}
-	panic("unreach")
+	// On a flow-based (i.e. point-to-point) packet connection, there are no
+	// circumstances where the first packet received from the other party is not
+	// a Request.
+	c.teardownUser()
+	c.inject(c.generateAbnormalReset(ResetNoConnection, h))
+	c.teardownWriteLoop()
+	return ErrDrop
 }
 
 // Step 4, Section 8.5: Prepare sequence numbers in REQUEST
@@ -55,6 +58,9 @@ func (c *Conn) step4_PrepSeqNoREQUEST(h *Header) os.Error {
 		c.PlaceSeqAck(h)
 		return nil
 	}
+	// For forward compatibility, even though the client expects only Response
+	// packets in REQUEST mode, it responds to other packets with a ResetPacketError
+	// and does not abort the connection.
 	c.inject(c.generateReset(ResetPacketError))
 	return ErrDrop
 }
@@ -151,14 +157,6 @@ func (c *Conn) step9_ProcessReset(h *Header) os.Error {
 	return ErrDrop
 }
 
-func (c *Conn) gotoTIMEWAIT() {
-	c.socket.SetState(TIMEWAIT)
-	go func() {
-		time.Sleep(2 * MSL)
-		c.kill()
-	}()
-}
-
 // Step 10, Section 8.5: Process REQUEST state (second part)
 func (c *Conn) step10_ProcessREQUEST2(h *Header) os.Error {
 	if c.socket.GetState() != REQUEST {
@@ -206,6 +204,9 @@ func (c *Conn) step11_ProcessRESPOND(h *Header) os.Error {
 		}
 		c.inject(c.generateResponse(serviceCode))
 	} else {
+		if h.Type != Ack && h.Type != DataAck {
+			log.Printf("entering OPEN on a non-Ack, non-DataAck packet")
+		}
 		c.socket.SetOSR(h.SeqNo)
 		c.socket.SetState(OPEN)
 	}
@@ -236,34 +237,6 @@ func (c *Conn) step13_ProcessCloseReq(h *Header) os.Error {
 		c.gotoCLOSING()
 	}
 	return nil
-}
-
-func (c *Conn) gotoCLOSING() {
-	c.socket.SetState(CLOSING)
-	go func() {
-		c.Lock()
-		rtt := c.socket.GetRTT()
-		c.Unlock()
-		b := newBackOff(2*rtt, CLOSING_BACKOFF_MAX, CLOSING_BACKOFF_FREQ)
-		for {
-			err := b.Sleep()
-			c.Lock()
-			state := c.socket.GetState()
-			c.Unlock()
-			if state != CLOSING {
-				break
-			}
-			if err != nil {
-				c.Lock()
-				c.gotoTIMEWAIT()
-				c.Unlock()
-				break
-			}
-			c.Lock()
-			c.inject(c.generateClose())
-			c.Unlock()
-		}
-	}()
 }
 
 // Step 14, Section 8.5: Process Close

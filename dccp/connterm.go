@@ -17,8 +17,8 @@ func (c *Conn) abortWith(resetCode byte) {
 // abort() resets the connection with Reset Code 2, "Aborted"
 func (c *Conn) abort() { c.abortWith(ResetAborted) }
 
-// kill() kills the connection immediately and not gracefully
-func (c *Conn) kill() {
+// abortQuietly() aborts the connection immediately without sending Reset packets
+func (c *Conn) abortQuietly() {
 	c.Lock()
 	c.socket.SetState(CLOSED)
 	c.Unlock()

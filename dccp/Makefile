@@ -14,6 +14,7 @@ GOFILES=\
 	conn.go\
 	conndbg.go\
 	conngen.go\
+	conngoto.go\
 	conninj.go\
 	connpipe.go\
 	connseqack.go\

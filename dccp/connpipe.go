@@ -27,7 +27,7 @@ func (c *Conn) readHeader() (h *Header, err os.Error) {
 func (c *Conn) readLoop() {
 	if err := c.hc.SetReadTimeout(MSL); err != nil {
 		log.Printf("SetReadTimeout failed")
-		c.kill()
+		c.abortQuietly()
 		return
 	}
 	for {
@@ -46,7 +46,7 @@ func (c *Conn) readLoop() {
 				continue
 			} else {
 				// Die if the underlying link is broken
-				c.kill()
+				c.abortQuietly()
 				return
 			}
 		}

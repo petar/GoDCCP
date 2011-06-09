@@ -7,10 +7,13 @@ package main
 import (
 	"log"
 	"rand"
+	// "time"
 	. "github.com/petar/GoDCCP/dccp"
 )
 
 func main() {
+	//rand.Seed(time.Nanoseconds())
+
 	InstallCtrlCPanic()
 	defer SavePanicTrace()
 	defer func() { chan int(nil) <- 1 }()
