@@ -51,8 +51,6 @@ func (s *socket) String() string {
 const (
 	RTT_DEFAULT            = 2e8      // 0.2 sec, default Round-Trip Time when no measurement is available
 	MSL                    = 2 * 60e9 // 2 mins in nanoseconds, Maximum Segment Lifetime, Section 3.4
-	PARTOPEN_BACKOFF_FIRST = 200e6    // 200 miliseconds in nanoseconds, Section 8.1.5
-	PARTOPEN_BACKOFF_MAX   = 4 * MSL  // 8 mins in nanoseconds, Section 8.1.5
 	CLOSING_BACKOFF_FREQ   = 64e9     // Backoff frequency of CLOSING timer, 64 seconds, Section 8.3
 	CLOSING_BACKOFF_MAX    = MSL      // Maximum amount of time in CLOSING timer
 	MAX_OPTIONS_SIZE       = 128

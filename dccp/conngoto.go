@@ -22,6 +22,18 @@ func (c *Conn) gotoLISTEN() {
 	}()
 }
 
+func (c *Conn) gotoRESPOND(hServiceCode uint32, hSeqNo int64) {
+	c.AssertLocked()
+	c.socket.SetState(RESPOND)
+	iss := c.socket.ChooseISS()
+	c.socket.SetGAR(iss)
+	c.socket.SetISR(hSeqNo)
+	c.socket.SetGSR(hSeqNo)
+	// TODO: To be more prudent, set service code only if it is currently 0,
+	// otherwise check that h.ServiceCode matches socket service code
+	c.socket.SetServiceCode(hServiceCode)
+}
+
 const (
 	REQUEST_BACKOFF_FIRST = 1e9 // Initial re-send period for client Request resends is 1 sec, in nanoseconds
 	REQUEST_BACKOFF_MAX   = 120e9 // Request re-sends quit after 2 mins, in nanoseconds
@@ -55,6 +67,38 @@ func (c *Conn) gotoREQUEST(serviceCode uint32) {
 			}
 			c.Lock()
 			c.inject(c.generateRequest(serviceCode))
+			c.Unlock()
+		}
+	}()
+}
+
+const (
+	PARTOPEN_BACKOFF_FIRST = 200e6    // 200 miliseconds in nanoseconds, Section 8.1.5
+	PARTOPEN_BACKOFF_MAX   = 4 * MSL  // 8 mins in nanoseconds, Section 8.1.5
+)
+
+func (c *Conn) gotoPARTOPEN() {
+	c.AssertLocked()
+	c.socket.SetState(PARTOPEN)
+
+	// Start PARTOPEN timer, according to Section 8.1.5
+	go func() {
+		b := newBackOff(PARTOPEN_BACKOFF_FIRST, PARTOPEN_BACKOFF_MAX, PARTOPEN_BACKOFF_FIRST)
+		for {
+			err := b.Sleep()
+			c.Lock()
+			state := c.socket.GetState()
+			c.Unlock()
+			if state != PARTOPEN {
+				break
+			}
+			// If the back-off timer has reached maximum wait. End the connection.
+			if err != nil {
+				c.abort()
+				break
+			}
+			c.Lock()
+			c.inject(c.generateAck())
 			c.Unlock()
 		}
 	}()

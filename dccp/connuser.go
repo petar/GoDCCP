@@ -24,19 +24,13 @@ func (c *Conn) GetMTU() int {
 
 // WriteBlock blocks until the slice b is sent.
 func (c *Conn) WriteBlock(b []byte) os.Error {
-	if len(b) > c.GetMTU() {
-		return ErrTooBig
-	}
+	c.writeData <- b
 	c.Lock()
 	state := c.socket.GetState()
 	c.Unlock()
-	if state != OPEN {
+	if state != OPEN && state != PARTOPEN {
 		return os.EBADF
 	}
-	if len(b) == 0 {
-		return nil
-	}
-	c.writeData <- b
 	return nil
 }
 

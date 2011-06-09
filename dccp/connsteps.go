@@ -28,22 +28,15 @@ func (c *Conn) step3_ProcessLISTEN(h *Header) os.Error {
 		return nil
 	}
 	if h.Type == Request {
-		c.socket.SetState(RESPOND)
-		iss := c.socket.ChooseISS()
-		c.socket.SetGAR(iss)
-		c.socket.SetISR(h.SeqNo)
-		c.socket.SetGSR(h.SeqNo)
-		// TODO: To be more prudent, set service code only if it is currently 0,
-		// otherwise check that h.ServiceCode matches socket service code
-		c.socket.SetServiceCode(h.ServiceCode)
+		c.gotoRESPOND(h.ServiceCode, h.SeqNo)
 		return nil
 	}
-	// On a flow-based (i.e. point-to-point) packet connection, there are no
-	// circumstances where the first packet received from the other party is not
-	// a Request.
-	c.teardownUser()
-	c.inject(c.generateAbnormalReset(ResetNoConnection, h))
-	c.teardownWriteLoop()
+	// For forward compatibility, if we receive a non-Request packet
+	// we respond with with a Reset (unless the received packet was a Reset)
+	// without aborting the connection.
+	if h.Type != Reset {
+		c.inject(c.generateAbnormalReset(ResetNoConnection, h))
+	}
 	return ErrDrop
 }
 
@@ -162,29 +155,7 @@ func (c *Conn) step10_ProcessREQUEST2(h *Header) os.Error {
 	if c.socket.GetState() != REQUEST {
 		return nil
 	}
-	c.socket.SetState(PARTOPEN)
-
-	// Start PARTOPEN timer, according to Section 8.1.5
-	go func() {
-		b := newBackOff(PARTOPEN_BACKOFF_FIRST, PARTOPEN_BACKOFF_MAX, PARTOPEN_BACKOFF_FIRST)
-		for {
-			err := b.Sleep()
-			c.Lock()
-			state := c.socket.GetState()
-			c.Unlock()
-			if state != PARTOPEN {
-				break
-			}
-			// If the back-off timer has reached maximum wait. End the connection.
-			if err != nil {
-				c.abort()
-				break
-			}
-			c.Lock()
-			c.inject(c.generateAck())
-			c.Unlock()
-		}
-	}()
+	c.gotoPARTOPEN()
 
 	return nil
 }

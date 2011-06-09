@@ -1,9 +1,14 @@
 
-* add goto_ functions for all state transitions
 * test connection establishment
-	* Server perceives first Request packet as out-of-sync in Step 6
 	* Ensure every state has a timeout exit
-* Should CC have a mechanism for saying: Things have been quiet for too long
+		* Should CC have a mechanism for saying: Things have been quiet for too long
+	· Why client is not leaving PARTOPEN
+		* Does server have a mechanism of knowing to acknowledge at least a few of
+		the client's packets sent during PARTOPEN?
+			* Do DataAck/Ack packets require a response?
+	* If read packets come at high speed, but strobes are at low speed, the read loop can
+	hang in one of the inject statements
+	* add goto_ functions for all state transitions
 
 * Reliable transport
 * test reliable transport (simulated drops)
