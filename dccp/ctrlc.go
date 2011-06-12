@@ -5,6 +5,7 @@
 package dccp
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -16,10 +17,10 @@ func InstallCtrlCPanic() {
 	go func() {
 		defer SavePanicTrace()
 		for s := range signal.Incoming {
-			if s == signal.Signal(signal.SIGINT) {
+			//if s == os.Signal(syscall.SIGINT) {
 				log.Printf("ctrl-c interruption: %s\n", s)
 				panic("ctrl-c")
-			}
+			//}
 		}
 	}()
 }
@@ -32,7 +33,7 @@ func SavePanicTrace() {
 	// Redirect stderr
 	file, err := os.Create("panic")
 	if err != nil {
-		panic("dumper (no file) " + r.(string))
+		panic("dumper (no file) " + r.(fmt.Stringer).String())
 	}
 	syscall.Dup2(file.Fd(), os.Stderr.Fd())
 	panic("dumper " + r.(string))

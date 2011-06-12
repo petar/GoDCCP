@@ -7,7 +7,7 @@ package dccp
 // abortWith() resets the connection with Reset Code resetCode
 func (c *Conn) abortWith(resetCode byte) {
 	c.Lock()
-	c.socket.SetState(CLOSED)
+	c.gotoCLOSED()
 	c.Unlock()
 	c.inject(c.generateReset(resetCode))
 	c.teardownUser()
@@ -20,7 +20,7 @@ func (c *Conn) abort() { c.abortWith(ResetAborted) }
 // abortQuietly() aborts the connection immediately without sending Reset packets
 func (c *Conn) abortQuietly() {
 	c.Lock()
-	c.socket.SetState(CLOSED)
+	c.gotoCLOSED()
 	c.Unlock()
 	c.teardownUser()
 	c.teardownWriteLoop()

@@ -8,7 +8,6 @@
 			* Do DataAck/Ack packets require a response?
 	* If read packets come at high speed, but strobes are at low speed, the read loop can
 	hang in one of the inject statements
-	* add goto_ functions for all state transitions
 
 * Reliable transport
 * test reliable transport (simulated drops)

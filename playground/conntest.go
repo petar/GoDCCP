@@ -6,8 +6,8 @@ package main
 
 import (
 	"log"
-	"rand"
-	// "time"
+	// "rand"
+	"time"
 	. "github.com/petar/GoDCCP/dccp"
 )
 
@@ -16,7 +16,7 @@ func main() {
 
 	InstallCtrlCPanic()
 	defer SavePanicTrace()
-	defer func() { chan int(nil) <- 1 }()
+	defer time.Sleep(60e9) // Sleep for 1 min after end
 
 	// Install stacks
 	linka, linkb := NewChanPipe()
@@ -34,10 +34,7 @@ func main() {
 	}
 
 	// Prepare random block
-	p := make([]byte, 10)
-	for i, _ := range p {
-		p[i] = byte(rand.Int())
-	}
+	p := []byte("hello world!")
 
 	// Write and read the block
 	err = ca.WriteBlock(p)
@@ -48,6 +45,7 @@ func main() {
 	if err != nil {
 		log.Printf("side b read: %s", err)
 	}
+	log.Printf("<---|%s|\n", string(q))
 
 	// Compare
 	if !byteSlicesEqual(p, q) {

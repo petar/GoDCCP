@@ -57,8 +57,8 @@ func (c *Conn) Close() os.Error {
 		return os.EBADF
 	}
 	// Transition to CLOSING
-	c.inject(c.generateClose())
 	c.Lock()
+	c.inject(c.generateClose())
 	c.gotoCLOSING()
 	c.Unlock()
 	return nil

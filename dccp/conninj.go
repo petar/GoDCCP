@@ -10,10 +10,9 @@ package dccp
 // REMARK: inject() is called at most once (currently) from inside readLoop() and inside a
 // lock on Conn, so it must not block, hence writeNonData has buffer space
 func (c *Conn) inject(h *Header) {
-	if h == nil {
-		panic("injecting nil header")
+	if h != nil {
+		c.logWriteHeaderLocked(h)
 	}
-	c.logWriteHeaderLocked(h)
 	c.writeNonData <- h
 }
 
@@ -29,8 +28,8 @@ func (c *Conn) writeLoop() {
 	// block in "writeNonData <-" while the connection moves into a state where
 	// it accepts app data (in Loop_II)
 
-	// This loop is active while in states prior to PARTOPEN (for clients) and OPEN (for servers)
-	// In particular, app data is not accepted yet
+	// This loop is active until state OPEN or PARTOPEN is observed, when a
+	// transition to Loop II_is made
 	Loop_I:
 
 	for {
@@ -59,16 +58,11 @@ func (c *Conn) writeLoop() {
 		switch state {
 		case OPEN, PARTOPEN:
 			goto Loop_II
-		case LISTEN, RESPOND, REQUEST:
-			continue Loop_I
-		case CLOSED:
-			goto Exit
-		default:
-			goto Loop_III
 		}
+		continue Loop_I
 	}
 
-	// This loop is active during PARTOPEN and OPEN states when app data is acceptable
+	// This loop is active until writeData is not closed
 	Loop_II:
 
 	for {
@@ -111,22 +105,9 @@ func (c *Conn) writeLoop() {
 				goto Exit
 			}
 		}
-		c.Lock()
-		state := c.socket.GetState()
-		c.Unlock()
-		switch state {
-		case OPEN, PARTOPEN:
-			continue Loop_II
-		case LISTEN, RESPOND, REQUEST:
-			panic("cannot return to OPEN or PARTOPEN")
-		case CLOSED:
-			goto Exit
-		default:
-			goto Loop_III
-		}
 	}
 
-	// This loop is active in states after PARTOPEN and OPEN, when app data is not accepted
+	// This loop is active until writeNonData is not closed
 	Loop_III:
 
 	for {
@@ -139,8 +120,7 @@ func (c *Conn) writeLoop() {
 			goto Exit
 		}
 		// We'll allow nil headers, since they can be used to trigger unblock
-		// from the above send operator and (without resulting into an actual
-		// send) activate the state check after the "if" statement below
+		// from the above send operator
 		if h != nil {
 			err := c.hc.WriteHeader(h)
 			// If the underlying layer is broken, abort
@@ -148,17 +128,6 @@ func (c *Conn) writeLoop() {
 				c.abortQuietly()
 				goto Exit
 			}
-		}
-		c.Lock()
-		state := c.socket.GetState()
-		c.Unlock()
-		switch state {
-		case OPEN, PARTOPEN, LISTEN, RESPOND, REQUEST:
-			panic("cannot return to prior state")
-		case CLOSEREQ, CLOSING, TIMEWAIT:
-			continue Loop_III
-		default:
-			goto Exit
 		}
 	}
 

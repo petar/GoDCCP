@@ -178,8 +178,7 @@ func (c *Conn) step11_ProcessRESPOND(h *Header) os.Error {
 		if h.Type != Ack && h.Type != DataAck {
 			log.Printf("entering OPEN on a non-Ack, non-DataAck packet")
 		}
-		c.socket.SetOSR(h.SeqNo)
-		c.socket.SetState(OPEN)
+		c.gotoOPEN(h.SeqNo)
 	}
 	return nil
 }
@@ -194,8 +193,7 @@ func (c *Conn) step12_ProcessPARTOPEN(h *Header) os.Error {
 		return nil
 	}
 	if h.Type != Response && h.Type != Reset && h.Type != Sync {
-		c.socket.SetOSR(h.SeqNo)
-		c.socket.SetState(OPEN)
+		c.gotoOPEN(h.SeqNo)
 		return nil
 	}
 	return nil
@@ -214,6 +212,7 @@ func (c *Conn) step13_ProcessCloseReq(h *Header) os.Error {
 func (c *Conn) step14_ProcessClose(h *Header) os.Error {
 	if h.Type == Close {
 		c.teardownUser()
+		c.gotoCLOSED()
 		c.inject(c.generateReset(ResetClosed))
 		c.teardownWriteLoop()
 		return ErrDrop
