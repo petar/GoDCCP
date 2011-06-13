@@ -190,6 +190,10 @@ func (c *Conn) step12_ProcessPARTOPEN(h *Header) os.Error {
 	}
 	if h.Type == Response {
 		c.inject(c.generateAck())
+		// XXX: This is a deviation from the RFC. The Sync packet necessitates a SyncAck
+		// response, which moves the client from PARTOPEN to OPEN in the lack of DataAck
+		// packets sent from the server to the client.
+		c.inject(c.generateSync())
 		return nil
 	}
 	if h.Type != Response && h.Type != Reset && h.Type != Sync {
@@ -210,14 +214,14 @@ func (c *Conn) step13_ProcessCloseReq(h *Header) os.Error {
 
 // Step 14, Section 8.5: Process Close
 func (c *Conn) step14_ProcessClose(h *Header) os.Error {
-	if h.Type == Close {
-		c.teardownUser()
-		c.gotoCLOSED()
-		c.inject(c.generateReset(ResetClosed))
-		c.teardownWriteLoop()
-		return ErrDrop
+	if h.Type != Close {
+		return nil
 	}
-	return nil
+	c.teardownUser()
+	c.gotoCLOSED()
+	c.inject(c.generateReset(ResetClosed))
+	c.teardownWriteLoop()
+	return ErrDrop
 }
 
 // Step 15, Section 8.5: Process Sync

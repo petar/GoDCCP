@@ -3,10 +3,6 @@
 	* Ensure every state has a timeout exit
 		* Should CC have a mechanism for saying: Things have been quiet for too long
 	* Should CC have a mechanism for injecting a packet?
-	· Why client is not leaving PARTOPEN
-		* Does server have a mechanism of knowing to acknowledge at least a few of
-		the client's packets sent during PARTOPEN?
-			* Do DataAck/Ack packets require a response?
 
 * Reliable transport
 * test reliable transport (simulated drops)

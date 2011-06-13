@@ -52,6 +52,18 @@ func main() {
 		if !byteSlicesEqual(p, q) {
 			log.Printf("read and write blocks differ")
 		}
+
+		/*
+		err = cb.WriteBlock(p)
+		if err != nil {
+			log.Printf("side b write: %s", err)
+		}
+		q, err = ca.ReadBlock()
+		if err != nil {
+			log.Printf("side a read: %s", err)
+		}
+		log.Printf(">--%d--|%s|\n", t, string(q))
+		*/
 	}
 
 	// Close connection
