@@ -242,9 +242,14 @@ func (c *Conn) step16_ProcessData(h *Header) os.Error {
 	// DCCP-Data, DCCP-DataAck, and DCCP-Ack packets received in CLOSEREQ or
 	// CLOSING states MAY be either processed or ignored.
 
-	if len(h.Data) > 0 {
-		c.readApp <- h.Data
+	// Drop data packets if application does not read them fast enough
+	c.readAppLk.Lock()
+	if c.readApp != nil {
+		if len(c.readApp) < cap(c.readApp) {
+			c.readApp <- h.Data
+		}
 	}
+	c.readAppLk.Unlock()
 
 	return nil
 }

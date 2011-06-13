@@ -27,10 +27,25 @@ func (c *Conn) abortQuietly() {
 }
 
 func (c *Conn) teardownUser() {
-	close(c.readApp)
-	close(c.writeData)
+	c.readAppLk.Lock()
+	if c.readApp != nil {
+		close(c.readApp)
+		c.readApp = nil
+	}
+	c.readAppLk.Unlock()
+	c.writeDataLk.Lock()
+	if c.writeData != nil {
+		close(c.writeData)
+		c.writeData = nil
+	}
+	c.writeDataLk.Unlock()
 }
 
 func (c *Conn) teardownWriteLoop() {
-	close(c.writeNonData)
+	c.writeNonDataLk.Lock()
+	defer c.writeNonDataLk.Unlock()
+	if c.writeNonData != nil {
+		close(c.writeNonData)
+		c.writeNonData = nil
+	}
 }

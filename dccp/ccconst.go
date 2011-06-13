@@ -6,6 +6,7 @@ package dccp
 
 import (
 	"os"
+	"time"
 )
 
 // NewConstRateControlFunc creates a function that makes new Congestion Control 
@@ -31,12 +32,13 @@ func (cc *constRateControl) Start() {
 	go func() {
 		for {
 			cc.Lock()
-			strobe := cc.strobe
-			cc.Unlock()
-			if strobe == nil {
+			if cc.strobe == nil {
+				cc.Unlock()
 				break
 			}
-			strobe <- 1
+			cc.strobe <- 1
+			cc.Unlock()
+			time.Sleep(cc.every)
 		}
 	}()
 }
@@ -56,6 +58,11 @@ func (cc *constRateControl) OnWrite(htype byte, x bool, seqno int64) (ccval byte
 func (cc *constRateControl) OnRead(htype byte, x bool, seqno int64, ccval byte, options []Option) os.Error { return nil }
 
 func (cc *constRateControl) Strobe() os.Error {
+	cc.Lock()
+	defer cc.Unlock()
+	if cc.strobe == nil {
+		return os.EBADF
+	}
 	_, ok := <-cc.strobe 
 	if !ok {
 		return os.EBADF
@@ -64,6 +71,8 @@ func (cc *constRateControl) Strobe() os.Error {
 }
 
 func (cc *constRateControl) Close() os.Error { 
+	cc.Lock()
+	defer cc.Unlock()
 	if cc.strobe != nil {
 		close(cc.strobe) 
 		cc.strobe = nil

@@ -10,18 +10,21 @@ type Conn struct {
 	cc    CongestionControl
 	Mutex // Protects access to socket
 	socket
-	readApp      chan []byte  // readLoop() sends application data to Read()
-	writeData    chan []byte  // Write() sends application data to writeLoop()
-	writeNonData chan *Header // inject() sends wire-format non-Data packets (higher priority) to writeLoop()
+	readAppLk      Mutex
+	readApp        chan []byte  // readLoop() sends application data to Read()
+	writeDataLk    Mutex
+	writeData      chan []byte  // Write() sends application data to writeLoop()
+	writeNonDataLk Mutex        // this lock used when sending/closing writeNonData
+	writeNonData   chan *Header // inject() sends wire-format non-Data packets (higher priority) to writeLoop()
 }
 
 func newConn(hc HeaderConn, cc CongestionControl) *Conn {
 	c := &Conn{
 		hc:           hc,
 		cc:           cc,
-		readApp:      make(chan []byte, 3),
+		readApp:      make(chan []byte, 5),
 		writeData:    make(chan []byte),
-		writeNonData: make(chan *Header, 3),
+		writeNonData: make(chan *Header, 5),
 	}
 
 	c.Lock()
@@ -44,7 +47,7 @@ func newConnServer(hc HeaderConn, cc CongestionControl) *Conn {
 	c.gotoLISTEN()
 	c.Unlock()
 
-	go c.writeLoop()
+	go c.writeLoop(c.writeNonData, c.writeData)
 	go c.readLoop()
 	return c
 }
@@ -56,7 +59,7 @@ func newConnClient(hc HeaderConn, cc CongestionControl, serviceCode uint32) *Con
 	c.gotoREQUEST(serviceCode)
 	c.Unlock()
 
-	go c.writeLoop()
+	go c.writeLoop(c.writeNonData, c.writeData)
 	go c.readLoop()
 	return c
 }

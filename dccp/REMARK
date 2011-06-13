@@ -1,4 +1,5 @@
 
+* Make sure exit from OPEN and PARTOPEN closes the user writeData & readApp
 * test connection establishment
 	* Ensure every state has a timeout exit
 		* Should CC have a mechanism for saying: Things have been quiet for too long
@@ -6,8 +7,6 @@
 		* Does server have a mechanism of knowing to acknowledge at least a few of
 		the client's packets sent during PARTOPEN?
 			* Do DataAck/Ack packets require a response?
-	* If read packets come at high speed, but strobes are at low speed, the read loop can
-	hang in one of the inject statements
 
 * Reliable transport
 * test reliable transport (simulated drops)

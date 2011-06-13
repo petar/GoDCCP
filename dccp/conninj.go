@@ -4,25 +4,38 @@
 
 package dccp
 
-// inject() adds the packet h to the outgoing non-Data pipeline, without blocking.
-// The pipeline is flushed continuously respecting the CongestionControl's
-// rate-limiting policy.
-// REMARK: inject() is called at most once (currently) from inside readLoop() and inside a
-// lock on Conn, so it must not block, hence writeNonData has buffer space
+import "os"
+
+// inject adds the packet h to the outgoing non-Data pipeline, without blocking.  The
+// pipeline is flushed continuously respecting the CongestionControl's rate-limiting policy.
+//
+// inject is called at most once (currently) from inside readLoop and inside a lock
+// on Conn, so it must not block, hence writeNonData has buffer space
 func (c *Conn) inject(h *Header) {
-	if h != nil {
-		c.logWriteHeaderLocked(h)
+	c.writeNonDataLk.Lock()
+	defer c.writeNonDataLk.Unlock()
+	if c.writeNonData == nil {
+		return
 	}
-	c.writeNonData <- h
+	// Dropping a nil is OK, since it happens only if there are other packets in the queue
+	if len(c.writeNonData) < cap(c.writeNonData) {
+		c.writeNonData <- h
+		if h != nil {
+			c.logWriteHeaderLocked(h)
+		}
+	}
+}
+
+func (c *Conn) write(h *Header) os.Error {
+	if c.cc.Strobe() != nil {
+		panic("broken congestion control")
+	}
+	return c.hc.WriteHeader(h)
 }
 
 // writeLoop() sends headers incoming on the writeData and writeNonData channels, while
 // giving priority to writeNonData. It continues to do so until writeNonData is closed.
-func (c *Conn) writeLoop() {
-	c.Lock()
-	writeNonData := c.writeNonData
-	writeData := c.writeData
-	c.Unlock()
+func (c *Conn) writeLoop(writeNonData chan *Header, writeData chan []byte) {
 
 	// The presence of multiple loops below allows user calls to WriteBlock to
 	// block in "writeNonData <-" while the connection moves into a state where
@@ -33,9 +46,6 @@ func (c *Conn) writeLoop() {
 	Loop_I:
 
 	for {
-		if c.cc.Strobe() != nil {
-			panic("broken congestion control")
-		}
 		h, ok := <-writeNonData
 		if !ok {
 			// Closing writeNonData means that the Conn is done and dead
@@ -45,7 +55,7 @@ func (c *Conn) writeLoop() {
 		// from the above send operator and (without resulting into an actual
 		// send) activate the state check after the "if" statement below
 		if h != nil {
-			err := c.hc.WriteHeader(h)
+			err := c.write(h)
 			// If the underlying layer is broken, abort
 			if err != nil {
 				c.abortQuietly()
@@ -66,9 +76,6 @@ func (c *Conn) writeLoop() {
 	Loop_II:
 
 	for {
-		if c.cc.Strobe() != nil {
-			panic("broken congestion control")
-		}
 		var h *Header
 		var ok bool
 		var appData []byte
@@ -99,7 +106,7 @@ func (c *Conn) writeLoop() {
 			c.Unlock()
 		}
 		if h != nil {
-			err := c.hc.WriteHeader(h)
+			err := c.write(h)
 			if err != nil {
 				c.abortQuietly()
 				goto Exit
@@ -111,9 +118,6 @@ func (c *Conn) writeLoop() {
 	Loop_III:
 
 	for {
-		if c.cc.Strobe() != nil {
-			panic("broken congestion control")
-		}
 		h, ok := <-writeNonData
 		if !ok {
 			// Closing writeNonData means that the Conn is done and dead
@@ -122,7 +126,7 @@ func (c *Conn) writeLoop() {
 		// We'll allow nil headers, since they can be used to trigger unblock
 		// from the above send operator
 		if h != nil {
-			err := c.hc.WriteHeader(h)
+			err := c.write(h)
 			// If the underlying layer is broken, abort
 			if err != nil {
 				c.abortQuietly()
