@@ -4,7 +4,10 @@
 
 package dccp
 
-import "time"
+import (
+	"log"
+	"time"
+)
 
 func (c *Conn) gotoLISTEN() {
 	c.AssertLocked()
@@ -66,6 +69,7 @@ func (c *Conn) gotoREQUEST(serviceCode uint32) {
 				break
 			}
 			c.Lock()
+			log.Printf("resend Request\n")
 			c.inject(c.generateRequest(serviceCode))
 			c.Unlock()
 		}
@@ -114,6 +118,7 @@ func (c *Conn) gotoOPEN(hSeqNo int64) {
 
 func (c *Conn) gotoTIMEWAIT() {
 	c.AssertLocked()
+	c.teardownUser()
 	c.socket.SetState(TIMEWAIT)
 	go func() {
 		time.Sleep(2 * MSL)
@@ -123,6 +128,7 @@ func (c *Conn) gotoTIMEWAIT() {
 
 func (c *Conn) gotoCLOSING() {
 	c.AssertLocked()
+	c.teardownUser()
 	c.socket.SetState(CLOSING)
 	go func() {
 		c.Lock()
@@ -152,5 +158,6 @@ func (c *Conn) gotoCLOSING() {
 
 func (c *Conn) gotoCLOSED() {
 	c.AssertLocked()
+	c.teardownUser()
 	c.socket.SetState(CLOSED)
 }

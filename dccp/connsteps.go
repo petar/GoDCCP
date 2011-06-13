@@ -247,6 +247,8 @@ func (c *Conn) step16_ProcessData(h *Header) os.Error {
 	if c.readApp != nil {
 		if len(c.readApp) < cap(c.readApp) {
 			c.readApp <- h.Data
+		} else {
+			log.Printf("dropping recvd packet, slow app\n")
 		}
 	}
 	c.readAppLk.Unlock()

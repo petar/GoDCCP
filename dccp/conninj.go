@@ -4,7 +4,10 @@
 
 package dccp
 
-import "os"
+import (
+	"log"
+	"os"
+)
 
 // inject adds the packet h to the outgoing non-Data pipeline, without blocking.  The
 // pipeline is flushed continuously respecting the CongestionControl's rate-limiting policy.
@@ -23,6 +26,8 @@ func (c *Conn) inject(h *Header) {
 		if h != nil {
 			c.logWriteHeaderLocked(h)
 		}
+	} else {
+		log.Printf("dropping non-data, congestion rate too slow\n")
 	}
 }
 

@@ -20,23 +20,25 @@ func NewConstRateControlFunc (sendsPerSecond int64) NewCongestionControlFunc {
 type constRateControl struct {
 	Mutex
 	every  int64 // Strobe every every nanoseconds
-	strobe chan int
+	strobeRead  chan int
+	strobeWrite chan int
 }
 
 // How to close the congestion control
 func newConstRateControl(every int64) *constRateControl {
-	return &constRateControl{ every: every, strobe: make(chan int) }
+	strobe := make(chan int)
+	return &constRateControl{ every: every, strobeRead: strobe, strobeWrite: strobe }
 }
 
 func (cc *constRateControl) Start() {
 	go func() {
 		for {
 			cc.Lock()
-			if cc.strobe == nil {
+			if cc.strobeWrite == nil {
 				cc.Unlock()
 				break
 			}
-			cc.strobe <- 1
+			cc.strobeWrite <- 1
 			cc.Unlock()
 			time.Sleep(cc.every)
 		}
@@ -58,12 +60,7 @@ func (cc *constRateControl) OnWrite(htype byte, x bool, seqno int64) (ccval byte
 func (cc *constRateControl) OnRead(htype byte, x bool, seqno int64, ccval byte, options []Option) os.Error { return nil }
 
 func (cc *constRateControl) Strobe() os.Error {
-	cc.Lock()
-	defer cc.Unlock()
-	if cc.strobe == nil {
-		return os.EBADF
-	}
-	_, ok := <-cc.strobe 
+	_, ok := <-cc.strobeRead 
 	if !ok {
 		return os.EBADF
 	}
@@ -73,9 +70,9 @@ func (cc *constRateControl) Strobe() os.Error {
 func (cc *constRateControl) Close() os.Error { 
 	cc.Lock()
 	defer cc.Unlock()
-	if cc.strobe != nil {
-		close(cc.strobe) 
-		cc.strobe = nil
+	if cc.strobeWrite != nil {
+		close(cc.strobeWrite) 
+		cc.strobeWrite = nil
 		return nil
 	}
 	return os.EBADF

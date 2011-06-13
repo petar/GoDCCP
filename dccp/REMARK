@@ -1,5 +1,4 @@
 
-* Make sure exit from OPEN and PARTOPEN closes the user writeData & readApp
 * test connection establishment
 	* Ensure every state has a timeout exit
 		* Should CC have a mechanism for saying: Things have been quiet for too long
