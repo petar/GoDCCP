@@ -47,20 +47,23 @@ func (c *Conn) ReadBlock() (b []byte, err os.Error) {
 // Close closes the connection, Section 8.3
 func (c *Conn) Close() os.Error {
 	c.Lock()
-	state := c.socket.GetState()
-	c.Unlock()
-	if state == CLOSED || state == CLOSEREQ || state == CLOSING || state == TIMEWAIT {
+	defer c.Unlock()
+	switch c.socket.GetState() {
+	case LISTEN:
+		c.abortWithUnderLock(ResetClosed)
 		return nil
+	case REQUEST:
+		c.abortWithUnderLock(ResetClosed)
+		return nil
+	case RESPOND:
+		c.abortWithUnderLock(ResetClosed)
+	case PARTOPEN, OPEN:
+		c.inject(c.generateClose())
+		c.gotoCLOSING()
+		return nil
+	case CLOSEREQ, CLOSING, TIMEWAIT, CLOSED:
 	}
-	if state != OPEN {
-		return os.EBADF
-	}
-	// Transition to CLOSING
-	c.Lock()
-	c.inject(c.generateClose())
-	c.gotoCLOSING()
-	c.Unlock()
-	return nil
+	panic("unknown state")
 }
 
 func (c *Conn) LocalLabel() Bytes { return c.hc.LocalLabel() }

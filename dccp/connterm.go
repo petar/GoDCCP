@@ -8,7 +8,15 @@ package dccp
 func (c *Conn) abortWith(resetCode byte) {
 	c.Lock()
 	c.gotoCLOSED()
+	c.inject(c.generateReset(resetCode))
 	c.Unlock()
+	c.teardownUser()
+	c.teardownWriteLoop()
+}
+
+func (c *Conn) abortWithUnderLock(resetCode byte) {
+	c.AssertLocked()
+	c.gotoCLOSED()
 	c.inject(c.generateReset(resetCode))
 	c.teardownUser()
 	c.teardownWriteLoop()

@@ -16,11 +16,11 @@ func main() {
 
 	InstallCtrlCPanic()
 	defer SavePanicTrace()
-	defer time.Sleep(60e9) // Sleep for 1 min after end
+	defer time.Sleep(2e9) // Sleep for 1 min after end
 
 	// Install stacks
 	linka, linkb := NewChanPipe()
-	newcc := NewConstRateControlFunc(4)
+	newcc := NewConstRateControlFunc(12)
 	stacka, stackb := NewStack(linka, newcc), NewStack(linkb, newcc)
 
 	// Establish connection
@@ -37,19 +37,21 @@ func main() {
 	p := []byte("hello world!")
 
 	// Write and read the block
-	err = ca.WriteBlock(p)
-	if err != nil {
-		log.Printf("side a write: %s", err)
-	}
-	q, err := cb.ReadBlock()
-	if err != nil {
-		log.Printf("side b read: %s", err)
-	}
-	log.Printf("<---|%s|\n", string(q))
+	for t := 0; t < 30; t++ {
+		err = ca.WriteBlock(p)
+		if err != nil {
+			log.Printf("side a write: %s", err)
+		}
+		q, err := cb.ReadBlock()
+		if err != nil {
+			log.Printf("side b read: %s", err)
+		}
+		log.Printf("<--%d--|%s|\n", t, string(q))
 
-	// Compare
-	if !byteSlicesEqual(p, q) {
-		log.Printf("read and write blocks differ")
+		// Compare
+		if !byteSlicesEqual(p, q) {
+			log.Printf("read and write blocks differ")
+		}
 	}
 
 	// Close connection
