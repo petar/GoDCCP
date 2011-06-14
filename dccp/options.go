@@ -40,6 +40,14 @@ func isOptionCCIDSpecific(optionType byte) bool {
 	return optionType >= 128 && optionType <= 255
 }
 
+func isOptionCCIDSenderToReceiver(optionType byte) bool {
+	return optionType >= 128 && optionType <= 191
+}
+
+func isOptionCCIDReceiverToSender(optionType byte) bool {
+	return optionType >= 192 && optionType <= 255
+}
+
 func isOptionSingleByte(optionType byte) bool {
 	return optionType >= 0 && optionType <= 31
 }

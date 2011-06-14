@@ -18,7 +18,7 @@ const maxDataOptionSize = 24
 func (c *Conn) GetMTU() int {
 	c.Lock()
 	defer c.Unlock()
-	c.updateSocketLink()
+	c.syncWithLink()
 	return int(c.socket.GetMPS()) - maxDataOptionSize - getFixedHeaderSize(DataAck, true)
 }
 

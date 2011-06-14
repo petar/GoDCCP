@@ -24,11 +24,31 @@ type socket struct {
 	GSR int64 // Greatest valid Sequence number Received (consequently, sent as AckNo back)
 	GAR int64 // Greatest valid Acknowledgement number Received on a non-Sync; initialized to S.ISS
 
-	CCIDA byte // CCID in use for the A-to-B half-connection, Section 10
-	CCIDB byte // CCID in use for the B-to-A half-connection, Section 10
+	CCIDA byte // CCID in use for the A-to-B half-connection (aka HC-Sender CCID), Section 10
+	CCIDB byte // CCID in use for the B-to-A half-connection (aka HC-Receiver CCID), Section 10
 
-	SWAF int64 // Sequence Window/A Feature, see Section 7.5.1
-	SWBF int64 // Sequence Window/B Feature, see Section 7.5.1
+	// Sequence Window/A Feature, see Section 7.5.1
+	// Controls the width of the Acknowledgement Number validity window used by the local DCCP
+	// endpoint (DCCP A), and the width of Sequence Number validity window used by the remote
+	// DCCP endpoint (DCCP B)
+	//
+	// A proper Sequence Window/A value must reflect the number of packets DCCP A expects to be
+	// in flight.  Only DCCP A can anticipate this number.
+	//
+	// XXX: One good guideline is for each endpoint to set Sequence Window to about five times
+	// the maximum number of packets it expects to send in a round- trip time.  Endpoints SHOULD
+	// send Change L(Sequence Window) options, as necessary, as the connection progresses.
+	//
+	// XXX: Also, an endpoint MUST NOT persistently send more than its Sequence Window number of
+	// packets per round-trip time; that is, DCCP A MUST NOT persistently send more than
+	// Sequence Window/A packets per RTT.
+	SWAF int64 	
+	
+	// Sequence Window/B Feature, see Section 7.5.1
+	// Controls the width of the Sequence Number validity window used by the local DCCP
+	// endpoint (DCCP A), and the width of Acknowledgement Number validity window used by the remote
+	// DCCP endpoint (DCCP B)
+	SWBF int64 
 
 	State       int
 	Server      bool   // True if the endpoint is a server, false if it is a client
@@ -49,6 +69,9 @@ func (s *socket) String() string {
 }
 
 const (
+	SEQWIN_INIT            = 100      // Initial value for SWAF and SWBF, Section 7.5.2
+	SEQWIN_FIXED           = 700      // Large enough constant for SWAF/SWBF until the feature is implemented
+	SEQWIN_MAX             = 2^46 - 1 // Maximum acceptable SWAF and SWBF value
 	RTT_DEFAULT            = 2e8      // 0.2 sec, default Round-Trip Time when no measurement is available
 	MSL                    = 2 * 60e9 // 2 mins in nanoseconds, Maximum Segment Lifetime, Section 3.4
 	CLOSING_BACKOFF_FREQ   = 64e9     // Backoff frequency of CLOSING timer, 64 seconds, Section 8.3
@@ -170,9 +193,8 @@ func min32(x, y int32) int32 {
 
 // TODO: Address the last paragraph of Section 7.5.1 regarding SWL,AWL calculation
 
-func (s *socket) SetSWABF(swaf, swbf int64) {
-	s.SWAF, s.SWBF = swaf, swbf
-}
+func (s *socket) SetSWAF(v int64) { s.SWAF = v }
+func (s *socket) SetSWBF(v int64) { s.SWBF = v }
 
 // GetSWLH() computes SWL and SWH, see Section 7.5.1
 func (s *socket) GetSWLH() (SWL int64, SWH int64) {

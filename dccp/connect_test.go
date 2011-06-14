@@ -13,8 +13,9 @@ func TestConnect(t *testing.T) {
 
 	// Install stacks
 	linka, linkb := NewChanPipe()
-	newcc := NewConstRateControlFunc(10)
-	stacka, stackb := NewStack(linka, newcc), NewStack(linkb, newcc)
+	newscc := NewFixedRateSenderControlFunc(10)
+	newrcc := NewFixedRateReceiverControlFunc()
+	stacka, stackb := NewStack(linka, newscc, newrcc), NewStack(linkb, newscc, newrcc)
 
 	// Establish connection
 	ca, err := stacka.Dial(nil, 1)

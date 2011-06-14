@@ -20,8 +20,9 @@ func main() {
 
 	// Install stacks
 	linka, linkb := NewChanPipe()
-	newcc := NewConstRateControlFunc(12)
-	stacka, stackb := NewStack(linka, newcc), NewStack(linkb, newcc)
+	newscc := NewFixedRateSenderControlFunc(12)
+	newrcc := NewFixedRateReceiverControlFunc()
+	stacka, stackb := NewStack(linka, newscc, newrcc), NewStack(linkb, newscc, newrcc)
 
 	// Establish connection
 	ca, err := stacka.Dial(nil, 1)

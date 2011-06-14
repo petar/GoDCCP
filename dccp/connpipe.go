@@ -24,8 +24,11 @@ func (c *Conn) readHeader() (h *Header, err os.Error) {
 	return h, nil
 }
 
+// How often we exit from a blocking call to readHeader, 10 sec in nanoseconds
+const READ_TIMEOUT = 10e9 
+
 func (c *Conn) readLoop() {
-	if err := c.hc.SetReadTimeout(MSL); err != nil {
+	if err := c.hc.SetReadTimeout(READ_TIMEOUT); err != nil {
 		log.Printf("SetReadTimeout failed")
 		c.abortQuietly()
 		return
@@ -53,7 +56,7 @@ func (c *Conn) readLoop() {
 		c.logReadHeader(h)
 
 		c.Lock()
-		c.updateSocketCongestionControl()
+		c.syncWithCongestionControl()
 		if c.step2_ProcessTIMEWAIT(h) != nil {
 			goto Done
 		}
@@ -104,15 +107,13 @@ func (c *Conn) readLoop() {
 	}
 }
 
-func (c *Conn) updateSocketCongestionControl() {
+func (c *Conn) syncWithCongestionControl() {
 	c.AssertLocked()
-	swaf, swbf := c.cc.GetSWABF()
-	c.socket.SetSWABF(swaf, swbf)
-	c.socket.SetRTT(c.cc.GetRTT())
-	c.socket.SetCCMPS(c.cc.GetCCMPS())
+	c.socket.SetRTT(c.scc.GetRTT())
+	c.socket.SetCCMPS(c.scc.GetCCMPS())
 }
 
-func (c *Conn) updateSocketLink() {
+func (c *Conn) syncWithLink() {
 	c.AssertLocked()
 	c.socket.SetPMTU(int32(c.hc.GetMTU()))
 }

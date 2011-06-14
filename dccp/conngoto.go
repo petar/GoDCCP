@@ -25,6 +25,8 @@ func (c *Conn) gotoLISTEN() {
 	}()
 }
 
+const RESPOND_TIMEOUT = 30e9 // Timeout in RESPOND state, 30 sec in nanoseconds
+
 func (c *Conn) gotoRESPOND(hServiceCode uint32, hSeqNo int64) {
 	c.AssertLocked()
 	c.socket.SetState(RESPOND)
@@ -35,6 +37,16 @@ func (c *Conn) gotoRESPOND(hServiceCode uint32, hSeqNo int64) {
 	// TODO: To be more prudent, set service code only if it is currently 0,
 	// otherwise check that h.ServiceCode matches socket service code
 	c.socket.SetServiceCode(hServiceCode)
+
+	go func() {
+		time.Sleep(RESPOND_TIMEOUT)
+		c.Lock()
+		state := c.socket.GetState()
+		c.Unlock()
+		if state == RESPOND {
+			c.abortQuietly()
+		}
+	}()
 }
 
 const (

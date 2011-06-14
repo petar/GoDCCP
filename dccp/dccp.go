@@ -10,17 +10,22 @@ import (
 )
 
 type Stack struct {
-	mux   *Mux
-	link  Link
-	newcc NewCongestionControlFunc
+	mux    *Mux
+	link   Link
+	newscc NewSenderCongestionControlFunc
+	newrcc NewReceiverCongestionControlFunc
 }
 
 // NewStack creates a new connection-handling object.
-func NewStack(link Link, newcc NewCongestionControlFunc) *Stack {
+func NewStack(link Link, 
+	      newscc NewSenderCongestionControlFunc, 
+	      newrcc NewReceiverCongestionControlFunc) *Stack {
+
 	return &Stack{
 		mux:   NewMux(link),
 		link:  link,
-		newcc: newcc,
+		newscc: newscc,
+		newrcc: newrcc,
 	}
 }
 
@@ -31,7 +36,7 @@ func (s *Stack) Dial(addr net.Addr, serviceCode uint32) (c BlockConn, err os.Err
 		return nil, err
 	}
 	hc := NewHeaderOverBlockConn(bc)
-	c = newConnClient(hc, s.newcc(), serviceCode)
+	c = newConnClient(hc, s.newscc(), s.newrcc(), serviceCode)
 	return c, nil
 }
 
@@ -43,6 +48,6 @@ func (s *Stack) Accept() (c BlockConn, err os.Error) {
 		return nil, err
 	}
 	hc := NewHeaderOverBlockConn(bc)
-	c = newConnServer(hc, s.newcc())
+	c = newConnServer(hc, s.newscc(), s.newrcc())
 	return c, nil
 }

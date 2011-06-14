@@ -6,7 +6,7 @@ GOFILES=\
 	backoff.go\
 	block.go\
 	cc.go\
-	ccconst.go\
+	ccfixed.go\
 	ccid3.go\
 	ccid3opt.go\
 	chanlink.go\
@@ -36,6 +36,7 @@ GOFILES=\
 	muxmsg.go\
 	options.go\
 	read.go\
+	retransmit.go\
 	servicecode.go\
 	socket.go\
 	string.go\

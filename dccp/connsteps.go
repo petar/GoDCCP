@@ -136,8 +136,14 @@ func (c *Conn) step7_CheckUnexpectedTypes(h *Header) os.Error {
 func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) os.Error {
 	// TODO: Implement a connection reset if OnRead returns ErrReset
 	// For now CongestionControl cannot advise a reset, just an ErrDrop
-	defer c.updateSocketCongestionControl()
-	return c.cc.OnRead(h.Type, h.X, h.SeqNo, h.CCVal, h.Options)
+	defer c.syncWithCongestionControl()
+	if err := c.scc.OnRead(h.Type, h.X, h.SeqNo, h.Options); err != nil {
+		return ErrDrop
+	}
+	if err := c.rcc.OnRead(h.Type, h.X, h.SeqNo, h.CCVal, h.Options); err != nil {
+		return ErrDrop
+	}
+	return nil
 }
 
 // Step 9, Section 8.5: Process Reset

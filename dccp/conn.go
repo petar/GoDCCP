@@ -7,7 +7,8 @@ package dccp
 // Conn 
 type Conn struct {
 	hc    HeaderConn
-	cc    CongestionControl
+	scc   SenderCongestionControl
+	rcc   ReceiverCongestionControl
 	Mutex // Protects access to socket
 	socket
 	readAppLk      Mutex
@@ -18,10 +19,11 @@ type Conn struct {
 	writeNonData   chan *Header // inject() sends wire-format non-Data packets (higher priority) to writeLoop()
 }
 
-func newConn(hc HeaderConn, cc CongestionControl) *Conn {
+func newConn(hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
 	c := &Conn{
 		hc:           hc,
-		cc:           cc,
+		scc:          scc,
+		rcc:          rcc,
 		readApp:      make(chan []byte, 5),
 		writeData:    make(chan []byte),
 		writeNonData: make(chan *Header, 5),
@@ -29,19 +31,27 @@ func newConn(hc HeaderConn, cc CongestionControl) *Conn {
 
 	c.Lock()
 	// Currently, CCID is not negotiated, rather both sides use the same
-	c.socket.SetCCIDA(cc.GetID())
-	c.socket.SetCCIDB(cc.GetID())
-	c.updateSocketLink()
-	c.updateSocketCongestionControl()
+	c.socket.SetCCIDA(scc.GetID())
+	c.socket.SetCCIDB(rcc.GetID())
+
+	// REMARK: SWAF/SWBF are currently not implemented. 
+	// Instead, we use wide enough fixed-size windows
+	c.socket.SetSWAF(SEQWIN_FIXED)
+	c.socket.SetSWBF(SEQWIN_FIXED)
+
+	c.syncWithLink()
+	c.syncWithCongestionControl()
 	c.Unlock()
 
-	cc.Start()
+	// Start congestion control mechanisms
+	scc.Start()
+	rcc.Start()
 
 	return c
 }
 
-func newConnServer(hc HeaderConn, cc CongestionControl) *Conn {
-	c := newConn(hc, cc)
+func newConnServer(hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
+	c := newConn(hc, scc, rcc)
 
 	c.Lock()
 	c.gotoLISTEN()
@@ -52,8 +62,8 @@ func newConnServer(hc HeaderConn, cc CongestionControl) *Conn {
 	return c
 }
 
-func newConnClient(hc HeaderConn, cc CongestionControl, serviceCode uint32) *Conn {
-	c := newConn(hc, cc)
+func newConnClient(hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl, serviceCode uint32) *Conn {
+	c := newConn(hc, scc, rcc)
 
 	c.Lock()
 	c.gotoREQUEST(serviceCode)

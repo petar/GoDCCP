@@ -32,7 +32,7 @@ func (c *Conn) inject(h *Header) {
 }
 
 func (c *Conn) write(h *Header) os.Error {
-	if c.cc.Strobe() != nil {
+	if c.scc.Strobe() != nil {
 		panic("broken congestion control")
 	}
 	return c.hc.WriteHeader(h)
@@ -142,5 +142,6 @@ func (c *Conn) writeLoop(writeNonData chan *Header, writeData chan []byte) {
 
 	// Close the congestion control here when it won't be needed any longer
 	Exit:
-	c.cc.Close()
+	c.scc.Close()
+	c.rcc.Close()
 }
