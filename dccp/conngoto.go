@@ -96,6 +96,8 @@ const (
 func (c *Conn) gotoPARTOPEN() {
 	c.AssertLocked()
 	c.socket.SetState(PARTOPEN)
+	c.scc.Open()
+	c.rcc.Open()
 	c.inject(nil) // Unblocks the writeLoop select, so it can see the state change
 
 	// Start PARTOPEN timer, according to Section 8.1.5
@@ -129,6 +131,8 @@ func (c *Conn) gotoOPEN(hSeqNo int64) {
 	c.AssertLocked()
 	c.socket.SetOSR(hSeqNo)
 	c.socket.SetState(OPEN)
+	c.scc.Open()
+	c.rcc.Open()
 	c.inject(nil) // Unblocks the writeLoop select, so it can see the state change
 }
 
@@ -136,6 +140,8 @@ func (c *Conn) gotoTIMEWAIT() {
 	c.AssertLocked()
 	c.teardownUser()
 	c.socket.SetState(TIMEWAIT)
+	c.scc.Close()
+	c.rcc.Close()
 	go func() {
 		time.Sleep(2 * MSL)
 		c.abortQuietly()
@@ -146,6 +152,8 @@ func (c *Conn) gotoCLOSING() {
 	c.AssertLocked()
 	c.teardownUser()
 	c.socket.SetState(CLOSING)
+	c.scc.Close()
+	c.rcc.Close()
 	go func() {
 		c.Lock()
 		rtt := c.socket.GetRTT()
@@ -176,4 +184,6 @@ func (c *Conn) gotoCLOSED() {
 	c.AssertLocked()
 	c.teardownUser()
 	c.socket.SetState(CLOSED)
+	c.scc.Close()
+	c.rcc.Close()
 }

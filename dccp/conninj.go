@@ -40,7 +40,10 @@ func (c *Conn) inject(h *Header) {
 	}
 	// Dropping a nil is OK, since it happens only if there are other packets in the queue
 	if len(c.writeNonData) < cap(c.writeNonData) {
-		c.writeNonData <- c.writeCCID(h)
+		if h != nil {
+			h = c.writeCCID(h)
+		}
+		c.writeNonData <- h
 		if h != nil {
 			c.logWriteHeaderLocked(h)
 		}
@@ -159,8 +162,5 @@ func (c *Conn) writeLoop(writeNonData chan *Header, writeData chan []byte) {
 		}
 	}
 
-	// Close the congestion control here when it won't be needed any longer
 	Exit:
-	c.scc.Close()
-	c.rcc.Close()
 }

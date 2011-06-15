@@ -1,8 +1,7 @@
 
-* CCID-inspired Reset and Reset-code separation b/w Sender/receiver
 
-* use cc only in OPEN and PARTOPEN states
 * introduce a readCongestionLoop and writeCongestionLoop to consume timeout and sync cc events
+* CCID-inspired Reset and Reset-code separation b/w Sender/receiver
 
 * Reliable transport
 * test reliable transport (simulated drops)

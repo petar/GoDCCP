@@ -39,7 +39,7 @@ func newFixedRateSenderControl(every int64) *fixedRateSenderControl {
 	return &fixedRateSenderControl{ every: every, strobeRead: strobe, strobeWrite: strobe }
 }
 
-func (scc *fixedRateSenderControl) Start() {
+func (scc *fixedRateSenderControl) Open() {
 	go func() {
 		for {
 			scc.Lock()
@@ -93,7 +93,7 @@ func newFixedRateReceiverControl() *fixedRateReceiverControl {
 	return &fixedRateReceiverControl{}
 }
 
-func (rcc *fixedRateReceiverControl) Start() {
+func (rcc *fixedRateReceiverControl) Open() {
 }
 
 func (rcc *fixedRateReceiverControl) GetID() byte { return CCID_FIXED }

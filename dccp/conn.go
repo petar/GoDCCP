@@ -9,21 +9,23 @@ type Conn struct {
 	hc    HeaderConn
 	scc   SenderCongestionControl
 	rcc   ReceiverCongestionControl
+
 	Mutex // Protects access to socket
 	socket
+
 	readAppLk      Mutex
 	readApp        chan []byte  // readLoop() sends application data to Read()
 	writeDataLk    Mutex
 	writeData      chan []byte  // Write() sends application data to writeLoop()
-	writeNonDataLk Mutex        // this lock used when sending/closing writeNonData
+	writeNonDataLk Mutex
 	writeNonData   chan *Header // inject() sends wire-format non-Data packets (higher priority) to writeLoop()
 }
 
 func newConn(hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
 	c := &Conn{
 		hc:           hc,
-		scc:          scc,
-		rcc:          rcc,
+		scc:          newActivatorForSenderCongestionControl(scc),
+		rcc:          newActivatorForReceiverCongestionControl(rcc),
 		readApp:      make(chan []byte, 5),
 		writeData:    make(chan []byte),
 		writeNonData: make(chan *Header, 5),
@@ -42,10 +44,6 @@ func newConn(hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionC
 	c.syncWithLink()
 	c.syncWithCongestionControl()
 	c.Unlock()
-
-	// Start congestion control mechanisms
-	scc.Start()
-	rcc.Start()
 
 	return c
 }
