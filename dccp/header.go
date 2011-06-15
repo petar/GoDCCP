@@ -29,7 +29,7 @@ type Header struct {
 	ServiceCode uint32   // ServiceCode: Applicaton level service (in Req,Resp pkts)
 	ResetCode   byte     // ResetCode: Reason for reset (in Reset pkts)
 	ResetData   []byte   // ResetData: Additional reset info (in Reset pkts)
-	Options     []Option // Used for feature negotiation, padding, mandatory flags
+	Options     []*Option // Used for feature negotiation, padding, mandatory flags
 	Data        []byte   // Application data (in Req, Resp, Data, DataAck pkts) 
 	// Ignored (in Ack, Close, CloseReq, Sync, SyncAck pkts)
 	// Error text (in Reset pkts)

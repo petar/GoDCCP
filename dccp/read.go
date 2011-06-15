@@ -160,21 +160,25 @@ func ReadHeader(buf []byte,
 	return gh, nil
 }
 
-func readOptions(buf []byte) ([]Option, os.Error) {
+func readOptions(buf []byte) ([]*Option, os.Error) {
 	if len(buf)&0x3 != 0 {
 		return nil, ErrAlign
 	}
 
-	opts := make([]Option, len(buf))
+	opts := make([]*Option, len(buf))
 	j, k := 0, 0
 	for k < len(buf) {
+		o := &Option{}
+
 		// Read option type
 		t := buf[k]
 		k += 1
 
 		if isOptionSingleByte(t) {
-			opts[j].Type = t
-			opts[j].Data = make([]byte, 0)
+			o.Type = t
+			o.Data = make([]byte, 0)
+
+			opts[j] = o
 			j += 1
 			continue
 		}
@@ -189,9 +193,11 @@ func readOptions(buf []byte) ([]Option, os.Error) {
 			break
 		}
 
-		opts[j].Type = t
-		opts[j].Data = buf[k : k+l-2]
+		o.Type = t
+		o.Data = buf[k : k+l-2]
 		k += l - 2
+
+		opts[j] = o
 		j += 1
 
 	}
@@ -199,8 +205,8 @@ func readOptions(buf []byte) ([]Option, os.Error) {
 	return opts[0:j], nil
 }
 
-func sanitizeOptionsAfterReading(Type byte, opts []Option) ([]Option, os.Error) {
-	r := make([]Option, len(opts))
+func sanitizeOptionsAfterReading(Type byte, opts []*Option) ([]*Option, os.Error) {
+	r := make([]*Option, len(opts))
 	j := 0
 
 	nextIsMandatory := false

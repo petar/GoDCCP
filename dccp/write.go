@@ -213,8 +213,8 @@ func (gh *Header) Write(sourceIP, destIP []byte,
 	return buf, nil
 }
 
-func writeOptions(opts []Option, buf []byte, Type byte) {
-	if len(buf)&0x3 != 0 {
+func writeOptions(opts []*Option, buf []byte, Type byte) {
+	if len(buf) & 0x3 != 0 {
 		panic("logic")
 	}
 	k := 0
