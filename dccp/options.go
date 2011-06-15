@@ -41,11 +41,53 @@ func isOptionCCIDSpecific(optionType byte) bool {
 }
 
 func isOptionCCIDSenderToReceiver(optionType byte) bool {
-	return optionType >= 128 && optionType <= 191
+	return (optionType >= 38 && optionType <= 43) || (optionType >= 128 && optionType <= 191)
+}
+
+func validateCCIDSenderToReceiver(opts []Option) bool {
+	for _, o := range opts {
+		if !isOptionCCIDSenderToReceiver(o.Type) {
+			return false
+		}
+	}
+	return true
+}
+
+func filterCCIDSenderToReceiverOptions(opts []Option) []Option {
+	r := make([]Option, len(opts))
+	k := 0
+	for _, o := range opts {
+		if isOptionCCIDSenderToReceiver(o.Type) {
+			r[k] = o
+			k++
+		}
+	}
+	return r[:k]
 }
 
 func isOptionCCIDReceiverToSender(optionType byte) bool {
-	return optionType >= 192 && optionType <= 255
+	return (optionType >= 38 && optionType <= 43) || (optionType >= 192 && optionType <= 255)
+}
+
+func validateCCIDReceiverToSender(opts []Option) bool {
+	for _, o := range opts {
+		if !isOptionCCIDReceiverToSender(o.Type) {
+			return false
+		}
+	}
+	return true
+}
+
+func filterCCIDReceiverToSenderOptions(opts []Option) []Option {
+	r := make([]Option, len(opts))
+	k := 0
+	for _, o := range opts {
+		if isOptionCCIDReceiverToSender(o.Type) {
+			r[k] = o
+			k++
+		}
+	}
+	return r[:k]
 }
 
 func isOptionSingleByte(optionType byte) bool {

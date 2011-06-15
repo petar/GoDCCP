@@ -1,5 +1,5 @@
 
-* extract HC-Sender/HC-Receiver options before passing to CCIDs
+* []Option -> []*Option
 * CCID-inspired Reset and Reset-code separation b/w Sender/receiver
 
 * use cc only in OPEN and PARTOPEN states

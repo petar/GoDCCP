@@ -9,6 +9,23 @@ import (
 	"os"
 )
 
+func (c *Conn) writeCCID(h *Header) *Header {
+	// HC-Sender CCID
+	ccval, sropts := c.scc.OnWrite(h.Type, h.X, h.SeqNo)
+	if !validateCCIDSenderToReceiver(sropts) {
+		panic("sender congestion control writes disallowed options")
+	}
+	h.CCVal = ccval
+	// HC-Receiver CCID
+	rsopts := c.rcc.OnWrite(h.Type, h.X, h.SeqNo)
+	if !validateCCIDReceiverToSender(rsopts) {
+		panic("receiver congestion control writes disallowed options")
+	}
+	// XXX: Also check option compatibility with respect to packet type (Data vs. other)
+	h.Options = append(h.Options, append(sropts, rsopts...)...)
+	return h
+}
+
 // inject adds the packet h to the outgoing non-Data pipeline, without blocking.  The
 // pipeline is flushed continuously respecting the CongestionControl's rate-limiting policy.
 //
@@ -17,12 +34,13 @@ import (
 func (c *Conn) inject(h *Header) {
 	c.writeNonDataLk.Lock()
 	defer c.writeNonDataLk.Unlock()
+
 	if c.writeNonData == nil {
 		return
 	}
 	// Dropping a nil is OK, since it happens only if there are other packets in the queue
 	if len(c.writeNonData) < cap(c.writeNonData) {
-		c.writeNonData <- h
+		c.writeNonData <- c.writeCCID(h)
 		if h != nil {
 			c.logWriteHeaderLocked(h)
 		}
@@ -108,6 +126,7 @@ func (c *Conn) writeLoop(writeNonData chan *Header, writeData chan []byte) {
 			// It should be that it doesn't. Must verify this.
 			c.Lock()
 			h = c.generateDataAck(appData)
+			h = c.writeCCID(h)
 			c.Unlock()
 		}
 		if h != nil {

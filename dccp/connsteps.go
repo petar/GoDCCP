@@ -137,10 +137,12 @@ func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) os.Error {
 	// TODO: Implement a connection reset if OnRead returns ErrReset
 	// For now CongestionControl cannot advise a reset, just an ErrDrop
 	defer c.syncWithCongestionControl()
-	if err := c.scc.OnRead(h.Type, h.X, h.SeqNo, h.Options); err != nil {
+	rsopts := filterCCIDReceiverToSenderOptions(h.Options)
+	if err := c.scc.OnRead(h.Type, h.X, h.SeqNo, rsopts); err != nil {
 		return ErrDrop
 	}
-	if err := c.rcc.OnRead(h.Type, h.X, h.SeqNo, h.CCVal, h.Options); err != nil {
+	sropts := filterCCIDSenderToReceiverOptions(h.Options)
+	if err := c.rcc.OnRead(h.Type, h.X, h.SeqNo, h.CCVal, sropts); err != nil {
 		return ErrDrop
 	}
 	return nil
