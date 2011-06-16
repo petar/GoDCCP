@@ -1,18 +1,16 @@
 
-
-* introduce a readCongestionLoop and writeCongestionLoop to consume timeout and sync cc events
-* CCID-inspired Reset and Reset-code separation b/w Sender/receiver
+* congestion control sync event mechanism
 
 * Reliable transport
 * test reliable transport (simulated drops)
 
-* CCID3
 * test CCID3 opts
+* CCID3
 * dynamically changing SWAF/SWBF
 
-* Conn.SetReadTimeout
-
 * add monitor-type output for the dccp stack
+* Conn.SetReadTimeout
+* abridged header read/write (no ports, no checksums)
 
 // TODO: In theory, long lived connections may wrap around the AckNo/SeqNo space
 // in which case maxu64() should not be used below. This will never happen however

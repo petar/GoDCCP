@@ -37,6 +37,9 @@ import "os"
 // sender (aka Half-Connection Sender CCID)
 type SenderCongestionControl interface {
 
+	// The congestion control is considered active between a call to Open and a call to Close or
+	// an internal event that forces closure (like a reset event).
+
 	// GetID() returns the CCID of this congestion control algorithm
 	GetID() byte
 
@@ -54,23 +57,28 @@ type SenderCongestionControl interface {
 
 	// Conn calls OnWrite before a packet is sent to give CongestionControl
 	// an opportunity to add CCVal and options to an outgoing packet
+	// NOTE: If the CC is not active, OnWrite should return 0, nil.
 	OnWrite(htype byte, x bool, seqno int64) (ccval byte, options []*Option)
 
-	// Conn calls OnRead after a packet has been accepted an validated
+	// Conn calls OnRead after a packet has been accepted and validated
 	// If OnRead returns ErrDrop, the packet will be dropped and no further processing
-	// will occur. If if it returns ErrReset, the connection will be reset.
-	// TODO: ErrReset behavior is not implemented. ErrReset should wrap the Reset Code to be
-	// used.
+	// will occur. If OnRead returns ResetError, the connection will be reset.
+	// NOTE: If the CC is not active, OnRead MUST return nil.
 	OnRead(htype byte, x bool, seqno int64, options []*Option) os.Error
 
 	// Strobe blocks until a new packet can be sent without violating the
-	// congestion control rate limit
-	Strobe() os.Error
+	// congestion control rate limit. 
+	// NOTE: If the CC is not active, Strobe MUST return immediately.
+	Strobe()
 
-	// ??
+	// OnIdle is called periodically, giving the CC a chance to:
+        // (a) Request a connection reset by returning a CongestionReset, or
+	// (b) Request the injection of an Ack packet by returning a CongestionAck
+	// NOTE: If the CC is not active, OnIdle MUST to return nil.
+	OnIdle() os.Error
 
 	// Close terminates the half-connection congestion control when it is not needed any longer
-	Close() os.Error
+	Close()
 }
 
 // ReceiverCongestionControl specifies the interface for the congestion control logic of a DCCP
@@ -86,19 +94,20 @@ type ReceiverCongestionControl interface {
 
 	// Conn calls OnWrite before a packet is sent to give CongestionControl
 	// an opportunity to add CCVal and options to an outgoing packet
+	// NOTE: If the CC is not active, OnWrite MUST return nil.
 	OnWrite(htype byte, x bool, seqno int64) (options []*Option)
 
 	// Conn calls OnRead after a packet has been accepted and validated
 	// If OnRead returns ErrDrop, the packet will be dropped and no further processing
-	// will occur. If if it returns ErrReset, the connection will be reset.
-	// TODO: ErrReset behavior is not implemented. ErrReset should wrap the Reset Code to be
-	// used.
+	// will occur. 
+	// NOTE: If the CC is not active, OnRead MUST return nil.
 	OnRead(htype byte, x bool, seqno int64, ccval byte, options []*Option) os.Error
 
-	// ??
+	// OnIdle behaves identically to the same method of the HC-Sender CCID
+	OnIdle() os.Error
 
 	// Close terminates the half-connection congestion control when it is not needed any longer
-	Close() os.Error
+	Close()
 }
 
 type NewSenderCongestionControlFunc func() SenderCongestionControl
@@ -109,116 +118,163 @@ const (
 	CCID3      = 3 // TCP-Friendly Rate Control (TFRC), RFC 4342
 )
 
-//  ---> Sender Congestion Control Activator
+// ---> Sender CC actuator
 
-func newActivatorForSenderCongestionControl(scc SenderCongestionControl) SenderCongestionControl {
-	return &senderCongestionControlActivator{ phase: ACTIVATOR_INIT, SenderCongestionControl: scc }
+// The actuator makes sure that the underlying Open/Close objects sees
+// exactly one call to Open and one call to Close (after the call to Open).
+
+func newSenderCCActuator(scc SenderCongestionControl) SenderCongestionControl {
+	return &senderCCActuator{ 
+		SenderCongestionControl: scc,
+		phase:                   ACTUATOR_INIT,
+		cls:                     make(chan int),
+	}
 }
 
-type senderCongestionControlActivator struct {
-	Mutex
-	phase byte
-	SenderCongestionControl
-}
 const (
-	ACTIVATOR_INIT = iota
-	ACTIVATOR_OPEN
-	ACTIVATOR_CLOSED
+	ACTUATOR_INIT = iota
+	ACTUATOR_OPEN
+	ACTUATOR_CLOSED
 )
 
-func (sa *senderCongestionControlActivator) Open() {
-	sa.Lock()
-	defer sa.Unlock()
-	if sa.phase != ACTIVATOR_INIT {
-		return
-	}
-	sa.phase = ACTIVATOR_OPEN
-	sa.SenderCongestionControl.Open()
-}
-
-func (sa *senderCongestionControlActivator) OnWrite(htype byte, x bool, seqno int64) (ccval byte, options []*Option) {
-	sa.Lock()
-	defer sa.Unlock()
-	if sa.phase == ACTIVATOR_OPEN {
-		return sa.SenderCongestionControl.OnWrite(htype, x, seqno)
-	}
-	return 0, nil
-}
-
-func (sa *senderCongestionControlActivator) OnRead(htype byte, x bool, seqno int64, options []*Option) os.Error {
-	sa.Lock()
-	defer sa.Unlock()
-	if sa.phase == ACTIVATOR_OPEN {
-		return sa.SenderCongestionControl.OnRead(htype, x, seqno, options)
-	}
-	return nil
-}
-
-func (sa *senderCongestionControlActivator) Strobe() os.Error {
-	sa.Lock()
-	defer sa.Unlock()
-	if sa.phase == ACTIVATOR_OPEN {
-		return sa.SenderCongestionControl.Strobe()
-	}
-	return nil
-}
-
-func (sa *senderCongestionControlActivator) Close() os.Error {
-	sa.Lock()
-	defer sa.Unlock()
-	if sa.phase != ACTIVATOR_OPEN {
-		return nil
-	}
-	sa.phase = ACTIVATOR_CLOSED
-	return sa.SenderCongestionControl.Close()
-}
-
-//  ---> Receiver Congestion Control Activator
-
-func newActivatorForReceiverCongestionControl(rcc ReceiverCongestionControl) ReceiverCongestionControl {
-	return &receiverCongestionControlActivator{ phase: ACTIVATOR_INIT, ReceiverCongestionControl: rcc }
-}
-
-type receiverCongestionControlActivator struct {
+type senderCCActuator struct {
+	SenderCongestionControl
 	Mutex
 	phase byte
-	ReceiverCongestionControl
+	cls   chan int
 }
 
-func (ra *receiverCongestionControlActivator) Open() {
-	ra.Lock()
-	defer ra.Unlock()
-	if ra.phase != ACTIVATOR_INIT {
+func (a *senderCCActuator) Open() {
+	a.Lock()
+	defer a.Unlock()
+	if a.phase != ACTUATOR_INIT {
 		return
 	}
-	ra.phase = ACTIVATOR_OPEN
-	ra.ReceiverCongestionControl.Open()
+	a.phase = ACTUATOR_OPEN
+	a.SenderCongestionControl.Open()
 }
 
-func (ra *receiverCongestionControlActivator) OnWrite(htype byte, x bool, seqno int64) (options []*Option) {
-	ra.Lock()
-	defer ra.Unlock()
-	if ra.phase == ACTIVATOR_OPEN {
-		return ra.ReceiverCongestionControl.OnWrite(htype, x, seqno)
+func (a *senderCCActuator) Close() {
+	a.Lock()
+	defer a.Unlock()
+	if a.phase != ACTUATOR_OPEN {
+		return
 	}
-	return nil
-}
-
-func (ra *receiverCongestionControlActivator) OnRead(htype byte, x bool, seqno int64, ccval byte, options []*Option) os.Error {
-	ra.Lock()
-	defer ra.Unlock()
-	if ra.phase == ACTIVATOR_OPEN {
-		return ra.ReceiverCongestionControl.OnRead(htype, x, seqno, ccval, options)
+	a.phase = ACTUATOR_CLOSED
+	if a.cls != nil {
+		close(a.cls)
+		a.cls = nil
 	}
-	return nil
+	a.SenderCongestionControl.Close()
 }
 
-func (ra *receiverCongestionControlActivator) Close() os.Error {
-	ra.Lock()
-	defer ra.Unlock()
-	if ra.phase != ACTIVATOR_OPEN {
+func (a *senderCCActuator) Strobe() {
+	a.Lock()
+	cls := a.cls
+	if a.phase != ACTUATOR_OPEN || cls == nil {
+		a.Unlock()
+		return
+	}
+	a.Unlock()
+
+	go func() {
+		a.SenderCongestionControl.Strobe()
+		a.Lock()
+		defer a.Unlock()
+		if a.cls != nil {
+			a.cls <- 1
+		}
+	}()
+
+	// This unblocks if (i) either Close is called or (ii) the underlying Strobe returns
+	<-cls
+}
+
+func (a *senderCCActuator) OnWrite(htype byte, x bool, seqno int64) (ccval byte, options []*Option) {
+	a.Lock()
+	defer a.Unlock()
+	if a.phase != ACTUATOR_OPEN {
+		return 0, nil
+	}
+	return a.SenderCongestionControl.OnWrite(htype, x, seqno)
+}
+
+func (a *senderCCActuator) OnRead(htype byte, x bool, seqno int64, options []*Option) os.Error {
+	a.Lock()
+	defer a.Unlock()
+	if a.phase != ACTUATOR_OPEN {
 		return nil
 	}
-	ra.phase = ACTIVATOR_CLOSED
-	return ra.ReceiverCongestionControl.Close()
+	return a.SenderCongestionControl.OnRead(htype, x, seqno, options)
+}
+
+func (a *senderCCActuator) OnIdle() os.Error {
+	a.Lock()
+	defer a.Unlock()
+	if a.phase != ACTUATOR_OPEN {
+		return nil
+	}
+	return a.SenderCongestionControl.OnIdle()
+}
+
+// ---> Receiver CC actuator
+
+func newReceiverCCActuator(rcc ReceiverCongestionControl) ReceiverCongestionControl {
+	return &receiverCCActuator{ 
+		ReceiverCongestionControl: rcc,
+		phase:                     ACTUATOR_INIT,
+	}
+}
+
+type receiverCCActuator struct {
+	ReceiverCongestionControl
+	Mutex
+	phase byte
+}
+
+func (a *receiverCCActuator) Open() {
+	a.Lock()
+	defer a.Unlock()
+	if a.phase != ACTUATOR_INIT {
+		return
+	}
+	a.phase = ACTUATOR_OPEN
+	a.ReceiverCongestionControl.Open()
+}
+
+func (a *receiverCCActuator) Close() {
+	a.Lock()
+	defer a.Unlock()
+	if a.phase != ACTUATOR_OPEN {
+		return
+	}
+	a.phase = ACTUATOR_CLOSED
+	a.ReceiverCongestionControl.Close()
+}
+	
+func (a *receiverCCActuator) OnWrite(htype byte, x bool, seqno int64) (options []*Option) {
+	a.Lock()
+	defer a.Unlock()
+	if a.phase != ACTUATOR_OPEN {
+		return nil
+	}
+	return a.ReceiverCongestionControl.OnWrite(htype, x, seqno)
+}
+
+func (a *receiverCCActuator) OnRead(htype byte, x bool, seqno int64, ccval byte, options []*Option) os.Error {
+	a.Lock()
+	defer a.Unlock()
+	if a.phase != ACTUATOR_OPEN {
+		return nil
+	}
+	return a.ReceiverCongestionControl.OnRead(htype, x, seqno, ccval, options)
+}
+
+func (a *receiverCCActuator) OnIdle() os.Error {
+	a.Lock()
+	defer a.Unlock()
+	if a.phase != ACTUATOR_OPEN {
+		return nil
+	}
+	return a.ReceiverCongestionControl.OnIdle()
 }

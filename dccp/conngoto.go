@@ -180,10 +180,12 @@ func (c *Conn) gotoCLOSING() {
 	}()
 }
 
+// gotoCLOSED MUST be idempotent
 func (c *Conn) gotoCLOSED() {
 	c.AssertLocked()
-	c.teardownUser()
 	c.socket.SetState(CLOSED)
+	c.teardownUser()
+	c.teardownWriteLoop()
 	c.scc.Close()
 	c.rcc.Close()
 }

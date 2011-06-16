@@ -24,28 +24,36 @@ func (c *Conn) readHeader() (h *Header, err os.Error) {
 	return h, nil
 }
 
-// How often we exit from a blocking call to readHeader, 10 sec in nanoseconds
-const READ_TIMEOUT = 10e9 
+// How often we exit from a blocking call to readHeader, 1 sec in nanoseconds
+const READ_TIMEOUT = 1e9 
 
 func (c *Conn) readLoop() {
-	if err := c.hc.SetReadTimeout(READ_TIMEOUT); err != nil {
-		log.Printf("SetReadTimeout failed")
-		c.abortQuietly()
-		return
-	}
 	for {
 		c.Lock()
 		state := c.socket.GetState()
+		rtt := c.socket.GetRTT()
 		c.Unlock()
 		if state == CLOSED {
 			break
 		}
+
+		// Adjust read timeout
+		if err := c.hc.SetReadTimeout(5 * rtt); err != nil {
+			log.Printf("SetReadTimeout failed")
+			c.abortQuietly()
+			return
+		}
+
+		// Read next header
 		h, err := c.readHeader()
 		if err != nil {
-			_, protoError := err.(ProtoError)
-			if protoError || err == os.EAGAIN {
-				// Drop packets that are unsupported or if there is timeout. 
-				// Intended for forward compatibility.
+			_, ok := err.(ProtoError)
+			if ok {
+				// Drop packets that are unsupported. Intended for forward compatibility.
+				continue
+			} else if err == os.EAGAIN {
+				// In the even of timeout, poll the congestion controls
+				c.pollCongestionControl()
 				continue
 			} else {
 				// Die if the underlying link is broken
@@ -104,6 +112,35 @@ func (c *Conn) readLoop() {
 		}
 	Done:
 		c.Unlock()
+	}
+}
+
+func (c *Conn) pollCongestionControl() {
+	if e := c.scc.OnIdle(); e != nil {
+		if re, ok := e.(CongestionReset); ok {
+			c.abortWith(re.ResetCode())
+			return
+		}
+		if e == CongestionAck {
+			c.Lock()
+			c.inject(c.generateAck())
+			c.Unlock()
+			return
+		}
+		log.Printf("unknown sender cc idle event")
+	}
+	if e := c.rcc.OnIdle(); e != nil {
+		if re, ok := e.(CongestionReset); ok {
+			c.abortWith(re.ResetCode())
+			return
+		}
+		if e == CongestionAck {
+			c.Lock()
+			c.inject(c.generateAck())
+			c.Unlock()
+			return
+		}
+		log.Printf("unknown receiver cc idle event")
 	}
 }
 

@@ -66,23 +66,19 @@ func (scc *fixedRateSenderControl) OnWrite(htype byte, x bool, seqno int64) (ccv
 
 func (scc *fixedRateSenderControl) OnRead(htype byte, x bool, seqno int64, options []*Option) os.Error { return nil }
 
-func (scc *fixedRateSenderControl) Strobe() os.Error {
-	_, ok := <-scc.strobeRead 
-	if !ok {
-		return os.EBADF
-	}
-	return nil
+func (scc *fixedRateSenderControl) OnIdle() os.Error { return nil }
+
+func (scc *fixedRateSenderControl) Strobe() {
+	<-scc.strobeRead 
 }
 
-func (scc *fixedRateSenderControl) Close() os.Error { 
+func (scc *fixedRateSenderControl) Close() { 
 	scc.Lock()
 	defer scc.Unlock()
 	if scc.strobeWrite != nil {
 		close(scc.strobeWrite) 
 		scc.strobeWrite = nil
-		return nil
 	}
-	return os.EBADF
 }
 
 // ---> Fixed-rate HC-Receiver Congestion Control
@@ -93,8 +89,7 @@ func newFixedRateReceiverControl() *fixedRateReceiverControl {
 	return &fixedRateReceiverControl{}
 }
 
-func (rcc *fixedRateReceiverControl) Open() {
-}
+func (rcc *fixedRateReceiverControl) Open() {}
 
 func (rcc *fixedRateReceiverControl) GetID() byte { return CCID_FIXED }
 
@@ -104,4 +99,6 @@ func (rcc *fixedRateReceiverControl) OnRead(htype byte, x bool, seqno int64, ccv
 	return nil
 }
 
-func (rcc *fixedRateReceiverControl) Close() os.Error { return nil }
+func (rcc *fixedRateReceiverControl) OnIdle() os.Error { return nil }
+
+func (rcc *fixedRateReceiverControl) Close() {}

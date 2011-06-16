@@ -34,6 +34,7 @@ func (c *Conn) abortQuietly() {
 	c.teardownWriteLoop()
 }
 
+// teardownUser MUST be idempotent
 func (c *Conn) teardownUser() {
 	c.readAppLk.Lock()
 	if c.readApp != nil {
@@ -49,6 +50,7 @@ func (c *Conn) teardownUser() {
 	c.writeDataLk.Unlock()
 }
 
+// teardownWriteLoop MUST be idempotent
 func (c *Conn) teardownWriteLoop() {
 	c.writeNonDataLk.Lock()
 	defer c.writeNonDataLk.Unlock()
@@ -56,4 +58,6 @@ func (c *Conn) teardownWriteLoop() {
 		close(c.writeNonData)
 		c.writeNonData = nil
 	}
+	c.scc.Close()
+	c.rcc.Close()
 }

@@ -24,8 +24,8 @@ type Conn struct {
 func newConn(hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
 	c := &Conn{
 		hc:           hc,
-		scc:          newActivatorForSenderCongestionControl(scc),
-		rcc:          newActivatorForReceiverCongestionControl(rcc),
+		scc:          newSenderCCActuator(scc),
+		rcc:          newReceiverCCActuator(rcc),
 		readApp:      make(chan []byte, 5),
 		writeData:    make(chan []byte),
 		writeNonData: make(chan *Header, 5),

@@ -134,16 +134,35 @@ func (c *Conn) step7_CheckUnexpectedTypes(h *Header) os.Error {
 // Step 8, Section 8.5: Process options and mark acknowledgeable
 // Section 7.4: A received packet becomes acknowledgeable when Step 8 is reached.
 func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) os.Error {
-	// TODO: Implement a connection reset if OnRead returns ErrReset
-	// For now CongestionControl cannot advise a reset, just an ErrDrop
+
 	defer c.syncWithCongestionControl()
 	rsopts := filterCCIDReceiverToSenderOptions(h.Options)
 	if err := c.scc.OnRead(h.Type, h.X, h.SeqNo, rsopts); err != nil {
-		return ErrDrop
+		if re, ok := err.(CongestionReset); ok {
+			c.abortWithUnderLock(re.ResetCode())
+			return ErrDrop
+		}
+		if err == CongestionAck {
+			c.inject(c.generateAck())
+		}
+		if err == ErrDrop {
+			return ErrDrop
+		}
+		log.Printf("unknown sender cc read event")
 	}
 	sropts := filterCCIDSenderToReceiverOptions(h.Options)
 	if err := c.rcc.OnRead(h.Type, h.X, h.SeqNo, h.CCVal, sropts); err != nil {
-		return ErrDrop
+		if re, ok := err.(CongestionReset); ok {
+			c.abortWithUnderLock(re.ResetCode())
+			return ErrDrop
+		}
+		if err == CongestionAck {
+			c.inject(c.generateAck())
+		}
+		if err == ErrDrop {
+			return ErrDrop
+		}
+		log.Printf("unknown receiver cc read event")
 	}
 	return nil
 }

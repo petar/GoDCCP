@@ -36,3 +36,19 @@ var (
 	ErrTimeout       = NewError("timeout")
 	ErrOverflow      = NewError("overflow")
 )
+
+// Congestion Control errors/events
+
+// CongestionReset is sent from Congestion Control to Conn to indicate that
+// the connection must be reset. CongestionReset encloses the desired Reset Code.
+type CongestionReset byte
+
+func (ce CongestionReset) String() string  { return "cc-reset(" + resetCodeString(byte(ce)) + ")" }
+
+func (ce CongestionReset) ResetCode() byte { return byte(ce) }
+
+func NewCongestionReset(resetCode byte) os.Error { return CongestionReset(resetCode) }
+
+// CongestionAck is sent from Congestion Control to Conn to advise that an
+// Ack packet should be sent to the other side.
+var CongestionAck = NewError("cc-ack")

@@ -1,5 +1,5 @@
-# Copyright 2010 Petar Maymounkov. All rights reserved.
-# Use of this source code is governed by a BSD-style
+# Copyright 2010 GoDCCP Authors. All rights reserved.
+# Use of this source code is governed by a 
 # license that can be found in the LICENSE file.
 
 include $(GOROOT)/src/Make.inc
@@ -7,10 +7,13 @@ include $(GOROOT)/src/Make.inc
 all:	install
 
 install:
-	cd dccp && make install
+	cd dccp && make install && \
+	cd retransmit && make install
 
 clean:
-	cd dccp && make clean
+	cd dccp && make clean && \
+	cd retransmit && make clean
 
 nuke:
-	cd dccp && make nuke
+	cd dccp && make nuke && \
+	cd retransmit && make nuke

@@ -53,9 +53,7 @@ func (c *Conn) inject(h *Header) {
 }
 
 func (c *Conn) write(h *Header) os.Error {
-	if c.scc.Strobe() != nil {
-		panic("broken congestion control")
-	}
+	c.scc.Strobe()
 	return c.hc.WriteHeader(h)
 }
 

@@ -36,7 +36,6 @@ GOFILES=\
 	muxmsg.go\
 	options.go\
 	read.go\
-	retransmit.go\
 	servicecode.go\
 	socket.go\
 	string.go\
