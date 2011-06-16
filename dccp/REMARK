@@ -1,6 +1,4 @@
 
-* congestion control sync event mechanism
-
 * Reliable transport
 * test reliable transport (simulated drops)
 

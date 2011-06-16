@@ -25,12 +25,12 @@ func DecodeLossEventRateOption(opt *Option) *LossEventRateOption {
 	if opt.Type != OptionLossEventRate || len(opt.Data) != 4 {
 		return nil
 	}
-	return &LossEventRateOption{RateInv: decode4ByteUint(opt.Data[0:4])}
+	return &LossEventRateOption{RateInv: Decode4ByteUint(opt.Data[0:4])}
 }
 
 func (opt *LossEventRateOption) Encode() (*Option, os.Error) {
 	d := make([]byte, 4)
-	encode4ByteUint(opt.RateInv, d)
+	Encode4ByteUint(opt.RateInv, d)
 	return &Option{
 		Type:      OptionLossEventRate,
 		Data:      d,
@@ -66,7 +66,7 @@ func DecodeLossIntervalsOption(opt *Option) *LossIntervalsOption {
 	if k > MaxLossIntervals || r != 0 {
 		return nil
 	}
-	skip := decode1ByteUint(opt.Data[0:1])
+	skip := Decode1ByteUint(opt.Data[0:1])
 	intervals := make([]*LossInterval, k)
 	for i := 0; i < k; i++ {
 		start := 1 + lossIntervalFootprint*i
@@ -89,7 +89,7 @@ func (opt *LossIntervalsOption) Encode() (*Option, os.Error) {
 		return nil, ErrOverflow
 	}
 	d := make([]byte, 1+lossIntervalFootprint*len(opt.LossIntervals))
-	encode1ByteUint(opt.SkipLength, d[0:1])
+	Encode1ByteUint(opt.SkipLength, d[0:1])
 	for i, lossInterval := range opt.LossIntervals {
 		j := 1 + i*lossIntervalFootprint
 		if lossInterval.encode(d[j:j+lossIntervalFootprint]) != nil {
@@ -123,24 +123,24 @@ func (li *LossInterval) encode(p []byte) os.Error {
 		return ErrOverflow
 	}
 
-	encode3ByteUint(li.LosslessLength, p[0:3])
+	Encode3ByteUint(li.LosslessLength, p[0:3])
 	l := li.LossLength
 	if li.ECNNonceEcho {
 		l |= _24thBit
 	}
-	encode3ByteUint(l, p[3:6])
-	encode3ByteUint(li.DataLength, p[6:9])
+	Encode3ByteUint(l, p[3:6])
+	Encode3ByteUint(li.DataLength, p[6:9])
 
 	return nil
 }
 
 func decodeLossInterval(p []byte) *LossInterval {
 	li := &LossInterval{}
-	li.LosslessLength = decode3ByteUint(p[0:3])
-	li.LossLength = decode3ByteUint(p[3:6])
+	li.LosslessLength = Decode3ByteUint(p[0:3])
+	li.LossLength = Decode3ByteUint(p[3:6])
 	li.ECNNonceEcho = (li.LossLength&_24thBit != 0)
 	li.LossLength &= ^uint32(_24thBit)
-	li.DataLength = decode3ByteUint(p[6:9])
+	li.DataLength = Decode3ByteUint(p[6:9])
 	return li
 }
 
@@ -154,12 +154,12 @@ func DecodeReceiveRateOption(opt *Option) *ReceiveRateOption {
 	if opt.Type != OptionReceiveRate || len(opt.Data) != 4 {
 		return nil
 	}
-	return &ReceiveRateOption{Rate: decode4ByteUint(opt.Data[0:4])}
+	return &ReceiveRateOption{Rate: Decode4ByteUint(opt.Data[0:4])}
 }
 
 func (opt *ReceiveRateOption) Encode() (*Option, os.Error) {
 	d := make([]byte, 4)
-	encode4ByteUint(opt.Rate, d)
+	Encode4ByteUint(opt.Rate, d)
 	return &Option{
 		Type:      OptionReceiveRate,
 		Data:      d,

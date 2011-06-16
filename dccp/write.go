@@ -110,14 +110,14 @@ func (gh *Header) Write(sourceIP, destIP []byte,
 	k := 0
 
 	// Write (1a) Generic Header
-	encode2ByteUint(gh.SourcePort, buf[k:k+2])
+	Encode2ByteUint(gh.SourcePort, buf[k:k+2])
 	k += 2
 
-	encode2ByteUint(gh.DestPort, buf[k:k+2])
+	Encode2ByteUint(gh.DestPort, buf[k:k+2])
 	k += 2
 
 	// Write app data offset
-	encode1ByteUint(byte(dataOffset>>2), buf[k:k+1])
+	Encode1ByteUint(byte(dataOffset>>2), buf[k:k+1])
 	k += 1
 
 	// Write CCVal
@@ -143,7 +143,7 @@ func (gh *Header) Write(sourceIP, destIP []byte,
 	// Write SeqNo
 	switch gh.X {
 	case false:
-		encode3ByteUint(uint32(gh.SeqNo), buf[k:k+3])
+		Encode3ByteUint(uint32(gh.SeqNo), buf[k:k+3])
 		k += 3
 	case true:
 		buf[k] = 0
@@ -151,7 +151,7 @@ func (gh *Header) Write(sourceIP, destIP []byte,
 		if gh.SeqNo < 0 {
 			panic("seqno < 0")
 		}
-		encode6ByteUint(uint64(gh.SeqNo), buf[k:k+6])
+		Encode6ByteUint(uint64(gh.SeqNo), buf[k:k+6])
 		k += 6
 	}
 
@@ -162,7 +162,7 @@ func (gh *Header) Write(sourceIP, destIP []byte,
 	case 4:
 		buf[k] = 0
 		k += 1 // Skip over Reserved
-		encode3ByteUint(uint32(gh.AckNo), buf[k:k+3])
+		Encode3ByteUint(uint32(gh.AckNo), buf[k:k+3])
 		k += 3
 	case 8:
 		buf[k], buf[k+1] = 0, 0
@@ -170,7 +170,7 @@ func (gh *Header) Write(sourceIP, destIP []byte,
 		if gh.AckNo < 0 {
 			panic("ackno < 0")
 		}
-		encode6ByteUint(uint64(gh.AckNo), buf[k:k+6])
+		Encode6ByteUint(uint64(gh.AckNo), buf[k:k+6])
 		k += 6
 	default:
 		panic("unreach")
@@ -179,7 +179,7 @@ func (gh *Header) Write(sourceIP, destIP []byte,
 	// Write (1c) Code Subheader: Service Code, or Reset Code and Reset Data fields
 	switch gh.Type {
 	case Request, Response:
-		encode4ByteUint(gh.ServiceCode, buf[k:k+4])
+		Encode4ByteUint(gh.ServiceCode, buf[k:k+4])
 		k += 4
 	case Reset:
 		buf[k] = gh.ResetCode

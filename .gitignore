@@ -17,6 +17,8 @@ _obj
 _test
 src/pkg/Make.deps
 _testmain.go
+panic
+playground/conntest
 
 syntax:regexp
 ^pkg/

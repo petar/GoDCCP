@@ -34,7 +34,7 @@ func ToTenMicroTime(t int64) uint32 { return uint32(t / TenMicroInNano) }
 
 // d must be a 4-byte slice
 func encodeTimestamp(t uint32, d []byte) []byte {
-	encode4ByteUint(t, d)
+	Encode4ByteUint(t, d)
 	return d[0:4]
 }
 
@@ -46,7 +46,7 @@ func DecodeTimestampOption(opt *Option) *TimestampOption {
 }
 
 func decodeTimestamp(d []byte) uint32 {
-	return decode4ByteUint(d)
+	return Decode4ByteUint(d)
 }
 
 // ElapsedTimeOption, Section 13.2
@@ -80,10 +80,10 @@ func encodeElapsed(elapsed uint32, d []byte) []byte {
 	}
 	if elapsed < OneSecInTenMicro/2 {
 		assertFitsIn2Bytes(uint64(elapsed))
-		encode2ByteUint(uint16(elapsed), d[0:2])
+		Encode2ByteUint(uint16(elapsed), d[0:2])
 		return d[0:2]
 	} else {
-		encode4ByteUint(elapsed, d)
+		Encode4ByteUint(elapsed, d)
 		return d[0:4]
 	}
 	panic("unreach")
@@ -106,9 +106,9 @@ func decodeElapsed(d []byte) (uint32, os.Error) {
 	var t uint32
 	switch len(d) {
 	case 2:
-		t = uint32(decode2ByteUint(d))
+		t = uint32(Decode2ByteUint(d))
 	case 4:
-		t = decode4ByteUint(d)
+		t = Decode4ByteUint(d)
 	default:
 		return 0, ErrSize
 	}

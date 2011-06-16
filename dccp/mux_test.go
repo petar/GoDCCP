@@ -106,12 +106,12 @@ func readUint32(t *testing.T, c BlockConn) uint32 {
 		t.Fatalf("read size: %d != 4", len(p))
 	}
 	// fmt.Printf("  %s ···> %v\n", c.(*flow).String(), p[:4])
-	return decode4ByteUint(p[:4])
+	return Decode4ByteUint(p[:4])
 }
 
 func writeUint32(t *testing.T, c BlockConn, u uint32) {
 	p := make([]byte, 4)
-	encode4ByteUint(u, p)
+	Encode4ByteUint(u, p)
 	err := c.WriteBlock(p)
 	if err != nil {
 		t.Fatalf("write: %s", err)

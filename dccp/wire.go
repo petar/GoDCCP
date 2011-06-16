@@ -10,14 +10,14 @@ package dccp
 
 // Wire format to integers
 
-func decode1ByteUint(w []byte) uint8 {
+func Decode1ByteUint(w []byte) uint8 {
 	if len(w) != 1 {
 		panic("size")
 	}
 	return uint8(w[0])
 }
 
-func decode2ByteUint(w []byte) uint16 {
+func Decode2ByteUint(w []byte) uint16 {
 	if len(w) != 2 {
 		panic("size")
 	}
@@ -27,7 +27,7 @@ func decode2ByteUint(w []byte) uint16 {
 	return u
 }
 
-func decode3ByteUint(w []byte) uint32 {
+func Decode3ByteUint(w []byte) uint32 {
 	if len(w) != 3 {
 		panic("size")
 	}
@@ -38,7 +38,7 @@ func decode3ByteUint(w []byte) uint32 {
 	return u
 }
 
-func decode4ByteUint(w []byte) uint32 {
+func Decode4ByteUint(w []byte) uint32 {
 	if len(w) != 4 {
 		panic("size")
 	}
@@ -50,7 +50,7 @@ func decode4ByteUint(w []byte) uint32 {
 	return u
 }
 
-func decode6ByteUint(w []byte) uint64 {
+func Decode6ByteUint(w []byte) uint64 {
 	if len(w) != 6 {
 		panic("size")
 	}
@@ -66,14 +66,14 @@ func decode6ByteUint(w []byte) uint64 {
 
 // Integers to wire format
 
-func encode1ByteUint(u uint8, w []byte) {
+func Encode1ByteUint(u uint8, w []byte) {
 	if len(w) != 1 {
 		panic("size")
 	}
 	w[0] = u
 }
 
-func encode2ByteUint(u uint16, w []byte) {
+func Encode2ByteUint(u uint16, w []byte) {
 	if len(w) != 2 {
 		panic("size")
 	}
@@ -81,7 +81,7 @@ func encode2ByteUint(u uint16, w []byte) {
 	w[0] = uint8((u >> 8) & 0xff)
 }
 
-func encode3ByteUint(u uint32, w []byte) {
+func Encode3ByteUint(u uint32, w []byte) {
 	if len(w) != 3 {
 		panic("size")
 	}
@@ -93,7 +93,7 @@ func encode3ByteUint(u uint32, w []byte) {
 	}
 }
 
-func encode4ByteUint(u uint32, w []byte) {
+func Encode4ByteUint(u uint32, w []byte) {
 	if len(w) != 4 {
 		panic("size")
 	}
@@ -103,7 +103,7 @@ func encode4ByteUint(u uint32, w []byte) {
 	w[0] = uint8((u >> (8 * 3)) & 0xff)
 }
 
-func encode6ByteUint(u uint64, w []byte) {
+func Encode6ByteUint(u uint64, w []byte) {
 	if len(w) != 6 {
 		panic("size")
 	}

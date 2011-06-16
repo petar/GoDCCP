@@ -2,18 +2,58 @@
 # Use of this source code is governed by a 
 # license that can be found in the LICENSE file.
 
-include $(GOROOT)/src/Make.inc
+nullstring :=
+space := $(nullstring) # a space at the end
+ifndef GOBIN
+QUOTED_HOME=$(subst $(space),\ ,$(HOME))
+GOBIN=$(QUOTED_HOME)/bin
+endif
+QUOTED_GOBIN=$(subst $(space),\ ,$(GOBIN))
 
-all:	install
+all: install
 
-install:
-	cd dccp && make install && \
-	cd retransmit && make install
+DIRS=\
+     	dccp\
+	retransmit\
 
-clean:
-	cd dccp && make clean && \
-	cd retransmit && make clean
+TEST=\
+	$(filter-out $(NOTEST),$(DIRS))
 
-nuke:
-	cd dccp && make nuke && \
-	cd retransmit && make nuke
+BENCH=\
+	$(filter-out $(NOBENCH),$(TEST))
+
+clean.dirs: $(addsuffix .clean, $(DIRS))
+install.dirs: $(addsuffix .install, $(DIRS))
+nuke.dirs: $(addsuffix .nuke, $(DIRS))
+test.dirs: $(addsuffix .test, $(TEST))
+bench.dirs: $(addsuffix .bench, $(BENCH))
+
+%.clean:
+	+cd $* && $(QUOTED_GOBIN)/gomake clean
+
+%.install:
+	+cd $* && $(QUOTED_GOBIN)/gomake install
+
+%.nuke:
+	+cd $* && $(QUOTED_GOBIN)/gomake nuke
+
+%.test:
+	+cd $* && $(QUOTED_GOBIN)/gomake test
+
+%.bench:
+	+cd $* && $(QUOTED_GOBIN)/gomake bench
+
+clean: clean.dirs
+
+install: install.dirs
+
+test:	test.dirs
+
+bench:	bench.dirs
+
+nuke: nuke.dirs
+
+deps:
+	./deps.bash
+
+-include Make.deps
