@@ -120,22 +120,22 @@ func Encode6ByteUint(u uint64, w []byte) {
 
 // Assertions
 
-func fitsIn2Bytes(x uint64) bool { return x>>16 == 0 }
+func FitsIn2Bytes(x uint64) bool { return x>>16 == 0 }
 
-func fitsIn3Bytes(x uint64) bool { return x>>24 == 0 }
+func FitsIn3Bytes(x uint64) bool { return x>>24 == 0 }
+
+func FitsIn4Bytes(x uint64) bool { return x>>32 == 0 }
 
 func fitsIn23Bits(x uint64) bool { return x>>23 == 0 }
 
-func fitsIn4Bytes(x uint64) bool { return x>>32 == 0 }
-
 func assertFitsIn2Bytes(x uint64) {
-	if !fitsIn2Bytes(x) {
+	if !FitsIn2Bytes(x) {
 		panic("width overflow, 2 bytes")
 	}
 }
 
 func assertFitsIn4Bytes(x uint64) {
-	if !fitsIn4Bytes(x) {
+	if !FitsIn4Bytes(x) {
 		panic("width overflow, 4 bytes")
 	}
 }

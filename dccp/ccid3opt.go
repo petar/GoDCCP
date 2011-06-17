@@ -117,9 +117,9 @@ func (li *LossInterval) encode(p []byte) os.Error {
 	if len(p) != 9 {
 		return ErrSize
 	}
-	if !fitsIn3Bytes(uint64(li.LosslessLength)) ||
+	if !FitsIn3Bytes(uint64(li.LosslessLength)) ||
 		!fitsIn23Bits(uint64(li.LossLength)) ||
-		!fitsIn3Bytes(uint64(li.DataLength)) {
+		!FitsIn3Bytes(uint64(li.DataLength)) {
 		return ErrOverflow
 	}
 
