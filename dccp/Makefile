@@ -7,8 +7,6 @@ GOFILES=\
 	block.go\
 	cc.go\
 	ccfixed.go\
-	ccid3.go\
-	ccid3opt.go\
 	chanlink.go\
 	checksum.go\
 	conn.go\

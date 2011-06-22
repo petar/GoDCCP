@@ -2,10 +2,10 @@
 // Use of this source code is governed by a 
 // license that can be found in the LICENSE file.
 
-package dccp
+package ccid3
 
 // import "os"
 
-type ccid3 struct {
+type ccid3sender struct {
 
 }
