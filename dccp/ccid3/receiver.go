@@ -4,8 +4,45 @@
 
 package ccid3
 
-// import "os"
+import (
+	"os"
+	"github.com/petar/GoDCCP/dccp"
+)
 
-type ccid3sender struct {
+type receiver struct {
+	receiveRate
+}
 
+// GetID() returns the CCID of this congestion control algorithm
+func (r *receiver) GetID() byte { return dccp.CCID3 }
+
+// Open tells the Congestion Control that the connection has entered
+// OPEN or PARTOPEN state and that the CC can now kick in.
+func (r *receiver) Open() {
+	?
+}
+
+// Conn calls OnWrite before a packet is sent to give CongestionControl
+// an opportunity to add CCVal and options to an outgoing packet
+// NOTE: If the CC is not active, OnWrite MUST return nil.
+func (r *receiver) OnWrite(htype byte, x bool, seqno int64) (options []*dccp.Option) {
+	?
+}
+
+// Conn calls OnRead after a packet has been accepted and validated
+// If OnRead returns ErrDrop, the packet will be dropped and no further processing
+// will occur. 
+// NOTE: If the CC is not active, OnRead MUST return nil.
+func (r *receiver) OnRead(htype byte, x bool, seqno int64, ccval byte, options []*dccp.Option) os.Error {
+	?
+}
+
+// OnIdle behaves identically to the same method of the HC-Sender CCID
+func (r *receiver) OnIdle() os.Error {
+	?
+}
+
+// Close terminates the half-connection congestion control when it is not needed any longer
+func (r *receiver) Close() {
+	?
 }

@@ -59,7 +59,6 @@ func decodeTimestamp(d []byte) uint32 {
 // elapsed since the packet being acknowledged was received, with units of hundredths of
 // milliseconds (10 microseconds granularity).
 type ElapsedTimeOption struct {
-	// Elapsed measures time in nanoseconds
 	Elapsed uint32
 }
 

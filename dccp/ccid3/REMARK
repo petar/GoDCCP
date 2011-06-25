@@ -1,0 +1,50 @@
+
+loss intervals
+==============
+
+A missing data packet doesn't begin a new loss interval until NDUPACK packets have been seen
+after the "hole", where NDUPACK = 3
+
+
+feedback packet
+===============
+	(-) receiver sends a feedback packet to the sender roughly once per round-trip time, if the sender is
+	  sending packets that frequentlyV
+	(-) contains:
+	   1. An Elapsed Time and/or Timestamp Echo option specifying the amount
+	      of time elapsed since the arrival at the receiver of the packet
+	      whose sequence number appears in the Acknowledgement Number field.
+	      These options are described in [RFC4340], Section 13.
+
+	   2. A Receive Rate option, defined in Section 8.3, specifying the rate
+	      at which data was received since the last DCCP-Ack was sent.
+
+	   3. A Loss Intervals option, defined in Section 8.6, specifying the
+	      most recent loss intervals experienced by the receiver.  (The
+	      definition of a loss interval is provided below.)  From Loss
+	      Intervals, the sender can easily calculate the loss event rate p
+	      using the procedure described in [RFC3448], Section 5.4.
+
+
+nofeedback timer
+
+allowed sending rate 
+	(-)  does not reduce below initial sending rate as a result of idle time
+	(-) < 2*ReceiveRate reported by receiver
+		(-) => after an application- limited period, the sender can at most double its sending rate from one
+		    round-trip time to the next, until it reaches the allowed sending rate determined by the loss event
+		    rate
+
+sending rate, determined by loss event rate
+
+packet size
+	(-) MAY calculate s as the segment size averaged over multiple round trip times -- for example, over the
+	    most recent four loss intervals
+	(-) OR set to MSS
+
+(DataDropped & SlowReceiver)
+
+---
+
+Maximum Segment Size (MSS) = the maximum size in bytes for the data segment, not including the
+default DCCP and IP packet headers
