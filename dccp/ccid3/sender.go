@@ -12,8 +12,8 @@ import (
 type sender struct {
 	dccp.Mutex
 	phase int
-	rtt   int64 // RTT estimate if available, negative otherwise
 
+	rttSender
 	windowCounter
 	strober
 }

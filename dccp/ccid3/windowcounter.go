@@ -18,6 +18,11 @@ type windowCounter struct {
 	lastTime int64  // The time at which the first packet with window counter value "last" was sent
 }
 
+const (
+	// Maximum value of window counter, RFC 4342 Section 10.2 and RFC 3448
+	WCTRMAX = 16
+)
+
 func (wc *windowCounter) Init(firstSendTime int64) {
 	wc.last = 0
 	wc.lastTime = firstSendTime
@@ -29,7 +34,7 @@ func (wc *windowCounter) Take(rtt int64) byte {
 	now := time.Nanoseconds()
 	quarterRTTs := (now - wc.lastTime) / (rtt / 4)
 	if quarterRTTs > 0 {
-		wc.last = (wc.last + byte(min64(quarter_RTTs, 5))) % 16
+		wc.last = (wc.last + byte(min64(quarter_RTTs, 5))) % WCTRMAX
 		wc.lastTime = now
 	}
 	return wc.last
@@ -37,17 +42,19 @@ func (wc *windowCounter) Take(rtt int64) byte {
 
 // After receiving an acknowledgement for a packet sent with window counter wcAckd, the sender
 // SHOULD increase its window counter, if necessary, so that subsequent packets have window
-// counter value at least (wcAckd + 4) mod 16.
+// counter value at least (wcAckd + 4) mod WCTRMAX.
 // XXX: What if local window counter has gone around the circle before the ack was received?
 func (wc *windowCounter) Place(wcAckd byte) {
-	atLeast := (wcAckd+4) % 16
-	if lessMod16(wc.last, atLeast) {
+	atLeast := (wcAckd+4) % WCTRMAX
+	if lessModWCTRMAX(wc.last, atLeast) {
 		wc.last = atLeast
 	}
 }
 
-func lessMod16(x, y byte) bool {
-	return (y-x) % 16 < 8
+const WCTRHALF = (WCTRMAX / 2) + (WCTRMAX & 0x1)
+
+func lessModWCTRMAX(x, y byte) bool {
+	return (y-x) % WCTRMAX < WCTRHALF
 }
 
 func min64(x, y int64) int64 {

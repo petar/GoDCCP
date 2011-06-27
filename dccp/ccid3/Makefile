@@ -3,11 +3,11 @@ include $(GOROOT)/src/Make.inc
 TARG=github.com/petar/GoDCCP/dccp/ccid3
 GOFILES=\
 	ccid3.go\
-	lossinterval.go\
+	loss.go\
 	opts.go\
 	receiver.go\
 	receiverate.go\
-	rttestimator.go\
+	rtt.go\
 	sender.go\
 	strober.go\
 	windowcounter.go\

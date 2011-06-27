@@ -10,7 +10,7 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-type lossIntervalTracker struct {
+type lossEvents struct {
 }
 
 func (t *lossIntervalTracker) OnRead(htype byte, x bool, seqno int64, ccval byte, options []*dccp.Option) os.Error {
@@ -19,3 +19,4 @@ func (t *lossIntervalTracker) OnRead(htype byte, x bool, seqno int64, ccval byte
 func (t *lossIntervalTracker) Option() *Option {
 	?
 }
+

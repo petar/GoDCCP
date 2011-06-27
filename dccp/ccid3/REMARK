@@ -1,32 +1,62 @@
 
-loss intervals
-==============
-
+[ R—loss ]
 A missing data packet doesn't begin a new loss interval until NDUPACK packets have been seen
 after the "hole", where NDUPACK = 3
 
 
-feedback packet
-===============
-	(-) receiver sends a feedback packet to the sender roughly once per round-trip time, if the sender is
-	  sending packets that frequentlyV
-	(-) contains:
-	   1. An Elapsed Time and/or Timestamp Echo option specifying the amount
-	      of time elapsed since the arrival at the receiver of the packet
-	      whose sequence number appears in the Acknowledgement Number field.
-	      These options are described in [RFC4340], Section 13.
+[ R—feedback ]
+MUST send feedback, if:
 
-	   2. A Receive Rate option, defined in Section 8.3, specifying the rate
-	      at which data was received since the last DCCP-Ack was sent.
+[ R—feedback—lossrate ]
+A newly calculated loss event rate p is greater than its previous value
 
-	   3. A Loss Intervals option, defined in Section 8.6, specifying the
-	      most recent loss intervals experienced by the receiver.  (The
-	      definition of a loss interval is provided below.)  From Loss
-	      Intervals, the sender can easily calculate the loss event rate p
-	      using the procedure described in [RFC3448], Section 5.4.
+[ R—feedback—timer ]
+The feedback timer expires and data packets have been received since the previous feedback was sent
+
+[ R—feedback—timer-via-time ]
+When the feedback timer expires, the receiver resets the timer to expire after R_m seconds, where
+R_m is the most recent estimate of the round-trip time received from the sender.
+¡
+We suggest estimating the round-trip time from the most recent data packet. Note that this procedure
+does not work when the inter-packet sending times are greater than the RTT.
+
+[ R—feedback—timer-via-ccval ]
+Whenever the receiver sends a feedback message, the receiver sets a local variable last_counter to
+the greatest received value of the window counter since the last feedback message was sent, if any
+data packets have been received since the last feedback message was sent.
+¡
+If the receiver receives a data packet with a window counter value greater than or equal to
+last_counter + 4, then the receiver sends a new feedback packet.
 
 
-nofeedback timer
+[ R—feedback ]
+An Elapsed Time and/or Timestamp Echo option specifying the amount of time elapsed since the arrival
+at the receiver of the packet whose sequence number appears in the Acknowledgement Number field.
+These options are described in [RFC4340], Section 13.
+¡
+A Receive Rate option, defined in Section 8.3, specifying the rate at which data was received since
+the last DCCP-Ack was sent.
+¡
+A Loss Intervals option, defined in Section 8.6, specifying the most recent loss intervals
+experienced by the receiver.  (The definition of a loss interval is provided below.)  From Loss
+Intervals, the sender can easily calculate the loss event rate p using the procedure described in
+[RFC3448], Section 5.4.
+
+
+
+
+
+
+[S–nofeedback—timer]
+After a feedback packet is received, the sender sets a nofeedback timer to at least four times the
+round- trip time estimate
+¡
+If the sender doesn't receive any feedback packets before the nofeedback timer expires, then the
+sender halves its sending rate.
+
+
+
+
 
 allowed sending rate 
 	(-)  does not reduce below initial sending rate as a result of idle time

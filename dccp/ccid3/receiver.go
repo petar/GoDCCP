@@ -10,7 +10,10 @@ import (
 )
 
 type receiver struct {
+	dccp.Mutex
+	rttReceiver
 	receiveRate
+	lossEvents
 }
 
 // GetID() returns the CCID of this congestion control algorithm
@@ -19,6 +22,9 @@ func (r *receiver) GetID() byte { return dccp.CCID3 }
 // Open tells the Congestion Control that the connection has entered
 // OPEN or PARTOPEN state and that the CC can now kick in.
 func (r *receiver) Open() {
+	r.rttReceiver.Init()
+	r.receiveRate.Init()
+	r.lossEvents.Init()
 	?
 }
 
@@ -26,6 +32,8 @@ func (r *receiver) Open() {
 // an opportunity to add CCVal and options to an outgoing packet
 // NOTE: If the CC is not active, OnWrite MUST return nil.
 func (r *receiver) OnWrite(htype byte, x bool, seqno int64) (options []*dccp.Option) {
+	r.Lock()
+	defer r.Unlock()
 	?
 }
 
@@ -34,11 +42,15 @@ func (r *receiver) OnWrite(htype byte, x bool, seqno int64) (options []*dccp.Opt
 // will occur. 
 // NOTE: If the CC is not active, OnRead MUST return nil.
 func (r *receiver) OnRead(htype byte, x bool, seqno int64, ccval byte, options []*dccp.Option) os.Error {
+	r.Lock()
+	defer r.Unlock()
 	?
 }
 
 // OnIdle behaves identically to the same method of the HC-Sender CCID
 func (r *receiver) OnIdle() os.Error {
+	r.Lock()
+	defer r.Unlock()
 	?
 }
 

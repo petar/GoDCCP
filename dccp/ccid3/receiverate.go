@@ -11,6 +11,10 @@ import (
 // receiveRate keeps track of the data receive rate at the CCID3 receiver,
 // and produces Receive Rate options for outgoing feedback packets.
 // It's function is specified in RFC 4342, Section 8.3.
+//
+// XXX: Section 8.1, on the other hand, seems to suggest an alternative
+// mechanism for computing receive rate, based on the window counter values
+// in CCVal.
 type receiveRate struct {
 	data0, data1 int
 	time0, time1 int64
@@ -22,8 +26,10 @@ func (r *receiveRate) Init() {
 	r.data0, r.data1 = 0, 0
 }
 
-// OnData is called to let the receiveRate know that data has been received
-func (r *receiveRate) OnData(data int) {
+// OnData is called to let the receiveRate know that data has been received.
+// The ccval window counter value is not used in the current rate receiver algorithm
+// explicitly. It is used implicitly in that the RTT estimate is based on these values.
+func (r *receiveRate) OnData(data int, ccval byte) {
 	r.data0 += data
 	r.data1 += data
 }
