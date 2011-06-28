@@ -18,6 +18,7 @@ import (
 // sending times are significantly greater than the RTT, resulting in packet pairs whose
 // CCVals differ by 5.  Explicit RTT measurement techniques, such as Timestamp and Timestamp
 // Echo, should be used in that case.
+// 
 type rttReceiver struct {
 
 	// rtt equals the latest RTT estimate, or 0 otherwise
@@ -32,7 +33,7 @@ type rttReceiver struct {
 
 	// ccvalTime[i] is the time when the first packet with CCVal=i was received.
 	// A value of 0 indicates that no packet with this CCVal has been received yet.
-	ccvalTime [16]int64
+	ccvalTime [WCTRMAX]int64
 }
 const CCValNil = 0xff
 
@@ -48,17 +49,17 @@ func (t *rttReceiver) Init() {
 
 // receiver calls OnRead every time a packet is received
 func (t *rttReceiver) OnRead(ccval byte) {
-	ccval = ccval % 16 // Safety
+	ccval = ccval % WCTRMAX // Safety
 
 	now := time.Nanoseconds()
-	if t.ccvalNow == CCValNil || lessMod16(ccval, t.ccvalNow) {
+	if t.ccvalNow == CCValNil || lessModWCTRMAX(ccval, t.ccvalNow) {
 		t.Init()
 		t.ccvalNow = ccval
 		t.ccvalTime[ccval] = now
 	} else {
 		t.ccvalNow = ccval
-		for i := 0; lessMod16(ccval, (ccval+i) % 16); i++ {
-			t.ccvalTime[(ccval+i) % 16] = 0
+		for i := 0; lessModWCTRMAX(ccval, (ccval+i) % WCTRMAX); i++ {
+			t.ccvalTime[(ccval+i) % WCTRMAX] = 0
 		}
 	}
 
@@ -75,16 +76,16 @@ func (t *rttReceiver) calcCCValRTT() {
 	t0 := t.ccvalTime[t.ccvalNow]
 	var t1 int64
 	var q byte
-	k := (t.ccvalNow + 12) % 16  // Equals (ccvalNow-4) mod 16
+	k := (t.ccvalNow + (WCTRMAX-4)) % WCTRMAX  // Equals (ccvalNow-4) mod WCTRMAX
 	switch {
 	case t.ccvalTime[k] != 0:
 		t1 = t.ccvalTime[k]
 		q = 4
-	case t.ccvalTime[(k+1) % 16] != 0:
-		t1 = t.ccvalTime[(k+1) % 16]
+	case t.ccvalTime[(k+1) % WCTRMAX] != 0:
+		t1 = t.ccvalTime[(k+1) % WCTRMAX]
 		q = 3
-	case t.ccvalTime[(k+2) % 16] != 0:
-		t1 = t.ccvalTime[(k+2) % 16]
+	case t.ccvalTime[(k+2) % WCTRMAX] != 0:
+		t1 = t.ccvalTime[(k+2) % WCTRMAX]
 		q = 2
 	}
 	if t1 == 0 {

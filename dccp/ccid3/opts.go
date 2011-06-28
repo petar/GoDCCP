@@ -107,7 +107,8 @@ func (opt *LossIntervalsOption) Encode() (*Option, os.Error) {
 type LossInterval struct {
 	LosslessLength uint32 // Lossless Length, a 24-bit number, RFC 4342, Section 8.6.1
 	LossLength     uint32 // Loss Length, a 23-bit number, RFC 4342, Section 8.6.1
-	DataLength     uint32 // Data Length, a 24-bit number, RFC 4342, Section 8.6.1
+	DataLength     uint32 // Data Length, a 24-bit number, RFC 4342, Section 8.6.1.
+	                      // Specifies loss interval's data length, as defined in Section 6.1.1.
 	ECNNonceEcho   bool   // ECN Nonce Echo, RFC 4342, Section 8.6.1
 }
 
