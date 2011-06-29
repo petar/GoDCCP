@@ -1,9 +1,4 @@
 
-[ R—loss ]
-A missing data packet doesn't begin a new loss interval until NDUPACK packets have been seen
-after the "hole", where NDUPACK = 3
-
-
 [ R—feedback ]
 MUST send feedback, if:
 
@@ -60,9 +55,6 @@ A loss interval begins with a lost or ECN-marked data packet; continues with at 
 time's worth of packets that may or may not be lost or marked; and completes with an arbitrarily
 long series of non-dropped, non-marked data packets.
 ¡
-A missing data packet doesn't begin a new loss interval until NDUPACK packets have been seen after
-the "hole", where NDUPACK = 3.
-!
 Loss interval lengths should include data packets and should exclude the acknowledgement packets
 from the reverse half-connection.
 ¡

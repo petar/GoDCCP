@@ -35,6 +35,10 @@ type Header struct {
 	// Error text (in Reset pkts)
 }
 
+const (
+	SEQNOMAX = 2^48 - 1
+)
+
 // Packet types. Stored in the Type field of the generic header.
 // Receivers MUST ignore any packets with reserved type.  That is,
 // packets with reserved type MUST NOT be processed, and they MUST
