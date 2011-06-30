@@ -16,30 +16,15 @@ import (
 type lossEvents struct {
 
 	// pastHeaders keeps track of the last NDUPACK headers to overcome network re-ordering
-	pastHeaders [NDUPACK]*headerEssence
+	pastHeaders [NDUPACK]*dccp.FeedforwardHeader
 
 	// pastIntervals keeps the most recent NINTERVAL finalized loss intervals
 	pastIntervals [NINTERVAL]*LossInterval
 	// nIntervals equals the total number of intervals pushed onto pastIntervals so far
 	nIntervals    int64
 
-	// lossyLen is the length of the lossy part of the current interval, so far.
-	// A value of zero indicates that an interval has not begun yet.
-	lossyLen   int
-	// Sequence number of the first packet in the current loss interval
-	startSeqNo int64
-	// Timestamp of the first packet in the current loss interval
-	startTime  int64
-	// Round-trip time estimate at the beginning of the current loss interval
-	startRTT   int64
-}
-
-type headerEssence struct {
-	Type    byte
-	X       bool
-	SeqNo   int64
-	CCVal   byte
-	Options []*dccp.Options
+	// evolveInterval keeps state of the currently evolving loss interval
+	evolveInterval
 }
 
 const NINTERVAL = 8
@@ -49,33 +34,15 @@ func (t *lossEvents) Init() {
 	?
 }
 
-// onOrderedRead is called after best effort has been made to fix packet 
-// reordering. This function performs tha main loss intervals construction logic.
-//
-// NOTE: This implementation ignores loss events of non-Data or non-DataAck packets,
-// however it includes them in the interval length reports. This significantly simplifies
-// the data structures involved. It is thus imperative that non-data packets are sent
-// much less often than data packets.
-//
-// XXX: It is possible to mend the sequence length overcounts by adding logic that
-// subtracts the count of every successfully received non-data packet from the final
-// sequence lengths.
-func (t *lossEvents) onOrderedRead(he *headerEssence) {
-	if he.Type != dccp.Data && he.Type != dccp.DataAck {
-		return
-	}
-	?
-}
-
 // PushPopHeader places the newly arrived header he into pastHeaders and 
 // returns potentially another header (if available) whose SeqNo is sooner.
 // Every header is returned exactly once.
-func (t *lossEvents) pushPopHeader(he *headerEssence) *headerEssence {
+func (t *lossEvents) pushPopHeader(ff *dccp.FeedforwardHeader) *dccp.FeedforwardHeader {
 	var popSeqNo int64 = dccp.SEQNOMAX+1
 	var pop int
 	for i, ge := range t.pastHeaders {
 		if ge == nil {
-			t.pastHeaders[i] = he
+			t.pastHeaders[i] = ff
 			return nil
 		}
 		if ge.SeqNo < popSeqNo {
@@ -83,21 +50,15 @@ func (t *lossEvents) pushPopHeader(he *headerEssence) *headerEssence {
 		}
 	}
 	r := t.pastHeaders[i]
-	t.pastHeaders[i] = he
+	t.pastHeaders[i] = ff
 	return r
 }
 
 // receiver calls OnRead every time a new packet arrives
-func (t *lossEvents) OnRead(htype byte, x bool, seqno int64, ccval byte, options []*dccp.Option) os.Error {
-	he := t.pushPopHeader(&headerEssence{
-		Type:    htype,
-		X:       x,
-		SeqNo:   seqno,
-		CCVal:   ccval,
-		Options: options,
-	})
-	if he != nil {
-		t.onOrderedRead(he)
+func (t *lossEvents) OnRead(ff *dccp.FeedforwardHeader, rtt int64) os.Error {
+	ff = t.pushPopHeader(ff)
+	if ff != nil {
+		t.evolveInterval.OnRead(ff, rtt)
 	}
 }
 
@@ -135,12 +96,17 @@ func (t *lossEvents) listIntervals() []*LossInterval {
 
 // currentInterval returns a loss interval for the current loss interval
 // if it is considered long enough for inclusion. A nil is returned otherwise.
-func (t *lossEvents) currentInterval() *LossInterval {
-	?
-}
+func (t *lossEvents) currentInterval() *LossInterval { return t.evolveInterval.Option() }
 
 func min64(x, y int64) int64 {
 	if x < y {
+		return x
+	}
+	return y
+}
+
+func max(x, y int) int {
+	if x > y {
 		return x
 	}
 	return y
@@ -158,3 +124,103 @@ func (t *lossEvents) Option() *Option {
 	}
 }
 
+// evolveInterval manages the incremental construction of a loss interval
+type evolveInterval struct {
+
+	// lastSeqNo is the sequence number of the last successfuly received packet
+	lastSeqNo   int64
+
+	// lossLen is the length of the lossy part of the current interval so far, counting all
+	// packet types. A value of zero indicates that an interval has not begun yet.
+	lossLen     int
+
+	// Sequence number of the first packet in the current loss interval
+	startSeqNo  int64
+
+	// Timestamp of the first packet in the current loss interval
+	startTime   int64
+
+	// Round-trip time estimate at the beginning of the current loss interval
+	startRTT    int64
+
+	// losslessLen is the length of the lossless part of the current interval so far, counting
+	// all packet types. A non-zero value indicates that the lossless part has begun.
+	losslessLen int
+
+	// nonDataLen is the number of non-Data or non-DataAck packets successfully received in
+	// the interval starting from startSeqNo up to now
+	nonDataLen  int
+}
+
+func (t *evolveInterval) Init() {
+	t.lastSeqNo = 0 XXX // Should this be reset?
+	t.lossLen = 0
+	t.startSeqNo = 0
+	t.startTime = 0
+	t.startRTT = 0
+	t.losslessLen = 0
+	t.nonDataLen = 0
+}
+
+// OnRead is called after best effort has been made to fix packet 
+// reordering. This function performs tha main loss intervals construction logic.
+//
+// NOTE: This implementation ignores loss events of non-Data or non-DataAck packets,
+// however it includes them in the interval length reports. This significantly simplifies
+// the data structures involved. It is thus imperative that non-data packets are sent
+// much less often than data packets.
+//
+// XXX: It is possible to mend the sequence length overcounts by adding logic that
+// subtracts the count of every successfully received non-data packet from the final
+// sequence lengths.
+func (t *evolveInterval) OnRead(ff *dccp.FeedforwardHeader, rtt int64) {
+
+	// If re-ordering still present, packet must be discarded
+	if ff.SeqNo <= t.lastSeqNo {
+		return
+	}
+	// Number of lost packets between this and the last received packets
+	nLost := int(ff.SeqNo - t.lastSeqNo) - 1
+	t.lastSeqNo = ff.SeqNo
+
+	// Discard non-data packets from loss interval construction,
+	if ff.Type != dccp.Data && ff.Type != dccp.DataAck {
+		// But count the number of non-data packets inside a loss interval
+		if t.lossLen > 0 {
+			t.nonDataLen++
+		}
+		return
+	}
+
+	// If no interval has started yet
+	if t.lossLen == 0 {
+		// Cannot start a loss interval on a succesfully received packet
+		if nLost == 0 {
+			return
+		}
+		?
+	}
+
+	// Otherwise, we are in the middle of an ongoing interval
+	?
+}
+
+// Given a sequence of nLost lost packets, sandwiched by two received packets
+// whose receive times are preFirst and postLast, estimateLostTimes returns the
+// estimated timestamps of the first and last lost packets, assuming a constant
+// time period between pairs of adjacent packets.
+func estimateLostTimes(preFirst, postLast int64, nLost int) (first, last int64) {
+	?
+}
+
+// evolveInterval returns a loss interval option for the current state loss if it is
+// considered long enough for inclusion in feedback to sender. A nil is returned otherwise.
+func (t *evolveInterval) Option() *LossInterval {
+	? // Add condition for including the current loss interval
+	return &LossInterval{
+		LosslessLength: t.losslessLen,
+		LossLength:     t.lossLen,
+		DataLength:     max(1, t.lossLen + t.losslessLen - t.nonDataLen),
+		ECNNonceEcho:   false,
+	}
+}

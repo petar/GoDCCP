@@ -64,7 +64,7 @@ func (scc *fixedRateSenderControl) GetRTT() int64 { return RTT_DEFAULT }
 
 func (scc *fixedRateSenderControl) OnWrite(htype byte, x bool, seqno int64) (ccval byte, options []*Option) { return 0, nil }
 
-func (scc *fixedRateSenderControl) OnRead(htype byte, x bool, seqno int64, options []*Option) os.Error { return nil }
+func (scc *fixedRateSenderControl) OnRead(fb *FeedbackHeader) os.Error { return nil }
 
 func (scc *fixedRateSenderControl) OnIdle() os.Error { return nil }
 
@@ -95,9 +95,7 @@ func (rcc *fixedRateReceiverControl) GetID() byte { return CCID_FIXED }
 
 func (rcc *fixedRateReceiverControl) OnWrite(htype byte, x bool, seqno int64) (options []*Option) { return nil }
 
-func (rcc *fixedRateReceiverControl) OnRead(htype byte, x bool, seqno int64, ccval byte, options []*Option) os.Error {
-	return nil
-}
+func (rcc *fixedRateReceiverControl) OnRead(ff *FeedforwardHeader) os.Error { return nil }
 
 func (rcc *fixedRateReceiverControl) OnIdle() os.Error { return nil }
 

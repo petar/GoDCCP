@@ -64,7 +64,7 @@ func (s *sender) OnWrite(htype byte, x bool, seqno int64) (ccval byte, options [
 // If OnRead returns ErrDrop, the packet will be dropped and no further processing
 // will occur. If OnRead returns ResetError, the connection will be reset.
 // NOTE: If the CC is not active, OnRead MUST return nil.
-func (s *sender) OnRead(htype byte, x bool, seqno int64, options []*dccp.Option) os.Error {
+func (s *sender) OnRead(fb *dccp.FeedbackHeader) os.Error {
 	?
 }
 

@@ -137,7 +137,7 @@ func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) os.Error {
 
 	defer c.syncWithCongestionControl()
 	rsopts := filterCCIDReceiverToSenderOptions(h.Options)
-	if err := c.scc.OnRead(h.Type, h.X, h.SeqNo, rsopts); err != nil {
+	if err := c.scc.OnRead(&FeedbackHeader{ h.Type, h.X, h.SeqNo, rsopts }); err != nil {
 		if re, ok := err.(CongestionReset); ok {
 			c.abortWithUnderLock(re.ResetCode())
 			return ErrDrop
@@ -151,7 +151,7 @@ func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) os.Error {
 		log.Printf("unknown sender cc read event")
 	}
 	sropts := filterCCIDSenderToReceiverOptions(h.Options)
-	if err := c.rcc.OnRead(h.Type, h.X, h.SeqNo, h.CCVal, sropts); err != nil {
+	if err := c.rcc.OnRead(&FeedforwardHeader{ h.Type, h.X, h.SeqNo, h.CCVal, sropts }); err != nil {
 		if re, ok := err.(CongestionReset); ok {
 			c.abortWithUnderLock(re.ResetCode())
 			return ErrDrop

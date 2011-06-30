@@ -64,7 +64,7 @@ type SenderCongestionControl interface {
 	// If OnRead returns ErrDrop, the packet will be dropped and no further processing
 	// will occur. If OnRead returns ResetError, the connection will be reset.
 	// NOTE: If the CC is not active, OnRead MUST return nil.
-	OnRead(htype byte, x bool, seqno int64, options []*Option) os.Error
+	OnRead(fb *FeedbackHeader) os.Error
 
 	// Strobe blocks until a new packet can be sent without violating the
 	// congestion control rate limit. 
@@ -101,13 +101,32 @@ type ReceiverCongestionControl interface {
 	// If OnRead returns ErrDrop, the packet will be dropped and no further processing
 	// will occur. 
 	// NOTE: If the CC is not active, OnRead MUST return nil.
-	OnRead(htype byte, x bool, seqno int64, ccval byte, options []*Option) os.Error
+	OnRead(ff *FeedforwardHeader) os.Error
 
 	// OnIdle behaves identically to the same method of the HC-Sender CCID
 	OnIdle() os.Error
 
 	// Close terminates the half-connection congestion control when it is not needed any longer
 	Close()
+}
+
+// FeedbackHeader encloses the parts of the packet header that
+// are sent by the HC-Receiver and received by the HC-Sender
+type FeedbackHeader struct {
+	Type    byte
+	X       bool
+	SeqNo   int64
+	Options []*Option
+}
+
+// FeedforwardHeader encloses the parts of the packet header that
+// are sent by the HC-Sender and received by the HC-Receiver
+type FeedforwardHeader struct {
+	Type    byte
+	X       bool
+	SeqNo   int64
+	CCVal   byte
+	Options []*Option
 }
 
 type NewSenderCongestionControlFunc func() SenderCongestionControl
@@ -199,13 +218,13 @@ func (a *senderCCActuator) OnWrite(htype byte, x bool, seqno int64) (ccval byte,
 	return a.SenderCongestionControl.OnWrite(htype, x, seqno)
 }
 
-func (a *senderCCActuator) OnRead(htype byte, x bool, seqno int64, options []*Option) os.Error {
+func (a *senderCCActuator) OnRead(fb *FeedbackHeader) os.Error {
 	a.Lock()
 	defer a.Unlock()
 	if a.phase != ACTUATOR_OPEN {
 		return nil
 	}
-	return a.SenderCongestionControl.OnRead(htype, x, seqno, options)
+	return a.SenderCongestionControl.OnRead(fb)
 }
 
 func (a *senderCCActuator) OnIdle() os.Error {
@@ -261,13 +280,13 @@ func (a *receiverCCActuator) OnWrite(htype byte, x bool, seqno int64) (options [
 	return a.ReceiverCongestionControl.OnWrite(htype, x, seqno)
 }
 
-func (a *receiverCCActuator) OnRead(htype byte, x bool, seqno int64, ccval byte, options []*Option) os.Error {
+func (a *receiverCCActuator) OnRead(ff *FeedforwardHeader) os.Error {
 	a.Lock()
 	defer a.Unlock()
 	if a.phase != ACTUATOR_OPEN {
 		return nil
 	}
-	return a.ReceiverCongestionControl.OnRead(htype, x, seqno, ccval, options)
+	return a.ReceiverCongestionControl.OnRead(ff)
 }
 
 func (a *receiverCCActuator) OnIdle() os.Error {

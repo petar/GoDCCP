@@ -56,15 +56,8 @@ Therefore, Loss Intervals options MUST NOT be sent on packets without an Acknowl
 A loss interval begins with a lost or ECN-marked data packet; continues with at most one round-trip
 time's worth of packets that may or may not be lost or marked; and completes with an arbitrarily
 long series of non-dropped, non-marked data packets.
-¡
-
-The lossy and lossless lengths are measured in sequence numbers.  Together, they sum to the
-interval's sequence length, which is the total number of packets the sender transmitted during the
-interval.
-¡
-For all loss intervals except the first, the DATA LENGTH equals the sequence length minus the number
-of non-data packets the sender transmitted during the loss interval, except that the minimum data
-length is one packet.
+!
+test loss.go in isolation
 
 
 
@@ -106,3 +99,10 @@ packet size
 
 Maximum Segment Size (MSS) = the maximum size in bytes for the data segment, not including the
 default DCCP and IP packet headers
+
+
+===========================================================================================
+A lot of calls to time.Nanoseconds() could be sped up by passing around the current time as an
+argument
+
+Fix for circular arithmetic everywhere where SeqNo and AckNo are involved: loss.go, etc.
