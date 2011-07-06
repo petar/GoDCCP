@@ -31,6 +31,7 @@ const NINTERVAL = 8
 
 // Init initializes/resets the lossEvents instance
 func (t *lossEvents) Init() {
+	t.evoleInterval.Init(t.pushInterval)
 	?
 }
 
@@ -98,20 +99,6 @@ func (t *lossEvents) listIntervals() []*LossInterval {
 // if it is considered long enough for inclusion. A nil is returned otherwise.
 func (t *lossEvents) currentInterval() *LossInterval { return t.evolveInterval.Option() }
 
-func min64(x, y int64) int64 {
-	if x < y {
-		return x
-	}
-	return y
-}
-
-func max(x, y int) int {
-	if x > y {
-		return x
-	}
-	return y
-}
-
 // Option returns the Loss Intervals option, representing the current state.
 //
 // NOTE: In a small deviation from the RFC, we don't send any loss intervals
@@ -127,8 +114,21 @@ func (t *lossEvents) Option() *Option {
 // evolveInterval manages the incremental construction of a loss interval
 type evolveInterval struct {
 
+	// push is called whenever an interval is finished
+	push        pushIntervalFunc
+
+	// --- Last received packet state
+
 	// lastSeqNo is the sequence number of the last successfuly received packet
 	lastSeqNo   int64
+
+	// lastTime is the time when the last packet was received
+	lastTime    int64
+
+	// lastRTT is the round-trip time when the last packet was received
+	lastRTT     int64
+
+	// --- Current interval state below
 
 	// lossLen is the length of the lossy part of the current interval so far, counting all
 	// packet types. A value of zero indicates that an interval has not begun yet.
@@ -152,8 +152,17 @@ type evolveInterval struct {
 	nonDataLen  int
 }
 
-func (t *evolveInterval) Init() {
-	t.lastSeqNo = 0 XXX // Should this be reset?
+type pushIntervalFunc func(*LossInterval)
+
+func (t *evolveInterval) Init(push pushIntervalFunc) {
+	t.push = push
+	t.lastSeqNo = 0
+	t.lastTime = 0
+	t.lastRTT = 0
+	t.reset()
+}
+
+func (t *evolveInterval) reset() {
 	t.lossLen = 0
 	t.startSeqNo = 0
 	t.startTime = 0
@@ -182,6 +191,8 @@ func (t *evolveInterval) OnRead(ff *dccp.FeedforwardHeader, rtt int64) {
 	// Number of lost packets between this and the last received packets
 	nLost := int(ff.SeqNo - t.lastSeqNo) - 1
 	t.lastSeqNo = ff.SeqNo
+	t.lastTime = ff.Time
+	t.lastRTT = rtt
 
 	// Discard non-data packets from loss interval construction,
 	if ff.Type != dccp.Data && ff.Type != dccp.DataAck {
@@ -192,12 +203,15 @@ func (t *evolveInterval) OnRead(ff *dccp.FeedforwardHeader, rtt int64) {
 		return
 	}
 
+	XX // noDataLen should be updated after the call to eatTail
+
 	// If no interval has started yet
 	if t.lossLen == 0 {
 		// Cannot start a loss interval on a succesfully received packet
 		if nLost == 0 {
 			return
 		}
+		tail := makeEventTail(t.lastTime, ff.Time, nLost)
 		?
 	}
 
@@ -205,17 +219,67 @@ func (t *evolveInterval) OnRead(ff *dccp.FeedforwardHeader, rtt int64) {
 	?
 }
 
-// Given a sequence of nLost lost packets, sandwiched by two received packets
-// whose receive times are preFirst and postLast, estimateLostTimes returns the
-// estimated timestamps of the first and last lost packets, assuming a constant
-// time period between pairs of adjacent packets.
-func estimateLostTimes(preFirst, postLast int64, nLost int) (first, last int64) {
-	?
+// Updates to t.nonDataLen should happen AFTER the call to eatTail.
+func (t *evolveInterval) eatTail(tail *eventTail) {
+	for tail != nil {
+		// If no interval has started yet
+		if t.lossLen = 0 {
+			// If no losses, then we quit
+			if tail.Lost() == 0 {
+				return
+			}
+			// Otherwise, lossy section becomes a loss interval and
+			// received packet becomes a lossless interval
+			t.startTime, t.startSeqNo = tail.LossInfo(1)
+			t.lossLen, t.startRTT = tail.Lost(), t.lastRTT
+			t.losslessLen = 1
+			t.nonDataLen = 0
+			return
+		} else {
+			// If the tail has no loss events, increase the lossless interval and quit
+			if tail.Lost() == 0 {
+				t.losslessLen++
+				return
+			}
+			// Can we greedily increase the size of the loss section?
+			if lossTime, lossSeqNo, k := tail.LatestLoss(t.startTime+t.startRTT); k > 0 {
+				t.lossLen += t.losslessLen + k
+				t.losslessLen = 0
+				tail.Chop(k)
+				// If the new tail has no loss events, adjust the lossless section and quit
+				if tail.Loss() == 0 {
+					t.losslessLen = 1
+					return
+				}
+				// Otherwise, finish the interval and consume the rest of tail
+			} else {
+			// If not, finish the current interval
+			t.finishInterval()
+		}
+	}
 }
 
-// evolveInterval returns a loss interval option for the current state loss if it is
-// considered long enough for inclusion in feedback to sender. A nil is returned otherwise.
-func (t *evolveInterval) Option() *LossInterval {
+func (t *evolveInterval) finishInterval() {
+	if t.lossLen <= 0 {
+		panic("no interval")
+	}
+	if t.nonDataLen > t.lossLen+t.losslessLen {
+		panic("non-data exceeds sequence length")
+	}
+	t.push(&LossInterval{
+	       LosslessLength: uint32(t.losslessLen),
+	       LossLength:     uint32(t.lossLen),
+	       DataLength:     uint32(t.lossLen+t.losslessLen-t.nonDataLen),
+	       ECNNonceEcho:   false,
+	       })
+	// This indicates that no interval is in progress
+	t.lossLen = 0
+}
+
+// UnfinishedOption returns a loss interval option for the current unfinished loss interval
+// if it is considered long enough for inclusion in feedback to sender. A nil is returned
+// otherwise.
+func (t *evolveInterval) UnfinishedOption() *LossInterval {
 	? // Add condition for including the current loss interval
 	return &LossInterval{
 		LosslessLength: t.losslessLen,
@@ -223,4 +287,90 @@ func (t *evolveInterval) Option() *LossInterval {
 		DataLength:     max(1, t.lossLen + t.losslessLen - t.nonDataLen),
 		ECNNonceEcho:   false,
 	}
+}
+
+// eventTail represents a yet unprocessed sequence of events that begins with a sequence of
+// evenly spaced in time loss events and concludes with a successful receive event.
+//
+//    * <--gap--> X <--gap--> X <--gap--> X <-------> O
+//  prev                                             recv
+//
+// Crucially, we allow prevTime == recvTime for whenever two packets are perceived
+// as being received at the same time.
+type eventTail struct {
+	prevSeqNo int64 // SeqNo of previous event
+	prevTime  int64 // Time of previous event (success or loss)
+	gap       int64 // Time between adjacent loss events
+	recvTime  int64 // Time of receive event
+	nlost     int   // Number of loss events (X's in picture above)
+}
+
+// Init initializes the event tail.
+func (t *eventTail) Init(prevTime, recvTime int64, nlost int, prevSeqNo int64) {
+	if recvTime < prevTime {
+		panic("second receive happens before first")
+	}
+	t.prevSeqNo = prevSeqNo
+	t.prevTime = prevTime
+	t.recvTime = recvTime
+	t.nlost = nlost
+	if nlost == 0 {
+		t.gap = 1
+	} else {
+		t.gap = (recvTime-prevTime) / int64(nlost)
+	}
+}
+
+// Lost returns the number of lost packets in this tail
+func (t *eventTail) Lost() int { return t.nlost }
+
+// LossInfo returns the time and sequence number of the k-th loss event.
+// Loss events are numbered 1,2, ... ,t.Lost()
+func (t *eventTail) LossInfo(k int64) (lossTime int64, lossSeqNo int64) {
+	if k <= 0 {
+		return -1, -1
+	}
+	return t.prevTime + k*t.gap, t.prevSeqNo + k
+}
+
+// LatestLoss returns the identity of the latest loss that occurred BEFORE-or-ON
+// the deadline, as well as the number of loss events that fall within the deadline.
+// The deadline is given in absolute time in nanoseconds. If no eligible loss
+// is available, k equals 0.
+func (t *eventTail) LatestLoss(deadline int64) (lossTime int64, lossSeqNo int64, k int) {
+	d := deadline - t.prevTime
+	if d < 0 || t.nlost == 0 {
+		return -1, -1, 0
+	}
+	var k int64
+	if t.gap == 0 {
+		k = t.nlost
+	} else {
+		k = min64(d/t.gap, t.nlost)
+	}
+	return t.LossInfo(k), k
+}
+
+// Chop removes the first k loss events from t.
+func (t *eventTail) Chop(k int) {
+	if k > t.nlost {
+		panic("chopping more than available")
+	}
+	t.prevSeqNo += int64(k)
+	t.prevTime += int64(k)*t.gap
+	t.nlost -= k
+}
+
+func min64(x, y int64) int64 {
+	if x < y {
+		return x
+	}
+	return y
+}
+
+func max(x, y int) int {
+	if x > y {
+		return x
+	}
+	return y
 }

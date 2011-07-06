@@ -117,6 +117,9 @@ type FeedbackHeader struct {
 	X       bool
 	SeqNo   int64
 	Options []*Option
+
+	// Time when header received
+	Time int64
 }
 
 // FeedforwardHeader encloses the parts of the packet header that
@@ -127,6 +130,9 @@ type FeedforwardHeader struct {
 	SeqNo   int64
 	CCVal   byte
 	Options []*Option
+
+	// Time when header received
+	Time int64
 }
 
 type NewSenderCongestionControlFunc func() SenderCongestionControl
