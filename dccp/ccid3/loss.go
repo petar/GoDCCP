@@ -32,7 +32,7 @@ const NINTERVAL = 8
 // Init initializes/resets the lossEvents instance
 func (t *lossEvents) Init() {
 	t.evoleInterval.Init(t.pushInterval)
-	?
+	XXX
 }
 
 // PushPopHeader places the newly arrived header he into pastHeaders and 
@@ -106,7 +106,7 @@ func (t *lossEvents) currentInterval() *LossInterval { return t.evolveInterval.O
 // this adequately.
 func (t *lossEvents) Option() *Option {
 	return &LossIntervalsOption{
-		SkipLength:    ?,
+		SkipLength:    XXX,
 		LossIntervals: t.listIntervals(),
 	}
 }
@@ -212,14 +212,15 @@ func (t *evolveInterval) OnRead(ff *dccp.FeedforwardHeader, rtt int64) {
 			return
 		}
 		tail := makeEventTail(t.lastTime, ff.Time, nLost)
-		?
+		XXX
 	}
 
 	// Otherwise, we are in the middle of an ongoing interval
-	?
+	XXX
 }
 
-// Updates to t.nonDataLen should happen AFTER the call to eatTail.
+// Updates to t.nonDataLen should happen AFTER the call to eatTail. XXX ???
+// eatTail does not interact with t.lastSeqNo, t.lastTime, or t.lastRTT.
 func (t *evolveInterval) eatTail(tail *eventTail) {
 	for tail != nil {
 		// If no interval has started yet
@@ -280,7 +281,7 @@ func (t *evolveInterval) finishInterval() {
 // if it is considered long enough for inclusion in feedback to sender. A nil is returned
 // otherwise.
 func (t *evolveInterval) UnfinishedOption() *LossInterval {
-	? // Add condition for including the current loss interval
+	XXX // Add condition for including the current loss interval
 	return &LossInterval{
 		LosslessLength: t.losslessLen,
 		LossLength:     t.lossLen,
