@@ -7,6 +7,7 @@ package dccp
 import (
 	"log"
 	"os"
+	"time"
 )
 
 // Step 2, Section 8.5: Check ports and process TIMEWAIT state

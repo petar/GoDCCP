@@ -6,7 +6,6 @@ package ccid3
 
 import (
 	"os"
-	"time"
 	"github.com/petar/GoDCCP/dccp"
 )
 
@@ -20,6 +19,7 @@ type lossEvents struct {
 
 	// pastIntervals keeps the most recent NINTERVAL finalized loss intervals
 	pastIntervals [NINTERVAL]*LossInterval
+
 	// nIntervals equals the total number of intervals pushed onto pastIntervals so far
 	nIntervals    int64
 
@@ -31,12 +31,11 @@ const NINTERVAL = 8
 
 // Init initializes/resets the lossEvents instance
 func (t *lossEvents) Init() {
-	t.evoleInterval.Init(t.pushInterval)
-	XXX
+	t.evolveInterval.Init(func(li *LossInterval) { t.pushInterval(li) })
 }
 
-// PushPopHeader places the newly arrived header he into pastHeaders and 
-// returns potentially another header (if available) whose SeqNo is sooner.
+// pushPopHeader places the newly arrived header ff into pastHeaders and 
+// returns potentially another header (if available) whose SeqNo is no later.
 // Every header is returned exactly once.
 func (t *lossEvents) pushPopHeader(ff *dccp.FeedforwardHeader) *dccp.FeedforwardHeader {
 	var popSeqNo int64 = dccp.SEQNOMAX+1
@@ -46,12 +45,14 @@ func (t *lossEvents) pushPopHeader(ff *dccp.FeedforwardHeader) *dccp.Feedforward
 			t.pastHeaders[i] = ff
 			return nil
 		}
+		// TODO: This must employ circular comparison
 		if ge.SeqNo < popSeqNo {
 			pop = i
+			popSeqNo = ge.SeqNo
 		}
 	}
-	r := t.pastHeaders[i]
-	t.pastHeaders[i] = ff
+	r := t.pastHeaders[pop]
+	t.pastHeaders[pop] = ff
 	return r
 }
 
@@ -61,19 +62,20 @@ func (t *lossEvents) OnRead(ff *dccp.FeedforwardHeader, rtt int64) os.Error {
 	if ff != nil {
 		t.evolveInterval.OnRead(ff, rtt)
 	}
+	return nil
 }
 
 // pushInterval saves li as the most recent finalized loss interval
 func (t *lossEvents) pushInterval(li *LossInterval) {
-	t.pastIntervals[int(t.nIntervals % len(t.pastIntervals))] = li
+	t.pastIntervals[int(t.nIntervals % int64(len(t.pastIntervals)))] = li
 	t.nIntervals++
 }
 
-// listIntervals lists the available finalized loss from most recent to least
+// listIntervals lists the available finalized loss intervals from most recent to least
 func (t *lossEvents) listIntervals() []*LossInterval {
 
 	l := len(t.pastIntervals)
-	k = int(min64(t.nIntervals, int64(l)))
+	k := int(min64(t.nIntervals, int64(l)))
 	first := t.currentInterval()
 	if first != nil {
 		k++
@@ -97,16 +99,17 @@ func (t *lossEvents) listIntervals() []*LossInterval {
 
 // currentInterval returns a loss interval for the current loss interval
 // if it is considered long enough for inclusion. A nil is returned otherwise.
-func (t *lossEvents) currentInterval() *LossInterval { return t.evolveInterval.Option() }
+func (t *lossEvents) currentInterval() *LossInterval { return t.evolveInterval.Unfinished() }
 
 // Option returns the Loss Intervals option, representing the current state.
 //
 // NOTE: In a small deviation from the RFC, we don't send any loss intervals
 // before the first loss event has occured. The sender is supposed to handle
 // this adequately.
-func (t *lossEvents) Option() *Option {
+func (t *lossEvents) Option() *LossIntervalsOption {
 	return &LossIntervalsOption{
-		SkipLength:    XXX,
+		// NOTE: We don't support SkipLength currently
+		SkipLength:    0,
 		LossIntervals: t.listIntervals(),
 	}
 }
@@ -224,7 +227,7 @@ func (t *evolveInterval) OnRead(ff *dccp.FeedforwardHeader, rtt int64) {
 func (t *evolveInterval) eatTail(tail *eventTail) {
 	for tail != nil {
 		// If no interval has started yet
-		if t.lossLen = 0 {
+		if t.lossLen == 0 {
 			// If no losses, then we quit
 			if tail.Lost() == 0 {
 				return
@@ -242,17 +245,17 @@ func (t *evolveInterval) eatTail(tail *eventTail) {
 				return
 			}
 			// Can we greedily increase the size of the loss section?
-			if lossTime, lossSeqNo, k := tail.LatestLoss(t.startTime+t.startRTT); k > 0 {
+			if _, _, k := tail.LatestLoss(t.startTime+t.startRTT); k > 0 {
 				t.lossLen += t.losslessLen + k
 				t.losslessLen = 0
 				tail.Chop(k)
 				// If the new tail has no loss events, adjust the lossless section and quit
-				if tail.Loss() == 0 {
+				if tail.Lost() == 0 {
 					t.losslessLen = 1
 					return
 				}
 				// Otherwise, finish the interval and consume the rest of tail
-			} else {
+			}
 			// If not, finish the current interval
 			t.finishInterval()
 		}
@@ -268,16 +271,16 @@ func (t *evolveInterval) finishInterval() {
 	       LossLength:     uint32(t.lossLen),
 	       DataLength:     uint32(max(1, t.lossLen+t.losslessLen)),  // TODO: We don't count non-data packets yet
 	       ECNNonceEcho:   false,
-	       })
+	})
 	// This indicates that no interval is in progress
 	t.lossLen = 0
 }
 
-// UnfinishedOption returns a loss interval option for the current unfinished loss interval
+// Unfinished returns a loss interval option for the current unfinished loss interval
 // if it is considered long enough for inclusion in feedback to sender. A nil is returned
 // otherwise.
-func (t *evolveInterval) UnfinishedOption() *LossInterval {
-	if t.lossLen == 0 || t.lastTime - t.startTime < 3*t.startRTT {
+func (t *evolveInterval) Unfinished() *LossInterval {
+	if t.lossLen == 0 || t.lastTime - t.startTime < 2*t.startRTT {
 		return nil
 	}
 	return &LossInterval{
@@ -341,13 +344,15 @@ func (t *eventTail) LatestLoss(deadline int64) (lossTime int64, lossSeqNo int64,
 	if d < 0 || t.nlost == 0 {
 		return -1, -1, 0
 	}
-	var k int64
+	var k64 int64
 	if t.gap == 0 {
-		k = t.nlost
+		k64 = int64(t.nlost)
 	} else {
-		k = min64(d/t.gap, t.nlost)
+		k64 = min64(d/t.gap, int64(t.nlost))
 	}
-	return t.LossInfo(k), k
+	lossTime, lossSeqNo = t.LossInfo(k64)
+	// TODO: Handle case when k overflows the int type
+	return lossTime, lossSeqNo, int(k64)
 }
 
 // Chop removes the first k loss events from t.

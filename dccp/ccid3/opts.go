@@ -4,7 +4,10 @@
 
 package ccid3
 
-import "os"
+import (
+	"os"
+	"github.com/petar/GoDCCP/dccp"
+)
 
 // CCID3-specific options
 const (
@@ -21,17 +24,17 @@ type LossEventRateOption struct {
 
 const UnknownLossEventRate = 2 ^ 32 - 1
 
-func DecodeLossEventRateOption(opt *Option) *LossEventRateOption {
+func DecodeLossEventRateOption(opt *dccp.Option) *LossEventRateOption {
 	if opt.Type != OptionLossEventRate || len(opt.Data) != 4 {
 		return nil
 	}
-	return &LossEventRateOption{RateInv: Decode4ByteUint(opt.Data[0:4])}
+	return &LossEventRateOption{RateInv: dccp.Decode4ByteUint(opt.Data[0:4])}
 }
 
-func (opt *LossEventRateOption) Encode() (*Option, os.Error) {
+func (opt *LossEventRateOption) Encode() (*dccp.Option, os.Error) {
 	d := make([]byte, 4)
-	Encode4ByteUint(opt.RateInv, d)
-	return &Option{
+	dccp.Encode4ByteUint(opt.RateInv, d)
+	return &dccp.Option{
 		Type:      OptionLossEventRate,
 		Data:      d,
 		Mandatory: false,
@@ -58,7 +61,7 @@ const (
 	lossIntervalFootprint = 9
 )
 
-func DecodeLossIntervalsOption(opt *Option) *LossIntervalsOption {
+func DecodeLossIntervalsOption(opt *dccp.Option) *LossIntervalsOption {
 	if opt.Type != OptionLossIntervals || len(opt.Data) < 1 {
 		return nil
 	}
@@ -66,7 +69,7 @@ func DecodeLossIntervalsOption(opt *Option) *LossIntervalsOption {
 	if k > MaxLossIntervals || r != 0 {
 		return nil
 	}
-	skip := Decode1ByteUint(opt.Data[0:1])
+	skip := dccp.Decode1ByteUint(opt.Data[0:1])
 	intervals := make([]*LossInterval, k)
 	for i := 0; i < k; i++ {
 		start := 1 + lossIntervalFootprint*i
@@ -81,22 +84,22 @@ func DecodeLossIntervalsOption(opt *Option) *LossIntervalsOption {
 	}
 }
 
-func (opt *LossIntervalsOption) Encode() (*Option, os.Error) {
+func (opt *LossIntervalsOption) Encode() (*dccp.Option, os.Error) {
 	if opt.SkipLength > NDUPACK {
-		return nil, ErrOverflow
+		return nil, dccp.ErrOverflow
 	}
 	if len(opt.LossIntervals) > MaxLossIntervals {
-		return nil, ErrOverflow
+		return nil, dccp.ErrOverflow
 	}
 	d := make([]byte, 1+lossIntervalFootprint*len(opt.LossIntervals))
-	Encode1ByteUint(opt.SkipLength, d[0:1])
+	dccp.Encode1ByteUint(opt.SkipLength, d[0:1])
 	for i, lossInterval := range opt.LossIntervals {
 		j := 1 + i*lossIntervalFootprint
 		if lossInterval.encode(d[j:j+lossIntervalFootprint]) != nil {
 			return nil, nil
 		}
 	}
-	return &Option{
+	return &dccp.Option{
 		Type:      OptionLossIntervals,
 		Data:      d,
 		Mandatory: false,
@@ -116,32 +119,32 @@ const _24thBit = 1 << 23
 
 func (li *LossInterval) encode(p []byte) os.Error {
 	if len(p) != 9 {
-		return ErrSize
+		return dccp.ErrSize
 	}
-	if !FitsIn3Bytes(uint64(li.LosslessLength)) ||
-		!fitsIn23Bits(uint64(li.LossLength)) ||
-		!FitsIn3Bytes(uint64(li.DataLength)) {
-		return ErrOverflow
+	if !dccp.FitsIn3Bytes(uint64(li.LosslessLength)) ||
+		!dccp.FitsIn23Bits(uint64(li.LossLength)) ||
+		!dccp.FitsIn3Bytes(uint64(li.DataLength)) {
+		return dccp.ErrOverflow
 	}
 
-	Encode3ByteUint(li.LosslessLength, p[0:3])
+	dccp.Encode3ByteUint(li.LosslessLength, p[0:3])
 	l := li.LossLength
 	if li.ECNNonceEcho {
 		l |= _24thBit
 	}
-	Encode3ByteUint(l, p[3:6])
-	Encode3ByteUint(li.DataLength, p[6:9])
+	dccp.Encode3ByteUint(l, p[3:6])
+	dccp.Encode3ByteUint(li.DataLength, p[6:9])
 
 	return nil
 }
 
 func decodeLossInterval(p []byte) *LossInterval {
 	li := &LossInterval{}
-	li.LosslessLength = Decode3ByteUint(p[0:3])
-	li.LossLength = Decode3ByteUint(p[3:6])
+	li.LosslessLength = dccp.Decode3ByteUint(p[0:3])
+	li.LossLength = dccp.Decode3ByteUint(p[3:6])
 	li.ECNNonceEcho = (li.LossLength&_24thBit != 0)
 	li.LossLength &= ^uint32(_24thBit)
-	li.DataLength = Decode3ByteUint(p[6:9])
+	li.DataLength = dccp.Decode3ByteUint(p[6:9])
 	return li
 }
 
@@ -151,17 +154,17 @@ type ReceiveRateOption struct {
 	Rate uint32 // in bytes per second
 }
 
-func DecodeReceiveRateOption(opt *Option) *ReceiveRateOption {
+func DecodeReceiveRateOption(opt *dccp.Option) *ReceiveRateOption {
 	if opt.Type != OptionReceiveRate || len(opt.Data) != 4 {
 		return nil
 	}
-	return &ReceiveRateOption{Rate: Decode4ByteUint(opt.Data[0:4])}
+	return &ReceiveRateOption{Rate: dccp.Decode4ByteUint(opt.Data[0:4])}
 }
 
-func (opt *ReceiveRateOption) Encode() (*Option, os.Error) {
+func (opt *ReceiveRateOption) Encode() (*dccp.Option, os.Error) {
 	d := make([]byte, 4)
-	Encode4ByteUint(opt.Rate, d)
-	return &Option{
+	dccp.Encode4ByteUint(opt.Rate, d)
+	return &dccp.Option{
 		Type:      OptionReceiveRate,
 		Data:      d,
 		Mandatory: false,

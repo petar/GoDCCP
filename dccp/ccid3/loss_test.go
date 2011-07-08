@@ -5,10 +5,70 @@
 package ccid3
 
 import (
-	"rand"
+	//"fmt"
+	//"rand"
 	"testing"
+	"github.com/petar/GoDCCP/dccp"
 )
 
+type ffRateMaker struct {
+	gap int64  // time between adjacent packets
+	ppr int64  // packets per rtt
+	t   int64  // time counter
+	s   int64  // sequence number counter
+}
+
+func (rm *ffRateMaker) Init(gap int64, ppr int64) {
+	rm.gap = gap
+	rm.ppr = ppr
+	rm.t = 1e11
+	rm.s = 20000
+}
+
+func (rm *ffRateMaker) RTT() int64 { return rm.gap * rm.ppr }
+
+func (rm *ffRateMaker) PPR() int64 { return rm.ppr }
+
+func (rm *ffRateMaker) Next() *dccp.FeedforwardHeader {
+	ff := &dccp.FeedforwardHeader{
+		Type:    dccp.Data,
+		X:       true,
+		SeqNo:   rm.s,
+		CCVal:   0,
+		Options: nil,
+		Time:    rm.t,
+	}
+	rm.s++
+	rm.t += rm.gap
+	return ff
+}
+
 func TestLossEvents(t *testing.T) {
-	?
+	var le lossEvents
+	le.Init()
+
+	var rm ffRateMaker
+	rm.Init(1e10, 10)
+	
+	le.OnRead(rm.Next(), rm.RTT())
+	for q := 0; q < 10; q++ {
+		// Drop first packet
+		rm.Next()
+		for i := 0; i < 3*int(rm.PPR()); i++ {
+			le.OnRead(rm.Next(), rm.RTT())
+		}
+		un := le.currentInterval()
+		if un == nil {
+			t.Errorf("expecting non-nil current interval")
+		}
+		expLossLen := uint32(1)
+		expLosslessLen := uint32(3*int(rm.PPR())-NDUPACK)
+		expDataLen := expLossLen + expLosslessLen
+		if un.LossLength != expLossLen || un.LosslessLength != expLosslessLen || un.DataLength != expDataLen {
+			t.Errorf("expect %d,%d,%d; got %d,%d,%d", 
+				 expLossLen, expLosslessLen, expDataLen,
+				 un.LossLength, un.LosslessLength, un.DataLength)
+		}
+		// fmt.Printf("%d —— %d == %d\n", un.LossLength, un.LosslessLength, un.DataLength)
+	}
 }

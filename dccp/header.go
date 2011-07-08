@@ -36,7 +36,7 @@ type Header struct {
 }
 
 const (
-	SEQNOMAX = 2^48 - 1
+	SEQNOMAX = (2 << 48) - 1
 )
 
 // Packet types. Stored in the Type field of the generic header.

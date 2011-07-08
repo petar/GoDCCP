@@ -126,7 +126,7 @@ func FitsIn3Bytes(x uint64) bool { return x>>24 == 0 }
 
 func FitsIn4Bytes(x uint64) bool { return x>>32 == 0 }
 
-func fitsIn23Bits(x uint64) bool { return x>>23 == 0 }
+func FitsIn23Bits(x uint64) bool { return x>>23 == 0 }
 
 func assertFitsIn2Bytes(x uint64) {
 	if !FitsIn2Bytes(x) {
