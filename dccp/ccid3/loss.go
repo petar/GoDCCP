@@ -139,13 +139,13 @@ func (t *lossEvents) Option() *LossIntervalsOption {
 
 // Loss event rate calculation
 
-// lossEventRate computes the average loss interval mean, RFC 5348, Section 5.4
+// lossEventRateInv computes the inverse of the loss event rate, RFC 5348, Section 5.4.
 // NOTE: We currently don't use the alternative algorithm, called History Discounting,
 // discussed in RFC 5348, Section 5.5
-func lossEventRate(h []*LossInterval, nInterval int) float64 {
+func lossEventRateInv(h []*LossInterval, nInterval int) uint32 {
 	k := max(len(h), nInterval)
 	if k < 2 {
-		return math.NaN()
+		return UnknownLossEventRate
 	}
 
 	// Directly from the RFC
@@ -163,7 +163,7 @@ func lossEventRate(h []*LossInterval, nInterval int) float64 {
 	I_tot := math.Fmax(I_tot0, I_tot1)
 	I_mean := I_tot / W_tot
 
-	return 1.0 / I_mean
+	return uint32(I_mean)
 }
 
 func intervalWeight(i, nInterval int) float64 {
