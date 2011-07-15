@@ -5,9 +5,7 @@
 package ccid3
 
 import (
-	"os"
 	"time"
-	"github.com/petar/GoDCCP/dccp"
 )
 
 // rttReceiver is the data structure that estimates the RTT at the receiver end.
@@ -58,7 +56,7 @@ func (t *rttReceiver) OnRead(ccval byte) {
 		t.ccvalTime[ccval] = now
 	} else {
 		t.ccvalNow = ccval
-		for i := 0; lessModWCTRMAX(ccval, (ccval+i) % WCTRMAX); i++ {
+		for i := byte(0); lessModWCTRMAX(ccval, (ccval+i) % WCTRMAX); i++ {
 			t.ccvalTime[(ccval+i) % WCTRMAX] = 0
 		}
 	}
@@ -108,5 +106,5 @@ func (t *rttReceiver) RTT() int64 {
 
 // rttSender is the data structure that estimates the RTT at the sender end.
 type rttSender struct {
-	?
+	// XXX
 }

@@ -5,10 +5,7 @@
 package ccid3
 
 import (
-	"math"
-	"os"
 	"time"
-	"github.com/petar/GoDCCP/dccp"
 )
 
 // windowCounter maintains the window counter (WC) logic of the sender.
@@ -34,7 +31,7 @@ func (wc *windowCounter) Take(rtt int64) byte {
 	now := time.Nanoseconds()
 	quarterRTTs := (now - wc.lastTime) / (rtt / 4)
 	if quarterRTTs > 0 {
-		wc.last = (wc.last + byte(min64(quarter_RTTs, 5))) % WCTRMAX
+		wc.last = (wc.last + byte(min64(quarterRTTs, 5))) % WCTRMAX
 		wc.lastTime = now
 	}
 	return wc.last
@@ -55,11 +52,4 @@ const WCTRHALF = (WCTRMAX / 2) + (WCTRMAX & 0x1)
 
 func lessModWCTRMAX(x, y byte) bool {
 	return (y-x) % WCTRMAX < WCTRHALF
-}
-
-func min64(x, y int64) int64 {
-	if x < y {
-		return x
-	}
-	return y
 }

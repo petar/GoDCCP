@@ -43,6 +43,29 @@ func (rm *ffRateMaker) Next() *dccp.FeedforwardHeader {
 	return ff
 }
 
+type intervalHistory struct {
+	h []*LossInterval
+}
+
+func (h *intervalHistory) Add(i *LossInterval) {
+	h.h = append(h.h, i)
+}
+
+func (h *intervalHistory) Check(tail []*LossInterval) bool {
+	if len(tail) > len(h.h) {
+		return false
+	}
+	for i, g := range tail {
+		j := len(h.h)-1-i
+		if g.LossLength != h.h[j].LossLength ||
+			g.LosslessLength != h.h[j].LosslessLength ||
+			g.DataLength != h.h[j].DataLength {
+			return false
+		}
+	}
+	return true
+}
+
 func TestLossEvents(t *testing.T) {
 	var le lossEvents
 	le.Init()
@@ -50,17 +73,26 @@ func TestLossEvents(t *testing.T) {
 	var rm ffRateMaker
 	rm.Init(1e10, 10)
 	
+	var h intervalHistory
 	le.OnRead(rm.Next(), rm.RTT())
 	for q := 0; q < 10; q++ {
-		// Drop first packet
+		for i := 0; i < NDUPACK; i++ {
+			le.OnRead(rm.Next(), rm.RTT())
+		}
+
 		rm.Next()
+
 		for i := 0; i < 3*int(rm.PPR()); i++ {
 			le.OnRead(rm.Next(), rm.RTT())
 		}
+
+		?
+
 		un := le.currentInterval()
 		if un == nil {
 			t.Errorf("expecting non-nil current interval")
 		}
+
 		expLossLen := uint32(1)
 		expLosslessLen := uint32(3*int(rm.PPR())-NDUPACK)
 		expDataLen := expLossLen + expLosslessLen

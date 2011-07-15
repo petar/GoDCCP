@@ -1,7 +1,5 @@
-
 [ R—feedback ]
 MUST send feedback, if:
-
 
 [ R—feedback—lossrate ]
 A newly calculated loss event rate p is greater than its previous value
@@ -9,14 +7,6 @@ A newly calculated loss event rate p is greater than its previous value
 
 [ R—feedback—timer ]
 The feedback timer expires and data packets have been received since the previous feedback was sent
-
-
-[ R—feedback—timer-via-time ]
-When the feedback timer expires, the receiver resets the timer to expire after R_m seconds, where
-R_m is the most recent estimate of the round-trip time received from the sender.
-¡
-We suggest estimating the round-trip time from the most recent data packet. Note that this procedure
-does not work when the inter-packet sending times are greater than the RTT.
 
 
 [ R—feedback—timer-via-ccval ]
@@ -32,16 +22,6 @@ last_counter + 4, then the receiver sends a new feedback packet.
 An Elapsed Time and/or Timestamp Echo option specifying the amount of time elapsed since the arrival
 at the receiver of the packet whose sequence number appears in the Acknowledgement Number field.
 These options are described in [RFC4340], Section 13.
-¡
-A Receive Rate option, defined in Section 8.3, specifying the rate at which data was received since
-the last DCCP-Ack was sent.
-¡
-A Loss Intervals option, defined in Section 8.6, specifying the most recent loss intervals
-experienced by the receiver.  (The definition of a loss interval is provided below.)  From Loss
-Intervals, the sender can easily calculate the loss event rate p using the procedure described in
-[RFC3448], Section 5.4.
-
-
 
 
 [ R—loss ]
@@ -52,17 +32,6 @@ been received.
 ¡
 Loss interval sequence numbers are delta encoded starting from the Acknowledgement Number.
 Therefore, Loss Intervals options MUST NOT be sent on packets without an Acknowledgement Number
-¡
-A loss interval begins with a lost or ECN-marked data packet; continues with at most one round-trip
-time's worth of packets that may or may not be lost or marked; and completes with an arbitrarily
-long series of non-dropped, non-marked data packets.
-!
-test loss.go in isolation
-
-
-
-
-
 
 
 
@@ -102,6 +71,10 @@ default DCCP and IP packet headers
 
 
 ===========================================================================================
+Ask Eddie about SkipLength
+
+Add backup RTT calculation in receiver based on Timestamps
+
 A lot of calls to time.Nanoseconds() could be sped up by passing around the current time as an
 argument
 

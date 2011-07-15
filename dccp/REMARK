@@ -1,4 +1,6 @@
 
+* replace all time.Nanoseconds() with func args?
+
 * Reliable transport
 * test reliable transport (simulated drops)
 

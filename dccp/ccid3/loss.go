@@ -6,8 +6,44 @@ package ccid3
 
 import (
 	"os"
+	"math"
 	"github.com/petar/GoDCCP/dccp"
 )
+
+// intervalHistory is a data structure that keeps track of a limited number of past lost
+// events and computes loss event rate estimates based on those.
+type intervalHistory struct {
+
+	// pastIntervals keeps the most recent NINTERVAL finalized loss intervals
+	pastIntervals [NINTERVAL]*LossInterval
+
+	// nIntervals equals the total number of intervals pushed onto pastIntervals so far
+	nIntervals    int64
+}
+
+const NINTERVAL = 8
+
+// Init initializes or resets the data structure
+func (h *intervalHistory) Init() {
+	h.nIntervals = 0
+}
+
+// pushInterval saves li as the most recent finalized loss interval
+func (h *intervalHistory) Push(li *LossInterval) {
+	h.pastIntervals[int(h.nIntervals % int64(len(h.pastIntervals)))] = li
+	h.nIntervals++
+}
+
+// Len returns the number of intervals in the history
+func (h *intervalHistory) Len() int {
+	return int(min64(h.nIntervals, int64(len(h.pastIntervals))))
+}
+
+// Get returns the i-th element in the history. The 0-th element is the most recent.
+func (h *intervalHistory) Get(i int) *LossInterval {
+	l := int64(len(h.pastIntervals))
+	return h.pastIntervals[int((h.nIntervals-1-int64(i)) % l)]
+}
 
 
 // lossEvents is the algorithm that keeps track of loss events and constructs the
@@ -17,21 +53,17 @@ type lossEvents struct {
 	// pastHeaders keeps track of the last NDUPACK headers to overcome network re-ordering
 	pastHeaders [NDUPACK]*dccp.FeedforwardHeader
 
-	// pastIntervals keeps the most recent NINTERVAL finalized loss intervals
-	pastIntervals [NINTERVAL]*LossInterval
-
-	// nIntervals equals the total number of intervals pushed onto pastIntervals so far
-	nIntervals    int64
+	// intervalHistory keeps a moving tail of the past few loss intervals
+	intervalHistory
 
 	// evolveInterval keeps state of the currently evolving loss interval
 	evolveInterval
 }
 
-const NINTERVAL = 8
-
 // Init initializes/resets the lossEvents instance
 func (t *lossEvents) Init() {
-	t.evolveInterval.Init(func(li *LossInterval) { t.pushInterval(li) })
+	t.intervalHistory.Init()
+	t.evolveInterval.Init(func(li *LossInterval) { t.intervalHistory.Push(li) })
 }
 
 // pushPopHeader places the newly arrived header ff into pastHeaders and 
@@ -65,35 +97,26 @@ func (t *lossEvents) OnRead(ff *dccp.FeedforwardHeader, rtt int64) os.Error {
 	return nil
 }
 
-// pushInterval saves li as the most recent finalized loss interval
-func (t *lossEvents) pushInterval(li *LossInterval) {
-	t.pastIntervals[int(t.nIntervals % int64(len(t.pastIntervals)))] = li
-	t.nIntervals++
-}
-
 // listIntervals lists the available finalized loss intervals from most recent to least
 func (t *lossEvents) listIntervals() []*LossInterval {
-
-	l := len(t.pastIntervals)
-	k := int(min64(t.nIntervals, int64(l)))
+	k := t.intervalHistory.Len()
 	first := t.currentInterval()
 	if first != nil {
 		k++
 	}
 
-	// OPT: This slice allocation can be avoided by using a fixed instance
+	// OPT: This slice allocation can be avoided by using a field instance
 	r := make([]*LossInterval, k)
 
-	var i int
+	var j int
 	if first != nil {
 		r[0] = first
-		i++
+		j++
 	}
-	p := int(t.nIntervals % int64(l)) + l
-	for ; i < k; i++ {
-		p--
-		r[i] = t.pastIntervals[p % l]
+	for i := 0; i < k; i++ {
+		r[i+j] = t.intervalHistory.Get(i)
 	}
+
 	return r
 }
 
@@ -108,11 +131,48 @@ func (t *lossEvents) currentInterval() *LossInterval { return t.evolveInterval.U
 // this adequately.
 func (t *lossEvents) Option() *LossIntervalsOption {
 	return &LossIntervalsOption{
-		// NOTE: We don't support SkipLength currently
+		// NOTE: We don't support (ignore) SkipLength currently
 		SkipLength:    0,
 		LossIntervals: t.listIntervals(),
 	}
 }
+
+// Loss event rate calculation
+
+// lossEventRate computes the average loss interval mean, RFC 5348, Section 5.4
+// NOTE: We currently don't use the alternative algorithm, called History Discounting,
+// discussed in RFC 5348, Section 5.5
+func lossEventRate(h []*LossInterval, nInterval int) float64 {
+	k := max(len(h), nInterval)
+	if k < 2 {
+		return math.NaN()
+	}
+
+	// Directly from the RFC
+	var I_tot0 float64 = 0
+	var I_tot1 float64 = 0
+	var W_tot float64 = 0
+	for i := 0; i <= k-1; i++ {
+		w_i := intervalWeight(i, nInterval)
+		I_tot0 += float64(h[i].SeqLen()) * w_i
+		W_tot += w_i
+	}
+	for i := 1; i <= k; i++ {
+		I_tot1 += float64(h[i].SeqLen()) * intervalWeight(i-1, nInterval)
+	}
+	I_tot := math.Fmax(I_tot0, I_tot1)
+	I_mean := I_tot / W_tot
+
+	return 1.0 / I_mean
+}
+
+func intervalWeight(i, nInterval int) float64 {
+	if i < nInterval / 2 {
+		return 1.0
+	}
+	return 2.0 * float64(nInterval-i) / float64(nInterval+2)
+}
+
 
 // evolveInterval manages the incremental construction of a loss interval
 type evolveInterval struct {

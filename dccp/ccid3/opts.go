@@ -16,6 +16,19 @@ const (
 	OptionReceiveRate   = 194
 )
 
+// Unencoded option is a type that knows how to encode itself into a dccp.Option
+type UnencodedOption interface {
+	Encode() (*dccp.Option, os.Error)
+}
+
+func encodeOption(u UnencodedOption) *dccp.Option {
+	opt, err := u.Encode()
+	if err != nil {
+		panic("problem encoding unencoded option")
+	}
+	return opt
+}
+
 // RFC 4342, Section 8.5
 type LossEventRateOption struct {
 	// RateInv is the inverse of the loss event rate, rounded UP, as calculated by the receiver
@@ -116,6 +129,11 @@ type LossInterval struct {
 }
 
 const _24thBit = 1 << 23
+
+// SeqLen returns the sequence length of the loss interval
+func (li *LossInterval) SeqLen() uint32 {
+	return li.LosslessLength + li.LossLength
+}
 
 func (li *LossInterval) encode(p []byte) os.Error {
 	if len(p) != 9 {

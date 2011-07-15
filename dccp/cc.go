@@ -125,6 +125,8 @@ type FeedbackHeader struct {
 // FeedforwardHeader encloses the parts of the packet header that
 // are sent by the HC-Sender and received by the HC-Receiver
 type FeedforwardHeader struct {
+
+	// These fields are copied directly from the header
 	Type    byte
 	X       bool
 	SeqNo   int64
@@ -132,7 +134,10 @@ type FeedforwardHeader struct {
 	Options []*Option
 
 	// Time when header received
-	Time int64
+	Time    int64
+
+	// Length of application data in bytes
+	DataLen int
 }
 
 type NewSenderCongestionControlFunc func() SenderCongestionControl
