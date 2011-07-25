@@ -28,6 +28,11 @@ type receiver struct {
 	// The following fields are used to compute ElapsedTime options
 	gsr                  int64    // Greatest sequence number of packet received via OnRead
 	gsrTimestamp         int64    // Timestamp of packet with greatest sequence number received via OnRead
+
+	// The greatest received value of the window counter since the last feedback message was sent
+	lastCCVal            byte
+	// The window counter of the latest received packet. Used internally to update lastCCVal.
+	latestCCVal          byte
 }
 
 // GetID() returns the CCID of this congestion control algorithm
@@ -52,6 +57,9 @@ func (r *receiver) Open() {
 
 	r.gsr = 0
 	r.gsrTimestamp = 0
+
+	r.lastCCVal = 0
+	r.latestCCVal = 0
 }
 
 func (r *receiver) makeElapsedTimeOption(ackNo int64, now int64) *dccp.ElapsedTimeOption {
@@ -82,6 +90,7 @@ func (r *receiver) OnWrite(htype byte, x bool, seqno, ackno int64) (options []*d
 		r.lastAck = now
 		r.dataSinceAck = false
 		r.lastLossEventRateInv = r.lossEvents.LossEventRateInv()
+		r.lastCCVal = r.latestCCVal
 
 		// Prepare feedback options
 		opts := make([]*dccp.Option, 3)
@@ -111,12 +120,31 @@ func (r *receiver) OnRead(ff *dccp.FeedforwardHeader) os.Error {
 	if !r.open {
 		return nil
 	}
+
 	if ff.Type == Data || ff.Type == DataAck {
 		r.dataSinceAck = true
+		r.latestCCVal = ff.CCVal
 	}
 	r.rttReceiver.OnRead(ff.CCVal)
 	r.receiveRate.OnRead(ff)
 	r.lossEvents.OnRead(ff, r.rttReceiver.RTT())
+
+	// Determine if feedback should be sent:
+
+	// (Feedback-Condition-II) If the current calculated loss event rate is greater than its
+	// previous value
+	if r.lossEvents.LossEventRateInv() < r.lastLossEventRateInv {
+		return dccp.CongestionAck
+	}
+
+	// (Feedback-Condition-III) If receive window counter increases by 4 or more on a data
+	// packet, since last time feedback was sent
+	if ff.Type == Data || ff.Type == DataAck {
+		if !lessModWCTRMAX(ff.CCVal, r.lastCCVal+4) {
+			return dccp.CongestionAck
+		}
+	}
+
 	return nil
 }
 
@@ -127,19 +155,14 @@ func (r *receiver) OnIdle() os.Error {
 	if !r.open {
 		return nil
 	}
+
 	// Determine if an Ack packet should be sent:
 
-	// (a) If one (estimated) RTT time has expired since last Ack AND data packets have been
-	// received in the meantime
+	// (Feedback-Condition-I) If one (estimated) round-trip time time has expired since last Ack
+	// AND data packets have been received in the meantime
 	if r.dataSinceAck && time.Nanoseconds() - r.lastWrite > r.rttReceiver.RTT() {
 		return dccp.CongestionAck
 	}
-
-	// (b) If the current calculated loss event rate is greater than its previous value
-	?
-
-	// (c)
-	?
 
 	return nil
 }
