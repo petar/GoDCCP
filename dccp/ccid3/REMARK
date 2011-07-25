@@ -3,28 +3,18 @@ Receiver:
 
 * MUST send feedback, if:
 
-	* A newly calculated loss event rate p is greater than its previous value
+	* (onidle) A newly calculated loss event rate p is greater than its previous value
 
-	* The feedback timer expires and data packets have been received since the previous feedback was sent
+	* (onidle) The feedback timer expires and data packets have been received since the previous feedback was sent
 
 
-	* Whenever the receiver sends a feedback message, the receiver sets a local variable last_counter to
+	* (onidle) Whenever the receiver sends a feedback message, the receiver sets a local variable last_counter to
 	the greatest received value of the window counter since the last feedback message was sent, if any
 	data packets have been received since the last feedback message was sent.
 	
 	If the receiver receives a data packet with a window counter value greater than or equal to
 	last_counter + 4, then the receiver sends a new feedback packet.
 
-
-	* An Elapsed Time and/or Timestamp Echo option specifying the amount of time elapsed since the arrival
-	at the receiver of the packet whose sequence number appears in the Acknowledgement Number field.
-	These options are described in [RFC4340], Section 13.
-
-* Loss interval sequence numbers are delta encoded starting from the Acknowledgement Number.
-Therefore, Loss Intervals options MUST NOT be sent on packets without an Acknowledgement Number
-???
-
-* Measure RTT based on CCVal and Timestamp opts and print head-to-head
 
 
 
@@ -62,13 +52,16 @@ default DCCP and IP packet headers
 
 
 ===========================================================================================
-Ask Eddie 
+
+* Ask Eddie 
 	* How can SkipLength be limited to 3, when there are othe condition that can make it longer?
 	* Why wouldn't the receiver just send the loss rate instead of the interval history?
 
-Add backup RTT calculation in receiver based on Timestamps
+* Measure RTT based on CCVal and Timestamp opts and print head-to-head
 
-A lot of calls to time.Nanoseconds() could be sped up by passing around the current time as an
+* Add backup RTT calculation in receiver based on Timestamps
+
+* A lot of calls to time.Nanoseconds() could be sped up by passing around the current time as an
 argument
 
-Fix for circular arithmetic everywhere where SeqNo and AckNo are involved: loss.go, etc.
+* Fix for circular arithmetic everywhere where SeqNo and AckNo are involved: loss.go, etc.

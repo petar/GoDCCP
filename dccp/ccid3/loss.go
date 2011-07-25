@@ -5,6 +5,7 @@
 package ccid3
 
 import (
+	"log"
 	"os"
 	"math"
 	"github.com/petar/GoDCCP/dccp"
@@ -57,6 +58,21 @@ func (t *lossEvents) pushPopHeader(ff *dccp.FeedforwardHeader) *dccp.Feedforward
 	return r
 }
 
+func (t *lossEvents) skipLength(ackno int64) byte {
+	var skip byte
+	var dbgGSR int64 = 0
+	for _, ge := range t.pastHeaders {
+		if ge != nil {
+			skip++
+			dbgGSR = max64(dbgGSR, ge.SeqNo)
+		}
+	}
+	if dbgGSR != ackno {
+		log.Printf("lossEvents GSR != AckNo")
+	}
+	return byte(skip)
+}
+
 // receiver calls OnRead every time a new packet arrives
 func (t *lossEvents) OnRead(ff *dccp.FeedforwardHeader, rtt int64) os.Error {
 	ff = t.pushPopHeader(ff)
@@ -94,9 +110,9 @@ func (t *lossEvents) listIntervals() []*LossInterval {
 // NOTE: In a small deviation from the RFC, we don't send any loss intervals
 // before the first loss event has occured. The sender is supposed to handle
 // this adequately.
-func (t *lossEvents) Option() *LossIntervalsOption {
+func (t *lossEvents) Option(ackno int64) *LossIntervalsOption {
 	return &LossIntervalsOption{
-		SkipLength:    0,  // NOTE: We don't support (we ignore) SkipLength currently
+		SkipLength:    t.skipLength(ackno),
 		LossIntervals: t.listIntervals(),
 	}
 }
