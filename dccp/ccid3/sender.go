@@ -56,7 +56,7 @@ func (s *sender) Open() {
 // Conn calls OnWrite before a packet is sent to give CongestionControl
 // an opportunity to add CCVal and options to an outgoing packet
 // NOTE: If the CC is not active, OnWrite should return 0, nil.
-func (s *sender) OnWrite(htype byte, x bool, seqno int64) (ccval byte, options []*dccp.Option) {
+func (s *sender) OnWrite(htype byte, x bool, seqno, ackno int64) (ccval byte, options []*dccp.Option) {
 	?
 }
 

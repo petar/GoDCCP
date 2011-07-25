@@ -94,12 +94,18 @@ func (t *lossEvents) listIntervals() []*LossInterval {
 // NOTE: In a small deviation from the RFC, we don't send any loss intervals
 // before the first loss event has occured. The sender is supposed to handle
 // this adequately.
-func (t *lossEvents) Option() (opt *LossIntervalsOption, lossEventRateInv uint32) {
-	history := t.listIntervals()
+func (t *lossEvents) Option() *LossIntervalsOption {
 	return &LossIntervalsOption{
 		SkipLength:    0,  // NOTE: We don't support (we ignore) SkipLength currently
-		LossIntervals: history,
-	}, t.lossEventRateCalculator.CalcLossEventRateInv(history)
+		LossIntervals: t.listIntervals(),
+	}
+}
+
+// LossEventRateInv returns the inverse of the loss event rate, calculated using the recent
+// history of loss intervals as well as the current (unfinished) interval, if sufficiently
+// long.
+func (t *lossEvents) LossEventRateInv() uint32 {
+	return t.lossEventRateCalculator.CalcLossEventRateInv(t.listIntervals())
 }
 
 // —————

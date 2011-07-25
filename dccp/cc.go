@@ -58,7 +58,7 @@ type SenderCongestionControl interface {
 	// Conn calls OnWrite before a packet is sent to give CongestionControl
 	// an opportunity to add CCVal and options to an outgoing packet
 	// NOTE: If the CC is not active, OnWrite should return 0, nil.
-	OnWrite(htype byte, x bool, seqno int64) (ccval byte, options []*Option)
+	OnWrite(htype byte, x bool, seqno, ackno int64) (ccval byte, options []*Option)
 
 	// Conn calls OnRead after a packet has been accepted and validated
 	// If OnRead returns ErrDrop, the packet will be dropped and no further processing
@@ -95,7 +95,7 @@ type ReceiverCongestionControl interface {
 	// Conn calls OnWrite before a packet is sent to give CongestionControl
 	// an opportunity to add CCVal and options to an outgoing packet
 	// NOTE: If the CC is not active, OnWrite MUST return nil.
-	OnWrite(htype byte, x bool, seqno int64) (options []*Option)
+	OnWrite(htype byte, x bool, seqno, ackno int64) (options []*Option)
 
 	// Conn calls OnRead after a packet has been accepted and validated
 	// If OnRead returns ErrDrop, the packet will be dropped and no further processing
@@ -220,13 +220,13 @@ func (a *senderCCActuator) Strobe() {
 	<-cls
 }
 
-func (a *senderCCActuator) OnWrite(htype byte, x bool, seqno int64) (ccval byte, options []*Option) {
+func (a *senderCCActuator) OnWrite(htype byte, x bool, seqno, ackno int64) (ccval byte, options []*Option) {
 	a.Lock()
 	defer a.Unlock()
 	if a.phase != ACTUATOR_OPEN {
 		return 0, nil
 	}
-	return a.SenderCongestionControl.OnWrite(htype, x, seqno)
+	return a.SenderCongestionControl.OnWrite(htype, x, seqno, ackno)
 }
 
 func (a *senderCCActuator) OnRead(fb *FeedbackHeader) os.Error {
@@ -282,13 +282,13 @@ func (a *receiverCCActuator) Close() {
 	a.ReceiverCongestionControl.Close()
 }
 	
-func (a *receiverCCActuator) OnWrite(htype byte, x bool, seqno int64) (options []*Option) {
+func (a *receiverCCActuator) OnWrite(htype byte, x bool, seqno, ackno int64) (options []*Option) {
 	a.Lock()
 	defer a.Unlock()
 	if a.phase != ACTUATOR_OPEN {
 		return nil
 	}
-	return a.ReceiverCongestionControl.OnWrite(htype, x, seqno)
+	return a.ReceiverCongestionControl.OnWrite(htype, x, seqno, ackno)
 }
 
 func (a *receiverCCActuator) OnRead(ff *FeedforwardHeader) os.Error {

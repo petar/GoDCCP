@@ -13,6 +13,7 @@ const (
 	OneSecInTenMicro  = 1e5 // 1 seconds in ten microsecond units
 )
 
+// —————
 // TimestampOption, Section 13.1
 // Time values are based on a circular uint32 value at 10 microseconds granularity
 type TimestampOption struct {
@@ -49,6 +50,7 @@ func decodeTimestamp(d []byte) uint32 {
 	return Decode4ByteUint(d)
 }
 
+// —————
 // ElapsedTimeOption, Section 13.2
 // This option is permitted in any DCCP packet that contains an Acknowledgement Number; such
 // options received on other packet types MUST be ignored.  It indicates how much time has
@@ -114,6 +116,7 @@ func decodeElapsed(d []byte) (uint32, os.Error) {
 	return t, nil
 }
 
+// —————
 // TimestampEchoOption, Section 13.3
 // Time values are based on a circular uint32 value at 10 microseconds granularity
 type TimestampEchoOption struct {
@@ -160,9 +163,18 @@ func DecodeTimestampEchoOption(opt *Option) *TimestampEchoOption {
 	}
 }
 
-// GetTimestampDiff() returns the circular difference between t0 an t1 in nanoseconds. Note
+// TenMicroTimeDiff() returns the circular difference between t0 an t1 in nanoseconds. Note
 // that t0 and t1 are themselves given in 10 microsecond circular units
-func GetTimestampDiff(t0, t1 uint32) uint32 { return minu32(t0-t1, t1-t0) }
+func TenMicroTimeDiff(t0, t1 uint32) uint32 { return minu32(t0-t1, t1-t0) }
+
+// Nano2TenMicroTimeLen converts a time length given in nanoseconds into 
+// units of 10 microseconds, capped by MaxElapsedTime
+func Nano2TenMicroTimeLen(ns int64) uint32 {
+	if ns < 0 {
+		panic("negative time difference")
+	}
+	return uint32(max64(ns/TenMicroInNano, MaxElapsedTime))
+}
 
 func minu32(x, y uint32) uint32 {
 	if x < y {

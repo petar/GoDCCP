@@ -1,39 +1,30 @@
-[ R—feedback ]
-MUST send feedback, if:
 
-[ R—feedback—lossrate ]
-A newly calculated loss event rate p is greater than its previous value
+Receiver:
 
+* MUST send feedback, if:
 
-[ R—feedback—timer ]
-The feedback timer expires and data packets have been received since the previous feedback was sent
+	* A newly calculated loss event rate p is greater than its previous value
 
-
-[ R—feedback—timer-via-ccval ]
-Whenever the receiver sends a feedback message, the receiver sets a local variable last_counter to
-the greatest received value of the window counter since the last feedback message was sent, if any
-data packets have been received since the last feedback message was sent.
-¡
-If the receiver receives a data packet with a window counter value greater than or equal to
-last_counter + 4, then the receiver sends a new feedback packet.
+	* The feedback timer expires and data packets have been received since the previous feedback was sent
 
 
-[ R—feedback ]
-An Elapsed Time and/or Timestamp Echo option specifying the amount of time elapsed since the arrival
-at the receiver of the packet whose sequence number appears in the Acknowledgement Number field.
-These options are described in [RFC4340], Section 13.
+	* Whenever the receiver sends a feedback message, the receiver sets a local variable last_counter to
+	the greatest received value of the window counter since the last feedback message was sent, if any
+	data packets have been received since the last feedback message was sent.
+	
+	If the receiver receives a data packet with a window counter value greater than or equal to
+	last_counter + 4, then the receiver sends a new feedback packet.
 
 
-[ R—loss ]
-The options MUST contain information about at least the most recent NINTERVAL + 1 = 9 loss intervals
-unless (1) there have not yet been NINTERVAL + 1 loss intervals, or (2) the receiver knows, because
-of the sender's acknowledgements, that some previously transmitted loss interval information has
-been received.
-¡
-Loss interval sequence numbers are delta encoded starting from the Acknowledgement Number.
+	* An Elapsed Time and/or Timestamp Echo option specifying the amount of time elapsed since the arrival
+	at the receiver of the packet whose sequence number appears in the Acknowledgement Number field.
+	These options are described in [RFC4340], Section 13.
+
+* Loss interval sequence numbers are delta encoded starting from the Acknowledgement Number.
 Therefore, Loss Intervals options MUST NOT be sent on packets without an Acknowledgement Number
+???
 
-
+* Measure RTT based on CCVal and Timestamp opts and print head-to-head
 
 
 
@@ -71,7 +62,9 @@ default DCCP and IP packet headers
 
 
 ===========================================================================================
-Ask Eddie about SkipLength
+Ask Eddie 
+	* How can SkipLength be limited to 3, when there are othe condition that can make it longer?
+	* Why wouldn't the receiver just send the loss rate instead of the interval history?
 
 Add backup RTT calculation in receiver based on Timestamps
 

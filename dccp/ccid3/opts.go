@@ -16,6 +16,7 @@ const (
 	OptionReceiveRate   = 194
 )
 
+// —————
 // Unencoded option is a type that knows how to encode itself into a dccp.Option
 type UnencodedOption interface {
 	Encode() (*dccp.Option, os.Error)
@@ -29,6 +30,7 @@ func encodeOption(u UnencodedOption) *dccp.Option {
 	return opt
 }
 
+// —————
 // RFC 4342, Section 8.5
 type LossEventRateOption struct {
 	// RateInv is the inverse of the loss event rate, rounded UP, as calculated by the receiver
@@ -55,6 +57,7 @@ func (opt *LossEventRateOption) Encode() (*dccp.Option, os.Error) {
 }
 
 
+// —————
 // RFC 4342, Section 8.6
 // Intervals are listed in reverse chronological order.
 // Loss interval sequence numbers are delta encoded starting from the Acknowledgement
@@ -167,6 +170,7 @@ func decodeLossInterval(p []byte) *LossInterval {
 }
 
 
+// —————
 // RFC 4342, Section 8.3
 type ReceiveRateOption struct {
 	Rate uint32 // in bytes per second

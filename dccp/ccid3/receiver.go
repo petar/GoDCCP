@@ -5,21 +5,29 @@
 package ccid3
 
 import (
+	"log"
 	"os"
 	"github.com/petar/GoDCCP/dccp"
 )
 
+// —————
 // receiver is a CCID3 congestion control receiver
 type receiver struct {
 	dccp.Mutex
 	rttReceiver
 	receiveRate
 	lossEvents
-	open              bool     // Whether the CC is active
-	lastWrite         int64    // The timestamp of the last call to OnWrite
-	lastAck           int64    // The timestamp of the last call to OnWrite with an Ack packet type
-	dataSinceAck      bool     // True if data packets have been received since the last Ack
-	lastLossEventRate uint32   // The loss event rate sent in the last Ack packet
+
+	open                 bool     // Whether the CC is active
+
+	lastWrite            int64    // The timestamp of the last call to OnWrite
+	lastAck              int64    // The timestamp of the last call to OnWrite with an Ack packet type
+	dataSinceAck         bool     // True if data packets have been received since the last Ack
+	lastLossEventRateInv uint32   // The inverse loss event rate sent in the last Ack packet
+
+	// The following fields are used to compute ElapsedTime options
+	gsr                  int64    // Greatest sequence number of packet received via OnRead
+	gsrTimestamp         int64    // Timestamp of packet with greatest sequence number received via OnRead
 }
 
 // GetID() returns the CCID of this congestion control algorithm
@@ -41,12 +49,23 @@ func (r *receiver) Open() {
 	r.lastAck = 0
 	r.dataSinceAck = false
 	r.lastLossEventRate = UnknownLossEventRate
+
+	r.gsr = 0
+	r.gsrTimestamp = 0
+}
+
+func (r *receiver) makeElapsedTimeOption(ackNo int64, now int64) *dccp.ElapsedTimeOption {
+	if ackNo != r.gsr {
+		log.Printf("CCID3 GSR != packet AckNo")
+		return nil
+	}
+	elapsedNS = max64(0, now - r.gsrTimestamp)
+	return &dccp.ElapsedTimeOption{ dccp.Nano2TenMicroTimeLen(elapsedNS) }
 }
 
 // Conn calls OnWrite before a packet is sent to give CongestionControl
 // an opportunity to add CCVal and options to an outgoing packet
-// NOTE: If the CC is not active, OnWrite MUST return nil.
-func (r *receiver) OnWrite(htype byte, x bool, seqno int64) (options []*dccp.Option) {
+func (r *receiver) OnWrite(htype byte, x bool, seqno, ackno int64) (options []*dccp.Option) {
 	r.Lock()
 	defer r.Unlock()
 	now := time.Nanoseconds()
@@ -62,12 +81,17 @@ func (r *receiver) OnWrite(htype byte, x bool, seqno int64) (options []*dccp.Opt
 		// Record last Ack write separately from last writes (in general)
 		r.lastAck = now
 		r.dataSinceAck = false
+		r.lastLossEventRateInv = r.lossEvents.LossEventRateInv()
 
 		// Prepare feedback options
 		opts := make([]*dccp.Option, 3)
-		?
+		opts[0] = r.makeElapsedTimeOption(ackno, now)
 		opts[1] = encodeOption(r.receiveRate.Flush(rtt))
 		opts[2] = encodeOption(r.lossEvents.Option())
+		if opts[0] == nil {
+			opts = opts[1:3]
+		}
+		return opts
 
 	case Data, DataAck:
 		?

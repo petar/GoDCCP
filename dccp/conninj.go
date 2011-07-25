@@ -11,13 +11,13 @@ import (
 
 func (c *Conn) writeCCID(h *Header) *Header {
 	// HC-Sender CCID
-	ccval, sropts := c.scc.OnWrite(h.Type, h.X, h.SeqNo)
+	ccval, sropts := c.scc.OnWrite(h.Type, h.X, h.SeqNo, h.AckNo)
 	if !validateCCIDSenderToReceiver(sropts) {
 		panic("sender congestion control writes disallowed options")
 	}
 	h.CCVal = ccval
 	// HC-Receiver CCID
-	rsopts := c.rcc.OnWrite(h.Type, h.X, h.SeqNo)
+	rsopts := c.rcc.OnWrite(h.Type, h.X, h.SeqNo, h.AckNo)
 	if !validateCCIDReceiverToSender(rsopts) {
 		panic("receiver congestion control writes disallowed options")
 	}
