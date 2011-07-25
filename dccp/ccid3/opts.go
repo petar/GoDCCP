@@ -23,6 +23,9 @@ type UnencodedOption interface {
 }
 
 func encodeOption(u UnencodedOption) *dccp.Option {
+	if u == nil {
+		return nil
+	}
 	opt, err := u.Encode()
 	if err != nil {
 		panic("problem encoding unencoded option")

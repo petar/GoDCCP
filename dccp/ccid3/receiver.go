@@ -53,7 +53,7 @@ func (r *receiver) Open() {
 	r.lastWrite = 0
 	r.lastAck = 0
 	r.dataSinceAck = false
-	r.lastLossEventRate = UnknownLossEventRate
+	r.lastLossEventRateInv = UnknownLossEventRate
 
 	r.gsr = 0
 	r.gsrTimestamp = 0
@@ -67,16 +67,15 @@ func (r *receiver) makeElapsedTimeOption(ackNo int64, now int64) *dccp.ElapsedTi
 		log.Printf("CCID3 GSR != packet AckNo")
 		return nil
 	}
-	elapsedNS = max64(0, now - r.gsrTimestamp)
+	elapsedNS := max64(0, now - r.gsrTimestamp)
 	return &dccp.ElapsedTimeOption{ dccp.Nano2TenMicroTimeLen(elapsedNS) }
 }
 
 // Conn calls OnWrite before a packet is sent to give CongestionControl
 // an opportunity to add CCVal and options to an outgoing packet
-func (r *receiver) OnWrite(htype byte, x bool, seqno, ackno int64) (options []*dccp.Option) {
+func (r *receiver) OnWrite(htype byte, x bool, seqno, ackno int64, now int64) (options []*dccp.Option) {
 	r.Lock()
 	defer r.Unlock()
-	now := time.Nanoseconds()
 	rtt := r.rttReceiver.RTT()
 
 	r.lastWrite = now
@@ -85,7 +84,7 @@ func (r *receiver) OnWrite(htype byte, x bool, seqno, ackno int64) (options []*d
 	}
 	
 	switch htype {
-	case Ack:
+	case dccp.Ack:
 		// Record last Ack write separately from last writes (in general)
 		r.lastAck = now
 		r.dataSinceAck = false
@@ -94,7 +93,7 @@ func (r *receiver) OnWrite(htype byte, x bool, seqno, ackno int64) (options []*d
 
 		// Prepare feedback options
 		opts := make([]*dccp.Option, 3)
-		opts[0] = r.makeElapsedTimeOption(ackno, now)
+		opts[0] = encodeOption(r.makeElapsedTimeOption(ackno, now))
 		opts[1] = encodeOption(r.receiveRate.Flush(rtt))
 		opts[2] = encodeOption(r.lossEvents.Option(ackno))
 		if opts[0] == nil {
@@ -102,10 +101,10 @@ func (r *receiver) OnWrite(htype byte, x bool, seqno, ackno int64) (options []*d
 		}
 		return opts
 
-	case Data, DataAck:
-		?
+	case dccp.Data, dccp.DataAck:
+		return nil
 	default:
-		?
+		return nil
 	}
 	panic("unreach")
 }
@@ -121,7 +120,7 @@ func (r *receiver) OnRead(ff *dccp.FeedforwardHeader) os.Error {
 		return nil
 	}
 
-	if ff.Type == Data || ff.Type == DataAck {
+	if ff.Type == dccp.Data || ff.Type == dccp.DataAck {
 		r.dataSinceAck = true
 		r.latestCCVal = ff.CCVal
 	}
@@ -139,7 +138,7 @@ func (r *receiver) OnRead(ff *dccp.FeedforwardHeader) os.Error {
 
 	// (Feedback-Condition-III) If receive window counter increases by 4 or more on a data
 	// packet, since last time feedback was sent
-	if ff.Type == Data || ff.Type == DataAck {
+	if ff.Type == dccp.Data || ff.Type == dccp.DataAck {
 		if !lessModWCTRMAX(ff.CCVal, r.lastCCVal+4) {
 			return dccp.CongestionAck
 		}
@@ -149,7 +148,7 @@ func (r *receiver) OnRead(ff *dccp.FeedforwardHeader) os.Error {
 }
 
 // OnIdle behaves identically to the same method of the HC-Sender CCID
-func (r *receiver) OnIdle() os.Error {
+func (r *receiver) OnIdle(now int64) os.Error {
 	r.Lock()
 	defer r.Unlock()
 	if !r.open {
@@ -160,7 +159,7 @@ func (r *receiver) OnIdle() os.Error {
 
 	// (Feedback-Condition-I) If one (estimated) round-trip time time has expired since last Ack
 	// AND data packets have been received in the meantime
-	if r.dataSinceAck && time.Nanoseconds() - r.lastWrite > r.rttReceiver.RTT() {
+	if r.dataSinceAck && now - r.lastWrite > r.rttReceiver.RTT() {
 		return dccp.CongestionAck
 	}
 

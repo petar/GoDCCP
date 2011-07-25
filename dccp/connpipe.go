@@ -7,6 +7,7 @@ package dccp
 import (
 	"log"
 	"os"
+	"time"
 )
 
 func (c *Conn) readHeader() (h *Header, err os.Error) {
@@ -116,7 +117,8 @@ func (c *Conn) readLoop() {
 }
 
 func (c *Conn) pollCongestionControl() {
-	if e := c.scc.OnIdle(); e != nil {
+	now := time.Nanoseconds()
+	if e := c.scc.OnIdle(now); e != nil {
 		if re, ok := e.(CongestionReset); ok {
 			c.abortWith(re.ResetCode())
 			return
@@ -129,7 +131,7 @@ func (c *Conn) pollCongestionControl() {
 		}
 		log.Printf("unknown sender cc idle event")
 	}
-	if e := c.rcc.OnIdle(); e != nil {
+	if e := c.rcc.OnIdle(now); e != nil {
 		if re, ok := e.(CongestionReset); ok {
 			c.abortWith(re.ResetCode())
 			return

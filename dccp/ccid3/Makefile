@@ -6,10 +6,10 @@ GOFILES=\
 	loss.go\
 	opts.go\
 	rate.go\
+	receiver.go\
 	rtt.go\
 	windowcounter.go\
 
-	#receiver.go\
 	#ccid3.go\
 	#sender.go\
 	#strober.go\

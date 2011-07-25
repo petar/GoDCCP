@@ -58,7 +58,7 @@ type SenderCongestionControl interface {
 	// Conn calls OnWrite before a packet is sent to give CongestionControl
 	// an opportunity to add CCVal and options to an outgoing packet
 	// NOTE: If the CC is not active, OnWrite should return 0, nil.
-	OnWrite(htype byte, x bool, seqno, ackno int64) (ccval byte, options []*Option)
+	OnWrite(htype byte, x bool, seqno, ackno int64, now int64) (ccval byte, options []*Option)
 
 	// Conn calls OnRead after a packet has been accepted and validated
 	// If OnRead returns ErrDrop, the packet will be dropped and no further processing
@@ -75,7 +75,7 @@ type SenderCongestionControl interface {
         // (a) Request a connection reset by returning a CongestionReset, or
 	// (b) Request the injection of an Ack packet by returning a CongestionAck
 	// NOTE: If the CC is not active, OnIdle MUST to return nil.
-	OnIdle() os.Error
+	OnIdle(now int64) os.Error
 
 	// Close terminates the half-connection congestion control when it is not needed any longer
 	Close()
@@ -95,7 +95,7 @@ type ReceiverCongestionControl interface {
 	// Conn calls OnWrite before a packet is sent to give CongestionControl
 	// an opportunity to add CCVal and options to an outgoing packet
 	// NOTE: If the CC is not active, OnWrite MUST return nil.
-	OnWrite(htype byte, x bool, seqno, ackno int64) (options []*Option)
+	OnWrite(htype byte, x bool, seqno, ackno int64, now int64) (options []*Option)
 
 	// Conn calls OnRead after a packet has been accepted and validated
 	// If OnRead returns ErrDrop, the packet will be dropped and no further processing
@@ -104,7 +104,7 @@ type ReceiverCongestionControl interface {
 	OnRead(ff *FeedforwardHeader) os.Error
 
 	// OnIdle behaves identically to the same method of the HC-Sender CCID
-	OnIdle() os.Error
+	OnIdle(now int64) os.Error
 
 	// Close terminates the half-connection congestion control when it is not needed any longer
 	Close()
@@ -220,13 +220,13 @@ func (a *senderCCActuator) Strobe() {
 	<-cls
 }
 
-func (a *senderCCActuator) OnWrite(htype byte, x bool, seqno, ackno int64) (ccval byte, options []*Option) {
+func (a *senderCCActuator) OnWrite(htype byte, x bool, seqno, ackno int64, now int64) (ccval byte, options []*Option) {
 	a.Lock()
 	defer a.Unlock()
 	if a.phase != ACTUATOR_OPEN {
 		return 0, nil
 	}
-	return a.SenderCongestionControl.OnWrite(htype, x, seqno, ackno)
+	return a.SenderCongestionControl.OnWrite(htype, x, seqno, ackno, now)
 }
 
 func (a *senderCCActuator) OnRead(fb *FeedbackHeader) os.Error {
@@ -238,13 +238,13 @@ func (a *senderCCActuator) OnRead(fb *FeedbackHeader) os.Error {
 	return a.SenderCongestionControl.OnRead(fb)
 }
 
-func (a *senderCCActuator) OnIdle() os.Error {
+func (a *senderCCActuator) OnIdle(now int64) os.Error {
 	a.Lock()
 	defer a.Unlock()
 	if a.phase != ACTUATOR_OPEN {
 		return nil
 	}
-	return a.SenderCongestionControl.OnIdle()
+	return a.SenderCongestionControl.OnIdle(now)
 }
 
 // ---> Receiver CC actuator
@@ -282,13 +282,13 @@ func (a *receiverCCActuator) Close() {
 	a.ReceiverCongestionControl.Close()
 }
 	
-func (a *receiverCCActuator) OnWrite(htype byte, x bool, seqno, ackno int64) (options []*Option) {
+func (a *receiverCCActuator) OnWrite(htype byte, x bool, seqno, ackno int64, now int64) (options []*Option) {
 	a.Lock()
 	defer a.Unlock()
 	if a.phase != ACTUATOR_OPEN {
 		return nil
 	}
-	return a.ReceiverCongestionControl.OnWrite(htype, x, seqno, ackno)
+	return a.ReceiverCongestionControl.OnWrite(htype, x, seqno, ackno, now)
 }
 
 func (a *receiverCCActuator) OnRead(ff *FeedforwardHeader) os.Error {
@@ -300,11 +300,11 @@ func (a *receiverCCActuator) OnRead(ff *FeedforwardHeader) os.Error {
 	return a.ReceiverCongestionControl.OnRead(ff)
 }
 
-func (a *receiverCCActuator) OnIdle() os.Error {
+func (a *receiverCCActuator) OnIdle(now int64) os.Error {
 	a.Lock()
 	defer a.Unlock()
 	if a.phase != ACTUATOR_OPEN {
 		return nil
 	}
-	return a.ReceiverCongestionControl.OnIdle()
+	return a.ReceiverCongestionControl.OnIdle(now)
 }

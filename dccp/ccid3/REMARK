@@ -1,16 +1,5 @@
 
-Receiver:
-
-* MUST send feedback, if:
-
-	* (onidle) Whenever the receiver sends a feedback message, the receiver sets a local variable last_counter to
-	the greatest received value of the window counter since the last feedback message was sent, if any
-	data packets have been received since the last feedback message was sent.
-	
-	If the receiver receives a data packet with a window counter value greater than or equal to
-	last_counter + 4, then the receiver sends a new feedback packet.
-
-	* loss_test
+* loss_test
 
 
 
