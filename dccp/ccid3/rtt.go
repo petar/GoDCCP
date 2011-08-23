@@ -106,5 +106,29 @@ func (t *rttReceiver) RTT() int64 {
 
 // rttSender is the data structure that estimates the RTT at the sender end.
 type rttSender struct {
-	// XXX
+	nSent     int
+	sentTimes [SENDER_RTT_HISTORY]sentTime  // Circular array, recording departure times of last few packets
+}
+
+const SENDER_RTT_HISTORY = 20 // We assume it's unlikely to lose 20 packets in a row
+
+type sentTime struct {
+	SeqNo int64
+	Time  int64
+}
+
+func (t *rttSender) Init() {
+	t.nSent = 0
+	for i, _ := range t.sentTimes {
+		t.sentTimes[i] = sentTimes{} // Zero SeqNo is considered invalid
+	}
+}
+
+func (t *rttSender) OnWrite(seqNo int64, now int64) {
+	t.sentTimes[t.nSent] = sentTime{seqNo, now}
+	t.nSent = (t.nSent+1) % SENDER_RTT_HISTORY
+}
+
+func (t *rttSender) RTT() int64 {
+	?
 }

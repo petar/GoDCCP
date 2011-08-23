@@ -1,46 +1,206 @@
 
-* loss_test
+SLOW-START:
 
+   (Section 5, Other Congestion Control Mechanisms)
+   The sender starts in a slow-start phase, roughly doubling its allowed
+   sending rate each round-trip time.  The slow-start phase is ended by
+   the receiver's report of a data packet drop or mark, after which the
+   sender uses the loss event rate to calculate its allowed sending
+   rate.
 
+   [RFC3390] gives an upper bound on the initial window of 
+   min(4*MSS, max(2*MSS, 4380 bytes))
 
+   Therefore, in contrast to [RFC3448], the initial CCID 3 sending rate
+   is allowed to be at least two packets per RTT, and at most four
+   packets per RTT, depending on the packet size.  The initial rate is
+   only allowed to be three or four packets per RTT when, in terms of
+   segment size, that translates to at most 4380 bytes per RTT.
 
-[S–nofeedback—timer]
-After a feedback packet is received, the sender sets a nofeedback timer to at least four times the
-round- trip time estimate
-¡
-If the sender doesn't receive any feedback packets before the nofeedback timer expires, then the
-sender halves its sending rate.
+   [RFC5348] TLD = Time Last Doubled (during slow start)
+   Window size = amount of data sent in one round trip time
 
+   Upon receiving the first round-trip time measurement,
+   TLD is set to the current time, and the allowed transmit rate, X, 
+   is set to the initial_rate.
 
+     initial_rate = min(4*MSS, max(2*MSS, 4380)) / R
 
+RTT ESTIMATE:
 
+   The sender's measurement of the round-trip time uses the Elapsed Time
+   and/or Timestamp Echo option contained in feedback packets, as
+   described in Section 8.2.  The Elapsed Time option is required, while
+   the Timestamp Echo option is not.  The sender maintains an average
+   round-trip time heavily weighted on the most recent measurements.
 
-allowed sending rate 
-	(-)  does not reduce below initial sending rate as a result of idle time
-	(-) < 2*ReceiveRate reported by receiver
-		(-) => after an application- limited period, the sender can at most double its sending rate from one
-		    round-trip time to the next, until it reaches the allowed sending rate determined by the loss event
-		    rate
+   [RFC5348, 4.3]
 
-sending rate, determined by loss event rate
+     R = q*R + (1-q)*R_sample;
 
-packet size
-	(-) MAY calculate s as the segment size averaged over multiple round trip times -- for example, over the
-	    most recent four loss intervals
-	(-) OR set to MSS
+   TFRC is not sensitive to the precise value for the filter constant q,
+   but a default value of 0.9 is RECOMMENDED.
 
-(DataDropped & SlowReceiver)
+   When a new RTT estimate is calculated (upon feedback packet arrival),
+   update the timeout interval:
 
----
+     RTO = max(4*R, 2*s/X)
 
-Maximum Segment Size (MSS) = the maximum size in bytes for the data segment, not including the
-default DCCP and IP packet headers
+CCVAL:
 
+   The window counter is generally incremented by one every quarter 
+   round-trip time.
+
+NOFEEDBACK
+
+   As specified in [RFC3448], Section 4.3, the sender sets a nofeedback timer to at least four
+   round-trip times, or to twice the interval between data packets, whichever is larger.
+
+   [RFC5348, 4.3] Update the timeout interval: RTO = max(4*R, 2*s/X)
+
+   If the sender hasn't received a feedback packet from the receiver when the nofeedback timer
+   expires, then the sender halves its allowed sending rate. The allowed sending rate is never reduced
+   below one packet per 64 seconds.
+
+RATE
+
+   If the sender never receives a feedback packet from the receiver, and
+   as a consequence never gets to set the allowed sending rate to one
+   packet per RTT, then the sending rate is left at its initial rate of
+   one packet per second, with the nofeedback timer expiring after two
+   seconds. The allowed sending rate is halved each time the nofeedback
+   timer expires. 
+
+   The allowed sending rate can be at most twice the rate received at the 
+   receiver in the last round-trip time.
+
+   [RFC5348, 4.3]  Update the allowed sending rate as follows.  This procedure uses
+       the variables t_mbi and recv_limit:
+
+      t_mbi: the maximum backoff interval of 64 seconds.
+      recv_limit: the limit on the sending rate computed from X_recv_set.
+
+   This procedure also uses the procedures Maximize X_recv_set() and
+   Update X_recv_set(), which are defined below.
+
+   The procedure for updating the allowed sending rate:
+
+      If (the entire interval covered by the feedback packet
+            was a data-limited interval) {
+          If (the feedback packet reports a new loss event or an
+                       increase in the loss event rate p) {
+              Halve entries in X_recv_set;
+              X_recv = 0.85 * X_recv;
+              Maximize X_recv_set();
+              recv_limit = max (X_recv_set);
+          } Else {
+              Maximize X_recv_set();
+              recv_limit = 2 * max (X_recv_set);
+          }
+      } Else {                      // typical behavior
+          Update X_recv_set();
+          recv_limit = 2 * max (X_recv_set);
+      }
+      If (p > 0) {          // congestion avoidance phase
+          Calculate X_Bps using the TCP throughput equation.
+          X = max(min(X_Bps, recv_limit), s/t_mbi);
+      } Else if (t_now - tld >= R) {
+          // initial slow-start
+          X = max(min(2*X, recv_limit), initial_rate);
+          tld = t_now;
+      }
+
+   The procedure for updating X_recv_set keeps a set of X_recv values
+   with timestamps from the two most recent round-trip times.
+
+   The procedure for maximizing X_recv_set keeps a single value, the
+   largest value from X_recv_set and the new X_recv.
+
+      Maximize X_recv_set():
+          Add X_recv to X_recv_set;
+          Delete initial value Infinity from X_recv_set,
+             if it is still a member.
+          Set the timestamp of the largest item to the current time;
+          Delete all other items.
+
+    (More clarifications in this RFC section.)
+
+Definition of a data-limited interval:
+   We define a sender as data-limited any time it is not sending as much
+   as it is allowed to send.  We define an interval as a 'data-limited
+   interval' if the sender was data-limited over the *entire* interval;
+
+IDLE AND APPLICATION LIMITED PERIODS
+
+   (5.1) The allowed sending rate is never reduced to less than the [RFC3390]
+   initial sending rate as the result of an idle period.  If the allowed
+   sending rate is less than the initial sending rate upon entry to the
+   idle period, then it will still be less than the initial sending rate
+   when the idle period is exited.  However, if the allowed sending rate
+   is greater than or equal to the initial sending rate upon entry to
+   the idle period, then it should not be reduced below the initial
+   sending rate no matter how long the idle period lasts.
+
+PACKET SIZE
+
+   (5.3) A CCID 3 implementation MAY calculate s as the segment size averaged over
+   multiple round trip times -- for example, over the most recent four
+   loss intervals, for loss intervals as defined in Section 6.1.
+
+   (5.3) Alternately, a CCID 3 implementation MAY use the Maximum Packet Size
+   to derive s.  In this case, s is set to the Maximum Segment Size
+   (MSS), the maximum size in bytes for the data segment, not including
+   the default DCCP and IP packet headers.  Each packet transmitted then
+   counts as one MSS, regardless of the actual segment size, and the TCP
+   throughput equation can be interpreted as specifying the sending rate
+   in packets per second.
+
+EQUATION
+
+                                s
+   X_Bps = ----------------------------------------------------------
+           R*sqrt(2*b*p/3) + (t_RTO * (3*sqrt(3*b*p/8)*p*(1+32*p^2)))
+
+      X_Bps is TCP's average transmit rate in bytes per second.  (X_Bps
+      is the same as X_calc in RFC 3448.)
+
+      s is the segment size in bytes (excluding IP and transport
+      protocol headers). [Size of one packet's payload, not counting headers.]
+
+      R is the round-trip time in seconds.
+
+      p is the loss event rate, between 0 and 1.0, of the number of loss
+      events as a fraction of the number of packets transmitted.
+
+      t_RTO is the TCP retransmission timeout value in seconds.
+
+      b is the maximum number of packets acknowledged by a single TCP
+      acknowledgement.
+
+   Implementations SHOULD set t_RTO = 4*R. Implementations
+   MAY also set t_RTO to max(4*R, one second), to match the recommended
+   minimum of one second on the RTO [RFC2988].
+
+   With t_RTO=4*R and b=1, the throughput equation for X_Bps, the TCP
+   sending rate in bytes per second, can be simplified as:
+
+                                s
+   X_Bps = -----------------------------------------------
+           R * (sqrt(2*p/3) + 12*sqrt(3*p/8)*p*(1+32*p^2))
+
+===========================================================================================
+
+* How does the sender's strober behave in data limited periods when the application
+is not calling it for a long while? We don't want a burst of sends!
+
+* test evolveInterval
+* test loss event rate
+* test receive rate
+* test rttReceiver
 
 ===========================================================================================
 
 * Ask Eddie 
-	* How can SkipLength be limited to 3, when there are othe condition that can make it longer?
 	* Why wouldn't the receiver just send the loss rate instead of the interval history?
 
 * Measure RTT based on CCVal and Timestamp opts and print head-to-head
@@ -51,3 +211,11 @@ default DCCP and IP packet headers
 argument
 
 * Fix for circular arithmetic everywhere where SeqNo and AckNo are involved: loss.go, etc.
+
+————— FEATURES NOT CURRENTLY SUPPORTED —————
+
+* TimestampEcho option and RTT estimates based on it
+* Data Dropped Option
+* Slow Receiver Option
+
+————— DEVIATIONS FROM DCCP —————

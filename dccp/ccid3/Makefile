@@ -8,10 +8,10 @@ GOFILES=\
 	rate.go\
 	receiver.go\
 	rtt.go\
+	strober.go\
 	windowcounter.go\
 
 	#ccid3.go\
 	#sender.go\
-	#strober.go\
 
 include $(GOROOT)/src/Make.pkg

@@ -46,6 +46,7 @@ func (r *receiver) Open() {
 	if r.open {
 		panic("opening an open ccid3 receiver")
 	}
+
 	r.rttReceiver.Init()
 	r.receiveRate.Init()
 	r.lossEvents.Init()

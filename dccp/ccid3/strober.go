@@ -5,7 +5,6 @@
 package ccid3
 
 import (
-	"os"
 	"time"
 	"github.com/petar/GoDCCP/dccp"
 )
@@ -42,7 +41,7 @@ func (s *strober) SetRate(per64sec int64) {
 func (s *strober) Strobe() {
 	s.Lock()
 	now := time.Nanoseconds()
-	delta = s.interval - (now - s.last)
+	delta := s.interval - (now - s.last)
 	s.Unlock()
 	if delta > 0 {
 		<-time.NewTimer(delta).C

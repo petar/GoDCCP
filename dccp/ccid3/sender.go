@@ -9,6 +9,8 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
+// —————
+// sender is a CCID3 congestion control sender
 type sender struct {
 	dccp.Mutex
 	phase int
@@ -36,9 +38,8 @@ const (
 func (s *sender) GetID() byte { return dccp.CCID3 }
 
 // GetCCMPS returns the Congestion Control Maximum Packet Size, CCMPS. Generally, PMTU <= CCMPS
-func (s *sender) GetCCMPS() int32 {
-	?
-}
+// TODO: For the time being we use a fixed CCMPS
+func (s *sender) GetCCMPS() int32 { return 2*1500 }
 
 // GetRTT returns the Round-Trip Time as measured by this CCID
 func (s *sender) GetRTT() int64 {
@@ -50,13 +51,20 @@ func (s *sender) GetRTT() int64 {
 // call to Open and after the call to Close, the Strobe function is
 // expected to return immediately.
 func (s *sender) Open() {
+	s.Lock()
+	defer s.Unlock()
+	if s.phase != INIT {
+		panic("opening an open ccid3 sender")
+	}
 	?
 }
 
 // Conn calls OnWrite before a packet is sent to give CongestionControl
 // an opportunity to add CCVal and options to an outgoing packet
 // NOTE: If the CC is not active, OnWrite should return 0, nil.
-func (s *sender) OnWrite(htype byte, x bool, seqno, ackno int64) (ccval byte, options []*dccp.Option) {
+func (s *sender) OnWrite(htype byte, x bool, seqno, ackno int64, now int64) (ccval byte, options []*dccp.Option) {
+	s.Lock()
+	defer s.Unlock()
 	?
 }
 
@@ -65,6 +73,8 @@ func (s *sender) OnWrite(htype byte, x bool, seqno, ackno int64) (ccval byte, op
 // will occur. If OnRead returns ResetError, the connection will be reset.
 // NOTE: If the CC is not active, OnRead MUST return nil.
 func (s *sender) OnRead(fb *dccp.FeedbackHeader) os.Error {
+	s.Lock()
+	defer s.Unlock()
 	?
 }
 
@@ -79,11 +89,18 @@ func (s *sender) Strobe() {
 // (a) Request a connection reset by returning a CongestionReset, or
 // (b) Request the injection of an Ack packet by returning a CongestionAck
 // NOTE: If the CC is not active, OnIdle MUST to return nil.
-func (s *sender) OnIdle() os.Error {
+func (s *sender) OnIdle(now int64) os.Error {
+	s.Lock()
+	defer s.Unlock()
 	?
 }
 
 // Close terminates the half-connection congestion control when it is not needed any longer
 func (s *sender) Close() {
-	?
+	s.Lock()
+	defer s.Unlock()
+	if s.phase == INIT || s.phase == CLOSED {
+		panic("closing a ccid3 sender in invalid phase")
+	}
+	r.phase = CLOSED
 }
