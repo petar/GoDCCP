@@ -6,6 +6,7 @@ package ccid3
 
 import (
 	"time"
+	"github.com/petar/GoDCCP/dccp"
 )
 
 // rttReceiver is the data structure that estimates the RTT at the receiver end.
@@ -106,29 +107,84 @@ func (t *rttReceiver) RTT() int64 {
 
 // rttSender is the data structure that estimates the RTT at the sender end.
 type rttSender struct {
-	nSent     int
-	sentTimes [SENDER_RTT_HISTORY]sentTime  // Circular array, recording departure times of last few packets
+	estimate int64
+	nSent    int
+	history  [SENDER_RTT_HISTORY]sendTime  // Circular array, recording departure times of last few packets
 }
 
-const SENDER_RTT_HISTORY = 20 // We assume it's unlikely to lose 20 packets in a row
-
-type sentTime struct {
+type sendTime struct {
 	SeqNo int64
 	Time  int64
 }
 
+const (
+	SENDER_RTT_HISTORY = 20 // How many timestamps of sent packets to remember
+	SENDER_RTT_WEIGHT_NEW = 1
+	SENDER_RTT_WEIGHT_OLD = 9
+)
+
+// Init resets the rttSender object for new use
 func (t *rttSender) Init() {
+	t.estimate = 0
 	t.nSent = 0
-	for i, _ := range t.sentTimes {
-		t.sentTimes[i] = sentTimes{} // Zero SeqNo is considered invalid
+	for i, _ := range t.history {
+		t.history[i] = sendTime{} // Zero SeqNo indicates no data
 	}
 }
 
+// Sender calls OnWrite for every packet sent.
 func (t *rttSender) OnWrite(seqNo int64, now int64) {
-	t.sentTimes[t.nSent] = sentTime{seqNo, now}
-	t.nSent = (t.nSent+1) % SENDER_RTT_HISTORY
+	t.history[t.nSent % SENDER_RTT_HISTORY] = sendTime{seqNo, now}
+	t.nSent++
+	if t.nSent > 3 * SENDER_RTT_HISTORY {
+		// Keep nSent small, yet reflecting that we've had some history already
+		t.nSent = SENDER_RTT_HISTORY + ((t.nSent+1) % SENDER_RTT_HISTORY)
+	}
 }
 
+func (t *rttSender) find(seqNo int64) *sendTime {
+	for i := 0; i < SENDER_RTT_HISTORY && i < t.nSent; i++ {
+		r := &t.history[(t.nSent-i-1) % SENDER_RTT_HISTORY]
+		if r.SeqNo == seqNo {
+			return r
+		}
+	}
+	return nil
+}
+
+// Sender calls OnRead for every arriving Ack packet. OnRead returns
+// true if the RTT estimate has been updated.
+func (t *rttSender) OnRead(ackNo int64, elapsed *dccp.ElapsedTimeOption, now int64) bool {
+	if elapsed == nil {
+		return false
+	}
+	s := t.find(ackNo)
+	if s == nil {
+		return false
+	}
+	elapsedNS := dccp.NSFromTenUS(elapsed.Elapsed) // Elapsed time at receiver in nanoseconds
+	if elapsedNS < 0 {
+		return false
+	}
+	est := (now - s.Time - elapsedNS) / 2
+	if est <= 0 {
+		return false
+	}
+	est_old := t.estimate
+	if est_old == 0 {
+		t.estimate = est
+	} else {
+		t.estimate = (est*SENDER_RTT_WEIGHT_NEW + est_old*SENDER_RTT_WEIGHT_OLD) / 
+			(SENDER_RTT_WEIGHT_NEW + SENDER_RTT_WEIGHT_OLD)
+	}
+	return true
+}
+
+// RTT returns the current round-trip time estimate, or the default if no estimate is
+// available yet
 func (t *rttSender) RTT() int64 {
-	?
+	if t.estimate <= 0 {
+		return dccp.RTT_DEFAULT
+	}
+	return t.estimate
 }

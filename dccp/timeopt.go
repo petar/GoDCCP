@@ -167,13 +167,26 @@ func DecodeTimestampEchoOption(opt *Option) *TimestampEchoOption {
 // that t0 and t1 are themselves given in 10 microsecond circular units
 func TenMicroTimeDiff(t0, t1 uint32) uint32 { return minu32(t0-t1, t1-t0) }
 
-// Nano2TenMicroTimeLen converts a time length given in nanoseconds into 
+// TenUSFromNS converts a time length given in nanoseconds into 
 // units of 10 microseconds, capped by MaxElapsedTime
-func Nano2TenMicroTimeLen(ns int64) uint32 {
+func TenUSFromNS(ns int64) uint32 {
 	if ns < 0 {
 		panic("negative time difference")
 	}
 	return uint32(max64(ns/TenMicroInNano, MaxElapsedTime))
+}
+
+// NSFromTenUS converts a time length given in ten microsecond units into
+// nanoseconds, without exceeding the maximum allowed time limit
+func NSFromTenUS(tus uint32) int64 {
+	return min64(int64(tus)*TenMicroInNano, MaxElapsedTime*TenMicroInNano)
+}
+
+func min64(x, y int64) int64 {
+	if x < y {
+		return x
+	}
+	return y
 }
 
 func minu32(x, y uint32) uint32 {

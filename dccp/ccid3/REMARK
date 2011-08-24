@@ -28,19 +28,6 @@ SLOW-START:
 
 RTT ESTIMATE:
 
-   The sender's measurement of the round-trip time uses the Elapsed Time
-   and/or Timestamp Echo option contained in feedback packets, as
-   described in Section 8.2.  The Elapsed Time option is required, while
-   the Timestamp Echo option is not.  The sender maintains an average
-   round-trip time heavily weighted on the most recent measurements.
-
-   [RFC5348, 4.3]
-
-     R = q*R + (1-q)*R_sample;
-
-   TFRC is not sensitive to the precise value for the filter constant q,
-   but a default value of 0.9 is RECOMMENDED.
-
    When a new RTT estimate is calculated (upon feedback packet arrival),
    update the timeout interval:
 

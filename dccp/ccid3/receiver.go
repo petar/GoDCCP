@@ -69,7 +69,7 @@ func (r *receiver) makeElapsedTimeOption(ackNo int64, now int64) *dccp.ElapsedTi
 		return nil
 	}
 	elapsedNS := max64(0, now - r.gsrTimestamp)
-	return &dccp.ElapsedTimeOption{ dccp.Nano2TenMicroTimeLen(elapsedNS) }
+	return &dccp.ElapsedTimeOption{ dccp.TenUSFromNS(elapsedNS) }
 }
 
 // Conn calls OnWrite before a packet is sent to give CongestionControl
