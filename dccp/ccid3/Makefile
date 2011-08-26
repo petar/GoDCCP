@@ -4,6 +4,7 @@ TARG=github.com/petar/GoDCCP/dccp/ccid3
 GOFILES=\
 	interval.go\
 	loss.go\
+	nofeedback.go\
 	opts.go\
 	rate.go\
 	receiver.go\

@@ -33,17 +33,7 @@ RTT ESTIMATE:
 
      RTO = max(4*R, 2*s/X)
 
-CCVAL:
-
-   The window counter is generally incremented by one every quarter 
-   round-trip time.
-
 NOFEEDBACK
-
-   As specified in [RFC3448], Section 4.3, the sender sets a nofeedback timer to at least four
-   round-trip times, or to twice the interval between data packets, whichever is larger.
-
-   [RFC5348, 4.3] Update the timeout interval: RTO = max(4*R, 2*s/X)
 
    If the sender hasn't received a feedback packet from the receiver when the nofeedback timer
    expires, then the sender halves its allowed sending rate. The allowed sending rate is never reduced
