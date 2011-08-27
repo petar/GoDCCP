@@ -11,6 +11,8 @@ GOFILES=\
 	rtt.go\
 	strober.go\
 	windowcounter.go\
+	s.go\
+	x.go\
 
 	#ccid3.go\
 	#sender.go\

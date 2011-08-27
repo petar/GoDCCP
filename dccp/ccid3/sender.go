@@ -13,11 +13,14 @@ import (
 // sender is a CCID3 congestion control sender
 type sender struct {
 	dccp.Mutex
-	phase int
-
-	rttSender
+	
 	windowCounter
+	rttSender
+	nofeedbackTimer
+	segmentSize
 	strober
+
+	phase int
 }
 
 // Phases of the congestion control mechanism
@@ -28,12 +31,6 @@ const (
 	CLOSED
 )
 
-// NOTES
-//
-// The sender starts in a slow-start phase, roughly doubling its allowed sending rate each
-// round-trip time.  The slow-start phase is ended by the receiver's report of a data packet drop or
-// mark, after which the sender uses the loss event rate to calculate its allowed sending rate.
-
 // GetID() returns the CCID of this congestion control algorithm
 func (s *sender) GetID() byte { return dccp.CCID3 }
 
@@ -42,9 +39,7 @@ func (s *sender) GetID() byte { return dccp.CCID3 }
 func (s *sender) GetCCMPS() int32 { return 2*1500 }
 
 // GetRTT returns the Round-Trip Time as measured by this CCID
-func (s *sender) GetRTT() int64 {
-	?
-}
+func (s *sender) GetRTT() int64 { return s.rttSender.RTT() }
 
 // Open tells the Congestion Control that the connection has entered
 // OPEN or PARTOPEN state and that the CC can now kick in. Before the

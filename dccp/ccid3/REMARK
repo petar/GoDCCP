@@ -8,32 +8,14 @@ SLOW-START:
    sender uses the loss event rate to calculate its allowed sending
    rate.
 
-   [RFC3390] gives an upper bound on the initial window of 
-   min(4*MSS, max(2*MSS, 4380 bytes))
-
-   Therefore, in contrast to [RFC3448], the initial CCID 3 sending rate
-   is allowed to be at least two packets per RTT, and at most four
-   packets per RTT, depending on the packet size.  The initial rate is
-   only allowed to be three or four packets per RTT when, in terms of
-   segment size, that translates to at most 4380 bytes per RTT.
-
-   [RFC5348] TLD = Time Last Doubled (during slow start)
-   Window size = amount of data sent in one round trip time
-
-   Upon receiving the first round-trip time measurement,
-   TLD is set to the current time, and the allowed transmit rate, X, 
-   is set to the initial_rate.
-
-     initial_rate = min(4*MSS, max(2*MSS, 4380)) / R
-
-RTT ESTIMATE:
+RTT ESTIMATE*
 
    When a new RTT estimate is calculated (upon feedback packet arrival),
    update the timeout interval:
 
      RTO = max(4*R, 2*s/X)
 
-NOFEEDBACK
+NOFEEDBACK*
 
    If the sender hasn't received a feedback packet from the receiver when the nofeedback timer
    expires, then the sender halves its allowed sending rate. The allowed sending rate is never reduced
@@ -117,20 +99,6 @@ IDLE AND APPLICATION LIMITED PERIODS
    is greater than or equal to the initial sending rate upon entry to
    the idle period, then it should not be reduced below the initial
    sending rate no matter how long the idle period lasts.
-
-PACKET SIZE
-
-   (5.3) A CCID 3 implementation MAY calculate s as the segment size averaged over
-   multiple round trip times -- for example, over the most recent four
-   loss intervals, for loss intervals as defined in Section 6.1.
-
-   (5.3) Alternately, a CCID 3 implementation MAY use the Maximum Packet Size
-   to derive s.  In this case, s is set to the Maximum Segment Size
-   (MSS), the maximum size in bytes for the data segment, not including
-   the default DCCP and IP packet headers.  Each packet transmitted then
-   counts as one MSS, regardless of the actual segment size, and the TCP
-   throughput equation can be interpreted as specifying the sending rate
-   in packets per second.
 
 EQUATION
 
