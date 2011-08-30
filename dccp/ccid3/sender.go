@@ -73,9 +73,8 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) os.Error {
 	?
 }
 
-// Strobe blocks until a new packet can be sent without violating the
-// congestion control rate limit. 
-// NOTE: If the CC is not active, Strobe MUST return immediately.
+// Strobe blocks until a new packet can be sent without violating the congestion control
+// rate limit. If the CC is not active, Strobe MUST return immediately.
 func (s *sender) Strobe() {
 	?
 }

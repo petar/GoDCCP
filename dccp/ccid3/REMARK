@@ -69,21 +69,6 @@ RATE
           tld = t_now;
       }
 
-   The procedure for updating X_recv_set keeps a set of X_recv values
-   with timestamps from the two most recent round-trip times.
-
-   The procedure for maximizing X_recv_set keeps a single value, the
-   largest value from X_recv_set and the new X_recv.
-
-      Maximize X_recv_set():
-          Add X_recv to X_recv_set;
-          Delete initial value Infinity from X_recv_set,
-             if it is still a member.
-          Set the timestamp of the largest item to the current time;
-          Delete all other items.
-
-    (More clarifications in this RFC section.)
-
 Definition of a data-limited interval:
    We define a sender as data-limited any time it is not sending as much
    as it is allowed to send.  We define an interval as a 'data-limited
