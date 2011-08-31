@@ -180,7 +180,7 @@ func (t *rttSender) OnRead(ackNo int64, elapsed *dccp.ElapsedTimeOption, now int
 	return true
 }
 
-// RTT returns the current round-trip time estimate, or the default if no estimate is
+// RTT returns the current round-trip time estimate in ns, or the default if no estimate is
 // available yet
 func (t *rttSender) RTT() int64 {
 	if t.estimate <= 0 {

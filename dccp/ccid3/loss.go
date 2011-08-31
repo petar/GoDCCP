@@ -218,10 +218,3 @@ func (h *intervalHistory) Get(i int) *LossInterval {
 	l := int64(len(h.pastIntervals))
 	return h.pastIntervals[int((h.pushCount-1-int64(i)) % l)]
 }
-
-func max64(x, y int64) int64 {
-	if x > y {
-		return x
-	}
-	return y
-}

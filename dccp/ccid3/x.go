@@ -13,15 +13,21 @@ import (
 // rateCaclulator computers the allowed sending rate of the sender
 type rateCalculator struct {
 	x_bps int     // Allowed Sending Rate; bps (Bytes Per Second)
-	x_pps int     // "       "       "   ; pps (Packets Per Second)
+	x_sps int     // "       "       "   ; sps (Segments Per Second)
 
 	ss    int     // Segment Size; b (Bytes)
 	rtt   int64   // Round-Trip Time estimate, or zero if none available; ns (Nanoseconds)
 	tld   int64   // Time Last Doubled (during slow start), or zero if unset; ns since UTC
+
+	recvLimit uint32
+
+	xRecvSet      // Data structure for x_recv_set (see RFC 5348)
 }
 
 const (
-	X_MAX_INIT_WIN  = 4380  // Maximum size in bytes of initial window
+	X_MAX_INIT_WIN          = 4380  // Maximum size in bytes of initial window
+	X_MAX_BACKOFF_INTERVAL  = 64e9  // Maximum backoff interval in ns (See RFC 5348, Section 4.3)
+	X_TCP_MAX_PACKETS_ACKED = 1     // (Throughput Eq.) TCP max number of packets ack'd in single ack
 )
 
 // Init resets the rate calculator for new use
@@ -31,6 +37,7 @@ func (t *rateCalculator) Init() {
 	t.ss = 0
 	t.rtt = 0
 	t.tld = 0
+	t.xRecvSet.Init()
 }
 
 // SetSS sets the Segment Size (packet size)
@@ -41,6 +48,7 @@ func (t *rateCalculator) SetSS(ss int) {
 // Sender calls SetRTT every time a new RTT estimate is available. 
 // SetRTT can result in a change of X (the Allowed Transmit Rate).
 func (t *rateCalculator) SetRTT(rtt int64, now int64) {
+	?? // this should be folded into OnRead
 	if t.rtt <= 0 {
 		r.tld = now
 		t.x = t.initialRate()
@@ -48,21 +56,50 @@ func (t *rateCalculator) SetRTT(rtt int64, now int64) {
 	t.rtt = rtt
 }
 
-// initRate returns the allowed initial sending rate in pps.
-// initRate can be called only if both SS and RTT have known values.
-func (t *rateCalculator) initRate() int {
+func (t *rateCalculator) OnRead(now /* ns+UTC */ int64, x_recv /* bps */ uint32, rtt /* ns */ int64) {
+	if /* the entire interval covered by the feedback packet was a data-limited interval */ {
+		if /* the feedback packet reports a new loss event or an increase in the loss event rate p */ {
+			t.xRecvSet.Halve()
+			x_recv = (85 * x_recv) / 100  ???
+			t.xRecvSet.Maximize(now, x_recv)
+			t.recvLimit = t.xRecvSet.Max()
+		} else {
+			t.xRecvSet.Maximize(now, x_recv)
+			t.recvLimit = 2 * t.xRecvSet.Max()
+		}
+	} else {
+		t.xRecvSet.Update(now, x_recv, rtt)
+		t.recvLimit = 2 * t.xRecvSet.Max()
+	}
+	var x_bps uint32
+	if /* loss > 0 */ {
+		x_eq_bps := equation ???
+		x_bps = maxu32(
+			minu32(x_eq_bps, t.recvLimit), 
+			(1e9*t.ss)/X_MAX_BACKOFF_INTERVAL
+		);
+	} else if t_now - tld >= R {
+		// Initial slow-start
+		x_bps = max(min(2*X, recv_limit), initial_rate);
+		tld = t_now;
+	}
+	// TODO: Place oscillation reduction code here (see RFC 5348, Section 4.3)
+}
+
+// ThruEq returns the allowed sending rate in bps according to the TCP throughput equation
+func (t *rateCalculator) ThruEq(rtt int64, invLossRate uint32, rto int64) uint32 {
+	??
+}
+
+// initRate returns the allowed initial sending rate in sps (segments per second) 
+// after RTT and SS are known.
+func (t *rateCalculator) initRate() uint32 {
 	if t.ss <= 0 || t.rtt <= 0 {
 		panic("unknown SS or RTT")
 	}
-	???
-	return min(4, max(2, X_MAX_INIT_WIN / t.ss))
-}
-
-func min(x, y int) int {
-	if x < y {
-		return x
-	}
-	return y
+	// window = bytes per round trip
+	win := min(4*t.ss, max(2*t.ss, X_MAX_INIT_WIN))
+	return uint32(max64((1e9*int64(win))/t.rtt, 1))
 }
 
 // —————
@@ -121,7 +158,7 @@ func (t *xRecvSet) Max() uint32 {
 //     Set the timestamp of the largest item to the current time;
 //     Delete all other items.
 //
-func (t *xRecvSet) Maximize(x_recv uint32, now int64) {
+func (t *xRecvSet) Maximize(now int64, x_recv uint32) {
 	for i, e := range t.set {
 		if e.Time > 0 {
 			x_recv = max(x_recv, e.Rate)
@@ -139,7 +176,7 @@ func (t *xRecvSet) Maximize(x_recv uint32, now int64) {
 //     Add X_recv to X_recv_set;
 //     Delete from X_recv_set values older than two round-trip times.
 //
-func (t *xRecvSet) Update(x_recv uint32, now int64, rtt int64) {
+func (t *xRecvSet) Update(now int64, x_recv uint32, rtt int64) {
 	// Remove entries older than two RTT
 	for i, e := range t.set {
 		if e.Time > 0 && now - e.Time > 2*rtt {

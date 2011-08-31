@@ -258,17 +258,3 @@ func (t *eventTail) Chop(k int) {
 	t.prevTime += int64(k)*t.gap
 	t.nlost -= k
 }
-
-func min64(x, y int64) int64 {
-	if x < y {
-		return x
-	}
-	return y
-}
-
-func max(x, y int) int {
-	if x > y {
-		return x
-	}
-	return y
-}

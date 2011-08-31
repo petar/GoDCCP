@@ -70,7 +70,19 @@ func (s *sender) OnWrite(htype byte, x bool, seqno, ackno int64, now int64) (ccv
 func (s *sender) OnRead(fb *dccp.FeedbackHeader) os.Error {
 	s.Lock()
 	defer s.Unlock()
-	?
+	
+	// Update the round-trip estimate
+	rttChanged := t.rttSender.OnRead(ackNo int64, elapsed *dccp.ElapsedTimeOption, now int64)
+	rtt := t.rttSender.RTT()
+
+	// Update the nofeedback timeout interval
+	t.nofeedbackTimer.
+
+	// Update the allowed sending rate
+	t.x.??
+
+	// Reset the nofeedback timer
+	??
 }
 
 // Strobe blocks until a new packet can be sent without violating the congestion control

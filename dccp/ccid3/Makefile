@@ -12,8 +12,9 @@ GOFILES=\
 	strober.go\
 	windowcounter.go\
 	s.go\
-	x.go\
+	util.go\
 
+	#x.go\
 	#ccid3.go\
 	#sender.go\
 

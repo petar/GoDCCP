@@ -1,3 +1,5 @@
+* Convert all data types to dimension types
+* What is the dimension of loss.go's invLossRate?
 
 SLOW-START:
 
@@ -35,39 +37,6 @@ RATE
 
    [RFC5348, 4.3]  Update the allowed sending rate as follows.  This procedure uses
        the variables t_mbi and recv_limit:
-
-      t_mbi: the maximum backoff interval of 64 seconds.
-      recv_limit: the limit on the sending rate computed from X_recv_set.
-
-   This procedure also uses the procedures Maximize X_recv_set() and
-   Update X_recv_set(), which are defined below.
-
-   The procedure for updating the allowed sending rate:
-
-      If (the entire interval covered by the feedback packet
-            was a data-limited interval) {
-          If (the feedback packet reports a new loss event or an
-                       increase in the loss event rate p) {
-              Halve entries in X_recv_set;
-              X_recv = 0.85 * X_recv;
-              Maximize X_recv_set();
-              recv_limit = max (X_recv_set);
-          } Else {
-              Maximize X_recv_set();
-              recv_limit = 2 * max (X_recv_set);
-          }
-      } Else {                      // typical behavior
-          Update X_recv_set();
-          recv_limit = 2 * max (X_recv_set);
-      }
-      If (p > 0) {          // congestion avoidance phase
-          Calculate X_Bps using the TCP throughput equation.
-          X = max(min(X_Bps, recv_limit), s/t_mbi);
-      } Else if (t_now - tld >= R) {
-          // initial slow-start
-          X = max(min(2*X, recv_limit), initial_rate);
-          tld = t_now;
-      }
 
 Definition of a data-limited interval:
    We define a sender as data-limited any time it is not sending as much

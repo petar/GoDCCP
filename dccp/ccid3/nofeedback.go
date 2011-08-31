@@ -65,21 +65,23 @@ func (t *nofeedbackTimer) OnWrite(ff *dccp.FeedforwardHeader) {
 		(NOFEEDBACK_WEIGHT_NEW + NOFEEDBACK_WEIGHT_OLD)
 }
 
+// Timeout returns the current duration of the nofeedback timer in ns
+func (t *nofeedbackTimer) Timeout() int64 {
+	if t.rtt <= 0 {
+		return NOFEEDBACK_TMO_WITHOUT_RTT
+	}
+	if t.dataInvFreq <= 0 {
+		return 4*t.rtt
+	}
+	return max64(4*t.rtt, 2*t.dataInvFreq)
+}
+
 // Expired returns true if the nofeedback timer has expired
 func (t *nofeedbackTimer) Expired(now int64) bool {
 	if t.lastFeedback <= 0 {
 		return false
 	}
-	var exp int64
-	if t.rtt <= 0 {
-		exp = NOFEEDBACK_TMO_WITHOUT_RTT
-	} else {
-		if t.dataInvFreq <= 0 {
-			exp = 4*t.rtt
-		} else {
-			exp = max64(4*t.rtt, 2*t.dataInvFreq)
-		}
-	}
-	XX // Is expiration measured since last send or receive?
-	return now - t.lastFeedback >= exp
+	// XX // Is expiration measured since last send or receive?
+	panic("?")
+	return now - t.lastFeedback >= t.Timeout()
 }
