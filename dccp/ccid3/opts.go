@@ -39,7 +39,7 @@ func encodeOption(u UnencodedOption) *dccp.Option {
 type LossEventRateOption struct {
 	// RateInv is the inverse of the loss event rate, rounded UP, as calculated by the receiver.
 	// Its units are data packets per loss interval.
-	RateInv uint32
+	RateInv UnitLossEventRateInv
 }
 
 const UnknownLossEventRate = math.MaxUint32
@@ -48,12 +48,12 @@ func DecodeLossEventRateOption(opt *dccp.Option) *LossEventRateOption {
 	if opt.Type != OptionLossEventRate || len(opt.Data) != 4 {
 		return nil
 	}
-	return &LossEventRateOption{RateInv: dccp.Decode4ByteUint(opt.Data[0:4])}
+	return &LossEventRateOption{RateInv: NewUnitLossEventRateInv(dccp.Decode4ByteUint(opt.Data[0:4]))}
 }
 
 func (opt *LossEventRateOption) Encode() (*dccp.Option, os.Error) {
 	d := make([]byte, 4)
-	dccp.Encode4ByteUint(opt.RateInv, d)
+	dccp.Encode4ByteUint(opt.RateInv.Uint32(), d)
 	return &dccp.Option{
 		Type:      OptionLossEventRate,
 		Data:      d,

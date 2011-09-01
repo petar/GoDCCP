@@ -23,7 +23,7 @@ type receiver struct {
 	lastWrite            int64    // The timestamp of the last call to OnWrite
 	lastAck              int64    // The timestamp of the last call to OnWrite with an Ack packet type
 	dataSinceAck         bool     // True if data packets have been received since the last Ack
-	lastLossEventRateInv U_LossEventRateInv   // The inverse loss event rate sent in the last Ack packet
+	lastLossEventRateInv UnitLossEventRateInv   // The inverse loss event rate sent in the last Ack packet
 
 	// The following fields are used to compute ElapsedTime options
 	gsr                  int64    // Greatest sequence number of packet received via OnRead
