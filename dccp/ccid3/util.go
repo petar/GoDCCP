@@ -8,10 +8,30 @@ package ccid3
 // The following are custom types intended to distinguish the different units of measurement
 // that might otherwise use similar primitive types.
 
-type UnitNS    int64   // Duration expressed in nanoseconds
-type UnitNSUTC int64   // Time relative to UTC zero in nanoseconds
-type UnitBPS   uint32  // Bytes per second
-type UnitPPS   uint32  // Packets (segments) per second
+
+// UnitNS represents unit of nanoseconds for measuring duration (relative time)
+type UnitNS int64
+
+func NewUnitNS(v int64) UnitNS { return UnitNS(v) }
+
+func (u UnitNS) Int64() int64 { return int64(u) }
+
+// UnitNS0 represents unit of time since UTC zero in nanoseconds (absolute time)
+type UnitNS0 int64
+
+func (u UnitNS0) Int64() int64 { return int64(u) }
+
+// UnitBPS represents unit of bytes-per-second
+type UnitBPS uint32
+
+func NewUnitBPS(v uint32) UnitBPS { return UnitBPS(v) }
+
+func (u UnitBPS) Uint32() uint32 { return uint32(u) }
+
+
+// UnitPPS represents unit of packets-per-second
+type UnitPPS uint32
+
 
 // In CCID3 and related RFCs, the term 'rate' means fraction (of a whole), and thus assumes
 // values in the real interval [0,1]. It is not to be confused with 'frequency' which
@@ -21,6 +41,7 @@ type UnitPPS   uint32  // Packets (segments) per second
 // corresponding to 1.0. Thus a UnitRate variable assumes values in [0, 1e9].
 //
 type UnitRate int64
+
 
 // —————
 // Below are some basic utility functions

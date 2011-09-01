@@ -35,9 +35,9 @@ type lossEvents struct {
 // variable would (if these were real numbers) give the loss event rate.
 type UnitLossEventRateInv uint32
 
-func NewUnitLossEventRateInv(u uint32) UnitLossEventRateInv { return UnitLossEventRateInv(u) }
+func NewUnitLossEventRateInv(v uint32) UnitLossEventRateInv { return UnitLossEventRateInv(v) }
 
-func (q UnitLossEventRateInv) Uint32() uint32 { return uint32(q) }
+func (u UnitLossEventRateInv) Uint32() uint32 { return uint32(u) }
 
 // Init initializes/resets the lossEvents instance
 func (t *lossEvents) Init() {

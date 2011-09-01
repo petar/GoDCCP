@@ -13,8 +13,8 @@ GOFILES=\
 	windowcounter.go\
 	s.go\
 	util.go\
+	x.go\
 
-	#x.go\
 	#ccid3.go\
 	#sender.go\
 
