@@ -5,6 +5,7 @@
 package ccid3
 
 import (
+	"math"
 	"os"
 	"github.com/petar/GoDCCP/dccp"
 )
@@ -36,11 +37,12 @@ func encodeOption(u UnencodedOption) *dccp.Option {
 // —————
 // RFC 4342, Section 8.5
 type LossEventRateOption struct {
-	// RateInv is the inverse of the loss event rate, rounded UP, as calculated by the receiver
+	// RateInv is the inverse of the loss event rate, rounded UP, as calculated by the receiver.
+	// Its units are data packets per loss interval.
 	RateInv uint32
 }
 
-const UnknownLossEventRate = 2 ^ 32 - 1
+const UnknownLossEventRate = math.MaxUint32
 
 func DecodeLossEventRateOption(opt *dccp.Option) *LossEventRateOption {
 	if opt.Type != OptionLossEventRate || len(opt.Data) != 4 {

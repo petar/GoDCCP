@@ -4,6 +4,26 @@
 
 package ccid3
 
+// —————
+// The following are custom types intended to distinguish the different units of measurement
+// that might otherwise use similar primitive types.
+
+type U_NS    int64   // Duration expressed in nanoseconds
+type U_NSUTC int64   // Time relative to UTC zero in nanoseconds
+type U_BPS   uint32  // Bytes per second
+type U_PPS   uint32  // Packets (segments) per second
+
+// In CCID3 and related RFCs, the term 'rate' means fraction (of a whole), and thus assumes
+// values in the real interval [0,1]. It is not to be confused with 'frequency' which
+// usually means volume-over-time and can assume non-negative reals as values.
+//
+// The type U_Rate represents a discretized rate with 0 corresponding to 0.0 and 1e9
+// corresponding to 1.0. Thus a U_Rate variable assumes values in [0, 1e9].
+//
+type U_Rate int64
+
+// —————
+// Below are some basic utility functions
 
 func min(x, y int) int {
 	if x < y {

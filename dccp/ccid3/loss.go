@@ -29,6 +29,12 @@ type lossEvents struct {
 	lossEventRateCalculator
 }
 
+// U_LossEventRateInv is a type representing the unit used by the RFCs to compute the loss
+// event rate inverse. The unit is number of data packets per loss interval. Since each loss
+// interval counts as one (packet) loss, the inverse (reciprocal) of a U_LossEventRateInv
+// variable would (if these were real numbers) give the loss event rate.
+type U_LossEventRateInv uint32
+
 // Init initializes/resets the lossEvents instance
 func (t *lossEvents) Init() {
 	t.evolveInterval.Init(func(li *LossInterval) { t.intervalHistory.Push(li) })
@@ -120,7 +126,7 @@ func (t *lossEvents) Option(ackno int64) *LossIntervalsOption {
 // LossEventRateInv returns the inverse of the loss event rate, calculated using the recent
 // history of loss intervals as well as the current (unfinished) interval, if sufficiently
 // long.
-func (t *lossEvents) LossEventRateInv() uint32 {
+func (t *lossEvents) LossEventRateInv() U_LossEventRateInv {
 	return t.lossEventRateCalculator.CalcLossEventRateInv(t.listIntervals())
 }
 
@@ -134,6 +140,7 @@ type lossEventRateCalculator struct {
 	h         []float64
 }
 
+// Init resets the calculator for new use with the given nInterval parameter
 func (t *lossEventRateCalculator) Init(nInterval int) {
 	t.nInterval = nInterval
 	t.w = make([]float64, nInterval)
@@ -153,7 +160,8 @@ func intervalWeight(i, nInterval int) float64 {
 // CalcLossEventRateInv computes the inverse of the loss event rate, RFC 5348, Section 5.4.
 // NOTE: We currently don't use the alternative algorithm, called History Discounting,
 // discussed in RFC 5348, Section 5.5
-func (t *lossEventRateCalculator) CalcLossEventRateInv(history []*LossInterval) uint32 {
+// TODO: This calculation should be replaced with an entirely integral one.
+func (t *lossEventRateCalculator) CalcLossEventRateInv(history []*LossInterval) U_LossEventRateInv {
 
 	// Prepare a slice with interval lengths
 	k := max(len(history), t.nInterval)
@@ -179,7 +187,7 @@ func (t *lossEventRateCalculator) CalcLossEventRateInv(history []*LossInterval) 
 	I_tot := math.Fmax(I_tot0, I_tot1)
 	I_mean := I_tot / W_tot
 
-	return uint32(I_mean)
+	return U_LossEventRateInv(math.Fmax(1.0, I_mean))
 }
 
 // —————
