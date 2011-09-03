@@ -9,6 +9,7 @@ GOFILES=\
 	rate.go\
 	receiver.go\
 	rtt.go\
+	table.go\
 	strober.go\
 	windowcounter.go\
 	s.go\

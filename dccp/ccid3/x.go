@@ -80,14 +80,14 @@ func (t *rateCalculator) SetRTT(rtt int64, now int64) {
 // throughput equation, for the regime b=1 and t_RTO=4*RTT (See RFC 5348, Section 3.1).
 func (t *rateCalculator) ThruEq(ss_b uint32, rtt_ns int64, lossRateInv uint32) uint32 {
 	// XX
-	bps := (1e9*int64(ss_b)) / (rtt_ns * thruEqDenom(lossRateInv))
+	bps := (1e9*int64(ss_b)) / (rtt_ns * thruEqQ(lossRateInv))
 	return uint32(bps)
 }
 
-// thruEqDenom computes the quantity (sqrt(2*p/3) + 12*sqrt(3*p/8)*p*(1+32*p^2)).
-// XXX
-func thruEqDenom(lossRateInv uint32) int64 {
-	return -1
+// thruEqDenom computes the quantity 1e3*(sqrt(2*p/3) + 12*sqrt(3*p/8)*p*(1+32*p^2)).
+func thruEqQ(lossRateInv uint32) int64 {
+	j := min(int(lossRateInv), len(qTable))
+	return qTable[j-1].Q
 }
 
 // initRate returns the allowed initial sending rate in bytes per second
