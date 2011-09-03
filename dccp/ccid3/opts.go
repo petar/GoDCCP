@@ -178,19 +178,20 @@ func decodeLossInterval(p []byte) *LossInterval {
 // —————
 // RFC 4342, Section 8.3
 type ReceiveRateOption struct {
-	Rate UnitBPS // The rate at which receiver has received data since it last send an Ack
+	// The rate at which receiver has received data since it last send an Ack; in bytes per second
+	Rate uint32 
 }
 
 func DecodeReceiveRateOption(opt *dccp.Option) *ReceiveRateOption {
 	if opt.Type != OptionReceiveRate || len(opt.Data) != 4 {
 		return nil
 	}
-	return &ReceiveRateOption{Rate: NewUnitBPS(dccp.Decode4ByteUint(opt.Data[0:4]))}
+	return &ReceiveRateOption{Rate: dccp.Decode4ByteUint(opt.Data[0:4])}
 }
 
 func (opt *ReceiveRateOption) Encode() (*dccp.Option, os.Error) {
 	d := make([]byte, 4)
-	dccp.Encode4ByteUint(opt.Rate.Uint32(), d)
+	dccp.Encode4ByteUint(opt.Rate, d)
 	return &dccp.Option{
 		Type:      OptionReceiveRate,
 		Data:      d,

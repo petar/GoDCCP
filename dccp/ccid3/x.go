@@ -12,11 +12,8 @@ import (
 
 // rateCaclulator computers the allowed sending rate of the sender
 type rateCalculator struct {
-	x     UnitBPS // Allowed Sending Rate; bps (Bytes Per Second)
-
-	ss    int     // Segment Size; b (Bytes)
-	rtt   int64   // Round-Trip Time estimate, or zero if none available; ns (Nanoseconds)
-	tld   int64   // Time Last Doubled (during slow start), or zero if unset; ns since UTC
+	x_bps uint32 // Allowed Sending Rate; in bytes per second
+	tld   int64  // Time Last Doubled (during slow start) or zero if unset; in ns since UTC zero
 
 	recvLimit uint32
 
@@ -24,24 +21,16 @@ type rateCalculator struct {
 }
 
 const (
-	X_MAX_INIT_WIN          = 4380  // Maximum size in bytes of initial window
+	X_MAX_INIT_WIN          = 4380  // Maximum size of initial window in bytes
 	X_MAX_BACKOFF_INTERVAL  = 64e9  // Maximum backoff interval in ns (See RFC 5348, Section 4.3)
-	X_TCP_MAX_PACKETS_ACKED = 1     // (Throughput Eq.) TCP max number of packets ack'd in single ack
 )
 
 // Init resets the rate calculator for new use
 func (t *rateCalculator) Init() {
 	// X // ??
-	t.x = 0
-	t.ss = 0
-	t.rtt = 0
+	t.x_bps = 0
 	t.tld = 0
 	t.xRecvSet.Init()
-}
-
-// SetSS sets the Segment Size (packet size)
-func (t *rateCalculator) SetSS(ss int) { 
-	t.ss = ss 
 }
 
 // Sender calls SetRTT every time a new RTT estimate is available. 
@@ -87,21 +76,27 @@ func (t *rateCalculator) SetRTT(rtt int64, now int64) {
 //	// TODO: Place oscillation reduction code here (see RFC 5348, Section 4.3)
 //}
 
-// ThruEq returns the allowed sending rate in bps according to the TCP throughput equation
-/*
-func (t *rateCalculator) ThruEq(rtt int64, invLossRate uint32, rto int64) uint32 {
-	??
+// ThruEq returns the allowed sending rate, in bytes per second, according to the TCP
+// throughput equation, for the regime b=1 and t_RTO=4*RTT (See RFC 5348, Section 3.1).
+func (t *rateCalculator) ThruEq(ss_b uint32, rtt_ns int64, lossRateInv uint32) uint32 {
+	// XX
+	bps := (1e9*int64(ss_b)) / (rtt_ns * thruEqDenom(lossRateInv))
+	return uint32(bps)
 }
-*/
 
-// initRate returns the allowed initial sending rate, after RTT and SS are known.
-func (t *rateCalculator) initRate() UnitBPS {
-	if t.ss <= 0 || t.rtt <= 0 {
+// thruEqDenom computes the quantity (sqrt(2*p/3) + 12*sqrt(3*p/8)*p*(1+32*p^2)).
+// XXX
+func thruEqDenom(lossRateInv uint32) int64 {
+	return -1
+}
+
+// initRate returns the allowed initial sending rate in bytes per second
+func (t *rateCalculator) initRate(ss_b uint32, rtt_ns int64) uint32 {
+	if ss_b <= 0 || rtt_ns <= 0 {
 		panic("unknown SS or RTT")
 	}
-	// window = bytes per round trip
-	win := min(4*t.ss, max(2*t.ss, X_MAX_INIT_WIN))
-	return NewUnitBPS(uint32(max64((1e9*int64(win))/t.rtt, 1)))
+	win_bpr := minu32(4*ss_b, maxu32(2*ss_b, X_MAX_INIT_WIN)) // window = bytes per round trip (bpr)
+	return uint32(max64((1e9*int64(win_bpr))/rtt_ns, 1))
 }
 
 // —————
@@ -111,8 +106,8 @@ type xRecvSet struct {
 }
 
 type xRecvEntry struct {
-	Rate UnitBPS    // Receive rate; bps (bytes per second)
-	Time UnitNS0    // Timestamp when entry was received. Time=0 indicates nil entry.
+	Rate uint32   // Receive rate; in bytes per second
+	Time int64    // Entry timestamp or zero if unset; in ns since UTC zero
 }
 
 const (
@@ -134,10 +129,10 @@ func (t *xRecvSet) Halve() {
 	}
 }
 
-// Max returns the highest rate in the set
-func (t *xRecvSet) Max() UnitBPS {
+// Max returns the highest rate in the set; in bytes per second
+func (t *xRecvSet) Max() uint32 {
 	var set bool
-	var r UnitBPS
+	var r uint32
 	for _, e := range t.set {
 		if e.Time <= 0 {
 			continue
@@ -162,15 +157,15 @@ func (t *xRecvSet) Max() UnitBPS {
 //     Set the timestamp of the largest item to the current time;
 //     Delete all other items.
 //
-func (t *xRecvSet) Maximize(now UnitNS0, x_recv UnitBPS) {
+func (t *xRecvSet) Maximize(now int64, x_recv_bps uint32) {
 	for i, e := range t.set {
 		if e.Time > 0 {
-			x_recv = NewUnitBPS(maxu32(x_recv.Uint32(), e.Rate.Uint32()))
+			x_recv_bps = maxu32(x_recv_bps, e.Rate)
 		}
 		t.set[i] = xRecvEntry{}
 	}
 	t.set[0].Time = now
-	t.set[0].Rate = x_recv
+	t.set[0].Rate = x_recv_bps
 }
 
 // The procedure for updating X_recv_set keeps a set of X_recv values
@@ -180,16 +175,16 @@ func (t *xRecvSet) Maximize(now UnitNS0, x_recv UnitBPS) {
 //     Add X_recv to X_recv_set;
 //     Delete from X_recv_set values older than two round-trip times.
 //
-func (t *xRecvSet) Update(now UnitNS0, x_recv UnitBPS, rtt UnitNS) {
+func (t *xRecvSet) Update(now int64, x_recv_bps uint32, rtt int64) {
 	// Remove entries older than two RTT
 	for i, e := range t.set {
-		if e.Time > 0 && NewUnitNS(now.Int64() - e.Time.Int64()) > 2*rtt {
+		if e.Time > 0 && now - e.Time > 2*rtt {
 			t.set[i] = xRecvEntry{}
 		}
 	}
 	// Find free cell or oldest entry
 	var j int = -1
-	var j_time UnitNS0 = now
+	var j_time int64 = now
 	for i, e := range t.set {
 		if e.Time <= 0 {
 			j = i
@@ -200,6 +195,6 @@ func (t *xRecvSet) Update(now UnitNS0, x_recv UnitBPS, rtt UnitNS) {
 			j_time = e.Time
 		}
 	}
-	t.set[j].Rate = x_recv
+	t.set[j].Rate = x_recv_bps
 	t.set[j].Time = now
 }

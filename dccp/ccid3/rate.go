@@ -59,9 +59,9 @@ func (r *receiveRate) Flush(rtt int64) *ReceiveRateOption {
 	return &ReceiveRateOption{rval}
 }
 
-func rate(nbytes int, nsec int64) UnitBPS {
+func rate(nbytes int, nsec int64) uint32 {
 	if nbytes < 0 || nsec <= 0 {
 		panic("receive rate, negative bytes or time")
 	}
-	return NewUnitBPS(uint32((int64(nbytes)*1e9)/nsec))
+	return uint32((int64(nbytes)*1e9)/nsec)
 }
