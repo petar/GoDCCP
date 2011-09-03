@@ -29,16 +29,6 @@ type lossEvents struct {
 	lossEventRateCalculator
 }
 
-// UnitLossEventRateInv is a type representing the unit used by the RFCs to compute the loss
-// event rate inverse. The unit is number of data packets per loss interval. Since each loss
-// interval counts as one (packet) loss, the inverse (reciprocal) of a UnitLossEventRateInv
-// variable would (if these were real numbers) give the loss event rate.
-type UnitLossEventRateInv uint32
-
-func NewUnitLossEventRateInv(v uint32) UnitLossEventRateInv { return UnitLossEventRateInv(v) }
-
-func (u UnitLossEventRateInv) Uint32() uint32 { return uint32(u) }
-
 // Init initializes/resets the lossEvents instance
 func (t *lossEvents) Init() {
 	t.evolveInterval.Init(func(li *LossInterval) { t.intervalHistory.Push(li) })
@@ -130,7 +120,7 @@ func (t *lossEvents) Option(ackno int64) *LossIntervalsOption {
 // LossEventRateInv returns the inverse of the loss event rate, calculated using the recent
 // history of loss intervals as well as the current (unfinished) interval, if sufficiently
 // long.
-func (t *lossEvents) LossEventRateInv() UnitLossEventRateInv {
+func (t *lossEvents) LossEventRateInv() uint32 {
 	return t.lossEventRateCalculator.CalcLossEventRateInv(t.listIntervals())
 }
 
@@ -165,7 +155,7 @@ func intervalWeight(i, nInterval int) float64 {
 // NOTE: We currently don't use the alternative algorithm, called History Discounting,
 // discussed in RFC 5348, Section 5.5
 // TODO: This calculation should be replaced with an entirely integral one.
-func (t *lossEventRateCalculator) CalcLossEventRateInv(history []*LossInterval) UnitLossEventRateInv {
+func (t *lossEventRateCalculator) CalcLossEventRateInv(history []*LossInterval) uint32 {
 
 	// Prepare a slice with interval lengths
 	k := max(len(history), t.nInterval)
@@ -191,7 +181,7 @@ func (t *lossEventRateCalculator) CalcLossEventRateInv(history []*LossInterval) 
 	I_tot := math.Fmax(I_tot0, I_tot1)
 	I_mean := I_tot / W_tot
 
-	return UnitLossEventRateInv(math.Fmax(1.0, I_mean))
+	return uint32(math.Fmax(1.0, I_mean))
 }
 
 // —————
