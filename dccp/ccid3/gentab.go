@@ -2,6 +2,8 @@
 // Use of this source code is governed by a 
 // license that can be found in the LICENSE file.
 
+// Use this output of this command as the contents of table.go
+
 package main
 
 import (

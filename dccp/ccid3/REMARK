@@ -54,39 +54,6 @@ IDLE AND APPLICATION LIMITED PERIODS
    the idle period, then it should not be reduced below the initial
    sending rate no matter how long the idle period lasts.
 
-EQUATION
-
-                                s
-   X_Bps = ----------------------------------------------------------
-           R*sqrt(2*b*p/3) + (t_RTO * (3*sqrt(3*b*p/8)*p*(1+32*p^2)))
-
-      X_Bps is TCP's average transmit rate in bytes per second.  (X_Bps
-      is the same as X_calc in RFC 3448.)
-
-      s is the segment size in bytes (excluding IP and transport
-      protocol headers). [Size of one packet's payload, not counting headers.]
-
-      R is the round-trip time in seconds.
-
-      p is the loss event rate, between 0 and 1.0, of the number of loss
-      events as a fraction of the number of packets transmitted.
-
-      t_RTO is the TCP retransmission timeout value in seconds.
-
-      b is the maximum number of packets acknowledged by a single TCP
-      acknowledgement.
-
-   Implementations SHOULD set t_RTO = 4*R. Implementations
-   MAY also set t_RTO to max(4*R, one second), to match the recommended
-   minimum of one second on the RTO [RFC2988].
-
-   With t_RTO=4*R and b=1, the throughput equation for X_Bps, the TCP
-   sending rate in bytes per second, can be simplified as:
-
-                                s
-   X_Bps = -----------------------------------------------
-           R * (sqrt(2*p/3) + 12*sqrt(3*p/8)*p*(1+32*p^2))
-
 ===========================================================================================
 
 * How does the sender's strober behave in data limited periods when the application

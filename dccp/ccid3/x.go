@@ -78,9 +78,8 @@ func (t *rateCalculator) SetRTT(rtt int64, now int64) {
 
 // ThruEq returns the allowed sending rate, in bytes per second, according to the TCP
 // throughput equation, for the regime b=1 and t_RTO=4*RTT (See RFC 5348, Section 3.1).
-func (t *rateCalculator) ThruEq(ss_b uint32, rtt_ns int64, lossRateInv uint32) uint32 {
-	// XX
-	bps := (1e9*int64(ss_b)) / (rtt_ns * thruEqQ(lossRateInv))
+func (t *rateCalculator) ThruEq(ss uint32, rtt int64, lossRateInv uint32) uint32 {
+	bps := (1e3*1e9*int64(ss)) / (rtt * thruEqQ(lossRateInv))
 	return uint32(bps)
 }
 
@@ -90,13 +89,13 @@ func thruEqQ(lossRateInv uint32) int64 {
 	return qTable[j-1].Q
 }
 
-// initRate returns the allowed initial sending rate in bytes per second
-func (t *rateCalculator) initRate(ss_b uint32, rtt_ns int64) uint32 {
-	if ss_b <= 0 || rtt_ns <= 0 {
+// initRate returns the allowed initial sending rate in bytes per second.
+func (t *rateCalculator) initRate(ss uint32, rtt int64) uint32 {
+	if ss <= 0 || rtt <= 0 {
 		panic("unknown SS or RTT")
 	}
-	win_bpr := minu32(4*ss_b, maxu32(2*ss_b, X_MAX_INIT_WIN)) // window = bytes per round trip (bpr)
-	return uint32(max64((1e9*int64(win_bpr))/rtt_ns, 1))
+	win := minu32(4*ss, maxu32(2*ss, X_MAX_INIT_WIN)) // window = bytes per round trip (bpr)
+	return uint32(max64((1e9*int64(win)) / rtt, 1))
 }
 
 // —————
