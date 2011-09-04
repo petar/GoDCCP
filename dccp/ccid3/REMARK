@@ -1,6 +1,3 @@
-* Convert all data types to dimension types
-* What is the dimension of loss.go's invLossRate?
-
 SLOW-START:
 
    (Section 5, Other Congestion Control Mechanisms)
@@ -58,6 +55,10 @@ IDLE AND APPLICATION LIMITED PERIODS
 
 * How does the sender's strober behave in data limited periods when the application
 is not calling it for a long while? We don't want a burst of sends!
+
+* Make sure that invalid option values are simply discarded. We know
+other party is not adversarial, but differences in protocol and/or implementation
+may introduce for small arithmetic errors (like division by zero).
 
 * test evolveInterval
 * test loss event rate

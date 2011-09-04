@@ -12,24 +12,29 @@ import (
 
 // rateCaclulator computers the allowed sending rate of the sender
 type rateCalculator struct {
-	x_bps uint32 // Allowed Sending Rate; in bytes per second
-	tld   int64  // Time Last Doubled (during slow start) or zero if unset; in ns since UTC zero
-
-	recvLimit uint32
-
-	xRecvSet      // Data structure for x_recv_set (see RFC 5348)
+	x          uint32 // Current allowed sending rate, in bytes per second
+	tld        int64  // Time Last Doubled (during slow start) or zero if unset; in ns since UTC zero
+	recv_limit uint32 // Receive limit, in bytes per second
+	xRecvSet          // Data structure for x_recv_set (see RFC 5348)
 }
 
 const (
-	X_MAX_INIT_WIN          = 4380  // Maximum size of initial window in bytes
-	X_MAX_BACKOFF_INTERVAL  = 64e9  // Maximum backoff interval in ns (See RFC 5348, Section 4.3)
+	X_MAX_INIT_WIN          = 4380           // Maximum size of initial window in bytes
+	X_MAX_BACKOFF_INTERVAL  = 64e9           // Maximum backoff interval in ns (See RFC 5348, Section 4.3)
+	X_RECV_MAX              = math.MaxInt32  // Maximum receive rate, in bytes per second
+	X_RECV_SET_SIZE         = 3              // Size of x_recv_set
 )
 
 // Init resets the rate calculator for new use
-func (t *rateCalculator) Init() {
-	// X // ??
-	t.x_bps = 0
-	t.tld = 0
+func (t *rateCalculator) Init(now int64) {
+	t.x = ??
+	t.tld = now ??
+	XX // Because X_recv_set is initialized with a single item, with value Infinity, recv_limit is
+	// set to Infinity for the first two round-trip times of the connection.  As a result, the
+	// sending rate is not limited by the receive rate during that period.  This avoids the
+	// problem of the sending rate being limited by the value of X_recv from the first feedback
+	// packet.
+	t.recv_limit = X_RECV_MAX
 	t.xRecvSet.Init()
 }
 
@@ -46,39 +51,42 @@ func (t *rateCalculator) SetRTT(rtt int64, now int64) {
 }
 */
 
-//func (t *rateCalculator) OnRead(now int64, x_recv uint32, rtt int64) {
-//	if /* the entire interval covered by the feedback packet was a data-limited interval */ {
-//		if /* the feedback packet reports a new loss event or an increase in the loss event rate p */ {
-//			t.xRecvSet.Halve()
-//			x_recv = (85 * x_recv) / 100  ???
-//			t.xRecvSet.Maximize(now, x_recv)
-//			t.recvLimit = t.xRecvSet.Max()
-//		} else {
-//			t.xRecvSet.Maximize(now, x_recv)
-//			t.recvLimit = 2 * t.xRecvSet.Max()
-//		}
-//	} else {
-//		t.xRecvSet.Update(now, x_recv, rtt)
-//		t.recvLimit = 2 * t.xRecvSet.Max()
-//	}
-//	var x_bps uint32
-//	if /* loss > 0 */ {
-//		x_eq_bps := equation ???
-//		x_bps = maxu32(
-//			minu32(x_eq_bps, t.recvLimit), 
-//			(1e9*t.ss)/X_MAX_BACKOFF_INTERVAL
-//		);
-//	} else if t_now - tld >= R {
-//		// Initial slow-start
-//		x_bps = max(min(2*X, recv_limit), initial_rate);
-//		tld = t_now;
-//	}
-//	// TODO: Place oscillation reduction code here (see RFC 5348, Section 4.3)
-//}
+// Sender calls OnRead each time a new feedback packet arrives.
+// OnRead returns the new allowed sending in bytes per second.
+// x_recv is given in bytes per second.
+func (t *rateCalculator) OnRead(now int64, x_recv uint32, rtt int64, lossRateInv uint32) uint32 {
+	if /* the entire interval covered by the feedback packet was a data-limited interval */ {
+		if /* the feedback packet reports a new loss event or an increase in the loss event rate p */ {
+			t.xRecvSet.Halve()
+			x_recv = (85 * x_recv) / 100
+			t.xRecvSet.Maximize(now, x_recv)
+			t.recv_limit = t.xRecvSet.Max()
+		} else {
+			t.xRecvSet.Maximize(now, x_recv)
+			t.recv_limit = 2 * t.xRecvSet.Max()
+		}
+	} else {
+		t.xRecvSet.Update(now, x_recv, rtt)
+		t.recv_limit = 2 * t.xRecvSet.Max()
+	}
+	if /* loss > 0 */ {
+		x_eq := t.thruEq(ss, rtt, lossRateInv)
+		t.x = maxu32(
+			minu32(x_eq, t.recv_limit), 
+			(1e9*ss) / X_MAX_BACKOFF_INTERVAL
+		)
+	} else if now - t.tld >= rtt {
+		// Initial slow-start
+		t.x = max(min(2*t.x, recv_limit), initRate(ss, rtt))
+		t.tld = now
+	}
+	// TODO: Place oscillation reduction code here (see RFC 5348, Section 4.3)
+	return t.x
+}
 
-// ThruEq returns the allowed sending rate, in bytes per second, according to the TCP
+// thruEq returns the allowed sending rate, in bytes per second, according to the TCP
 // throughput equation, for the regime b=1 and t_RTO=4*RTT (See RFC 5348, Section 3.1).
-func (t *rateCalculator) ThruEq(ss uint32, rtt int64, lossRateInv uint32) uint32 {
+func (t *rateCalculator) thruEq(ss uint32, rtt int64, lossRateInv uint32) uint32 {
 	bps := (1e3*1e9*int64(ss)) / (rtt * thruEqQ(lossRateInv))
 	return uint32(bps)
 }
@@ -90,7 +98,7 @@ func thruEqQ(lossRateInv uint32) int64 {
 }
 
 // initRate returns the allowed initial sending rate in bytes per second.
-func (t *rateCalculator) initRate(ss uint32, rtt int64) uint32 {
+func initRate(ss uint32, rtt int64) uint32 {
 	if ss <= 0 || rtt <= 0 {
 		panic("unknown SS or RTT")
 	}
@@ -108,11 +116,6 @@ type xRecvEntry struct {
 	Rate uint32   // Receive rate; in bytes per second
 	Time int64    // Entry timestamp or zero if unset; in ns since UTC zero
 }
-
-const (
-	X_RECV_SET_SIZE = 3              // Size of x_recv_set
-	X_RECV_MAX      = math.MaxInt32  // Maximum receive rate
-)
 
 // Init resets the xRecvSet object for new use
 func (t *xRecvSet) Init() {
