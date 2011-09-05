@@ -12,9 +12,10 @@ import (
 
 // rateCaclulator computers the allowed sending rate of the sender
 type rateCalculator struct {
-	x          uint32 // Current allowed sending rate, in bytes per second
-	tld        int64  // Time Last Doubled (during slow start) or zero if unset; in ns since UTC zero
-	recv_limit uint32 // Receive limit, in bytes per second
+	x               uint32 // Current allowed sending rate, in bytes per second
+	tld             int64  // Time Last Doubled (during slow start) or zero if unset; in ns since UTC zero
+	recv_limit      uint32 // Receive limit, in bytes per second
+	lastLossRateInv uint32 // The latest loss rate inverse received. Zero indicates unknown rate
 	xRecvSet          // Data structure for x_recv_set (see RFC 5348)
 }
 
@@ -26,37 +27,49 @@ const (
 )
 
 // Init resets the rate calculator for new use
-func (t *rateCalculator) Init(now int64) {
-	t.x = ??
-	t.tld = now ??
-	XX // Because X_recv_set is initialized with a single item, with value Infinity, recv_limit is
+func (t *rateCalculator) Init(now int64, ss uint32) {
+	// The allowed sending rate before the first feedback packet is received
+	// is one packet per second.
+	t.x = ss
+	// tld = 0 indicates that the first feedback packet has yet not been received.
+	t.tld = 0
+	// Because X_recv_set is initialized with a single item, with value Infinity, recv_limit is
 	// set to Infinity for the first two round-trip times of the connection.  As a result, the
 	// sending rate is not limited by the receive rate during that period.  This avoids the
 	// problem of the sending rate being limited by the value of X_recv from the first feedback
 	// packet.
 	t.recv_limit = X_RECV_MAX
+	t.lastLossRateInv = 0
 	t.xRecvSet.Init()
 }
 
-// Sender calls SetRTT every time a new RTT estimate is available. 
-// SetRTT can result in a change of X (the Allowed Transmit Rate).
-/*
-func (t *rateCalculator) SetRTT(rtt int64, now int64) {
-	?? // this should be folded into OnRead
-	if t.rtt <= 0 {
-		r.tld = now
-		t.x = t.initialRate()
-	}
-	t.rtt = rtt
+// onFirstRead is called internally to handle the very first feedback packet received.
+func (t *rateCalculator) onFirstRead(now int64, ss uint32, rtt int64) uint32 {
+	t.tld = now
+	t.x = initRate(ss, rtt)
+	return t.x
 }
-*/
+
+// initRate returns the allowed initial sending rate in bytes per second.
+func initRate(ss uint32, rtt int64) uint32 {
+	if ss <= 0 || rtt <= 0 {
+		panic("unknown SS or RTT")
+	}
+	win := minu32(4*ss, maxu32(2*ss, X_MAX_INIT_WIN)) // window = bytes per round trip (bpr)
+	return uint32(max64((1e9*int64(win)) / rtt, 1))
+}
 
 // Sender calls OnRead each time a new feedback packet arrives.
 // OnRead returns the new allowed sending in bytes per second.
 // x_recv is given in bytes per second.
-func (t *rateCalculator) OnRead(now int64, x_recv uint32, rtt int64, lossRateInv uint32) uint32 {
+func (t *rateCalculator) OnRead(now int64, ss uint32, x_recv uint32, rtt int64, lossRateInv uint32, newLoss bool) uint32 {
+	?? // The loss rate inv should never be < 1 after the first newLoss event
+	// lossTracker: current rate, new loss reported, increase or decrease from prev event
+	if t.tld <= 0 {
+		return t.onFirstRead(now, ss, rtt)
+	}
 	if /* the entire interval covered by the feedback packet was a data-limited interval */ {
-		if /* the feedback packet reports a new loss event or an increase in the loss event rate p */ {
+		if ?? /* the feedback packet reports a new loss event or an increase in the loss event rate p */ {
 			t.xRecvSet.Halve()
 			x_recv = (85 * x_recv) / 100
 			t.xRecvSet.Maximize(now, x_recv)
@@ -69,7 +82,8 @@ func (t *rateCalculator) OnRead(now int64, x_recv uint32, rtt int64, lossRateInv
 		t.xRecvSet.Update(now, x_recv, rtt)
 		t.recv_limit = 2 * t.xRecvSet.Max()
 	}
-	if /* loss > 0 */ {
+	// Non-zero loss rate inverse indicates that we are in the post-slow start phase
+	if lossRateInv > 0 {
 		x_eq := t.thruEq(ss, rtt, lossRateInv)
 		t.x = maxu32(
 			minu32(x_eq, t.recv_limit), 
@@ -81,6 +95,7 @@ func (t *rateCalculator) OnRead(now int64, x_recv uint32, rtt int64, lossRateInv
 		t.tld = now
 	}
 	// TODO: Place oscillation reduction code here (see RFC 5348, Section 4.3)
+	r.lastLossRateInv = lossRateInv ?? // should onFirstRead do something as well?
 	return t.x
 }
 
@@ -95,15 +110,6 @@ func (t *rateCalculator) thruEq(ss uint32, rtt int64, lossRateInv uint32) uint32
 func thruEqQ(lossRateInv uint32) int64 {
 	j := min(int(lossRateInv), len(qTable))
 	return qTable[j-1].Q
-}
-
-// initRate returns the allowed initial sending rate in bytes per second.
-func initRate(ss uint32, rtt int64) uint32 {
-	if ss <= 0 || rtt <= 0 {
-		panic("unknown SS or RTT")
-	}
-	win := minu32(4*ss, maxu32(2*ss, X_MAX_INIT_WIN)) // window = bytes per round trip (bpr)
-	return uint32(max64((1e9*int64(win)) / rtt, 1))
 }
 
 // —————

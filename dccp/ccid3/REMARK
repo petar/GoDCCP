@@ -1,12 +1,3 @@
-SLOW-START:
-
-   (Section 5, Other Congestion Control Mechanisms)
-   The sender starts in a slow-start phase, roughly doubling its allowed
-   sending rate each round-trip time.  The slow-start phase is ended by
-   the receiver's report of a data packet drop or mark, after which the
-   sender uses the loss event rate to calculate its allowed sending
-   rate.
-
 RTT ESTIMATE*
 
    When a new RTT estimate is calculated (upon feedback packet arrival),
@@ -20,20 +11,13 @@ NOFEEDBACK*
    expires, then the sender halves its allowed sending rate. The allowed sending rate is never reduced
    below one packet per 64 seconds.
 
+   Take care of RTO both in onFirstRead and OnRead
+
 RATE
 
-   If the sender never receives a feedback packet from the receiver, and
-   as a consequence never gets to set the allowed sending rate to one
-   packet per RTT, then the sending rate is left at its initial rate of
-   one packet per second, with the nofeedback timer expiring after two
+   ... with the nofeedback timer expiring after two
    seconds. The allowed sending rate is halved each time the nofeedback
    timer expires. 
-
-   The allowed sending rate can be at most twice the rate received at the 
-   receiver in the last round-trip time.
-
-   [RFC5348, 4.3]  Update the allowed sending rate as follows.  This procedure uses
-       the variables t_mbi and recv_limit:
 
 Definition of a data-limited interval:
    We define a sender as data-limited any time it is not sending as much
