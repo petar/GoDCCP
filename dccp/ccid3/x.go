@@ -26,7 +26,10 @@ const (
 	X_RECV_SET_SIZE         = 3              // Size of x_recv_set
 )
 
-// Init resets the rate calculator for new use
+// Init resets the rate calculator for new use and returns the initial 
+// allowed sending rate (in bytes per second). The latter is the rate
+// to be used before the first feedback packet is received and hence before
+// an RTT estimate is available.
 func (t *rateCalculator) Init(now int64, ss uint32) {
 	// The allowed sending rate before the first feedback packet is received
 	// is one packet per second.
@@ -61,7 +64,8 @@ func initRate(ss uint32, rtt int64) uint32 {
 
 // Sender calls OnRead each time a new feedback packet arrives.
 // OnRead returns the new allowed sending in bytes per second.
-// x_recv is given in bytes per second.
+// x_recv is given in bytes per second.  
+// lossRateInv equals zero if the loss rate is still unknown.
 func (t *rateCalculator) OnRead(now int64, ss uint32, x_recv uint32, rtt int64, lossRateInv uint32, newLoss bool) uint32 {
 	?? // The loss rate inv should never be < 1 after the first newLoss event
 	// lossTracker: current rate, new loss reported, increase or decrease from prev event

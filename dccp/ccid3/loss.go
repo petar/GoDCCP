@@ -181,6 +181,9 @@ func (t *lossEventRateCalculator) CalcLossEventRateInv(history []*LossInterval) 
 	I_tot := math.Fmax(I_tot0, I_tot1)
 	I_mean := I_tot / W_tot
 
+	// A computation of the loss event rate inverse, based on finished loss intervals,
+	// can never return a value smaller than one. For this reason, elsewhere in the code,
+	// a rate inverse variable can have the special value zero to mean 'rate not known'.
 	return uint32(math.Fmax(1.0, I_mean))
 }
 

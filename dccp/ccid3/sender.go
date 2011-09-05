@@ -19,17 +19,7 @@ type sender struct {
 	nofeedbackTimer
 	segmentSize
 	strober
-
-	phase int
 }
-
-// Phases of the congestion control mechanism
-const (
-	INIT = iota
-	SLOWSTART
-	EQUATION
-	CLOSED
-)
 
 // GetID() returns the CCID of this congestion control algorithm
 func (s *sender) GetID() byte { return dccp.CCID3 }
