@@ -13,7 +13,7 @@ import (
 
 // —————
 // lossEvents is the algorithm that keeps track of loss events and constructs the
-// loss intervals option upon request
+// loss intervals option at the receiver.
 type lossEvents struct {
 
 	// pastHeaders keeps track of the last NDUPACK headers to overcome network re-ordering
@@ -222,4 +222,10 @@ func (h *intervalHistory) Len() int {
 func (h *intervalHistory) Get(i int) *LossInterval {
 	l := int64(len(h.pastIntervals))
 	return h.pastIntervals[int((h.pushCount-1-int64(i)) % l)]
+}
+
+// —————
+// lossTracker process loss rate options received at the sender and maintains relevant loss history.
+type lossTracker struct {
+	?
 }

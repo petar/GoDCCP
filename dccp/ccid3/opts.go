@@ -15,6 +15,8 @@ const (
 	OptionLossEventRate = 192
 	OptionLossIntervals = 193
 	OptionReceiveRate   = 194
+	// OptionLossInfo IS NOT part of CCID3. This is an extension we add.
+	OptionLossInfo      = 210
 )
 
 // —————
@@ -194,6 +196,38 @@ func (opt *ReceiveRateOption) Encode() (*dccp.Option, os.Error) {
 	dccp.Encode4ByteUint(opt.Rate, d)
 	return &dccp.Option{
 		Type:      OptionReceiveRate,
+		Data:      d,
+		Mandatory: false,
+	}, nil
+}
+
+// —————
+// The LossInfo option directly carries, from the receiver to the sender, the types of loss
+// information that a CCID3 sender would have to reconstruct from the LossIntervals option.  This is
+// an extension to the RFC specification.
+type LossInfoOption struct {
+	// RateInv is the inverse of the loss event rate, rounded UP, as calculated by the receiver.
+	RateInv uint32
+	// NewLoss indicates how many new loss events are reported by the feedback packet carrying this option
+	NewLossCount uint8
+}
+
+func DecodeLossInfoOption(opt *dccp.Option) *LossInfoOption {
+	if opt.Type != OptionLossInfo || len(opt.Data) != 5 {
+		return nil
+	}
+	return &LossInfoOption{
+		RateInv:      dccp.Decode4ByteUint(opt.Data[0:4]),
+		NewLossCount: dccp.Decode1ByteUint(opt.Data[4:5]),
+	}
+}
+
+func (opt *LossInfoOption) Encode() (*dccp.Option, os.Error) {
+	d := make([]byte, 5)
+	dccp.Encode4ByteUint(opt.RateInv, d)
+	dccp.Encode1ByteUint(opt.NewLossCount, d[4:])
+	return &dccp.Option{
+		Type:      OptionLossInfo,
 		Data:      d,
 		Mandatory: false,
 	}, nil
