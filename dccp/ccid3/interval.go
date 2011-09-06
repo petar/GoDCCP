@@ -23,7 +23,7 @@ type evolveInterval struct {
 	// lastTime is the time when the last packet was received
 	lastTime    int64
 
-	// lastRTT is the round-trip time when the last packet was received
+	// lastRTT is the round-trip time estimate when the last packet was received
 	lastRTT     int64
 
 	// nonDataLen is the number of non-data packets since last received (data) packet
@@ -59,10 +59,10 @@ func (t *evolveInterval) Init(push pushIntervalFunc) {
 	t.lastSeqNo = 0
 	t.lastTime = 0
 	t.lastRTT = 0
-	t.reset()
+	t.clearInterval()
 }
 
-func (t *evolveInterval) reset() {
+func (t *evolveInterval) clearInterval() {
 	t.lossLen = 0
 	t.startSeqNo = 0
 	t.startTime = 0
@@ -72,28 +72,20 @@ func (t *evolveInterval) reset() {
 }
 
 // OnRead is called after best effort has been made to fix packet 
-// reordering. This function performs tha main loss intervals construction logic.
+// reordering. This function performs tha main loss interval construction logic.
 //
-// NOTE: This implementation ignores receive events of non-Data or non-DataAck packets,
-// however it includes them in the interval length reports (as losses). This simplifies
-// the data structures involved. It is thus imperative that non-data packets are sent
-// much less often than data packets.
-//
-// TODO: It is possible to mend the sequence length overcounts by adding logic that
-// subtracts the count of every successfully received non-data packet from the final
-// sequence lengths.
+// TODO: Account for non-data packets
 func (t *evolveInterval) OnRead(ff *dccp.FeedforwardHeader, rtt int64) {
 
-	// If re-ordering still present, packet must be discarded
+	// If re-ordering present, packet is not considered here, because it was already counted as
+	// a lost packet when t.lastSeqNo was considered
 	if ff.SeqNo <= t.lastSeqNo {
 		return
 	}
 
-	// Discard non-data packets from loss interval construction,
+	// Keep a separate count of non-Data packets
 	if ff.Type != dccp.Data && ff.Type != dccp.DataAck {
-		// But count the number of non-data packets since last received (data) packet
 		t.nonDataLen++
-		return
 	}
 
 	// Number of lost packets between this and the last received packets
@@ -105,9 +97,8 @@ func (t *evolveInterval) OnRead(ff *dccp.FeedforwardHeader, rtt int64) {
 	t.lastSeqNo = ff.SeqNo
 	t.lastTime = ff.Time
 	t.lastRTT = rtt
-	t.nonDataLen = 0
 
-	// Only perform updates after the second received packet
+	// Only perform updates after the second packet ever received
 	if lastSeqNo > 0 {
 
 		// Prepare tail between previous receive and this one
@@ -118,87 +109,106 @@ func (t *evolveInterval) OnRead(ff *dccp.FeedforwardHeader, rtt int64) {
 	}
 }
 
+// eatTail updates the currently evolving loss interval by processing the newly received eventTail.
 // eatTail does not interact with t.lastSeqNo, t.lastTime, or t.lastRTT.
+// Upon return, eatTail always leaves a non-nil interval in progress.
 func (t *evolveInterval) eatTail(tail *eventTail) {
+	// If the tail has loss events or there was an interval in progress, eatTail must always
+	// leave an interval in progress upon return.  In particular, the only time when t.lossLen == 0 
+	// outside of eatTail, is when no packet drops have been witnessed yet.
+	if t.lossLen > 0 || tail.LostCount() > 0 {
+		defer func() {
+			if t.lossLen <= 0 || t.losslessLen <= 0 {
+				panic("eatTail leaves no interval in progress")
+			}
+		}()
+	}
 	for tail != nil {
-		// If no interval has started yet
+		// If no interval in progress
 		if t.lossLen == 0 {
 			// If no losses, then we quit
-			if tail.Lost() == 0 {
+			if tail.LostCount() == 0 {
 				return
 			}
-			// Otherwise, lossy section becomes a loss interval and
-			// received packet becomes a lossless interval
-			t.startTime, t.startSeqNo = tail.LossInfo(1)
-			t.lossLen, t.startRTT = tail.Lost(), t.lastRTT
+			// Otherwise, we start a new interval whose loss section becomes the lossy
+			// section of the tail and whose lossless section becomes the single
+			// received packet at the end of the tail
+			t.startTime, t.startSeqNo = tail.GetLossEvent(1)
+			t.lossLen, t.startRTT = tail.LostCount(), t.lastRTT
 			t.losslessLen = 1
 			return
 		} else {
 			// If the tail has no loss events, increase the lossless interval and quit
-			if tail.Lost() == 0 {
+			if tail.LostCount() == 0 {
 				t.losslessLen++
 				return
 			}
 			// Can we greedily increase the size of the loss section?
-			if _, _, k := tail.LatestLoss(t.startTime+t.startRTT); k > 0 {
+			if _, _, k := tail.LatestLoss(t.startTime + t.startRTT); k > 0 {
 				t.lossLen += t.losslessLen + k
 				t.losslessLen = 0
 				tail.Chop(k)
-				// If the new tail has no loss events, adjust the lossless section and quit
-				if tail.Lost() == 0 {
+				// If the new tail has no loss events, adjust the lossless section and return
+				if tail.LostCount() == 0 {
 					t.losslessLen = 1
 					return
 				}
-				// Otherwise, finish the interval and consume the rest of tail
+				// Otherwise, finish the interval and consume the rest of the tail
+				// in the next iteration
 			}
-			// If not, finish the current interval
+			// If not, finish the current interval (and begin a new one in the next iteration)
 			t.finishInterval()
+			// When exiting the iteration here, the tail ALWAYS contains loss events
 		}
 	}
 }
 
 func (t *evolveInterval) finishInterval() {
 	if t.lossLen <= 0 {
-		panic("no interval")
+		panic("finishing an interval without loss")
 	}
 	t.push(&LossInterval{
 	       LosslessLength: uint32(t.losslessLen),
 	       LossLength:     uint32(t.lossLen),
-	       DataLength:     uint32(max(1, t.lossLen+t.losslessLen)),  // TODO: We don't count non-data packets yet
+	       DataLength:     uint32(t.lossLen + t.losslessLen),  // TODO: We don't count non-data packets yet
 	       ECNNonceEcho:   false,
 	})
-	// This indicates that no interval is in progress
-	t.lossLen = 0
+	t.clearInterval()
 }
 
-// Unfinished returns a loss interval for the current unfinished loss interval if it is
-// considered long enough for inclusion in feedback to sender. A nil is returned otherwise.
+// Unfinished returns a loss interval for the current unfinished loss interval.
+// A nil is returned only if no packet drops have been witnessed yet, because in this
+// case, and in this case only, there is no interval in progress.
 func (t *evolveInterval) Unfinished() *LossInterval {
-	if t.lossLen == 0 || t.lastTime - t.startTime < 2*t.startRTT {
+	if t.lossLen <= 0 {
 		return nil
+	}
+	if t.losslessLen <= 0 {
+		panic("interval in progress missing lossless section")
 	}
 	return &LossInterval{
 		LosslessLength: uint32(t.losslessLen),
 		LossLength:     uint32(t.lossLen),
-		DataLength:     uint32(max(1, t.lossLen + t.losslessLen)),
+		DataLength:     uint32(t.lossLen + t.losslessLen), // TODO: We don't account for non-data packets yet
 		ECNNonceEcho:   false,
 	}
 }
 
+// —————
 // eventTail represents a yet unprocessed sequence of events that begins with a sequence of
-// evenly spaced in time loss events and concludes with a successful receive event.
+// evenly spaced-in-time loss events and concludes with a successful receive event.
 //
 //    * <--gap--> X <--gap--> X <--gap--> X <-------> O
 //  prev                                             recv
 //
-// Crucially, we allow prevTime == recvTime for whenever two packets are perceived
+// We allow prevTime == recvTime for whenever two packets are perceived
 // as being received at the same time.
 type eventTail struct {
 	prevSeqNo int64 // SeqNo of previous event
 	prevTime  int64 // Time of previous event (success or loss)
 	gap       int64 // Time between adjacent loss events
 	recvTime  int64 // Time of receive event
-	nlost     int   // Number of loss events (X's in picture above)
+	nlost     int   // Number of loss events ("X"s in picture above)
 }
 
 // Init initializes the event tail.
@@ -218,11 +228,11 @@ func (t *eventTail) Init(prevTime, recvTime int64, nlost int, prevSeqNo int64) {
 }
 
 // Lost returns the number of lost packets in this tail
-func (t *eventTail) Lost() int { return t.nlost }
+func (t *eventTail) LostCount() int { return t.nlost }
 
-// LossInfo returns the time and sequence number of the k-th loss event.
-// Loss events are numbered 1,2, ... ,t.Lost()
-func (t *eventTail) LossInfo(k int64) (lossTime int64, lossSeqNo int64) {
+// GetLossEvent returns the time and sequence number of the k-th loss event.
+// Loss events are numbered 1,2, ... ,t.LostCount()
+func (t *eventTail) GetLossEvent(k int64) (lossTime int64, lossSeqNo int64) {
 	if k <= 0 {
 		return -1, -1
 	}
@@ -244,7 +254,7 @@ func (t *eventTail) LatestLoss(deadline int64) (lossTime int64, lossSeqNo int64,
 	} else {
 		k64 = min64(d/t.gap, int64(t.nlost))
 	}
-	lossTime, lossSeqNo = t.LossInfo(k64)
+	lossTime, lossSeqNo = t.GetLossEvent(k64)
 	// TODO: Handle case when k overflows the int type
 	return lossTime, lossSeqNo, int(k64)
 }

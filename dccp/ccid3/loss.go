@@ -58,6 +58,9 @@ func (t *lossEvents) pushPopHeader(ff *dccp.FeedforwardHeader) *dccp.Feedforward
 	return r
 }
 
+// skipLength returns the number of packets, before and including the one being
+// acknowledged, that are in the re-ordering queue pastHeaders and have not yet been
+// considered by the loss intervals logic.
 func (t *lossEvents) skipLength(ackno int64) byte {
 	var skip byte
 	var dbgGSR int64 = 0
@@ -68,7 +71,7 @@ func (t *lossEvents) skipLength(ackno int64) byte {
 		}
 	}
 	if dbgGSR != ackno {
-		log.Printf("lossEvents GSR != AckNo")
+		panic("lossEvents GSR != AckNo")
 	}
 	return byte(skip)
 }
@@ -106,10 +109,13 @@ func (t *lossEvents) listIntervals() []*LossInterval {
 }
 
 // Option returns the Loss Intervals option, representing the current state.
+// ackno is the seq no that the Ack packet is acknowledging. It equals the AckNo
+// field of that packet.
 //
-// NOTE: In a small deviation from the RFC, we don't send any loss intervals
+// NOTE: In a deviation from the RFC, we don't send any loss intervals
 // before the first loss event has occured. The sender is supposed to handle
 // this adequately.
+?? deal with the NOTE
 func (t *lossEvents) Option(ackno int64) *LossIntervalsOption {
 	return &LossIntervalsOption{
 		SkipLength:    t.skipLength(ackno),
@@ -120,6 +126,7 @@ func (t *lossEvents) Option(ackno int64) *LossIntervalsOption {
 // LossEventRateInv returns the inverse of the loss event rate, calculated using the recent
 // history of loss intervals as well as the current (unfinished) interval, if sufficiently
 // long.
+?? should the loss rate include the current interval?
 func (t *lossEvents) LossEventRateInv() uint32 {
 	return t.lossEventRateCalculator.CalcLossEventRateInv(t.listIntervals())
 }
@@ -227,5 +234,5 @@ func (h *intervalHistory) Get(i int) *LossInterval {
 // —————
 // lossTracker process loss rate options received at the sender and maintains relevant loss history.
 type lossTracker struct {
-	?
+	??
 }

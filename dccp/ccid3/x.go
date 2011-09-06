@@ -15,7 +15,6 @@ type rateCalculator struct {
 	x               uint32 // Current allowed sending rate, in bytes per second
 	tld             int64  // Time Last Doubled (during slow start) or zero if unset; in ns since UTC zero
 	recv_limit      uint32 // Receive limit, in bytes per second
-	lastLossRateInv uint32 // The latest loss rate inverse received. Zero indicates unknown rate
 	xRecvSet          // Data structure for x_recv_set (see RFC 5348)
 }
 
@@ -42,7 +41,6 @@ func (t *rateCalculator) Init(now int64, ss uint32) {
 	// problem of the sending rate being limited by the value of X_recv from the first feedback
 	// packet.
 	t.recv_limit = X_RECV_MAX
-	t.lastLossRateInv = 0
 	t.xRecvSet.Init()
 }
 
@@ -99,7 +97,6 @@ func (t *rateCalculator) OnRead(now int64, ss uint32, x_recv uint32, rtt int64, 
 		t.tld = now
 	}
 	// TODO: Place oscillation reduction code here (see RFC 5348, Section 4.3)
-	r.lastLossRateInv = lossRateInv ?? // should onFirstRead do something as well?
 	return t.x
 }
 
