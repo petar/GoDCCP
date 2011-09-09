@@ -15,7 +15,7 @@ const (
 	OptionLossEventRate = 192
 	OptionLossIntervals = 193
 	OptionReceiveRate   = 194
-	// OptionLossDigest IS NOT a part of CCID3. It is an extension.
+	// OptionLossDigest IS NOT a part of CCID3. It is an experimental extension.
 	OptionLossDigest    = 210
 )
 
@@ -44,10 +44,12 @@ type LossEventRateOption struct {
 	RateInv uint32
 }
 
-? Distinguish between max inv loss rate, and no loss or unknown
 const (
-	UnknownLossEventRateInv = 0           // Signifies no dropped packets encountered yet
-	MaxLossEventRateInv  = math.MaxUint32 // Corresponds to minimum non-zero loss rate
+	// UnknownLossEventRateInv is the maximum representable loss event rate inverse, 
+	// and therefore corresponds to the minimum representable loss event rate.
+	// In the CCID protocol, this constant is interpreted as 'no loss events detected'.
+	// Its numerical value allows it be used safely in comparison operations.
+	UnknownLossEventRateInv = math.MaxUint32
 )
 
 func DecodeLossEventRateOption(opt *dccp.Option) *LossEventRateOption {
@@ -211,6 +213,7 @@ func (opt *ReceiveRateOption) Encode() (*dccp.Option, os.Error) {
 // an extension to the RFC specification.
 type LossDigestOption struct {
 	// RateInv is the inverse of the loss event rate, rounded UP, as calculated by the receiver.
+	// A value of UnknownLossEventRateInv indicates that no loss events have been observed.
 	RateInv uint32
 	// NewLoss indicates how many new loss events are reported by the feedback packet carrying this option
 	NewLossCount uint8

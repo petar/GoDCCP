@@ -54,7 +54,7 @@ func (r *receiver) Open() {
 	r.lastWrite = 0
 	r.lastAck = 0
 	r.dataSinceAck = false
-	r.lastLossEventRateInv = UnknownLossEventRate
+	r.lastLossEventRateInv = UnknownLossEventRateInv
 
 	r.gsr = 0
 	r.gsrTimestamp = 0

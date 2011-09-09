@@ -87,7 +87,7 @@ func (t *lossEvents) OnRead(ff *dccp.FeedforwardHeader, rtt int64) os.Error {
 
 // listIntervals lists the finished loss intervals from most recent to least, including
 // the current (unfinished) interval as long as it is sufficiently long
-func (t *lossEvents) listIntervals() []*LossInterval {
+func (t *lossEvents) listIntervals() []*LossIntervalDetail {
 	current := t.evolveInterval.Unfinished()
 	cInd := 0
 	if current != nil {
@@ -95,8 +95,8 @@ func (t *lossEvents) listIntervals() []*LossInterval {
 	}
 	k := t.intervalHistory.Len() + cInd
 
-	// OPT: This slice allocation can be avoided by using a field instance
-	r := make([]*LossInterval, k)
+	// TODO: This slice allocation can be avoided by making r into a field 
+	r := make([]*LossIntervalDetail, k)
 
 	if cInd == 1 {
 		r[0] = current
@@ -108,24 +108,42 @@ func (t *lossEvents) listIntervals() []*LossInterval {
 	return r
 }
 
-// Option returns the Loss Intervals option, representing the current state.
-// ackno is the seq no that the Ack packet is acknowledging. It equals the AckNo
-// field of that packet.
+// LossIntervalsOption returns the Loss Intervals option, representing the current state.
+// ackno is the seq no that the Ack packet is acknowledging. It equals the AckNo field of
+// that packet.
 //
 // NOTE: In a deviation from the RFC, we don't send any loss intervals
 // before the first loss event has occured. The sender is supposed to handle
 // this adequately.
-func (t *lossEvents) Option(ackno int64) *LossIntervalsOption {
+func (t *lossEvents) LossIntervalsOption(ackno int64) *LossIntervalsOption {
 	return &LossIntervalsOption{
 		SkipLength:    t.skipLength(ackno),
-		LossIntervals: t.listIntervals(),
+		LossIntervals: stripLossIntervalDetail(t.listIntervals()),
+	}
+}
+
+func stripLossIntervalDetail(s []*LossIntervalDetail) []*LossInterval {
+	r := make([]*LossInterval, len(s))
+	for i, e := range s {
+		r[i] = &e.LossInterval
+	}
+	return r
+}
+
+func (t *lossEvents) LossDigestOption() *LossDigestOption {
+	panic("new loss count calculation not implemented")
+	return &LossDigestOption{
+		// RateInv is the inverse of the loss event rate, rounded UP, as calculated by the receiver.
+		// A value of UnknownLossEventRateInv indicates that no loss events have been observed.
+		RateInv:      t.LossEventRateInv(),
+		// NewLoss indicates how many new loss events are reported by the feedback packet carrying this option
+		NewLossCount: 0, // TODO: This is not implemented
 	}
 }
 
 // LossEventRateInv returns the inverse of the loss event rate, calculated using the recent
 // history of loss intervals as well as the current (unfinished) interval, if sufficiently long.
-// A return value of zero indicates that no lost packets have been encountered yet.
-?? the loss rate calculator should not use the current interval if too small
+// A return value of UknownLossEventRateInv indicates that no lost packets have been encountered yet.
 func (t *lossEvents) LossEventRateInv() uint32 {
 	return t.lossEventRateCalculator.CalcLossEventRateInv(t.listIntervals())
 }
@@ -161,13 +179,14 @@ func intervalWeight(i, nInterval int) float64 {
 // NOTE: We currently don't use the alternative algorithm, called History Discounting,
 // discussed in RFC 5348, Section 5.5
 // TODO: This calculation should be replaced with an entirely integral one.
+// TODO: Remove the most recent unfinished interval from the calculation, if too small. Not crucial.
 func (t *lossEventRateCalculator) CalcLossEventRateInv(history []*LossIntervalDetail) uint32 {
 
 	// Prepare a slice with interval lengths
 	k := max(len(history), t.nInterval)
 	if k < 2 {
-		?
-		return UnknownLossEventRate
+		// Too few loss events are reported as UnknownLossEventRateInv which signifies 'no loss'
+		return UnknownLossEventRateInv
 	}
 	h := t.h[:k]
 	for i := 0; i < k; i++ {
@@ -188,10 +207,10 @@ func (t *lossEventRateCalculator) CalcLossEventRateInv(history []*LossIntervalDe
 	I_tot := math.Fmax(I_tot0, I_tot1)
 	I_mean := I_tot / W_tot
 
-	// A computation of the loss event rate inverse, based on finished loss intervals,
-	// can never return a value smaller than one. For this reason, elsewhere in the code,
-	// a rate inverse variable can have the special value zero to mean 'rate not known'.
-	return uint32(math.Fmax(1.0, I_mean))
+	if I_mean < 1.0 {
+		panic("invalid inverse")
+	}
+	return uint32(I_mean)
 }
 
 // —————
