@@ -52,7 +52,17 @@ type evolveInterval struct {
 	_tail       eventTail
 }
 
-type pushIntervalFunc func(*LossInterval)
+// LossIntervalDetail is an internal structure that contains more detailed information about a loss
+// interval than the LossInterval structure that is transported inside a DCCP option.
+type LossIntervalDetail struct {
+	LossInterval
+	StartSeqNo int64 // The sequence number of the first packet in the loss interval
+	StartTime  int64 // The reception time of the first packet in the loss interval
+	StartRTT   int64 // The RTT estimate when the interval began
+	Unfinished bool  // True if the loss interval is still evolving
+}
+
+type pushIntervalFunc func(*LossIntervalDetail)
 
 func (t *evolveInterval) Init(push pushIntervalFunc) {
 	t.push = push
@@ -167,11 +177,17 @@ func (t *evolveInterval) finishInterval() {
 	if t.lossLen <= 0 {
 		panic("finishing an interval without loss")
 	}
-	t.push(&LossInterval{
-	       LosslessLength: uint32(t.losslessLen),
-	       LossLength:     uint32(t.lossLen),
-	       DataLength:     uint32(t.lossLen + t.losslessLen),  // TODO: We don't count non-data packets yet
-	       ECNNonceEcho:   false,
+	t.push(&LossIntervalDetail{
+		LossInterval: LossInterval{
+			LosslessLength: uint32(t.losslessLen),
+			LossLength:     uint32(t.lossLen),
+			DataLength:     uint32(t.lossLen + t.losslessLen),  // TODO: We don't count non-data packets yet
+			ECNNonceEcho:   false,
+		},
+		StartSeqNo: t.startSeqNo,
+		StartTime:  t.startTime,
+		StartRTT:   t.startRTT,
+		Unfinished: false,
 	})
 	t.clearInterval()
 }
@@ -179,18 +195,27 @@ func (t *evolveInterval) finishInterval() {
 // Unfinished returns a loss interval for the current unfinished loss interval.
 // A nil is returned only if no packet drops have been witnessed yet, because in this
 // case, and in this case only, there is no interval in progress.
-func (t *evolveInterval) Unfinished() *LossInterval {
+func (t *evolveInterval) Unfinished() *LossIntervalDetail {
 	if t.lossLen <= 0 {
 		return nil
 	}
 	if t.losslessLen <= 0 {
 		panic("interval in progress missing lossless section")
 	}
-	return &LossInterval{
-		LosslessLength: uint32(t.losslessLen),
-		LossLength:     uint32(t.lossLen),
-		DataLength:     uint32(t.lossLen + t.losslessLen), // TODO: We don't account for non-data packets yet
-		ECNNonceEcho:   false,
+	// TODO: An optimization might consider not creating a new LossIntervalDetail each time
+	// Unfinished is called, since this may in fact happen multiple times per loss interval
+	// lifetime.
+	return &LossIntervalDetail{
+		LossInterval: LossInterval{
+			LosslessLength: uint32(t.losslessLen),
+			LossLength:     uint32(t.lossLen),
+			DataLength:     uint32(t.lossLen + t.losslessLen), // TODO: We don't account for non-data packets yet
+			ECNNonceEcho:   false,
+		},
+		StartSeqNo: t.startSeqNo,
+		StartTime:  t.startTime,
+		StartRTT:   t.startRTT,
+		Unfinished: true,
 	}
 }
 

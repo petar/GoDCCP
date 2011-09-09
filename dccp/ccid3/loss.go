@@ -31,7 +31,7 @@ type lossEvents struct {
 
 // Init initializes/resets the lossEvents instance
 func (t *lossEvents) Init() {
-	t.evolveInterval.Init(func(li *LossInterval) { t.intervalHistory.Push(li) })
+	t.evolveInterval.Init(func(lid *LossIntervalDetail) { t.intervalHistory.Push(lid) })
 	t.intervalHistory.Init(NINTERVAL)
 	t.lossEventRateCalculator.Init(NINTERVAL)
 }
@@ -115,7 +115,6 @@ func (t *lossEvents) listIntervals() []*LossInterval {
 // NOTE: In a deviation from the RFC, we don't send any loss intervals
 // before the first loss event has occured. The sender is supposed to handle
 // this adequately.
-?? deal with the NOTE
 func (t *lossEvents) Option(ackno int64) *LossIntervalsOption {
 	return &LossIntervalsOption{
 		SkipLength:    t.skipLength(ackno),
@@ -124,9 +123,9 @@ func (t *lossEvents) Option(ackno int64) *LossIntervalsOption {
 }
 
 // LossEventRateInv returns the inverse of the loss event rate, calculated using the recent
-// history of loss intervals as well as the current (unfinished) interval, if sufficiently
-// long.
-?? should the loss rate include the current interval?
+// history of loss intervals as well as the current (unfinished) interval, if sufficiently long.
+// A return value of zero indicates that no lost packets have been encountered yet.
+?? the loss rate calculator should not use the current interval if too small
 func (t *lossEvents) LossEventRateInv() uint32 {
 	return t.lossEventRateCalculator.CalcLossEventRateInv(t.listIntervals())
 }
@@ -162,16 +161,17 @@ func intervalWeight(i, nInterval int) float64 {
 // NOTE: We currently don't use the alternative algorithm, called History Discounting,
 // discussed in RFC 5348, Section 5.5
 // TODO: This calculation should be replaced with an entirely integral one.
-func (t *lossEventRateCalculator) CalcLossEventRateInv(history []*LossInterval) uint32 {
+func (t *lossEventRateCalculator) CalcLossEventRateInv(history []*LossIntervalDetail) uint32 {
 
 	// Prepare a slice with interval lengths
 	k := max(len(history), t.nInterval)
 	if k < 2 {
+		?
 		return UnknownLossEventRate
 	}
 	h := t.h[:k]
 	for i := 0; i < k; i++ {
-		h[i] = float64(history[i].SeqLen())
+		h[i] = float64(history[i].LossInterval.SeqLen())
 	}
 
 	// Directly from the RFC
@@ -200,7 +200,7 @@ func (t *lossEventRateCalculator) CalcLossEventRateInv(history []*LossInterval) 
 type intervalHistory struct {
 
 	// pastIntervals keeps the most recent NINTERVAL finalized loss intervals
-	pastIntervals []*LossInterval
+	pastIntervals []*LossIntervalDetail
 
 	// pushCount equals the total number of intervals pushed onto pastIntervals so far
 	pushCount     int64
@@ -210,13 +210,13 @@ const NINTERVAL = 8
 
 // Init initializes or resets the data structure
 func (h *intervalHistory) Init(nInterval int) {
-	h.pastIntervals = make([]*LossInterval, nInterval)
+	h.pastIntervals = make([]*LossIntervalDetail, nInterval)
 	h.pushCount = 0
 }
 
 // pushInterval saves li as the most recent finalized loss interval
-func (h *intervalHistory) Push(li *LossInterval) {
-	h.pastIntervals[int(h.pushCount % int64(len(h.pastIntervals)))] = li
+func (h *intervalHistory) Push(lid *LossIntervalDetail) {
+	h.pastIntervals[int(h.pushCount % int64(len(h.pastIntervals)))] = lid
 	h.pushCount++
 }
 
@@ -226,7 +226,7 @@ func (h *intervalHistory) Len() int {
 }
 
 // Get returns the i-th element in the history. The 0-th element is the most recent.
-func (h *intervalHistory) Get(i int) *LossInterval {
+func (h *intervalHistory) Get(i int) *LossIntervalDetail {
 	l := int64(len(h.pastIntervals))
 	return h.pastIntervals[int((h.pushCount-1-int64(i)) % l)]
 }
@@ -234,5 +234,4 @@ func (h *intervalHistory) Get(i int) *LossInterval {
 // —————
 // lossTracker process loss rate options received at the sender and maintains relevant loss history.
 type lossTracker struct {
-	??
 }

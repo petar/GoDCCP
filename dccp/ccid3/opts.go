@@ -44,7 +44,11 @@ type LossEventRateOption struct {
 	RateInv uint32
 }
 
-const UnknownLossEventRate = math.MaxUint32
+? Distinguish between max inv loss rate, and no loss or unknown
+const (
+	UnknownLossEventRateInv = 0           // Signifies no dropped packets encountered yet
+	MaxLossEventRateInv  = math.MaxUint32 // Corresponds to minimum non-zero loss rate
+)
 
 func DecodeLossEventRateOption(opt *dccp.Option) *LossEventRateOption {
 	if opt.Type != OptionLossEventRate || len(opt.Data) != 4 {
