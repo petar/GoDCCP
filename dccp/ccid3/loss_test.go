@@ -43,15 +43,15 @@ func (rm *ffRateMaker) Next() *dccp.FeedforwardHeader {
 	return ff
 }
 
-type intervalHistory struct {
+type lossHistory struct {
 	h []*LossInterval
 }
 
-func (h *intervalHistory) Add(i *LossInterval) {
+func (h *lossHistory) Add(i *LossInterval) {
 	h.h = append(h.h, i)
 }
 
-func (h *intervalHistory) Check(tail []*LossInterval) bool {
+func (h *lossHistory) Check(tail []*LossInterval) bool {
 	if len(tail) > len(h.h) {
 		return false
 	}
@@ -67,13 +67,13 @@ func (h *intervalHistory) Check(tail []*LossInterval) bool {
 }
 
 func TestLossEvents(t *testing.T) {
-	var le lossEvents
+	var le lossReceiver
 	le.Init()
 
 	var rm ffRateMaker
 	rm.Init(1e10, 10)
 	
-	var h intervalHistory
+	var h lossHistory
 	le.OnRead(rm.Next(), rm.RTT())
 	for q := 0; q < 10; q++ {
 		for i := 0; i < NDUPACK; i++ {

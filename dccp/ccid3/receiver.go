@@ -16,7 +16,7 @@ type receiver struct {
 	dccp.Mutex
 	rttReceiver
 	receiveRate
-	lossEvents
+	lossReceiver
 
 	open                 bool     // Whether the CC is active
 
@@ -49,7 +49,7 @@ func (r *receiver) Open() {
 
 	r.rttReceiver.Init()
 	r.receiveRate.Init()
-	r.lossEvents.Init()
+	r.lossReceiver.Init()
 	r.open = true
 	r.lastWrite = 0
 	r.lastAck = 0
@@ -89,14 +89,14 @@ func (r *receiver) OnWrite(htype byte, x bool, seqno, ackno int64, now int64) (o
 		// Record last Ack write separately from last writes (in general)
 		r.lastAck = now
 		r.dataSinceAck = false
-		r.lastLossEventRateInv = r.lossEvents.LossEventRateInv()
+		r.lastLossEventRateInv = r.lossReceiver.LossEventRateInv()
 		r.lastCCVal = r.latestCCVal
 
 		// Prepare feedback options
 		opts := make([]*dccp.Option, 3)
 		opts[0] = encodeOption(r.makeElapsedTimeOption(ackno, now))
 		opts[1] = encodeOption(r.receiveRate.Flush(rtt))
-		opts[2] = encodeOption(r.lossEvents.Option(ackno))
+		opts[2] = encodeOption(r.lossReceiver.LossIntervalsOption(ackno))
 		if opts[0] == nil {
 			opts = opts[1:3]
 		}
@@ -127,13 +127,13 @@ func (r *receiver) OnRead(ff *dccp.FeedforwardHeader) os.Error {
 	}
 	r.rttReceiver.OnRead(ff.CCVal)
 	r.receiveRate.OnRead(ff)
-	r.lossEvents.OnRead(ff, r.rttReceiver.RTT())
+	r.lossReceiver.OnRead(ff, r.rttReceiver.RTT())
 
 	// Determine if feedback should be sent:
 
 	// (Feedback-Condition-II) If the current calculated loss event rate is greater than its
 	// previous value
-	if r.lossEvents.LossEventRateInv() < r.lastLossEventRateInv {
+	if r.lossReceiver.LossEventRateInv() < r.lastLossEventRateInv {
 		return dccp.CongestionAck
 	}
 

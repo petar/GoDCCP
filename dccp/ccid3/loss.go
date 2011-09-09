@@ -5,16 +5,16 @@
 package ccid3
 
 import (
-	"log"
+	//"log"
 	"os"
 	"math"
 	"github.com/petar/GoDCCP/dccp"
 )
 
 // —————
-// lossEvents is the algorithm that keeps track of loss events and constructs the
+// lossReceiver is the algorithm that keeps track of loss events and constructs the
 // loss intervals option at the receiver.
-type lossEvents struct {
+type lossReceiver struct {
 
 	// pastHeaders keeps track of the last NDUPACK headers to overcome network re-ordering
 	pastHeaders [NDUPACK]*dccp.FeedforwardHeader
@@ -22,24 +22,24 @@ type lossEvents struct {
 	// evolveInterval keeps state of the currently evolving loss interval
 	evolveInterval
 
-	// intervalHistory keeps a moving tail of the past few loss intervals
-	intervalHistory
+	// lossHistory keeps a moving tail of the past few loss intervals
+	lossHistory
 
-	// lossEventRateCalculator calculates loss event rates
-	lossEventRateCalculator
+	// lossRateCalculator calculates loss event rates
+	lossRateCalculator
 }
 
-// Init initializes/resets the lossEvents instance
-func (t *lossEvents) Init() {
-	t.evolveInterval.Init(func(lid *LossIntervalDetail) { t.intervalHistory.Push(lid) })
-	t.intervalHistory.Init(NINTERVAL)
-	t.lossEventRateCalculator.Init(NINTERVAL)
+// Init initializes/resets the lossReceiver instance
+func (t *lossReceiver) Init() {
+	t.evolveInterval.Init(func(lid *LossIntervalDetail) { t.lossHistory.Push(lid) })
+	t.lossHistory.Init(NINTERVAL)
+	t.lossRateCalculator.Init(NINTERVAL)
 }
 
 // pushPopHeader places the newly arrived header ff into pastHeaders and 
 // returns potentially another header (if available) whose SeqNo is no later.
 // Every header is returned exactly once.
-func (t *lossEvents) pushPopHeader(ff *dccp.FeedforwardHeader) *dccp.FeedforwardHeader {
+func (t *lossReceiver) pushPopHeader(ff *dccp.FeedforwardHeader) *dccp.FeedforwardHeader {
 	var popSeqNo int64 = dccp.SEQNOMAX+1
 	var pop int
 	for i, ge := range t.pastHeaders {
@@ -61,7 +61,7 @@ func (t *lossEvents) pushPopHeader(ff *dccp.FeedforwardHeader) *dccp.Feedforward
 // skipLength returns the number of packets, before and including the one being
 // acknowledged, that are in the re-ordering queue pastHeaders and have not yet been
 // considered by the loss intervals logic.
-func (t *lossEvents) skipLength(ackno int64) byte {
+func (t *lossReceiver) skipLength(ackno int64) byte {
 	var skip byte
 	var dbgGSR int64 = 0
 	for _, ge := range t.pastHeaders {
@@ -71,13 +71,13 @@ func (t *lossEvents) skipLength(ackno int64) byte {
 		}
 	}
 	if dbgGSR != ackno {
-		panic("lossEvents GSR != AckNo")
+		panic("lossReceiver GSR != AckNo")
 	}
 	return byte(skip)
 }
 
 // receiver calls OnRead every time a new packet arrives
-func (t *lossEvents) OnRead(ff *dccp.FeedforwardHeader, rtt int64) os.Error {
+func (t *lossReceiver) OnRead(ff *dccp.FeedforwardHeader, rtt int64) os.Error {
 	ff = t.pushPopHeader(ff)
 	if ff != nil {
 		t.evolveInterval.OnRead(ff, rtt)
@@ -87,13 +87,13 @@ func (t *lossEvents) OnRead(ff *dccp.FeedforwardHeader, rtt int64) os.Error {
 
 // listIntervals lists the finished loss intervals from most recent to least, including
 // the current (unfinished) interval as long as it is sufficiently long
-func (t *lossEvents) listIntervals() []*LossIntervalDetail {
+func (t *lossReceiver) listIntervals() []*LossIntervalDetail {
 	current := t.evolveInterval.Unfinished()
 	cInd := 0
 	if current != nil {
 		cInd = 1
 	}
-	k := t.intervalHistory.Len() + cInd
+	k := t.lossHistory.Len() + cInd
 
 	// TODO: This slice allocation can be avoided by making r into a field 
 	r := make([]*LossIntervalDetail, k)
@@ -102,7 +102,7 @@ func (t *lossEvents) listIntervals() []*LossIntervalDetail {
 		r[0] = current
 	}
 	for i := 0; i < k-cInd; i++ {
-		r[i+cInd] = t.intervalHistory.Get(i)
+		r[i+cInd] = t.lossHistory.Get(i)
 	}
 
 	return r
@@ -115,7 +115,7 @@ func (t *lossEvents) listIntervals() []*LossIntervalDetail {
 // NOTE: In a deviation from the RFC, we don't send any loss intervals
 // before the first loss event has occured. The sender is supposed to handle
 // this adequately.
-func (t *lossEvents) LossIntervalsOption(ackno int64) *LossIntervalsOption {
+func (t *lossReceiver) LossIntervalsOption(ackno int64) *LossIntervalsOption {
 	return &LossIntervalsOption{
 		SkipLength:    t.skipLength(ackno),
 		LossIntervals: stripLossIntervalDetail(t.listIntervals()),
@@ -130,7 +130,7 @@ func stripLossIntervalDetail(s []*LossIntervalDetail) []*LossInterval {
 	return r
 }
 
-func (t *lossEvents) LossDigestOption() *LossDigestOption {
+func (t *lossReceiver) LossDigestOption() *LossDigestOption {
 	panic("new loss count calculation not implemented")
 	return &LossDigestOption{
 		// RateInv is the inverse of the loss event rate, rounded UP, as calculated by the receiver.
@@ -144,22 +144,22 @@ func (t *lossEvents) LossDigestOption() *LossDigestOption {
 // LossEventRateInv returns the inverse of the loss event rate, calculated using the recent
 // history of loss intervals as well as the current (unfinished) interval, if sufficiently long.
 // A return value of UknownLossEventRateInv indicates that no lost packets have been encountered yet.
-func (t *lossEvents) LossEventRateInv() uint32 {
-	return t.lossEventRateCalculator.CalcLossEventRateInv(t.listIntervals())
+func (t *lossReceiver) LossEventRateInv() uint32 {
+	return t.lossRateCalculator.CalcLossEventRateInv(t.listIntervals())
 }
 
 // —————
-// lossEventRateCalculator calculates the inverse of the loss event rate as
+// lossRateCalculator calculates the inverse of the loss event rate as
 // specified in Section 5.4, RFC 5348. One instantiation can perform repeated
 // calculations using a fixed nInterval parameter.
-type lossEventRateCalculator struct {
+type lossRateCalculator struct {
 	nInterval int
 	w         []float64
 	h         []float64
 }
 
 // Init resets the calculator for new use with the given nInterval parameter
-func (t *lossEventRateCalculator) Init(nInterval int) {
+func (t *lossRateCalculator) Init(nInterval int) {
 	t.nInterval = nInterval
 	t.w = make([]float64, nInterval)
 	for i, _ := range t.w {
@@ -180,7 +180,7 @@ func intervalWeight(i, nInterval int) float64 {
 // discussed in RFC 5348, Section 5.5
 // TODO: This calculation should be replaced with an entirely integral one.
 // TODO: Remove the most recent unfinished interval from the calculation, if too small. Not crucial.
-func (t *lossEventRateCalculator) CalcLossEventRateInv(history []*LossIntervalDetail) uint32 {
+func (t *lossRateCalculator) CalcLossEventRateInv(history []*LossIntervalDetail) uint32 {
 
 	// Prepare a slice with interval lengths
 	k := max(len(history), t.nInterval)
@@ -214,9 +214,9 @@ func (t *lossEventRateCalculator) CalcLossEventRateInv(history []*LossIntervalDe
 }
 
 // —————
-// intervalHistory is a data structure that keeps track of a limited number of past loss
+// lossHistory is a data structure that keeps track of a limited number of past loss
 // intervals.
-type intervalHistory struct {
+type lossHistory struct {
 
 	// pastIntervals keeps the most recent NINTERVAL finalized loss intervals
 	pastIntervals []*LossIntervalDetail
@@ -228,29 +228,29 @@ type intervalHistory struct {
 const NINTERVAL = 8
 
 // Init initializes or resets the data structure
-func (h *intervalHistory) Init(nInterval int) {
+func (h *lossHistory) Init(nInterval int) {
 	h.pastIntervals = make([]*LossIntervalDetail, nInterval)
 	h.pushCount = 0
 }
 
 // pushInterval saves li as the most recent finalized loss interval
-func (h *intervalHistory) Push(lid *LossIntervalDetail) {
+func (h *lossHistory) Push(lid *LossIntervalDetail) {
 	h.pastIntervals[int(h.pushCount % int64(len(h.pastIntervals)))] = lid
 	h.pushCount++
 }
 
 // Len returns the number of intervals in the history
-func (h *intervalHistory) Len() int {
+func (h *lossHistory) Len() int {
 	return int(min64(h.pushCount, int64(len(h.pastIntervals))))
 }
 
 // Get returns the i-th element in the history. The 0-th element is the most recent.
-func (h *intervalHistory) Get(i int) *LossIntervalDetail {
+func (h *lossHistory) Get(i int) *LossIntervalDetail {
 	l := int64(len(h.pastIntervals))
 	return h.pastIntervals[int((h.pushCount-1-int64(i)) % l)]
 }
 
 // —————
-// lossTracker process loss rate options received at the sender and maintains relevant loss history.
-type lossTracker struct {
+// lossSender process loss rate options received at the sender and maintains relevant loss history.
+type lossSender struct {
 }
