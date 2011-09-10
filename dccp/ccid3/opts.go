@@ -214,9 +214,10 @@ func (opt *ReceiveRateOption) Encode() (*dccp.Option, os.Error) {
 type LossDigestOption struct {
 	// RateInv is the inverse of the loss event rate, rounded UP, as calculated by the receiver.
 	// A value of UnknownLossEventRateInv indicates that no loss events have been observed.
-	RateInv uint32
+	RateInv      uint32
+
 	// NewLoss indicates how many new loss events are reported by the feedback packet carrying this option
-	NewLossCount uint8
+	NewLossCount byte
 }
 
 func DecodeLossDigestOption(opt *dccp.Option) *LossDigestOption {

@@ -139,7 +139,7 @@ func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) os.Error {
 	defer c.syncWithCongestionControl()
 	now := time.Nanoseconds()
 	rsopts := filterCCIDReceiverToSenderOptions(h.Options)
-	if err := c.scc.OnRead(&FeedbackHeader{ h.Type, h.X, h.SeqNo, rsopts, now }); err != nil {
+	if err := c.scc.OnRead(&FeedbackHeader{ h.Type, h.X, h.SeqNo, rsopts, h.AckNo, now }); err != nil {
 		if re, ok := err.(CongestionReset); ok {
 			c.abortWithUnderLock(re.ResetCode())
 			return ErrDrop

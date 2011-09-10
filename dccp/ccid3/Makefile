@@ -2,6 +2,7 @@ include $(GOROOT)/src/Make.inc
 
 TARG=github.com/petar/GoDCCP/dccp/ccid3
 GOFILES=\
+	err.go\
 	interval.go\
 	loss.go\
 	nofeedback.go\
@@ -10,6 +11,7 @@ GOFILES=\
 	receiver.go\
 	rtt.go\
 	table.go\
+	track.go\
 	strober.go\
 	windowcounter.go\
 	s.go\

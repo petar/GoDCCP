@@ -18,6 +18,7 @@ type sender struct {
 	rttSender
 	nofeedbackTimer
 	segmentSize
+	lossSender
 	strober
 }
 

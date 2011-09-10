@@ -112,8 +112,7 @@ func (r *receiver) OnWrite(htype byte, x bool, seqno, ackno int64, now int64) (o
 
 // Conn calls OnRead after a packet has been accepted and validated
 // If OnRead returns ErrDrop, the packet will be dropped and no further processing
-// will occur. 
-// NOTE: If the CC is not active, OnRead MUST return nil.
+// will occur. If the CC is not active, OnRead MUST return nil.
 func (r *receiver) OnRead(ff *dccp.FeedforwardHeader) os.Error {
 	r.Lock()
 	defer r.Unlock()

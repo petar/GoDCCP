@@ -249,8 +249,3 @@ func (h *lossHistory) Get(i int) *LossIntervalDetail {
 	l := int64(len(h.pastIntervals))
 	return h.pastIntervals[int((h.pushCount-1-int64(i)) % l)]
 }
-
-// —————
-// lossSender process loss rate options received at the sender and maintains relevant loss history.
-type lossSender struct {
-}

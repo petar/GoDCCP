@@ -113,13 +113,14 @@ type ReceiverCongestionControl interface {
 // FeedbackHeader encloses the parts of the packet header that
 // are sent by the HC-Receiver and received by the HC-Sender
 type FeedbackHeader struct {
-	Type    byte
-	X       bool
-	SeqNo   int64
-	Options []*Option
+	Type     byte
+	X        bool
+	SeqNo    int64
+	Options  []*Option
+	AckNo    int64
 
 	// Time when header received
-	Time int64
+	Time     int64
 }
 
 // FeedforwardHeader encloses the parts of the packet header that

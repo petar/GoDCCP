@@ -66,6 +66,7 @@ func initRate(ss uint32, rtt int64) uint32 {
 // lossRateInv equals zero if the loss rate is still unknown.
 func (t *rateCalculator) OnRead(now int64, ss uint32, x_recv uint32, rtt int64, lossRateInv uint32, newLoss bool) uint32 {
 	?? // The loss rate inv should never be < 1 after the first newLoss event
+	?? // Fix for new UnknownLoss... value convention
 	// lossSender: current rate, new loss reported, increase or decrease from prev event
 	if t.tld <= 0 {
 		return t.onFirstRead(now, ss, rtt)
