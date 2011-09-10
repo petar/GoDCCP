@@ -17,6 +17,10 @@ type strober struct {
 	last     int64
 }
 
+// Init resets the strober instance for new use
+func (s *strober) Init() {
+}
+
 // SetWait sets the strobing rate by setting the time interval between two strobes in nanoseconds
 func (s *strober) SetInterval(interval int64) {
 	s.Lock()

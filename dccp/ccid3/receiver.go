@@ -77,7 +77,7 @@ func (r *receiver) makeElapsedTimeOption(ackNo int64, now int64) *dccp.ElapsedTi
 func (r *receiver) OnWrite(htype byte, x bool, seqno, ackno int64, now int64) (options []*dccp.Option) {
 	r.Lock()
 	defer r.Unlock()
-	rtt := r.rttReceiver.RTT()
+	rtt := r.rttReceiver.RTT(now)
 
 	r.lastWrite = now
 	if !r.open {
@@ -124,9 +124,9 @@ func (r *receiver) OnRead(ff *dccp.FeedforwardHeader) os.Error {
 		r.dataSinceAck = true
 		r.latestCCVal = ff.CCVal
 	}
-	r.rttReceiver.OnRead(ff.CCVal)
+	r.rttReceiver.OnRead(ff.CCVal, ff.Time)
 	r.receiveRate.OnRead(ff)
-	r.lossReceiver.OnRead(ff, r.rttReceiver.RTT())
+	r.lossReceiver.OnRead(ff, r.rttReceiver.RTT(ff.Time))
 
 	// Determine if feedback should be sent:
 
@@ -139,7 +139,7 @@ func (r *receiver) OnRead(ff *dccp.FeedforwardHeader) os.Error {
 	// (Feedback-Condition-III) If receive window counter increases by 4 or more on a data
 	// packet, since last time feedback was sent
 	if ff.Type == dccp.Data || ff.Type == dccp.DataAck {
-		if !lessModWCTRMAX(ff.CCVal, r.lastCCVal+4) {
+		if !lessWindowCounterMod(ff.CCVal, (r.lastCCVal+4) % WindowCounterMod) {
 			return dccp.CongestionAck
 		}
 	}
@@ -159,7 +159,7 @@ func (r *receiver) OnIdle(now int64) os.Error {
 
 	// (Feedback-Condition-I) If one (estimated) round-trip time time has expired since last Ack
 	// AND data packets have been received in the meantime
-	if r.dataSinceAck && now - r.lastWrite > r.rttReceiver.RTT() {
+	if r.dataSinceAck && now - r.lastWrite > r.rttReceiver.RTT(now) {
 		return dccp.CongestionAck
 	}
 

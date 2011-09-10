@@ -23,11 +23,6 @@ RATE
    seconds. The allowed sending rate is halved each time the nofeedback
    timer expires. 
 
-Definition of a data-limited interval:
-   We define a sender as data-limited any time it is not sending as much
-   as it is allowed to send.  We define an interval as a 'data-limited
-   interval' if the sender was data-limited over the *entire* interval;
-
 IDLE AND APPLICATION LIMITED PERIODS
 
    (5.1) The allowed sending rate is never reduced to less than the [RFC3390]

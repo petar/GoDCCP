@@ -5,7 +5,6 @@
 package ccid3
 
 import (
-	"time"
 	"github.com/petar/GoDCCP/dccp"
 )
 
@@ -32,7 +31,7 @@ type rttReceiver struct {
 
 	// ccvalTime[i] is the time when the first packet with CCVal=i was received.
 	// A value of 0 indicates that no packet with this CCVal has been received yet.
-	ccvalTime [WCTRMAX]int64
+	ccvalTime [WindowCounterMod]int64
 }
 const CCValNil = 0xff
 
@@ -47,18 +46,17 @@ func (t *rttReceiver) Init() {
 }
 
 // receiver calls OnRead every time a packet is received
-func (t *rttReceiver) OnRead(ccval byte) {
-	ccval = ccval % WCTRMAX // Safety
+func (t *rttReceiver) OnRead(ccval byte, now int64) {
+	ccval = ccval % WindowCounterMod // Safety
 
-	now := time.Nanoseconds()
-	if t.ccvalNow == CCValNil || lessModWCTRMAX(ccval, t.ccvalNow) {
+	if t.ccvalNow == CCValNil || lessWindowCounterMod(ccval, t.ccvalNow) {
 		t.Init()
 		t.ccvalNow = ccval
 		t.ccvalTime[ccval] = now
 	} else {
 		t.ccvalNow = ccval
-		for i := byte(0); lessModWCTRMAX(ccval, (ccval+i) % WCTRMAX); i++ {
-			t.ccvalTime[(ccval+i) % WCTRMAX] = 0
+		for i := byte(0); lessWindowCounterMod(ccval, (ccval+i) % WindowCounterMod); i++ {
+			t.ccvalTime[(ccval+i) % WindowCounterMod] = 0
 		}
 	}
 
@@ -75,16 +73,16 @@ func (t *rttReceiver) calcCCValRTT() {
 	t0 := t.ccvalTime[t.ccvalNow]
 	var t1 int64
 	var q byte
-	k := (t.ccvalNow + (WCTRMAX-4)) % WCTRMAX  // Equals (ccvalNow-4) mod WCTRMAX
+	k := (t.ccvalNow + (WindowCounterMod-4)) % WindowCounterMod  // Equals (ccvalNow-4) mod WindowCounterMod
 	switch {
 	case t.ccvalTime[k] != 0:
 		t1 = t.ccvalTime[k]
 		q = 4
-	case t.ccvalTime[(k+1) % WCTRMAX] != 0:
-		t1 = t.ccvalTime[(k+1) % WCTRMAX]
+	case t.ccvalTime[(k+1) % WindowCounterMod] != 0:
+		t1 = t.ccvalTime[(k+1) % WindowCounterMod]
 		q = 3
-	case t.ccvalTime[(k+2) % WCTRMAX] != 0:
-		t1 = t.ccvalTime[(k+2) % WCTRMAX]
+	case t.ccvalTime[(k+2) % WindowCounterMod] != 0:
+		t1 = t.ccvalTime[(k+2) % WindowCounterMod]
 		q = 2
 	}
 	if t1 == 0 {
@@ -96,8 +94,7 @@ func (t *rttReceiver) calcCCValRTT() {
 }
 
 // RTT returns the best available estimate of the round-trip time
-func (t *rttReceiver) RTT() int64 {
-	now := time.Nanoseconds()
+func (t *rttReceiver) RTT(now int64) int64 {
 	if t.rtt != 0 &&  now - t.rttTime < 1e9 {
 		return t.rtt
 	}
@@ -154,11 +151,24 @@ func (t *rttSender) find(seqNo int64) *sendTime {
 
 // Sender calls OnRead for every arriving Ack packet. OnRead returns
 // true if the RTT estimate has been updated.
-func (t *rttSender) OnRead(ackNo int64, elapsed *dccp.ElapsedTimeOption, now int64) bool {
+func (t *rttSender) OnRead(fb *dccp.FeedbackHeader) bool {
+
+	// Read ElapsedTimeOption
+	if fb.Type != dccp.Ack && fb.Type != dccp.DataAck {
+		return false
+	}
+	var elapsed *dccp.ElapsedTimeOption
+	for _, opt := range fb.Options {
+		if elapsed = dccp.DecodeElapsedTimeOption(opt); elapsed != nil {
+			break
+		}
+	}
 	if elapsed == nil {
 		return false
 	}
-	s := t.find(ackNo)
+
+	// Update RTT estimate
+	s := t.find(fb.AckNo)
 	if s == nil {
 		return false
 	}
@@ -166,7 +176,7 @@ func (t *rttSender) OnRead(ackNo int64, elapsed *dccp.ElapsedTimeOption, now int
 	if elapsedNS < 0 {
 		return false
 	}
-	est := (now - s.Time - elapsedNS) / 2
+	est := (fb.Time - s.Time - elapsedNS) / 2
 	if est <= 0 {
 		return false
 	}
@@ -177,6 +187,7 @@ func (t *rttSender) OnRead(ackNo int64, elapsed *dccp.ElapsedTimeOption, now int
 		t.estimate = (est*SENDER_RTT_WEIGHT_NEW + est_old*SENDER_RTT_WEIGHT_OLD) / 
 			(SENDER_RTT_WEIGHT_NEW + SENDER_RTT_WEIGHT_OLD)
 	}
+
 	return true
 }
 

@@ -4,52 +4,50 @@
 
 package ccid3
 
-import (
-	"time"
-)
-
 // windowCounter maintains the window counter (WC) logic of the sender.
 // It's logic is described in RFC 4342, Section 8.1.
 type windowCounter struct {
-	last     byte   // The last window counter value sent
-	lastTime int64  // The time at which the first packet with window counter value "last" was sent
+	lastCounter byte   // The last window counter value sent
+	lastTime    int64  // The time at which the first packet with window counter value lastCounter was sent
 }
 
 const (
 	// Maximum value of window counter, RFC 4342 Section 10.2 and RFC 3448
-	WCTRMAX = 16
+	WindowCounterMod  = 16
+	// Add doc here
+	WindowCounterHalf = (WindowCounterMod / 2) + (WindowCounterMod & 0x1)
 )
 
-func (wc *windowCounter) Init(firstSendTime int64) {
-	wc.last = 0
-	wc.lastTime = firstSendTime
+func lessWindowCounterMod(x, y byte) bool {
+	return (y-x) % WindowCounterMod < WindowCounterHalf
 }
 
-// The sender calls Take in order to obtain the WC value to be included in the next
+// Init resets the windowCounter instance for new use
+func (wc *windowCounter) Init() {
+	wc.lastCounter = 0
+	wc.lastTime = 0
+}
+
+// The sender calls OnWrite in order to obtain the WC value to be included in the next
 // outgoing packet
-func (wc *windowCounter) Take(rtt int64) byte {
-	now := time.Nanoseconds()
+func (wc *windowCounter) OnWrite(rtt int64, now int64) byte {
 	quarterRTTs := (now - wc.lastTime) / (rtt / 4)
 	if quarterRTTs > 0 {
-		wc.last = (wc.last + byte(min64(quarterRTTs, 5))) % WCTRMAX
+		wc.lastCounter = (wc.lastCounter + byte(min64(quarterRTTs, 5))) % WindowCounterMod
 		wc.lastTime = now
 	}
-	return wc.last
+	return wc.lastCounter
 }
 
 // After receiving an acknowledgement for a packet sent with window counter wcAckd, the sender
 // SHOULD increase its window counter, if necessary, so that subsequent packets have window
-// counter value at least (wcAckd + 4) mod WCTRMAX.
+// counter value at least (wcAckd + 4) mod WindowCounterMod.
 // XXX: What if local window counter has gone around the circle before the ack was received?
-func (wc *windowCounter) Place(wcAckd byte) {
-	atLeast := (wcAckd+4) % WCTRMAX
-	if lessModWCTRMAX(wc.last, atLeast) {
-		wc.last = atLeast
+func (wc *windowCounter) OnRead(rtt int64, wcAckd byte, now int64) {
+	atLeast := (wcAckd+4) % WindowCounterMod
+	wouldCounter := wc.OnWrite(rtt, now)
+	if lessWindowCounterMod(wouldCounter, atLeast) {
+		wc.lastCounter = atLeast
+		wc.lastTime = now
 	}
-}
-
-const WCTRHALF = (WCTRMAX / 2) + (WCTRMAX & 0x1)
-
-func lessModWCTRMAX(x, y byte) bool {
-	return (y-x) % WCTRMAX < WCTRHALF
 }

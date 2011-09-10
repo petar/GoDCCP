@@ -13,13 +13,14 @@ import (
 // sender is a CCID3 congestion control sender
 type sender struct {
 	dccp.Mutex
-	
 	windowCounter
 	rttSender
 	nofeedbackTimer
 	segmentSize
 	lossSender
 	strober
+
+	open bool // Whether the CC is active
 }
 
 // GetID() returns the CCID of this congestion control algorithm
@@ -39,47 +40,75 @@ func (s *sender) GetRTT() int64 { return s.rttSender.RTT() }
 func (s *sender) Open() {
 	s.Lock()
 	defer s.Unlock()
-	if s.phase != INIT {
+	if s.open {
 		panic("opening an open ccid3 sender")
 	}
-	?
+	s.windowCounter.Init()
+	s.rttSender.Init()
+	s.nofeedbackTimer.Init()
+	s.segmentSize.Init()
+	s.lossSender.Init()
+	s.strober.Init()
+	s.open = true
 }
 
 // Conn calls OnWrite before a packet is sent to give CongestionControl
 // an opportunity to add CCVal and options to an outgoing packet
-// NOTE: If the CC is not active, OnWrite should return 0, nil.
+// If the CC is not active, OnWrite should return 0, nil.
 func (s *sender) OnWrite(htype byte, x bool, seqno, ackno int64, now int64) (ccval byte, options []*dccp.Option) {
 	s.Lock()
 	defer s.Unlock()
-	?
+
+	if !s.open {
+		return 0, nil
+	}
+
+	return s.windowCounter.OnWrite(s.rttSender.RTT(), now), nil
 }
 
 // Conn calls OnRead after a packet has been accepted and validated
 // If OnRead returns ErrDrop, the packet will be dropped and no further processing
 // will occur. If OnRead returns ResetError, the connection will be reset.
-// NOTE: If the CC is not active, OnRead MUST return nil.
+// If the CC is not active, OnRead MUST return nil.
 func (s *sender) OnRead(fb *dccp.FeedbackHeader) os.Error {
 	s.Lock()
 	defer s.Unlock()
+
+	if !s.open {
+		return nil
+	}
+	if fb.Type != dccp.Ack && fb.Type != dccp.DataAck {
+		return nil
+	}
+
+	// Window counter update
+	panic("?")
 	
 	// Update the round-trip estimate
-	rttChanged := t.rttSender.OnRead(ackNo int64, elapsed *dccp.ElapsedTimeOption, now int64)
-	rtt := t.rttSender.RTT()
+	//rttChanged := s.rttSender.OnRead(fb)
+	//rtt := s.rttSender.RTT()
 
 	// Update the nofeedback timeout interval
-	t.nofeedbackTimer.
+	// t.nofeedbackTimer. ??
 
 	// Update the allowed sending rate
-	t.x.??
+	// t.x.??
 
 	// Reset the nofeedback timer
-	??
+	panic("?")
 }
 
 // Strobe blocks until a new packet can be sent without violating the congestion control
 // rate limit. If the CC is not active, Strobe MUST return immediately.
 func (s *sender) Strobe() {
-	?
+	s.Lock()
+	defer s.Unlock()
+
+	if !s.open {
+		return
+	}
+
+	s.strober.Strobe()
 }
 
 // OnIdle is called periodically, giving the CC a chance to:
@@ -89,15 +118,16 @@ func (s *sender) Strobe() {
 func (s *sender) OnIdle(now int64) os.Error {
 	s.Lock()
 	defer s.Unlock()
-	?
+	
+	panic("?")
 }
 
 // Close terminates the half-connection congestion control when it is not needed any longer
 func (s *sender) Close() {
 	s.Lock()
 	defer s.Unlock()
-	if s.phase == INIT || s.phase == CLOSED {
-		panic("closing a ccid3 sender in invalid phase")
+	if !s.open {
+		panic("closing a non-open ccid3 sender")
 	}
-	r.phase = CLOSED
+	s.open = false
 }

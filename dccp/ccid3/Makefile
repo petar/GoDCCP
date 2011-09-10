@@ -16,9 +16,9 @@ GOFILES=\
 	windowcounter.go\
 	s.go\
 	util.go\
+	x.go\
+	sender.go\
 
-	#x.go\
 	#ccid3.go\
-	#sender.go\
 
 include $(GOROOT)/src/Make.pkg

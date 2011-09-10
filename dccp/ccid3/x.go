@@ -79,7 +79,8 @@ func (t *rateCalculator) OnRead(f XFeedback) uint32 {
 	if t.tld <= 0 {
 		return t.onFirstRead(f.Now, f.SS, f.RTT)
 	}
-	if /* the entire interval covered by the feedback packet was a data-limited interval */ {
+	// TODO: We currently don't honor data-limited periods
+	if false /* the entire interval covered by the feedback packet was a data-limited interval */ {
 		if f.LossFeedback.RateInc || f.LossFeedback.NewLossCount > 0 {
 			t.xRecvSet.Halve()
 			f.XRecv = (85 * f.XRecv) / 100
@@ -96,13 +97,10 @@ func (t *rateCalculator) OnRead(f XFeedback) uint32 {
 	// Are we in the post-slow start phase
 	if f.LossFeedback.RateInv < UnknownLossEventRateInv {
 		xEq := t.thruEq(f.SS, f.RTT, f.LossFeedback.RateInv)
-		t.x = maxu32(
-			minu32(xEq, t.recvLimit), 
-			(1e9 * f.SS) / X_MAX_BACKOFF_INTERVAL
-		)
+		t.x = maxu32(minu32(xEq, t.recvLimit), uint32((1e9 * int64(f.SS)) / X_MAX_BACKOFF_INTERVAL))
 	} else if f.Now - t.tld >= f.RTT {
 		// Initial slow-start
-		t.x = max(min(2*t.x, recvLimit), initRate(f.SS, f.RTT))
+		t.x = maxu32(minu32(2*t.x, t.recvLimit), initRate(f.SS, f.RTT))
 		t.tld = f.Now
 	}
 	// TODO: Place oscillation reduction code here (see RFC 5348, Section 4.3)
