@@ -12,10 +12,10 @@ import (
 
 // rateCaclulator computers the allowed sending rate of the sender
 type rateCalculator struct {
-	x               uint32 // Current allowed sending rate, in bytes per second
-	tld             int64  // Time Last Doubled (during slow start) or zero if unset; in ns since UTC zero
-	recv_limit      uint32 // Receive limit, in bytes per second
-	xRecvSet          // Data structure for x_recv_set (see RFC 5348)
+	x         uint32 // Current allowed sending rate, in bytes per second
+	tld       int64  // Time Last Doubled (during slow start) or zero if unset; in ns since UTC zero
+	recvLimit uint32 // Receive limit, in bytes per second
+	xRecvSet         // Data structure for x_recv_set (see RFC 5348)
 }
 
 const (
@@ -35,12 +35,12 @@ func (t *rateCalculator) Init(now int64, ss uint32) {
 	t.x = ss
 	// tld = 0 indicates that the first feedback packet has yet not been received.
 	t.tld = 0
-	// Because X_recv_set is initialized with a single item, with value Infinity, recv_limit is
+	// Because X_recv_set is initialized with a single item, with value Infinity, recvLimit is
 	// set to Infinity for the first two round-trip times of the connection.  As a result, the
 	// sending rate is not limited by the receive rate during that period.  This avoids the
 	// problem of the sending rate being limited by the value of X_recv from the first feedback
 	// packet.
-	t.recv_limit = X_RECV_MAX
+	t.recvLimit = X_RECV_MAX
 	t.xRecvSet.Init()
 }
 
@@ -60,42 +60,52 @@ func initRate(ss uint32, rtt int64) uint32 {
 	return uint32(max64((1e9*int64(win)) / rtt, 1))
 }
 
+// XFeedback contains computed feedback variables that are used by the rate calculator to update the
+// allowed sending rate
+type XFeedback struct {
+	Now   int64   // Time now
+	SS    uint32  // Segment size
+	XRecv uint32  // Receive rate
+	RTT   int64   // Round-trip time
+	LossFeedback  // Loss-related feedback
+}
+
 // Sender calls OnRead each time a new feedback packet arrives.
 // OnRead returns the new allowed sending in bytes per second.
 // x_recv is given in bytes per second.  
 // lossRateInv equals zero if the loss rate is still unknown.
-func (t *rateCalculator) OnRead(now int64, ss uint32, x_recv uint32, rtt int64, lossRateInv uint32, newLoss bool) uint32 {
-	?? // The loss rate inv should never be < 1 after the first newLoss event
-	?? // Fix for new UnknownLoss... value convention
-	// lossSender: current rate, new loss reported, increase or decrease from prev event
+func (t *rateCalculator) OnRead(f XFeedback) uint32 {
+	if f.LossFeedback.RateInv < 1 {
+		panic("invalid loss rate inverse")
+	}
 	if t.tld <= 0 {
-		return t.onFirstRead(now, ss, rtt)
+		return t.onFirstRead(f.Now, f.SS, f.RTT)
 	}
 	if /* the entire interval covered by the feedback packet was a data-limited interval */ {
-		if ?? /* the feedback packet reports a new loss event or an increase in the loss event rate p */ {
+		if f.LossFeedback.RateInc || f.LossFeedback.NewLossCount > 0 {
 			t.xRecvSet.Halve()
-			x_recv = (85 * x_recv) / 100
-			t.xRecvSet.Maximize(now, x_recv)
-			t.recv_limit = t.xRecvSet.Max()
+			f.XRecv = (85 * f.XRecv) / 100
+			t.xRecvSet.Maximize(f.Now, f.XRecv)
+			t.recvLimit = t.xRecvSet.Max()
 		} else {
-			t.xRecvSet.Maximize(now, x_recv)
-			t.recv_limit = 2 * t.xRecvSet.Max()
+			t.xRecvSet.Maximize(f.Now, f.XRecv)
+			t.recvLimit = 2 * t.xRecvSet.Max()
 		}
 	} else {
-		t.xRecvSet.Update(now, x_recv, rtt)
-		t.recv_limit = 2 * t.xRecvSet.Max()
+		t.xRecvSet.Update(f.Now, f.XRecv, f.RTT)
+		t.recvLimit = 2 * t.xRecvSet.Max()
 	}
-	// Non-zero loss rate inverse indicates that we are in the post-slow start phase
-	if lossRateInv > 0 {
-		x_eq := t.thruEq(ss, rtt, lossRateInv)
+	// Are we in the post-slow start phase
+	if f.LossFeedback.RateInv < UnknownLossEventRateInv {
+		xEq := t.thruEq(f.SS, f.RTT, f.LossFeedback.RateInv)
 		t.x = maxu32(
-			minu32(x_eq, t.recv_limit), 
-			(1e9*ss) / X_MAX_BACKOFF_INTERVAL
+			minu32(xEq, t.recvLimit), 
+			(1e9 * f.SS) / X_MAX_BACKOFF_INTERVAL
 		)
-	} else if now - t.tld >= rtt {
+	} else if f.Now - t.tld >= f.RTT {
 		// Initial slow-start
-		t.x = max(min(2*t.x, recv_limit), initRate(ss, rtt))
-		t.tld = now
+		t.x = max(min(2*t.x, recvLimit), initRate(f.SS, f.RTT))
+		t.tld = f.Now
 	}
 	// TODO: Place oscillation reduction code here (see RFC 5348, Section 4.3)
 	return t.x
@@ -167,15 +177,15 @@ func (t *xRecvSet) Max() uint32 {
 //     Set the timestamp of the largest item to the current time;
 //     Delete all other items.
 //
-func (t *xRecvSet) Maximize(now int64, x_recv_bps uint32) {
+func (t *xRecvSet) Maximize(now int64, xRecvBPS uint32) {
 	for i, e := range t.set {
 		if e.Time > 0 {
-			x_recv_bps = maxu32(x_recv_bps, e.Rate)
+			xRecvBPS = maxu32(xRecvBPS, e.Rate)
 		}
 		t.set[i] = xRecvEntry{}
 	}
 	t.set[0].Time = now
-	t.set[0].Rate = x_recv_bps
+	t.set[0].Rate = xRecvBPS
 }
 
 // The procedure for updating X_recv_set keeps a set of X_recv values
@@ -185,7 +195,7 @@ func (t *xRecvSet) Maximize(now int64, x_recv_bps uint32) {
 //     Add X_recv to X_recv_set;
 //     Delete from X_recv_set values older than two round-trip times.
 //
-func (t *xRecvSet) Update(now int64, x_recv_bps uint32, rtt int64) {
+func (t *xRecvSet) Update(now int64, xRecvBPS uint32, rtt int64) {
 	// Remove entries older than two RTT
 	for i, e := range t.set {
 		if e.Time > 0 && now - e.Time > 2*rtt {
@@ -205,6 +215,6 @@ func (t *xRecvSet) Update(now int64, x_recv_bps uint32, rtt int64) {
 			j_time = e.Time
 		}
 	}
-	t.set[j].Rate = x_recv_bps
+	t.set[j].Rate = xRecvBPS
 	t.set[j].Time = now
 }
