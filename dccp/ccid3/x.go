@@ -72,8 +72,6 @@ type XFeedback struct {
 
 // Sender calls OnRead each time a new feedback packet arrives.
 // OnRead returns the new allowed sending in bytes per second.
-// x_recv is given in bytes per second.  
-// lossRateInv equals zero if the loss rate is still unknown.
 func (t *rateCalculator) OnRead(f XFeedback) uint32 {
 	if f.LossFeedback.RateInv < 1 {
 		panic("invalid loss rate inverse")
