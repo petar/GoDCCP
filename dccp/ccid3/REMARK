@@ -13,10 +13,6 @@ NOFEEDBACK*
 
    Take care of RTO both in onFirstRead and OnRead
 
-LOSS
-
-   Fix skip-length to be < NDUPACK.
-
 RATE
 
    ... with the nofeedback timer expiring after two

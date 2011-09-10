@@ -95,7 +95,7 @@ func (r *receiver) OnWrite(htype byte, x bool, seqno, ackno int64, now int64) (o
 		// Prepare feedback options
 		opts := make([]*dccp.Option, 3)
 		opts[0] = encodeOption(r.makeElapsedTimeOption(ackno, now))
-		opts[1] = encodeOption(r.receiveRate.Flush(rtt))
+		opts[1] = encodeOption(r.receiveRate.Flush(rtt, now))
 		opts[2] = encodeOption(r.lossReceiver.LossIntervalsOption(ackno))
 		if opts[0] == nil {
 			opts = opts[1:3]

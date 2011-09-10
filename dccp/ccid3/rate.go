@@ -5,7 +5,6 @@
 package ccid3
 
 import (
-	"time"
 	"github.com/petar/GoDCCP/dccp"
 )
 
@@ -22,17 +21,20 @@ type receiveRate struct {
 }
 
 func (r *receiveRate) Init() {
-	now := time.Nanoseconds()
-	r.time0, r.time1 = now, now
+	r.time0, r.time1 = 0, 0
 	r.data0, r.data1 = 0, 0
 }
 
-// OnData is called to let the receiveRate know that data has been received.
+// OnRead is called to let the receiveRate know that data has been received.
 // The ccval window counter value is not used in the current rate receiver algorithm
 // explicitly. It is used implicitly in that the RTT estimate is based on these values.
 func (r *receiveRate) OnRead(ff *dccp.FeedforwardHeader) {
 	if ff.Type != dccp.Data && ff.Type != dccp.DataAck {
 		return
+	}
+	if r.time0 == 0 || r.time1 == 0 {
+		r.time0 = ff.Time
+		r.time1 = ff.Time
 	}
 	r.data0 += ff.DataLen
 	r.data1 += ff.DataLen
@@ -40,8 +42,7 @@ func (r *receiveRate) OnRead(ff *dccp.FeedforwardHeader) {
 
 // Flush returns a Receive Rate option and indicates to receiveRate 
 // that the next Ack-to-Ack window has begun
-func (r *receiveRate) Flush(rtt int64) *ReceiveRateOption {
-	now := time.Nanoseconds()
+func (r *receiveRate) Flush(rtt int64, now int64) *ReceiveRateOption {
 	if r.time0 > now || r.time1 > now {
 		panic("receive rate time")
 	}
@@ -53,12 +54,14 @@ func (r *receiveRate) Flush(rtt int64) *ReceiveRateOption {
 	if d1 < rtt {
 		return &ReceiveRateOption{rate(r.data0, d0)}
 	}
-	rval := rate(r.data1, d1)
+	rval := rate(r.data0, d0)
 	r.data0, r.data1 = r.data1, 0
 	r.time0, r.time1 = r.time1, now
 	return &ReceiveRateOption{rval}
 }
 
+// Given data volume in bytes and time duration in nanoseconds, rate returns the
+// corresponding rate in bytes per second
 func rate(nbytes int, nsec int64) uint32 {
 	if nbytes < 0 || nsec <= 0 {
 		panic("receive rate, negative bytes or time")

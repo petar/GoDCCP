@@ -14,7 +14,7 @@ GOFILES=\
 	track.go\
 	strober.go\
 	windowcounter.go\
-	s.go\
+	ss.go\
 	util.go\
 	x.go\
 	sender.go\
