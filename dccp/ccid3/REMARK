@@ -1,3 +1,6 @@
+
+windowCounter: lookup SeqNo -> ccval
+
 RTT ESTIMATE*
 
    When a new RTT estimate is calculated (upon feedback packet arrival),
@@ -19,49 +22,7 @@ RATE
    seconds. The allowed sending rate is halved each time the nofeedback
    timer expires. 
 
-IDLE AND APPLICATION LIMITED PERIODS
-
-   (5.1) The allowed sending rate is never reduced to less than the [RFC3390]
-   initial sending rate as the result of an idle period.  If the allowed
-   sending rate is less than the initial sending rate upon entry to the
-   idle period, then it will still be less than the initial sending rate
-   when the idle period is exited.  However, if the allowed sending rate
-   is greater than or equal to the initial sending rate upon entry to
-   the idle period, then it should not be reduced below the initial
-   sending rate no matter how long the idle period lasts.
-
 ===========================================================================================
 
-* How does the sender's strober behave in data limited periods when the application
-is not calling it for a long while? We don't want a burst of sends!
-
-* Make sure that invalid option values are simply discarded. We know
-other party is not adversarial, but differences in protocol and/or implementation
-may introduce for small arithmetic errors (like division by zero).
-
-* test evolveInterval
-* test loss event rate
-* test receive rate
-* test rttReceiver
-
-===========================================================================================
-
-* Ask Eddie 
-	* Why wouldn't the receiver just send the loss rate instead of the interval history?
-
-* Measure RTT based on CCVal and Timestamp opts and print head-to-head
-
-* Add backup RTT calculation in receiver based on Timestamps
-
-* A lot of calls to time.Nanoseconds() could be sped up by passing around the current time as an
-argument
-
+* Reduce calls to time.Nanoseconds in dccp
 * Fix for circular arithmetic everywhere where SeqNo and AckNo are involved: loss.go, etc.
-
-————— FEATURES NOT CURRENTLY SUPPORTED —————
-
-* TimestampEcho option and RTT estimates based on it
-* Data Dropped Option
-* Slow Receiver Option
-
-————— DEVIATIONS FROM DCCP —————

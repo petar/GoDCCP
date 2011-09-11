@@ -10,23 +10,23 @@ import (
 )
 
 // —————
-// lossSender processes loss intervals options received at the sender and maintains relevant loss
+// lossTracker processes loss intervals options received at the sender and maintains relevant loss
 // statistics.
-type lossSender struct {
+type lossTracker struct {
 	lastAckNo   int64   // SeqNo of the last ack'd segment; equals the AckNo of the last feedback
 	lastRateInv uint32  // Last known value of loss event rate inverse
 	lossRateCalculator
 }
 
-// Init resets the lossSender instance for new use
-func (t *lossSender) Init() {
+// Init resets the lossTracker instance for new use
+func (t *lossTracker) Init() {
 	t.lastAckNo = 0
 	t.lastRateInv = UnknownLossEventRateInv
 	t.lossRateCalculator.Init(NINTERVAL)
 }
 
 // calcRateInv computes the loss event rate inverse encoded in the loss intervals
-func (t *lossSender) calcRateInv(details []*LossIntervalDetail) uint32 {
+func (t *lossTracker) calcRateInv(details []*LossIntervalDetail) uint32 {
 	return t.lossRateCalculator.CalcLossEventRateInv(details)
 }
 
@@ -38,7 +38,7 @@ type LossFeedback struct {
 }
 
 // Sender calls OnRead whenever a new feedback packet arrives
-func (t *lossSender) OnRead(fb *dccp.FeedbackHeader) (LossFeedback, os.Error) {
+func (t *lossTracker) OnRead(fb *dccp.FeedbackHeader) (LossFeedback, os.Error) {
 
 	// Read the loss options
 	if fb.Type != dccp.Ack && fb.Type != dccp.DataAck {

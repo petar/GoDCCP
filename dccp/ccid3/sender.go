@@ -13,11 +13,12 @@ import (
 // sender is a CCID3 congestion control sender
 type sender struct {
 	dccp.Mutex
-	windowCounter
 	rttSender
+	windowCounter
 	nofeedbackTimer
 	segmentSize
-	lossSender
+	lossTracker
+	rateCalculator
 	strober
 
 	open bool // Whether the CC is active
@@ -28,7 +29,7 @@ func (s *sender) GetID() byte { return dccp.CCID3 }
 
 // GetCCMPS returns the Congestion Control Maximum Packet Size, CCMPS. Generally, PMTU <= CCMPS
 // TODO: For the time being we use a fixed CCMPS
-func (s *sender) GetCCMPS() int32 { return 2*1500 }
+func (s *sender) GetCCMPS() int32 { return FixedSegmentSize }
 
 // GetRTT returns the Round-Trip Time as measured by this CCID
 func (s *sender) GetRTT() int64 { return s.rttSender.RTT() }
@@ -47,7 +48,9 @@ func (s *sender) Open() {
 	s.rttSender.Init()
 	s.nofeedbackTimer.Init()
 	s.segmentSize.Init()
-	s.lossSender.Init()
+	s.segmentSize.SetMPS(FixedSegmentSize)
+	s.lossTracker.Init()
+	s.rateCalculator.Init(FixedSegmentSize)
 	s.strober.Init()
 	s.open = true
 }
@@ -77,22 +80,26 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) os.Error {
 	if !s.open {
 		return nil
 	}
+	?? // This check should probably be module specific. Are all modules bellow just for Ack packets?
 	if fb.Type != dccp.Ack && fb.Type != dccp.DataAck {
 		return nil
 	}
 
-	// Window counter update
-	panic("?")
-	
 	// Update the round-trip estimate
-	//rttChanged := s.rttSender.OnRead(fb)
-	//rtt := s.rttSender.RTT()
+	rttChanged := s.rttSender.OnRead(fb)
+	rtt := s.rttSender.RTT()
 
+	// Window counter update
+	s.windowCounter.OnRead(rtt, ??, fb.Time)
+	
 	// Update the nofeedback timeout interval
 	// t.nofeedbackTimer. ??
 
-	// Update the allowed sending rate
-	// t.x.??
+	// Update loss estimates
+	// t.lossTracker.??
+
+	// Update allowed sending rate
+	// t.rateCalculator.??
 
 	// Reset the nofeedback timer
 	panic("?")

@@ -39,9 +39,12 @@ func (s *strober) SetRate(per64sec int64) {
 	}
 }
 
-// Strobe ensures that the frequency with which (multiple calls) to Strobe return does not exceed
-// the allowed rate.  Strobe MUST not be called concurrently. For efficiency, it does not use a lock
-// to prevent concurrent invocation.
+// Strobe ensures that the frequency with which (multiple calls) to Strobe return does not
+// exceed the allowed rate.  In particular, note that strober makes sure that after data
+// limited periods, when the application is not calling it for a while, there is no burst of
+// high frequency returns.  Strobe MUST not be called concurrently. For efficiency, it does
+// not use a lock to prevent concurrent invocation.
+// TODO: This routine should be optimized
 func (s *strober) Strobe() {
 	s.Lock()
 	now := time.Nanoseconds()

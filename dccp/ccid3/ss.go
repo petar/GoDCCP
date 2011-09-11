@@ -11,6 +11,8 @@ type segmentSize struct {
 	mps int
 }
 
+const FixedSegmentSize = 2*1500
+
 // Init resets the object for new use
 func (t *segmentSize) Init() {
 	t.mps = 0

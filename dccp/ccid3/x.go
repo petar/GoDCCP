@@ -29,7 +29,7 @@ const (
 // allowed sending rate (in bytes per second). The latter is the rate
 // to be used before the first feedback packet is received and hence before
 // an RTT estimate is available.
-func (t *rateCalculator) Init(now int64, ss uint32) {
+func (t *rateCalculator) Init(ss uint32) {
 	// The allowed sending rate before the first feedback packet is received
 	// is one packet per second.
 	t.x = ss
