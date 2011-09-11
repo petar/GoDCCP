@@ -12,10 +12,12 @@ import (
 
 // rateCaclulator computers the allowed sending rate of the sender
 type rateCalculator struct {
-	x         uint32 // Current allowed sending rate, in bytes per second
-	tld       int64  // Time Last Doubled (during slow start) or zero if unset; in ns since UTC zero
-	recvLimit uint32 // Receive limit, in bytes per second
-	xRecvSet         // Data structure for x_recv_set (see RFC 5348)
+	x           uint32 // Current allowed sending rate, in bytes per second
+	tld         int64  // Time Last Doubled (during slow start) or zero if unset; in ns since UTC zero
+	recvLimit   uint32 // Receive limit, in bytes per second
+	recoverRate uint32 // (RFC 5348, Section 4.4)
+	hasFeedback bool   // True if sender has received any feedback from the receiver
+	xRecvSet           // Data structure for x_recv_set (see RFC 5348)
 }
 
 const (
@@ -33,6 +35,7 @@ func (t *rateCalculator) Init(ss uint32) {
 	// The allowed sending rate before the first feedback packet is received
 	// is one packet per second.
 	t.x = ss
+	t.recoverRate = ss
 	// tld = 0 indicates that the first feedback packet has yet not been received.
 	t.tld = 0
 	// Because X_recv_set is initialized with a single item, with value Infinity, recvLimit is
@@ -41,8 +44,12 @@ func (t *rateCalculator) Init(ss uint32) {
 	// problem of the sending rate being limited by the value of X_recv from the first feedback
 	// packet.
 	t.recvLimit = X_RECV_MAX
+	t.hasFeedback = false
 	t.xRecvSet.Init()
 }
+
+// X returns the allowed sending rate in bytes per second
+func (t *rateCalculator) X() uint32 { return t.x }
 
 // onFirstRead is called internally to handle the very first feedback packet received.
 func (t *rateCalculator) onFirstRead(now int64, ss uint32, rtt int64) uint32 {
@@ -70,12 +77,13 @@ type XFeedback struct {
 	LossFeedback  // Loss-related feedback
 }
 
-// Sender calls OnRead each time a new feedback packet arrives.
+// Sender calls OnRead each time a new feedback packet (i.e. Ack or DataAck) arrives.
 // OnRead returns the new allowed sending in bytes per second.
 func (t *rateCalculator) OnRead(f XFeedback) uint32 {
 	if f.LossFeedback.RateInv < 1 {
 		panic("invalid loss rate inverse")
 	}
+	t.hasFeedback = true
 	if t.tld <= 0 {
 		return t.onFirstRead(f.Now, f.SS, f.RTT)
 	}
@@ -105,6 +113,41 @@ func (t *rateCalculator) OnRead(f XFeedback) uint32 {
 	}
 	// TODO: Place oscillation reduction code here (see RFC 5348, Section 4.3)
 	return t.x
+}
+
+// Sender calls OnFeedbackExpire when the no feedback timer expires.
+// OnFeedbackExpire returns the new allowed sending rate.
+// See RFC 5348, Section 4.4
+func (t *rateCalculator) OnFeedbackTimer(hasRTT bool, ss uint32, lossRateInv uint32, idleSince int64, nofeedbackSet int64) uint32 {
+	xRecv := t.xRecvSet.Max()
+	if !hasRTT && !t.hasFeedback && idleSince > nofeedbackSet {
+		// We do not have X_Bps or recover_rate yet.
+		// Halve the allowed sending rate.
+		t.x = maxu32(t.x/2, uint32((1e9 * int64(ss)) / X_MAX_BACKOFF_INTERVAL));
+	} else if 
+		((lossRateInv < UnknownLossEventRateInv && xRecv < t.recoverRate) ||
+		(lossRateInv == UnknownLossEventRateInv && t.x < 2*t.recoverRate)) &&
+		idleSince <= nofeedbackSet {
+		// Don't halve the allowed sending rate. Do nothing.
+	} else if lossRateInv == UnknownLossEventRateInv {
+		// We do not have X_Bps yet.
+		// Halve the allowed sending rate.
+		t.x = maxu32(t.x/2, uint32((1e9 * int64(ss)) / X_MAX_BACKOFF_INTERVAL));
+	} else if t.x > 2*xRecv {
+		// 2*X_recv was already limiting the sending rate.
+		// Halve the allowed sending rate.
+		t.updateLimits(xRecv)
+	} else {
+		// The sending rate was limited by X_Bps, not by X_recv.
+		// Halve the allowed sending rate.
+		t.updateLimits(t.x/2)
+	}
+	return t.x
+}
+
+// See RFC 5348, Section 4.4
+func (t *rateCalculator) updateLimits(x uint32) {
+	panic("?")
 }
 
 // thruEq returns the allowed sending rate, in bytes per second, according to the TCP

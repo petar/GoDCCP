@@ -8,6 +8,7 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
+// —————
 // rttReceiver is the data structure that estimates the RTT at the receiver end.
 // It's function is described in RFC 4342, towards the end of Section 8.1.
 //
@@ -102,6 +103,7 @@ func (t *rttReceiver) RTT(now int64) int64 {
 }
 
 
+// —————
 // rttSender is the data structure that estimates the RTT at the sender end.
 type rttSender struct {
 	estimate int64
@@ -198,4 +200,9 @@ func (t *rttSender) RTT() int64 {
 		return dccp.RTT_DEFAULT
 	}
 	return t.estimate
+}
+
+// HasRTT returns true if rttSender has an RTT sample
+func (t *rttSender) HasRTT() bool {
+	return t.estimate > 0
 }
