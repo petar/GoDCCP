@@ -5,7 +5,6 @@
 package ccid3
 
 import (
-	//"os"
 	"github.com/petar/GoDCCP/dccp"
 )
 
@@ -34,14 +33,27 @@ func (t *nofeedbackTimer) Init() {
 
 // Sender calls OnRead each time a feedback packet is received.
 // OnRead restarts the nofeedback timer each time a feedback packet is received.
-func (t *nofeedbackTimer) OnRead(rtt int64, fb *dccp.FeedbackHeader) { 
-	t.rtt = rtt
+func (t *nofeedbackTimer) OnRead(rtt int64, rttEstimated bool, fb *dccp.FeedbackHeader) { 
+	if fb.Type != dccp.Ack && fb.Type != dccp.DataAck {
+		return
+	}
+	if rttEstimated {
+		t.rtt = rtt
+	} else {
+		t.rtt = 0
+	}
 	t.lastFeedback = fb.Time 
 }
 
 // Sender calls OnWrite each time a packet is sent out to the receiver.
 // OnWrite is used to calculate timing between data packet sends.
 func (t *nofeedbackTimer) OnWrite(ff *dccp.FeedforwardHeader) {
+	// The very first time lastFeedback is set to equal the time when the first packet goes out,
+	// since we are waiting for a feedback since that starting time. Afterwards, lastFeedback
+	// can only assume times of incoming feedback packets.
+	if ff.lastFeedback <= 0 {
+		ff.lastFeedback = ff.Time
+	}
 	if ff.Type != dccp.Data && ff.Type != dccp.DataAck {
 		return
 	}
@@ -77,7 +89,5 @@ func (t *nofeedbackTimer) Expired(now int64) bool {
 	if t.lastFeedback <= 0 {
 		return false
 	}
-	// XX // Is expiration measured since last send or receive?
-	panic("?")
 	return now - t.lastFeedback >= t.Timeout()
 }

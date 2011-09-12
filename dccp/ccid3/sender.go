@@ -87,10 +87,10 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) os.Error {
 
 	// Update the round-trip estimate
 	s.rttSender.OnRead(fb)
-	rtt := s.rttSender.RTT()
+	rtt, rttEstimated := s.rttSender.RTT()
 
 	// Update the nofeedback timeout interval
-	t.nofeedbackTimer.OnRead(rtt, fb)
+	t.nofeedbackTimer.OnRead(rtt, rttEstimated, fb)
 
 	// Window counter update
 	s.windowCounter.OnRead(fb.AckNo)

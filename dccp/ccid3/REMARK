@@ -1,13 +1,8 @@
 
 * reset nofeedback timer after processing allowed send rate upon nofeedback expiration, section 4.4.
 
-RTT ESTIMATE*
-
-   When a new RTT estimate is calculated (upon feedback packet arrival),
-   update the timeout interval:
-
-     RTO = max(4*R, 2*s/X)
-
+* updateLimits
+ 
 NOFEEDBACK*
 
    If the sender hasn't received a feedback packet from the receiver when the nofeedback timer
@@ -16,14 +11,9 @@ NOFEEDBACK*
 
    Take care of RTO both in onFirstRead and OnRead
 
-RATE
-
-   ... with the nofeedback timer expiring after two
-   seconds. The allowed sending rate is halved each time the nofeedback
-   timer expires. 
-
 ===========================================================================================
 
+* For testing: mechanism for communicating various events like tmo expiration, etc.
 * Add check on AckNo's to make sure they are not smaller than the initial sequence number
 * Reduce calls to time.Nanoseconds in dccp
 * Fix for circular arithmetic everywhere where SeqNo and AckNo are involved: loss.go, etc.

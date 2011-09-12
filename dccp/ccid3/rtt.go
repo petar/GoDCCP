@@ -194,12 +194,12 @@ func (t *rttSender) OnRead(fb *dccp.FeedbackHeader) bool {
 }
 
 // RTT returns the current round-trip time estimate in ns, or the default if no estimate is
-// available yet
-func (t *rttSender) RTT() int64 {
+// available yet. estimated is set if the RTT is estimated (as opposed to default).
+func (t *rttSender) RTT() (rtt int64, estimated bool) {
 	if t.estimate <= 0 {
-		return dccp.RTT_DEFAULT
+		return dccp.RTT_DEFAULT, false
 	}
-	return t.estimate
+	return t.estimate, true
 }
 
 // HasRTT returns true if rttSender has an RTT sample
