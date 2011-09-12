@@ -10,6 +10,7 @@ package ccid3
 type windowCounter struct {
 	lastCounter byte   // The last window counter value sent
 	lastTime    int64  // The time at which the first packet with window counter value lastCounter was sent
+	lastAckNo   int64  // The sequence number of the last acknowledged packet
 	windowHistory
 }
 
@@ -28,30 +29,53 @@ func lessWindowCounterMod(x, y byte) bool {
 func (wc *windowCounter) Init() {
 	wc.lastCounter = 0
 	wc.lastTime = 0
+	wc.lastAckNo = 0
+	wc.windowHistory.Init()
 }
 
 // The sender calls OnWrite in order to obtain the WC value to be included in the next
 // outgoing packet
-func (wc *windowCounter) OnWrite(rtt int64, now int64) byte {
-	quarterRTTs := (now - wc.lastTime) / (rtt / 4)
-	if quarterRTTs > 0 {
-		wc.lastCounter = (wc.lastCounter + byte(min64(quarterRTTs, 5))) % WindowCounterMod
-		wc.lastTime = now
+func (wc *windowCounter) OnWrite(rtt int64, seqNo int64, now int64) byte {
+	ccval, update := wc.peek(rtt, now)
+
+	// After receiving an acknowledgement for a packet sent with window counter ccvalAck, the
+	// sender SHOULD increase its window counter, if necessary, so that subsequent packets have
+	// window counter value at least (ccvalAck + 4) mod WindowCounterMod.  
+	// XXX: What if local window counter has gone around the circle before the ack was received?
+	ccvalAck, ok := wc.windowHistory.Lookup(wc.lastAckNo)
+	if ok {
+		atLeast := (ccvalAck+4) % WindowCounterMod
+		if lessWindowCounterMod(ccval, atLeast) {
+			ccval = atLeast
+			update = true
+		}
 	}
-	return wc.lastCounter
+
+	if update {
+		wc.lastCounter = ccval
+		wc.lastTime = now
+		wc.windowHistory.Add(seqNo, ccval)
+	}
+	return ccval
 }
 
-// After receiving an acknowledgement for a packet sent with window counter wcAckd, the sender
-// SHOULD increase its window counter, if necessary, so that subsequent packets have window
-// counter value at least (wcAckd + 4) mod WindowCounterMod.
-// XXX: What if local window counter has gone around the circle before the ack was received?
-func (wc *windowCounter) OnRead(rtt int64, wcAckd byte, now int64) {
-	atLeast := (wcAckd+4) % WindowCounterMod
-	wouldCounter := wc.OnWrite(rtt, now)
-	if lessWindowCounterMod(wouldCounter, atLeast) {
-		wc.lastCounter = atLeast
-		wc.lastTime = now
+// peek returns the counter value for the next outgoing packet.
+// update is set if the counter value represents a new window
+func (wc *windowCounter) peek(rtt int64, now int64) (ccval byte, update bool) {
+	quarterRTTs := (now - wc.lastTime) / (rtt / 4)
+	if quarterRTTs > 0 {
+		ccval = (wc.lastCounter + byte(min64(quarterRTTs, 5))) % WindowCounterMod
+		update = true
+	} else {
+		ccval = wc.lastCounter
+		update = false
 	}
+	return ccval, update
+}
+
+// Sender calls OnRead every time it receives an Ack or DataAck packet
+func (wc *windowCounter) OnRead(ackNo int64) {
+	wc.lastAckNo = max64(wc.lastAckNo, ackNo)
 }
 
 // —————
@@ -100,12 +124,11 @@ func (t *windowHistory) Lookup(seqNo int64) (ccval byte, ok bool) {
 	// after at least one call to Add. Consequently, the only case in which the history does not
 	// have the ccval of the seqNo is if the history has moved past it. This corresponds to the
 	// least recent entry in the history having a StartSeqNo greater than seqNo.
-	l := len(t.history)
-	if t.history[t.j % l].StartSeqNo > seqNo {
+	if t.history[t.j % WindowHistoryLen].StartSeqNo > seqNo {
 		return 0, false
 	}
-	for i := 0; i < l; i++ {
-		w := t.history[(t.j+i) % l]
+	for i := 0; i < WindowHistoryLen; i++ {
+		w := t.history[(t.j+i) % WindowHistoryLen]
 		if w.StartSeqNo > seqNo {
 			break
 		}

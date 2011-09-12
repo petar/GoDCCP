@@ -66,7 +66,7 @@ func (s *sender) OnWrite(htype byte, x bool, seqno, ackno int64, now int64) (ccv
 		return 0, nil
 	}
 
-	return s.windowCounter.OnWrite(s.rttSender.RTT(), now), nil
+	return s.windowCounter.OnWrite(s.rttSender.RTT(), ???, now), nil
 }
 
 // Conn calls OnRead after a packet has been accepted and validated
@@ -90,7 +90,7 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) os.Error {
 	rtt := s.rttSender.RTT()
 
 	// Window counter update
-	s.windowCounter.OnRead(rtt, ??, fb.Time)
+	s.windowCounter.OnRead(fb.AckNo)
 	
 	// Update the nofeedback timeout interval
 	// t.nofeedbackTimer. ??

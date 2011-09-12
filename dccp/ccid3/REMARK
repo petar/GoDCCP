@@ -1,8 +1,6 @@
 
 * reset nofeedback timer after processing allowed send rate upon nofeedback expiration, section 4.4.
 
-windowCounter: lookup SeqNo -> ccval
-
 RTT ESTIMATE*
 
    When a new RTT estimate is calculated (upon feedback packet arrival),
