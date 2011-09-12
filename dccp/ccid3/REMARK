@@ -26,5 +26,6 @@ RATE
 
 ===========================================================================================
 
+* Add check on AckNo's to make sure they are not smaller than the initial sequence number
 * Reduce calls to time.Nanoseconds in dccp
 * Fix for circular arithmetic everywhere where SeqNo and AckNo are involved: loss.go, etc.
