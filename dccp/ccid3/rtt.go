@@ -1,4 +1,4 @@
-// Copyright 2010 GoDCCP Authors. All rights reserved.
+// Copyright 2011 GoDCCP Authors. All rights reserved.
 // Use of this source code is governed by a 
 // license that can be found in the LICENSE file.
 
@@ -151,8 +151,8 @@ func (t *rttSender) find(seqNo int64) *sendTime {
 	return nil
 }
 
-// Sender calls OnRead for every arriving Ack packet. OnRead returns
-// true if the RTT estimate has been updated.
+// Sender calls OnRead for every arriving Ack packet. 
+// OnRead returns true if the RTT estimate has changed.
 func (t *rttSender) OnRead(fb *dccp.FeedbackHeader) bool {
 
 	// Read ElapsedTimeOption

@@ -1,4 +1,4 @@
-// Copyright 2010 GoDCCP Authors. All rights reserved.
+// Copyright 2011 GoDCCP Authors. All rights reserved.
 // Use of this source code is governed by a 
 // license that can be found in the LICENSE file.
 
@@ -32,14 +32,10 @@ func (t *nofeedbackTimer) Init() {
 	t.rtt = 0
 }
 
-// Sender calls OnRTT to announce a new round-trip time estimate
-func (t *nofeedbackTimer) OnRTT(rtt int64) { 
-	t.rtt = rtt 
-}
-
 // Sender calls OnRead each time a feedback packet is received.
 // OnRead restarts the nofeedback timer each time a feedback packet is received.
-func (t *nofeedbackTimer) OnRead(fb *dccp.FeedbackHeader) { 
+func (t *nofeedbackTimer) OnRead(rtt int64, fb *dccp.FeedbackHeader) { 
+	t.rtt = rtt
 	t.lastFeedback = fb.Time 
 }
 

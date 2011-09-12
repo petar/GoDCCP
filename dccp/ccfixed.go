@@ -9,20 +9,14 @@ import (
 	"time"
 )
 
-// NewFixedRateSenderControlFunc creates a function that makes new HC-Sender Congestion Control 
-// which sends packets at a constant rate of sendsPerSecond packets per second
-func NewFixedRateSenderControlFunc (sendsPerSecond int64) NewSenderCongestionControlFunc {
-	return func() SenderCongestionControl {
-		return newFixedRateSenderControl(1e9 / sendsPerSecond)
-	}
+type CCFixed struct {}
+
+func (CCFixed) NewSender() dccp.SenderCongestionControl { 
+	return newFixedRateSenderControl(1e9 / sendsPerSecond) 
 }
 
-// NewFixedRateReceiverControlFunc creates a function that makes new HC-Receiver Congestion Control 
-// which sends packets at a constant rate of sendsPerSecond packets per second
-func NewFixedRateReceiverControlFunc () NewReceiverCongestionControlFunc {
-	return func() ReceiverCongestionControl {
-		return newFixedRateReceiverControl()
-	}
+func (CCFixed) NewReceiver() dccp.ReceiverCongestionControl {
+	return newFixedRateReceiverControl()
 }
 
 // ---> Fixed-rate HC-Sender Congestion Control

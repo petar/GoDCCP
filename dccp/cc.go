@@ -141,8 +141,11 @@ type FeedforwardHeader struct {
 	DataLen int
 }
 
-type NewSenderCongestionControlFunc func() SenderCongestionControl
-type NewReceiverCongestionControlFunc func() ReceiverCongestionControl
+// CCID is a factory type that creates instances of sender and receiver CCIDs
+type CCID interface {
+	NewSender() SenderCongestionControl
+	NewReceiver() ReceiverCongestionControl
+}
 
 const (
 	CCID2      = 2 // TCP-like Congestion Control, RFC 4341

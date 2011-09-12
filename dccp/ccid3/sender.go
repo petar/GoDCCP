@@ -1,4 +1,4 @@
-// Copyright 2010 GoDCCP Authors. All rights reserved.
+// Copyright 2011 GoDCCP Authors. All rights reserved.
 // Use of this source code is governed by a 
 // license that can be found in the LICENSE file.
 
@@ -80,23 +80,24 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) os.Error {
 	if !s.open {
 		return nil
 	}
-	?? // This check should probably be module specific. Are all modules bellow just for Ack packets?
+	// Only feedback packets (Ack or DataAck) trigger updates in the congestion control
 	if fb.Type != dccp.Ack && fb.Type != dccp.DataAck {
 		return nil
 	}
 
 	// Update the round-trip estimate
-	rttChanged := s.rttSender.OnRead(fb)
+	s.rttSender.OnRead(fb)
 	rtt := s.rttSender.RTT()
+
+	// Update the nofeedback timeout interval
+	t.nofeedbackTimer.OnRead(rtt, fb)
 
 	// Window counter update
 	s.windowCounter.OnRead(fb.AckNo)
 	
-	// Update the nofeedback timeout interval
-	// t.nofeedbackTimer. ??
-
 	// Update loss estimates
-	// t.lossTracker.??
+	lossFeedback, err := t.lossTracker.OnRead(fb)
+	?
 
 	// Update allowed sending rate
 	// t.rateCalculator.??
