@@ -25,24 +25,24 @@ func NewStack(link Link, ccid CCID) *Stack {
 }
 
 // Dial initiates a new connection to the specified Link-layer address.
-func (s *Stack) Dial(addr net.Addr, serviceCode uint32) (c BlockConn, err os.Error) {
+func (s *Stack) Dial(addr net.Addr, serviceCode uint32) (c SegmentConn, err os.Error) {
 	bc, err := s.mux.Dial(addr)
 	if err != nil {
 		return nil, err
 	}
-	hc := NewHeaderOverBlockConn(bc)
+	hc := NewHeaderOverSegmentConn(bc)
 	c = newConnClient(hc, s.ccid.NewSender(), s.ccid.NewReceiver(), serviceCode)
 	return c, nil
 }
 
 // Accept blocks until a new connecion is established. It then
 // returns the connection.
-func (s *Stack) Accept() (c BlockConn, err os.Error) {
+func (s *Stack) Accept() (c SegmentConn, err os.Error) {
 	bc, err := s.mux.Accept()
 	if err != nil {
 		return nil, err
 	}
-	hc := NewHeaderOverBlockConn(bc)
+	hc := NewHeaderOverSegmentConn(bc)
 	c = newConnServer(hc, s.ccid.NewSender(), s.ccid.NewReceiver())
 	return c, nil
 }

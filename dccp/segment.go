@@ -10,14 +10,14 @@ import (
 )
 
 // Bytes is a type that has an equivalent representation as a byte slice
-// We use it for addresses, since net.Addr does not requires such representation
+// We use it for addresses, since net.Addr does not require such representation
 type Bytes interface {
 	Bytes() []byte
 }
 
-// A BlockConn is an I/O facility that explicitly reads/writes data in the form
+// A SegmentConn is an I/O facility that explicitly reads/writes data in the form
 // of indivisible blocks of data. 
-type BlockConn interface {
+type SegmentConn interface {
 	// GetMTU returns th he largest allowable block size (for read and write). The MTU may vary.
 	GetMTU() int
 
@@ -38,8 +38,8 @@ type BlockConn interface {
 
 // BlockDialListener represents a type that can accept and dial lossy packet connections
 type BlockDialListener interface {
-	Accept() (c BlockConn, err os.Error)
-	Dial(addr net.Addr) (c BlockConn, err os.Error)
+	Accept() (c SegmentConn, err os.Error)
+	Dial(addr net.Addr) (c SegmentConn, err os.Error)
 	Close() os.Error
 }
 
@@ -63,18 +63,18 @@ type HeaderConn interface {
 	Close() os.Error
 }
 
-// NewHeaderOverBlockConn creates a HeaderConn on top of a BlockConn
-func NewHeaderOverBlockConn(bc BlockConn) HeaderConn {
+// NewHeaderOverSegmentConn creates a HeaderConn on top of a SegmentConn
+func NewHeaderOverSegmentConn(bc SegmentConn) HeaderConn {
 	return &headerOverBlock{ bc: bc }
 }
 
 type headerOverBlock struct {
-	bc   BlockConn
+	bc   SegmentConn
 }
 
 func (hob *headerOverBlock) GetMTU() int { return hob.bc.GetMTU() }
 
-// Since a BlockConn already has the notion of a flow, both ReadHeader
+// Since a SegmentConn already has the notion of a flow, both ReadHeader
 // and WriteHeader pass zero labels for the Source and Dest IPs
 // to the DCCP header's read and write functions.
 

@@ -33,7 +33,7 @@ func (ee *endToEnd) acceptLoop(link Link) {
 		if err != nil {
 			ee.t.Fatalf("accept %s", c, err)
 		}
-		go func(c BlockConn) {
+		go func(c SegmentConn) {
 			i := int(readUint32(ee.t, c))
 
 			// Expect to read the number i i-times
@@ -97,7 +97,7 @@ func (ee *endToEnd) dialLoop(link Link) {
 	}
 }
 
-func readUint32(t *testing.T, c BlockConn) uint32 {
+func readUint32(t *testing.T, c SegmentConn) uint32 {
 	p, err := c.ReadBlock()
 	if err != nil {
 		t.Fatalf("read: %s", err)
@@ -109,7 +109,7 @@ func readUint32(t *testing.T, c BlockConn) uint32 {
 	return Decode4ByteUint(p[:4])
 }
 
-func writeUint32(t *testing.T, c BlockConn, u uint32) {
+func writeUint32(t *testing.T, c SegmentConn, u uint32) {
 	p := make([]byte, 4)
 	Encode4ByteUint(u, p)
 	err := c.WriteBlock(p)

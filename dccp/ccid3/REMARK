@@ -2,6 +2,8 @@
 * reset nofeedback timer after processing allowed send rate upon nofeedback expiration, section 4.4.
 
 * updateLimits
+
+* the nofeedback timer has different duration logic depending on who set it last!
  
 NOFEEDBACK*
 

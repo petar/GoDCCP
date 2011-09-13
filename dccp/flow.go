@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// flow{} is a BlockConn
+// flow{} is a SegmentConn
 type flow struct {
 	addr net.Addr
 	m    *Mux

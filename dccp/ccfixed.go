@@ -11,11 +11,11 @@ import (
 
 type CCFixed struct {}
 
-func (CCFixed) NewSender() dccp.SenderCongestionControl { 
-	return newFixedRateSenderControl(1e9 / sendsPerSecond) 
+func (CCFixed) NewSender() SenderCongestionControl { 
+	return newFixedRateSenderControl(1e9) // one packet per second. sendsPerSecond
 }
 
-func (CCFixed) NewReceiver() dccp.ReceiverCongestionControl {
+func (CCFixed) NewReceiver() ReceiverCongestionControl {
 	return newFixedRateReceiverControl()
 }
 

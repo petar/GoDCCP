@@ -58,7 +58,7 @@ func NewMux(link Link) *Mux {
 }
 
 // Accept() returns the first incoming flow request
-func (m *Mux) Accept() (c BlockConn, err os.Error) {
+func (m *Mux) Accept() (c SegmentConn, err os.Error) {
 	f, ok := <-m.acceptChan
 	if !ok {
 		return nil, os.EBADF
@@ -67,7 +67,7 @@ func (m *Mux) Accept() (c BlockConn, err os.Error) {
 }
 
 // Dial opens a packet-based connection to the Link-layer addr
-func (m *Mux) Dial(addr net.Addr) (c BlockConn, err os.Error) {
+func (m *Mux) Dial(addr net.Addr) (c SegmentConn, err os.Error) {
 	ch := make(chan muxHeader)
 	local := ChooseLabel()
 	f := newFlow(addr, m, ch, m.cargoMaxLen(), local, nil)

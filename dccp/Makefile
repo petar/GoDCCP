@@ -4,7 +4,7 @@ TARG=github.com/petar/GoDCCP/dccp
 GOFILES=\
 	addr.go\
 	backoff.go\
-	block.go\
+	segment.go\
 	cc.go\
 	ccfixed.go\
 	chanlink.go\

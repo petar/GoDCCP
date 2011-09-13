@@ -16,6 +16,7 @@ type rateCalculator struct {
 	tld         int64  // Time Last Doubled (during slow start) or zero if unset; in ns since UTC zero
 	recvLimit   uint32 // Receive limit, in bytes per second
 	recoverRate uint32 // (RFC 5348, Section 4.4)
+	lossRateInv uint32 // The last known loss event rate inverse
 	hasFeedback bool   // True if sender has received any feedback from the receiver
 	xRecvSet           // Data structure for x_recv_set (see RFC 5348)
 }
@@ -36,6 +37,7 @@ func (t *rateCalculator) Init(ss uint32) {
 	// is one packet per second.
 	t.x = ss
 	t.recoverRate = ss
+	t.lossRateInv = UnknownLossEventRateInv
 	// tld = 0 indicates that the first feedback packet has yet not been received.
 	t.tld = 0
 	// Because X_recv_set is initialized with a single item, with value Infinity, recvLimit is
@@ -84,6 +86,7 @@ func (t *rateCalculator) OnRead(f XFeedback) uint32 {
 		panic("invalid loss rate inverse")
 	}
 	t.hasFeedback = true
+	t.lossRateInv = f.LossFeedback.RateInv
 	if t.tld <= 0 {
 		return t.onFirstRead(f.Now, f.SS, f.RTT)
 	}
@@ -103,9 +106,9 @@ func (t *rateCalculator) OnRead(f XFeedback) uint32 {
 		t.recvLimit = 2 * t.xRecvSet.Max()
 	}
 	// Are we in the post-slow start phase
-	if f.LossFeedback.RateInv < UnknownLossEventRateInv {
-		xEq := t.thruEq(f.SS, f.RTT, f.LossFeedback.RateInv)
-		t.x = maxu32(minu32(xEq, t.recvLimit), uint32((1e9 * int64(f.SS)) / X_MAX_BACKOFF_INTERVAL))
+	if t.lossRateInv < UnknownLossEventRateInv {
+		xEq := t.thruEq(f.SS, f.RTT)
+		t.x = maxu32(minu32(xEq, t.recvLimit), minRate(f.SS))
 	} else if f.Now - t.tld >= f.RTT {
 		// Initial slow-start
 		t.x = maxu32(minu32(2*t.x, t.recvLimit), initRate(f.SS, f.RTT))
@@ -118,21 +121,21 @@ func (t *rateCalculator) OnRead(f XFeedback) uint32 {
 // Sender calls OnFeedbackExpire when the no feedback timer expires.
 // OnFeedbackExpire returns the new allowed sending rate.
 // See RFC 5348, Section 4.4
-func (t *rateCalculator) OnFeedbackTimer(hasRTT bool, ss uint32, lossRateInv uint32, idleSince int64, nofeedbackSet int64) uint32 {
+func (t *rateCalculator) OnFeedbackTimer(hasRTT bool, ss uint32, idleSince int64, nofeedbackSet int64) uint32 {
 	xRecv := t.xRecvSet.Max()
 	if !hasRTT && !t.hasFeedback && idleSince > nofeedbackSet {
 		// We do not have X_Bps or recover_rate yet.
 		// Halve the allowed sending rate.
-		t.x = maxu32(t.x/2, uint32((1e9 * int64(ss)) / X_MAX_BACKOFF_INTERVAL));
+		t.x = maxu32(t.x/2, minRate(ss));
 	} else if 
-		((lossRateInv < UnknownLossEventRateInv && xRecv < t.recoverRate) ||
-		(lossRateInv == UnknownLossEventRateInv && t.x < 2*t.recoverRate)) &&
+		((t.lossRateInv < UnknownLossEventRateInv && xRecv < t.recoverRate) ||
+		(t.lossRateInv == UnknownLossEventRateInv && t.x < 2*t.recoverRate)) &&
 		idleSince <= nofeedbackSet {
 		// Don't halve the allowed sending rate. Do nothing.
-	} else if lossRateInv == UnknownLossEventRateInv {
+	} else if t.lossRateInv == UnknownLossEventRateInv {
 		// We do not have X_Bps yet.
 		// Halve the allowed sending rate.
-		t.x = maxu32(t.x/2, uint32((1e9 * int64(ss)) / X_MAX_BACKOFF_INTERVAL));
+		t.x = maxu32(t.x/2, minRate(ss));
 	} else if t.x > 2*xRecv {
 		// 2*X_recv was already limiting the sending rate.
 		// Halve the allowed sending rate.
@@ -145,15 +148,25 @@ func (t *rateCalculator) OnFeedbackTimer(hasRTT bool, ss uint32, lossRateInv uin
 	return t.x
 }
 
+// minRate returns the unconditionally minimum sending rate in bytes per second
+func minRate(ss uint32) uint32 {
+	return uint32((1e9 * int64(ss)) / X_MAX_BACKOFF_INTERVAL)
+}
+
 // See RFC 5348, Section 4.4
-func (t *rateCalculator) updateLimits(x uint32) {
-	panic("?")
+func (t *rateCalculator) updateLimits(now int64, ss uint32, timerLimit uint32) {
+	xMin := minRate(ss)
+	if timerLimit < xMin {
+		timerLimit = xMin
+	}
+	t.xRecvSet.Reduce(now, timerLimit/2)
+	?
 }
 
 // thruEq returns the allowed sending rate, in bytes per second, according to the TCP
 // throughput equation, for the regime b=1 and t_RTO=4*RTT (See RFC 5348, Section 3.1).
-func (t *rateCalculator) thruEq(ss uint32, rtt int64, lossRateInv uint32) uint32 {
-	bps := (1e3*1e9*int64(ss)) / (rtt * thruEqQ(lossRateInv))
+func (t *rateCalculator) thruEq(ss uint32, rtt int64) uint32 {
+	bps := (1e3*1e9*int64(ss)) / (rtt * thruEqQ(t.lossRateInv))
 	return uint32(bps)
 }
 
@@ -225,6 +238,16 @@ func (t *xRecvSet) Maximize(now int64, xRecvBPS uint32) {
 	}
 	t.set[0].Time = now
 	t.set[0].Rate = xRecvBPS
+}
+
+// Reduce deletes all entries in xRecvSet and replaces them with a single entry,
+// corresponding to now and xRecv
+func (t *xRecvSet) Reduce(now int64, xRecv uint32) {
+	for i, _ := range t.set {
+		t.set[i] = xRecvEntry{}
+	}
+	t.set[0].Time = now
+	t.set[0].Rate = xRecv
 }
 
 // The procedure for updating X_recv_set keeps a set of X_recv values
