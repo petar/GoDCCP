@@ -51,8 +51,8 @@ func (t *nofeedbackTimer) OnWrite(ff *dccp.FeedforwardHeader) {
 	// The very first time lastFeedback is set to equal the time when the first packet goes out,
 	// since we are waiting for a feedback since that starting time. Afterwards, lastFeedback
 	// can only assume times of incoming feedback packets.
-	if ff.lastFeedback <= 0 {
-		ff.lastFeedback = ff.Time
+	if t.lastFeedback <= 0 {
+		t.lastFeedback = ff.Time
 	}
 	if ff.Type != dccp.Data && ff.Type != dccp.DataAck {
 		return
