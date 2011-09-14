@@ -101,7 +101,7 @@ func (f *flow) String() string {
 	return f.getLocal().String() + "--" + f.getRemote().String()
 }
 
-func (f *flow) WriteBlock(block []byte) os.Error {
+func (f *flow) WriteSegment(block []byte) os.Error {
 	f.Lock()
 	m := f.m
 	f.Unlock()
@@ -117,7 +117,7 @@ func (f *flow) WriteBlock(block []byte) os.Error {
 	return err
 }
 
-func (f *flow) ReadBlock() (block []byte, err os.Error) {
+func (f *flow) ReadSegment() (block []byte, err os.Error) {
 	f.rlk.Lock()
 	defer f.rlk.Unlock()
 

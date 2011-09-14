@@ -34,11 +34,11 @@ func TestConnect(t *testing.T) {
 	}
 
 	// Write and read the block
-	err = ca.WriteBlock(p)
+	err = ca.WriteSegment(p)
 	if err != nil {
 		t.Errorf("side a write: %s", err)
 	}
-	q, err := cb.ReadBlock()
+	q, err := cb.ReadSegment()
 	if err != nil {
 		t.Errorf("side b read: %s", err)
 	}

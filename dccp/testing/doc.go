@@ -1,0 +1,9 @@
+// Copyright 2011 GoDCCP Authors. All rights reserved.
+// Use of this source code is governed by a 
+// license that can be found in the LICENSE file.
+
+/*
+	This package contains utilities for testing DCCP and CCID in a controlled and simulated
+	environment.
+*/
+package testing

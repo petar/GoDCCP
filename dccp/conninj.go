@@ -63,7 +63,7 @@ func (c *Conn) write(h *Header) os.Error {
 // giving priority to writeNonData. It continues to do so until writeNonData is closed.
 func (c *Conn) writeLoop(writeNonData chan *Header, writeData chan []byte) {
 
-	// The presence of multiple loops below allows user calls to WriteBlock to
+	// The presence of multiple loops below allows user calls to WriteSegment to
 	// block in "writeNonData <-" while the connection moves into a state where
 	// it accepts app data (in Loop_II)
 

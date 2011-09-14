@@ -13,7 +13,7 @@ import (
 const maxDataOptionSize = 24
 
 // GetMTU() returns the maximum size of an application-level data block that can be passed
-// to WriteBlock This is an informative number. Packets are sent anyway, but they may be
+// to WriteSegment This is an informative number. Packets are sent anyway, but they may be
 // dropped by the link layer or a router.
 func (c *Conn) GetMTU() int {
 	c.Lock()
@@ -22,8 +22,8 @@ func (c *Conn) GetMTU() int {
 	return int(c.socket.GetMPS()) - maxDataOptionSize - getFixedHeaderSize(DataAck, true)
 }
 
-// WriteBlock blocks until the slice b is sent.
-func (c *Conn) WriteBlock(b []byte) os.Error {
+// WriteSegment blocks until the slice b is sent.
+func (c *Conn) WriteSegment(b []byte) os.Error {
 	c.writeDataLk.Lock()
 	defer c.writeDataLk.Unlock()
 	if c.writeData == nil {
@@ -33,9 +33,9 @@ func (c *Conn) WriteBlock(b []byte) os.Error {
 	return nil
 }
 
-// ReadBlock blocks until the next packet of application data is received.
+// ReadSegment blocks until the next packet of application data is received.
 // It returns a non-nil error only if the connection has been closed.
-func (c *Conn) ReadBlock() (b []byte, err os.Error) {
+func (c *Conn) ReadSegment() (b []byte, err os.Error) {
 	b, ok := <-c.readApp
 	if !ok {
 		// The connection has been closed

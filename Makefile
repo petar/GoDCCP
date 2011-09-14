@@ -14,6 +14,8 @@ all: install
 
 DIRS=\
      	dccp\
+     	dccp/testing\
+     	dccp/ccid3\
 	retransmit\
 
 TEST=\

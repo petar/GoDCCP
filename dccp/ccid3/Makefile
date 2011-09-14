@@ -17,8 +17,7 @@ GOFILES=\
 	ss.go\
 	util.go\
 	x.go\
-
-	#sender.go\
-	#ccid3.go\
+	sender.go\
+	ccid3.go\
 
 include $(GOROOT)/src/Make.pkg

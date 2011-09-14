@@ -114,7 +114,7 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) os.Error {
 		log.Printf("feedback packet with corrupt receive rate option")
 		return nil
 	}
-	xf := &XFeedback struct {
+	xf := &XFeedback{
 		Now:          fb.Time,
 		SS:           FixedSegmentSize,
 		XRecv:        xrecv,
@@ -167,6 +167,7 @@ func (s *sender) OnIdle(now int64) os.Error {
 	}
 	
 	if s.nofeedbackTimer.IsExpired(now) {
+		??
 		s.rateCalculator.OnNoFeedback(now int64, hasRTT bool, idleSince int64, nofeedbackSet int64)
 		s.nofeedbackTimer.Reset(now)
 	}

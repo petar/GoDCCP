@@ -21,11 +21,11 @@ type SegmentConn interface {
 	// GetMTU returns th he largest allowable block size (for read and write). The MTU may vary.
 	GetMTU() int
 
-	ReadBlock() (block []byte, err os.Error)
+	ReadSegment() (block []byte, err os.Error)
 
 	// If the user attempts to write a block that is too big, an ErrTooBig is returned
 	// and the block is not sent.
-	WriteBlock(block []byte) (err os.Error)
+	WriteSegment(block []byte) (err os.Error)
 
 	LocalLabel() Bytes
 
@@ -36,8 +36,8 @@ type SegmentConn interface {
 	Close() os.Error
 }
 
-// BlockDialListener represents a type that can accept and dial lossy packet connections
-type BlockDialListener interface {
+// SegmentDialAccepter represents a type that can accept and dial lossy packet connections
+type SegmentDialAccepter interface {
 	Accept() (c SegmentConn, err os.Error)
 	Dial(addr net.Addr) (c SegmentConn, err os.Error)
 	Close() os.Error
@@ -63,41 +63,41 @@ type HeaderConn interface {
 	Close() os.Error
 }
 
-// NewHeaderOverSegmentConn creates a HeaderConn on top of a SegmentConn
-func NewHeaderOverSegmentConn(bc SegmentConn) HeaderConn {
-	return &headerOverBlock{ bc: bc }
+// NewHeaderConn creates a HeaderConn on top of a SegmentConn
+func NewHeaderConn(bc SegmentConn) HeaderConn {
+	return &headerConn{ bc: bc }
 }
 
-type headerOverBlock struct {
+type headerConn struct {
 	bc   SegmentConn
 }
 
-func (hob *headerOverBlock) GetMTU() int { return hob.bc.GetMTU() }
+func (hob *headerConn) GetMTU() int { return hob.bc.GetMTU() }
 
 // Since a SegmentConn already has the notion of a flow, both ReadHeader
 // and WriteHeader pass zero labels for the Source and Dest IPs
 // to the DCCP header's read and write functions.
 
-func (hob *headerOverBlock) ReadHeader() (h *Header, err os.Error) {
-	p, err := hob.bc.ReadBlock()
+func (hob *headerConn) ReadHeader() (h *Header, err os.Error) {
+	p, err := hob.bc.ReadSegment()
 	if err != nil {
 		return nil, err
 	}
 	return ReadHeader(p, labelZero.Bytes(), labelZero.Bytes(), AnyProto, false)
 }
 
-func (hob *headerOverBlock) WriteHeader(h *Header) (err os.Error) {
+func (hob *headerConn) WriteHeader(h *Header) (err os.Error) {
 	p, err := h.Write(labelZero.Bytes(), labelZero.Bytes(), AnyProto, false)
 	if err != nil {
 		return err
 	}
-	return hob.bc.WriteBlock(p)
+	return hob.bc.WriteSegment(p)
 }
 
-func (hob *headerOverBlock) LocalLabel() Bytes { return hob.bc.LocalLabel() }
+func (hob *headerConn) LocalLabel() Bytes { return hob.bc.LocalLabel() }
 
-func (hob *headerOverBlock) RemoteLabel() Bytes { return hob.bc.RemoteLabel() }
+func (hob *headerConn) RemoteLabel() Bytes { return hob.bc.RemoteLabel() }
 
-func (hob *headerOverBlock) SetReadTimeout(nsec int64) os.Error { return hob.bc.SetReadTimeout(nsec) }
+func (hob *headerConn) SetReadTimeout(nsec int64) os.Error { return hob.bc.SetReadTimeout(nsec) }
 
-func (hob *headerOverBlock) Close() os.Error { return hob.bc.Close() }
+func (hob *headerConn) Close() os.Error { return hob.bc.Close() }
