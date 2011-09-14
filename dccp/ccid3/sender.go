@@ -5,6 +5,7 @@
 package ccid3
 
 import (
+	"log"
 	"os"
 	"github.com/petar/GoDCCP/dccp"
 )
@@ -12,15 +13,14 @@ import (
 // —————
 // sender is a CCID3 congestion control sender
 type sender struct {
-	dccp.Mutex
+	strober
+	dccp.Mutex // Locks all fields below
 	rttSender
 	windowCounter
 	nofeedbackTimer
 	segmentSize
 	lossTracker
 	rateCalculator
-	strober
-
 	open bool // Whether the CC is active
 }
 
@@ -32,7 +32,11 @@ func (s *sender) GetID() byte { return dccp.CCID3 }
 func (s *sender) GetCCMPS() int32 { return FixedSegmentSize }
 
 // GetRTT returns the Round-Trip Time as measured by this CCID
-func (s *sender) GetRTT() int64 { return s.rttSender.RTT() }
+func (s *sender) GetRTT() int64 { 
+	s.Lock()
+	defer s.Unlock()
+	return s.rttSender.RTT() 
+}
 
 // Open tells the Congestion Control that the connection has entered
 // OPEN or PARTOPEN state and that the CC can now kick in. Before the
@@ -51,14 +55,14 @@ func (s *sender) Open() {
 	s.segmentSize.SetMPS(FixedSegmentSize)
 	s.lossTracker.Init()
 	s.rateCalculator.Init(FixedSegmentSize)
-	s.strober.Init()
+	s.strober.Init((s.rateCalculator.X()*64) / FixedSegmentSize)
 	s.open = true
 }
 
 // Conn calls OnWrite before a packet is sent to give CongestionControl
 // an opportunity to add CCVal and options to an outgoing packet
 // If the CC is not active, OnWrite should return 0, nil.
-func (s *sender) OnWrite(htype byte, x bool, seqno, ackno int64, now int64) (ccval byte, options []*dccp.Option) {
+func (s *sender) OnWrite(ph *dccp.PreHeader) (ccval byte, options []*dccp.Option) {
 	s.Lock()
 	defer s.Unlock()
 
@@ -66,9 +70,9 @@ func (s *sender) OnWrite(htype byte, x bool, seqno, ackno int64, now int64) (ccv
 		return 0, nil
 	}
 
-	s.nofeedbackTimer.OnWrite(ff)
+	s.nofeedbackTimer.OnWrite(ph)
 
-	return s.windowCounter.OnWrite(s.rttSender.RTT(), ???, now), nil
+	return s.windowCounter.OnWrite(s.rttSender.RTT(), ph.SeqNo, ph.Time), nil
 }
 
 // Conn calls OnRead after a packet has been accepted and validated
@@ -92,29 +96,61 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) os.Error {
 	rtt, rttEstimated := s.rttSender.RTT()
 
 	// Update the nofeedback timeout interval and reset the timer
-	t.nofeedbackTimer.OnRead(rtt, rttEstimated, fb)
+	s.nofeedbackTimer.OnRead(rtt, rttEstimated, fb)
 
 	// Window counter update
 	s.windowCounter.OnRead(fb.AckNo)
 	
 	// Update loss estimates
-	lossFeedback, err := t.lossTracker.OnRead(fb)
-	?
+	lossFeedback, err := s.lossTracker.OnRead(fb)
+	if err != nil {
+		log.Printf("feedback packet with corrupt loss option")
+		return nil
+	}
 
 	// Update allowed sending rate
-	// t.rateCalculator.??
+	xrecv, err := readReceiveRate(fb)
+	if err != nil {
+		log.Printf("feedback packet with corrupt receive rate option")
+		return nil
+	}
+	xf := &XFeedback struct {
+		Now:          fb.Time,
+		SS:           FixedSegmentSize,
+		XRecv:        xrecv,
+		RTT:          rtt,
+		LossFeedback: lossFeedback,
+	}
+	x := s.rateCalculator.OnRead(xf)
 
-	// Reset the nofeedback timer
-	panic("?")
+	// Update rate at strober
+	s.strober.SetRate((x*64) / FixedSegmentSize)
+}
+
+func readReceiveRate(fb *dccp.FeedbackHeader) (xrecv uint32, err os.Error) {
+	if fb.Type != dccp.Ack && fb.Type != dccp.DataAck {
+		return 0, ErrNoAck
+	}
+	var receiveRate *ReceiveRateOption
+	for _, opt := range fb.Options {
+		if receiveRate = DecodeReceiveRateOption(opt); receiveRate != nil {
+			break
+		}
+	}
+	if receiveRate == nil {
+		return 0, ErrMissingOption
+	}
+	return receiveRate.Rate, nil
 }
 
 // Strobe blocks until a new packet can be sent without violating the congestion control
 // rate limit. If the CC is not active, Strobe MUST return immediately.
 func (s *sender) Strobe() {
 	s.Lock()
-	defer s.Unlock()
+	open := s.open
+	s.Unlock()
 
-	if !s.open {
+	if !open {
 		return
 	}
 

@@ -1,10 +1,4 @@
 
-* integrate x with sender
-
-* is strobe robust?
-
-===========================================================================================
-
 * (Virtual) Timer interface for DCCP framework
 * Rename segment<->header connection
 * Eavesdropper pipe. Knobs:

@@ -47,23 +47,23 @@ func (t *nofeedbackTimer) OnRead(rtt int64, rttEstimated bool, fb *dccp.Feedback
 
 // Sender calls OnWrite each time a packet is sent out to the receiver.
 // OnWrite is used to calculate timing between data packet sends.
-func (t *nofeedbackTimer) OnWrite(ff *dccp.FeedforwardHeader) {
+func (t *nofeedbackTimer) OnWrite(ph *dccp.PreHeader) {
 	// The very first time resetTime is set to equal the time when the first packet goes out,
 	// since we are waiting for a feedback since that starting time. Afterwards, resetTime
 	// can only assume times of incoming feedback packets.
 	if t.resetTime <= 0 {
-		t.resetTime = ff.Time
+		t.resetTime = ph.Time
 	}
 
 	// Update inverse frequency of data packets estimate
-	if ff.Type != dccp.Data && ff.Type != dccp.DataAck {
+	if ph.Type != dccp.Data && ph.Type != dccp.DataAck {
 		return
 	}
 	if t.lastDataSent == 0 {
-		t.lastDataSent = ff.Time
+		t.lastDataSent = ph.Time
 		return
 	}
-	d := ff.Time - t.lastDataSent
+	d := ph.Time - t.lastDataSent
 	if d <= 0 {
 		return
 	}

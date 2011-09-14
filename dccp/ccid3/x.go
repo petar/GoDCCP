@@ -88,7 +88,7 @@ type XFeedback struct {
 
 // Sender calls OnRead each time a new feedback packet (i.e. Ack or DataAck) arrives.
 // OnRead returns the new allowed sending in bytes per second.
-func (t *rateCalculator) OnRead(f XFeedback) uint32 {
+func (t *rateCalculator) OnRead(f *XFeedback) uint32 {
 	if f.LossFeedback.RateInv < 1 {
 		panic("invalid loss rate inverse")
 	}

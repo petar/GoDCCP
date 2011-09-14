@@ -18,7 +18,8 @@ type strober struct {
 }
 
 // Init resets the strober instance for new use
-func (s *strober) Init() {
+func (s *strober) Init(per64sec int64) {
+	s.SetRate(per64sec)
 }
 
 // SetWait sets the strobing rate by setting the time interval between two strobes in nanoseconds
@@ -26,6 +27,7 @@ func (s *strober) SetInterval(interval int64) {
 	s.Lock()
 	defer s.Unlock()
 	s.interval = interval
+	s.last = 0
 }
 
 // SetRate sets the strobing rate in strobes per 64 seconds
@@ -43,7 +45,9 @@ func (s *strober) SetRate(per64sec int64) {
 // exceed the allowed rate.  In particular, note that strober makes sure that after data
 // limited periods, when the application is not calling it for a while, there is no burst of
 // high frequency returns.  Strobe MUST not be called concurrently. For efficiency, it does
-// not use a lock to prevent concurrent invocation.
+// not use a lock to prevent concurrent invocation. DCCP currently calls Strobe in a loop,
+// so concurrent invocations are not a concern.
+//
 // TODO: This routine should be optimized
 func (s *strober) Strobe() {
 	s.Lock()
