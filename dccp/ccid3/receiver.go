@@ -74,29 +74,29 @@ func (r *receiver) makeElapsedTimeOption(ackNo int64, now int64) *dccp.ElapsedTi
 
 // Conn calls OnWrite before a packet is sent to give CongestionControl
 // an opportunity to add CCVal and options to an outgoing packet
-func (r *receiver) OnWrite(htype byte, x bool, seqno, ackno int64, now int64) (options []*dccp.Option) {
+func (r *receiver) OnWrite(ph *dccp.PreHeader) (options []*dccp.Option) {
 	r.Lock()
 	defer r.Unlock()
-	rtt := r.rttReceiver.RTT(now)
+	rtt := r.rttReceiver.RTT(ph.Time)
 
-	r.lastWrite = now
+	r.lastWrite = ph.Time
 	if !r.open {
 		return nil
 	}
 	
-	switch htype {
+	switch ph.Type {
 	case dccp.Ack:
 		// Record last Ack write separately from last writes (in general)
-		r.lastAck = now
+		r.lastAck = ph.Time
 		r.dataSinceAck = false
 		r.lastLossEventRateInv = r.lossReceiver.LossEventRateInv()
 		r.lastCCVal = r.latestCCVal
 
 		// Prepare feedback options
 		opts := make([]*dccp.Option, 3)
-		opts[0] = encodeOption(r.makeElapsedTimeOption(ackno, now))
-		opts[1] = encodeOption(r.receiveRate.Flush(rtt, now))
-		opts[2] = encodeOption(r.lossReceiver.LossIntervalsOption(ackno))
+		opts[0] = encodeOption(r.makeElapsedTimeOption(ph.AckNo, ph.Time))
+		opts[1] = encodeOption(r.receiveRate.Flush(rtt, ph.Time))
+		opts[2] = encodeOption(r.lossReceiver.LossIntervalsOption(ph.AckNo))
 		if opts[0] == nil {
 			opts = opts[1:3]
 		}
