@@ -73,42 +73,42 @@ type headerConn struct {
 	bc   SegmentConn
 }
 
-func (hob *headerConn) GetMTU() int { 
-	return hob.bc.GetMTU() 
+func (hc *headerConn) GetMTU() int { 
+	return hc.bc.GetMTU() 
 }
 
 // Since a SegmentConn already has the notion of a flow, both ReadHeader
 // and WriteHeader pass zero labels for the Source and Dest IPs
 // to the DCCP header's read and write functions.
 
-func (hob *headerConn) ReadHeader() (h *Header, err os.Error) {
-	p, err := hob.bc.ReadSegment()
+func (hc *headerConn) ReadHeader() (h *Header, err os.Error) {
+	p, err := hc.bc.ReadSegment()
 	if err != nil {
 		return nil, err
 	}
 	return ReadHeader(p, LabelZero.Bytes(), LabelZero.Bytes(), AnyProto, false)
 }
 
-func (hob *headerConn) WriteHeader(h *Header) (err os.Error) {
+func (hc *headerConn) WriteHeader(h *Header) (err os.Error) {
 	p, err := h.Write(LabelZero.Bytes(), LabelZero.Bytes(), AnyProto, false)
 	if err != nil {
 		return err
 	}
-	return hob.bc.WriteSegment(p)
+	return hc.bc.WriteSegment(p)
 }
 
-func (hob *headerConn) LocalLabel() Bytes { 
-	return hob.bc.LocalLabel() 
+func (hc *headerConn) LocalLabel() Bytes { 
+	return hc.bc.LocalLabel() 
 }
 
-func (hob *headerConn) RemoteLabel() Bytes { 
-	return hob.bc.RemoteLabel() 
+func (hc *headerConn) RemoteLabel() Bytes { 
+	return hc.bc.RemoteLabel() 
 }
 
-func (hob *headerConn) SetReadTimeout(nsec int64) os.Error { 
-	return hob.bc.SetReadTimeout(nsec) 
+func (hc *headerConn) SetReadTimeout(nsec int64) os.Error { 
+	return hc.bc.SetReadTimeout(nsec) 
 }
 
-func (hob *headerConn) Close() os.Error { 
-	return hob.bc.Close() 
+func (hc *headerConn) Close() os.Error { 
+	return hc.bc.Close() 
 }
