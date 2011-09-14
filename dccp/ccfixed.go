@@ -56,7 +56,7 @@ func (scc *fixedRateSenderControl) GetCCMPS() int32 { return 1e9 }
 
 func (scc *fixedRateSenderControl) GetRTT() int64 { return RTT_DEFAULT }
 
-func (scc *fixedRateSenderControl) OnWrite(htype byte, x bool, seqno, ackno int64, now int64) (ccval byte, options []*Option) { return 0, nil }
+func (scc *fixedRateSenderControl) OnWrite(ph *PreHeader) (ccval byte, options []*Option) { return 0, nil }
 
 func (scc *fixedRateSenderControl) OnRead(fb *FeedbackHeader) os.Error { return nil }
 
@@ -87,7 +87,7 @@ func (rcc *fixedRateReceiverControl) Open() {}
 
 func (rcc *fixedRateReceiverControl) GetID() byte { return CCID_FIXED }
 
-func (rcc *fixedRateReceiverControl) OnWrite(htype byte, x bool, seqno, ackno int64, now int64) (options []*Option) { return nil }
+func (rcc *fixedRateReceiverControl) OnWrite(ph *PreHeader) (options []*Option) { return nil }
 
 func (rcc *fixedRateReceiverControl) OnRead(ff *FeedforwardHeader) os.Error { return nil }
 

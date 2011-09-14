@@ -13,13 +13,13 @@ import (
 func (c *Conn) writeCCID(h *Header) *Header {
 	now := time.Nanoseconds()
 	// HC-Sender CCID
-	ccval, sropts := c.scc.OnWrite(h.Type, h.X, h.SeqNo, h.AckNo, now)
+	ccval, sropts := c.scc.OnWrite(&PreHeader{Type: h.Type, X: h.X, SeqNo: h.SeqNo, AckNo: h.AckNo, Time: now})
 	if !validateCCIDSenderToReceiver(sropts) {
 		panic("sender congestion control writes disallowed options")
 	}
 	h.CCVal = ccval
 	// HC-Receiver CCID
-	rsopts := c.rcc.OnWrite(h.Type, h.X, h.SeqNo, h.AckNo, now)
+	rsopts := c.rcc.OnWrite(&PreHeader{Type: h.Type, X: h.X, SeqNo: h.SeqNo, AckNo: h.AckNo, Time: now})
 	if !validateCCIDReceiverToSender(rsopts) {
 		panic("receiver congestion control writes disallowed options")
 	}
