@@ -21,7 +21,9 @@ func NewChanPipe() (p, q *ChanLink) {
 	return &ChanLink{in: c0, out: c1}, &ChanLink{in: c1, out: c0}
 }
 
-func (l *ChanLink) GetMTU() int { return 1500 }
+func (l *ChanLink) GetMTU() int { 
+	return 1500 
+}
 
 func (l *ChanLink) SetReadTimeout(nsec int64) os.Error {
 	return nil

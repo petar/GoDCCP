@@ -63,6 +63,7 @@ type HeaderConn interface {
 	Close() os.Error
 }
 
+// —————
 // NewHeaderConn creates a HeaderConn on top of a SegmentConn
 func NewHeaderConn(bc SegmentConn) HeaderConn {
 	return &headerConn{ bc: bc }
@@ -72,7 +73,9 @@ type headerConn struct {
 	bc   SegmentConn
 }
 
-func (hob *headerConn) GetMTU() int { return hob.bc.GetMTU() }
+func (hob *headerConn) GetMTU() int { 
+	return hob.bc.GetMTU() 
+}
 
 // Since a SegmentConn already has the notion of a flow, both ReadHeader
 // and WriteHeader pass zero labels for the Source and Dest IPs
@@ -83,21 +86,29 @@ func (hob *headerConn) ReadHeader() (h *Header, err os.Error) {
 	if err != nil {
 		return nil, err
 	}
-	return ReadHeader(p, labelZero.Bytes(), labelZero.Bytes(), AnyProto, false)
+	return ReadHeader(p, LabelZero.Bytes(), LabelZero.Bytes(), AnyProto, false)
 }
 
 func (hob *headerConn) WriteHeader(h *Header) (err os.Error) {
-	p, err := h.Write(labelZero.Bytes(), labelZero.Bytes(), AnyProto, false)
+	p, err := h.Write(LabelZero.Bytes(), LabelZero.Bytes(), AnyProto, false)
 	if err != nil {
 		return err
 	}
 	return hob.bc.WriteSegment(p)
 }
 
-func (hob *headerConn) LocalLabel() Bytes { return hob.bc.LocalLabel() }
+func (hob *headerConn) LocalLabel() Bytes { 
+	return hob.bc.LocalLabel() 
+}
 
-func (hob *headerConn) RemoteLabel() Bytes { return hob.bc.RemoteLabel() }
+func (hob *headerConn) RemoteLabel() Bytes { 
+	return hob.bc.RemoteLabel() 
+}
 
-func (hob *headerConn) SetReadTimeout(nsec int64) os.Error { return hob.bc.SetReadTimeout(nsec) }
+func (hob *headerConn) SetReadTimeout(nsec int64) os.Error { 
+	return hob.bc.SetReadTimeout(nsec) 
+}
 
-func (hob *headerConn) Close() os.Error { return hob.bc.Close() }
+func (hob *headerConn) Close() os.Error { 
+	return hob.bc.Close() 
+}

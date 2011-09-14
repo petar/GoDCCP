@@ -22,7 +22,7 @@ type Label struct {
 const LabelLen = 16
 
 var (
-	labelZero       = Label{}
+	LabelZero       = Label{}
 	labelCRC64Table = crc64.MakeTable(crc64.ISO)
 )
 
@@ -32,10 +32,12 @@ func (label *Label) Bytes() []byte {
 	if label != nil {
 		return label.data[:]
 	}
-	return labelZero.data[:]
+	return LabelZero.data[:]
 }
 
-func (label *Label) hash() { label.h = crc64.Checksum(label.data[:], labelCRC64Table) }
+func (label *Label) hash() { 
+	label.h = crc64.Checksum(label.data[:], labelCRC64Table) 
+}
 
 func isZero(bb []byte) bool {
 	for _, b := range bb {
@@ -60,7 +62,9 @@ func ChooseLabel() *Label {
 }
 
 // Hash() returns the hash code of this label
-func (label *Label) Hash() uint64 { return label.h }
+func (label *Label) Hash() uint64 { 
+	return label.h 
+}
 
 // Equal() performs a deep check for equality with q@
 func (label *Label) Equal(q *Label) bool {
@@ -89,7 +93,7 @@ func ReadLabel(p []byte) (label *Label, n int, err os.Error) {
 // Write() writes the wire format representation of the label into p@
 func (label *Label) Write(p []byte) (n int, err os.Error) {
 	if label == nil {
-		label = &labelZero
+		label = &LabelZero
 	}
 	if len(p) < LabelLen {
 		return 0, os.NewError("label can't fit")
@@ -101,7 +105,7 @@ func (label *Label) Write(p []byte) (n int, err os.Error) {
 // String() returns a string representation of the label
 func (label *Label) String() string {
 	if label == nil {
-		label = &labelZero
+		label = &LabelZero
 	}
 	var w bytes.Buffer
 	for i, b := range label.data {
@@ -113,7 +117,9 @@ func (label *Label) String() string {
 	return string(w.Bytes())
 }
 
-func (label *Label) Address() string { return label.String() }
+func (label *Label) Address() string { 
+	return label.String() 
+}
 
 // ParseLabel() parses and creates a new label from the string representation in s@
 func ParseLabel(s string) (label *Label, n int, err os.Error) {
