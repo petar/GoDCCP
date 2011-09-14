@@ -132,10 +132,10 @@ func (t *rateCalculator) recalculate(now int64) uint32 {
 	return t.x
 }
 
-// Sender calls OnFeedbackExpire when the no feedback timer expires.
-// OnFeedbackExpire returns the new allowed sending rate.
+// Sender calls OnNoFeedback when the no feedback timer expires.
+// OnNoFeedback returns the new allowed sending rate.
 // See RFC 5348, Section 4.4
-func (t *rateCalculator) OnFeedbackTimer(now int64, hasRTT bool, idleSince int64, nofeedbackSet int64) uint32 {
+func (t *rateCalculator) OnNoFeedback(now int64, hasRTT bool, idleSince int64, nofeedbackSet int64) uint32 {
 	xRecv := t.xRecvSet.Max()
 	if !hasRTT && !t.hasFeedback && idleSince > nofeedbackSet {
 		// We do not have X_Bps or recover_rate yet.

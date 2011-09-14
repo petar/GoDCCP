@@ -66,6 +66,8 @@ func (s *sender) OnWrite(htype byte, x bool, seqno, ackno int64, now int64) (ccv
 		return 0, nil
 	}
 
+	s.nofeedbackTimer.OnWrite(ff)
+
 	return s.windowCounter.OnWrite(s.rttSender.RTT(), ???, now), nil
 }
 
@@ -89,7 +91,7 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) os.Error {
 	s.rttSender.OnRead(fb)
 	rtt, rttEstimated := s.rttSender.RTT()
 
-	// Update the nofeedback timeout interval
+	// Update the nofeedback timeout interval and reset the timer
 	t.nofeedbackTimer.OnRead(rtt, rttEstimated, fb)
 
 	// Window counter update
@@ -119,15 +121,21 @@ func (s *sender) Strobe() {
 	s.strober.Strobe()
 }
 
-// OnIdle is called periodically, giving the CC a chance to:
-// (a) Request a connection reset by returning a CongestionReset, or
-// (b) Request the injection of an Ack packet by returning a CongestionAck
-// NOTE: If the CC is not active, OnIdle MUST to return nil.
+// OnIdle is called periodically. If the CC is not active, OnIdle MUST to return nil.
 func (s *sender) OnIdle(now int64) os.Error {
 	s.Lock()
 	defer s.Unlock()
+
+	if !s.open {
+		return nil
+	}
 	
-	panic("?")
+	if s.nofeedbackTimer.IsExpired(now) {
+		s.rateCalculator.OnNoFeedback(now int64, hasRTT bool, idleSince int64, nofeedbackSet int64)
+		s.nofeedbackTimer.Reset(now)
+	}
+
+	return nil
 }
 
 // Close terminates the half-connection congestion control when it is not needed any longer

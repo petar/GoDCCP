@@ -1,15 +1,15 @@
 
-* reset nofeedback timer after processing allowed send rate upon nofeedback expiration, section 4.4.
+* integrate x with sender
 
-* the nofeedback timer has different duration logic depending on who set it last!
- 
-NOFEEDBACK*
+* is strobe robust?
 
-   If the sender hasn't received a feedback packet from the receiver when the nofeedback timer
-   expires, then the sender halves its allowed sending rate. The allowed sending rate is never reduced
-   below one packet per 64 seconds.
+===========================================================================================
 
-   Take care of RTO both in onFirstRead and OnRead
+* (Virtual) Timer interface for DCCP framework
+* Rename segment<->header connection
+* Eavesdropper pipe. Knobs:
+	* virtual time duration
+	* inject drops by time or packet number
 
 ===========================================================================================
 
