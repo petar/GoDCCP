@@ -10,6 +10,10 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
+func newSender() *sender {
+	return &sender{}
+}
+
 // —————
 // sender is a CCID3 congestion control sender
 type sender struct {
@@ -35,7 +39,8 @@ func (s *sender) GetCCMPS() int32 { return FixedSegmentSize }
 func (s *sender) GetRTT() int64 { 
 	s.Lock()
 	defer s.Unlock()
-	return s.rttSender.RTT() 
+	rtt, _ := s.rttSender.RTT() 
+	return rtt
 }
 
 // Open tells the Congestion Control that the connection has entered
@@ -50,12 +55,13 @@ func (s *sender) Open() {
 	}
 	s.windowCounter.Init()
 	s.rttSender.Init()
+	rtt, _ := s.rttSender.RTT()
 	s.nofeedbackTimer.Init()
 	s.segmentSize.Init()
 	s.segmentSize.SetMPS(FixedSegmentSize)
 	s.lossTracker.Init()
-	s.rateCalculator.Init(FixedSegmentSize)
-	s.strober.Init((s.rateCalculator.X()*64) / FixedSegmentSize)
+	s.rateCalculator.Init(FixedSegmentSize, rtt)
+	s.strober.Init((int64(s.rateCalculator.X())*64) / FixedSegmentSize)
 	s.open = true
 }
 
@@ -72,7 +78,9 @@ func (s *sender) OnWrite(ph *dccp.PreHeader) (ccval byte, options []*dccp.Option
 
 	s.nofeedbackTimer.OnWrite(ph)
 
-	return s.windowCounter.OnWrite(s.rttSender.RTT(), ph.SeqNo, ph.Time), nil
+	rtt, _ := s.rttSender.RTT()
+
+	return s.windowCounter.OnWrite(rtt, ph.SeqNo, ph.Time), nil
 }
 
 // Conn calls OnRead after a packet has been accepted and validated
@@ -124,7 +132,9 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) os.Error {
 	x := s.rateCalculator.OnRead(xf)
 
 	// Update rate at strober
-	s.strober.SetRate((x*64) / FixedSegmentSize)
+	s.strober.SetRate((int64(x)*64) / FixedSegmentSize)
+
+	return nil
 }
 
 func readReceiveRate(fb *dccp.FeedbackHeader) (xrecv uint32, err os.Error) {
@@ -167,8 +177,9 @@ func (s *sender) OnIdle(now int64) os.Error {
 	}
 	
 	if s.nofeedbackTimer.IsExpired(now) {
-		??
-		s.rateCalculator.OnNoFeedback(now int64, hasRTT bool, idleSince int64, nofeedbackSet int64)
+		idleSince, nofeedbackSet := s.nofeedbackTimer.GetIdleSinceAndReset()
+		_, hasRTT := s.rttSender.RTT()
+		s.rateCalculator.OnNoFeedback(now, hasRTT, idleSince, nofeedbackSet)
 		s.nofeedbackTimer.Reset(now)
 	}
 

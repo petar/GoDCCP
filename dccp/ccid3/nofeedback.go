@@ -12,6 +12,7 @@ import (
 // sender. The timeout may change in response to various events.
 type nofeedbackTimer struct {
 	resetTime    int64 // Last time we got feedback; ns since UTC
+	idleSince    int64 // Time last packet of any type was sent
 	lastDataSent int64 // Time last data packet was sent, or zero otherwise; ns since UTC
 	dataInvFreq  int64 // Interval between data packets, or zero if unknown; ns
 	rtt          int64 // Current known round-trip time estimate, or zero if none; ns
@@ -26,9 +27,14 @@ const (
 // Init resets the nofeedback timer for new use
 func (t *nofeedbackTimer) Init() {
 	t.resetTime = 0
+	t.idleSince = 0
 	t.lastDataSent = 0
 	t.dataInvFreq = 0
 	t.rtt = 0
+}
+
+func (t *nofeedbackTimer) GetIdleSinceAndReset() (idleSince int64, nofeedbackSet int64) {
+	return t.idleSince, t.resetTime
 }
 
 // Sender calls OnRead each time a feedback packet is received.
@@ -54,6 +60,7 @@ func (t *nofeedbackTimer) OnWrite(ph *dccp.PreHeader) {
 	if t.resetTime <= 0 {
 		t.resetTime = ph.Time
 	}
+	t.idleSince = ph.Time
 
 	// Update inverse frequency of data packets estimate
 	if ph.Type != dccp.Data && ph.Type != dccp.DataAck {

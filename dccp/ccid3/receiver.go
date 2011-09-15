@@ -10,6 +10,10 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
+func newReceiver() *receiver {
+	return &receiver{}
+}
+
 // —————
 // receiver is a CCID3 congestion control receiver
 type receiver struct {
@@ -36,7 +40,9 @@ type receiver struct {
 }
 
 // GetID() returns the CCID of this congestion control algorithm
-func (r *receiver) GetID() byte { return dccp.CCID3 }
+func (r *receiver) GetID() byte { 
+	return dccp.CCID3 
+}
 
 // Open tells the Congestion Control that the connection has entered
 // OPEN or PARTOPEN state and that the CC can now kick in.
