@@ -48,7 +48,7 @@ func newConn(hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionC
 	return c
 }
 
-func newConnServer(hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
+func NewConnServer(hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
 	c := newConn(hc, scc, rcc)
 
 	c.Lock()
@@ -60,7 +60,7 @@ func newConnServer(hc HeaderConn, scc SenderCongestionControl, rcc ReceiverConge
 	return c
 }
 
-func newConnClient(hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl, serviceCode uint32) *Conn {
+func NewConnClient(hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl, serviceCode uint32) *Conn {
 	c := newConn(hc, scc, rcc)
 
 	c.Lock()
