@@ -183,7 +183,7 @@ func intervalWeight(i, nInterval int) float64 {
 func (t *lossRateCalculator) CalcLossEventRateInv(history []*LossIntervalDetail) uint32 {
 
 	// Prepare a slice with interval lengths
-	k := max(len(history), t.nInterval)
+	k := min(len(history), t.nInterval)
 	if k < 2 {
 		// Too few loss events are reported as UnknownLossEventRateInv which signifies 'no loss'
 		return UnknownLossEventRateInv

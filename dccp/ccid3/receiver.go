@@ -5,7 +5,6 @@
 package ccid3
 
 import (
-	"log"
 	"os"
 	"github.com/petar/GoDCCP/dccp"
 )
@@ -70,9 +69,13 @@ func (r *receiver) Open() {
 }
 
 func (r *receiver) makeElapsedTimeOption(ackNo int64, now int64) *dccp.ElapsedTimeOption {
-	if ackNo != r.gsr {
-		log.Printf("CCID3 GSR != packet AckNo")
+	// The first Ack may be sent before receiver has had a chance to see a gsr, in which
+	// case we return nil
+	if r.gsr == 0 {
 		return nil
+	}
+	if ackNo != r.gsr {
+		panic("ccid3 receiver: GSR != AckNo")
 	}
 	elapsedNS := max64(0, now - r.gsrTimestamp)
 	return &dccp.ElapsedTimeOption{ dccp.TenUSFromNS(elapsedNS) }
@@ -100,7 +103,9 @@ func (r *receiver) OnWrite(ph *dccp.PreHeader) (options []*dccp.Option) {
 
 		// Prepare feedback options
 		opts := make([]*dccp.Option, 3)
-		opts[0] = encodeOption(r.makeElapsedTimeOption(ph.AckNo, ph.Time))
+		if elapsedTimeOpt := r.makeElapsedTimeOption(ph.AckNo, ph.Time); elapsedTimeOpt != nil {
+			opts[0] = encodeOption(elapsedTimeOpt)
+		}
 		opts[1] = encodeOption(r.receiveRate.Flush(rtt, ph.Time))
 		opts[2] = encodeOption(r.lossReceiver.LossIntervalsOption(ph.AckNo))
 		if opts[0] == nil {
