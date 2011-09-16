@@ -10,15 +10,15 @@ GOFILES=\
 	chanlink.go\
 	checksum.go\
 	conn.go\
-	conndbg.go\
-	conngen.go\
-	conngoto.go\
-	conninj.go\
-	connpipe.go\
-	connseqack.go\
-	connsteps.go\
-	connterm.go\
-	connuser.go\
+	log.go\
+	gen.go\
+	goto.go\
+	inj.go\
+	pipe.go\
+	seqack.go\
+	steps.go\
+	term.go\
+	user.go\
 	ctrlc.go\
 	dccp.go\
 	dial.go\
