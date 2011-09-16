@@ -112,14 +112,14 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) os.Error {
 	// Update loss estimates
 	lossFeedback, err := s.lossTracker.OnRead(fb)
 	if err != nil {
-		log.Printf("feedback packet with corrupt loss option")
+		log.Printf("feedback packet with corrupt loss option (%s)", err)
 		return nil
 	}
 
 	// Update allowed sending rate
 	xrecv, err := readReceiveRate(fb)
 	if err != nil {
-		log.Printf("feedback packet with corrupt receive rate option")
+		log.Printf("feedback packet with corrupt receive rate option (%s)", err)
 		return nil
 	}
 	xf := &XFeedback{

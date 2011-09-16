@@ -101,17 +101,15 @@ func (r *receiver) OnWrite(ph *dccp.PreHeader) (options []*dccp.Option) {
 		r.lastLossEventRateInv = r.lossReceiver.LossEventRateInv()
 		r.lastCCVal = r.latestCCVal
 
-		// Prepare feedback options
-		opts := make([]*dccp.Option, 3)
-		if elapsedTimeOpt := r.makeElapsedTimeOption(ph.AckNo, ph.Time); elapsedTimeOpt != nil {
-			opts[0] = encodeOption(elapsedTimeOpt)
+		// Prepare feedback options, if we've seen packets before
+		if r.gsr > 0 {
+			opts := make([]*dccp.Option, 3)
+			opts[0] = encodeOption(r.makeElapsedTimeOption(ph.AckNo, ph.Time))
+			opts[1] = encodeOption(r.receiveRate.Flush(rtt, ph.Time))
+			opts[2] = encodeOption(r.lossReceiver.LossIntervalsOption(ph.AckNo))
+			return opts
 		}
-		opts[1] = encodeOption(r.receiveRate.Flush(rtt, ph.Time))
-		opts[2] = encodeOption(r.lossReceiver.LossIntervalsOption(ph.AckNo))
-		if opts[0] == nil {
-			opts = opts[1:3]
-		}
-		return opts
+		return nil
 
 	case dccp.Data, dccp.DataAck:
 		return nil
