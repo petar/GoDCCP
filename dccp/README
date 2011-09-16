@@ -1,14 +1,7 @@
+* automatic hierarchical logging, so that that strober.log(..) prints out the right thing
 
 * replace all time.Nanoseconds() with func args?
-
-* Reliable transport
-* test reliable transport (simulated drops)
-
-* test CCID3 opts
-* CCID3
 * dynamically changing SWAF/SWBF
-
-* add monitor-type output for the dccp stack
 * Conn.SetReadTimeout
 * abridged header read/write (no ports, no checksums)
 
