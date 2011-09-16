@@ -98,6 +98,7 @@ func (c *Conn) gotoPARTOPEN() {
 	c.socket.SetState(PARTOPEN)
 	c.scc.Open()
 	c.rcc.Open()
+	c.logEvent("CCID open")
 	c.inject(nil) // Unblocks the writeLoop select, so it can see the state change
 
 	// Start PARTOPEN timer, according to Section 8.1.5
@@ -142,6 +143,7 @@ func (c *Conn) gotoTIMEWAIT() {
 	c.socket.SetState(TIMEWAIT)
 	c.scc.Close()
 	c.rcc.Close()
+	c.logEvent("CCID close ->TIMEWAIT")
 	go func() {
 		time.Sleep(2 * MSL)
 		c.abortQuietly()
@@ -154,6 +156,7 @@ func (c *Conn) gotoCLOSING() {
 	c.socket.SetState(CLOSING)
 	c.scc.Close()
 	c.rcc.Close()
+	c.logEvent("CCID close ->CLOSING")
 	go func() {
 		c.Lock()
 		rtt := c.socket.GetRTT()
@@ -188,4 +191,5 @@ func (c *Conn) gotoCLOSED() {
 	c.teardownWriteLoop()
 	c.scc.Close()
 	c.rcc.Close()
+	c.logEvent("CCID close ->CLOSED")
 }

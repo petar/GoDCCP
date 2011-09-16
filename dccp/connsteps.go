@@ -150,7 +150,7 @@ func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) os.Error {
 		if err == ErrDrop {
 			return ErrDrop
 		}
-		log.Printf("unknown sender cc read event")
+		c.logWarn("unknown sender cc read event")
 	}
 	sropts := filterCCIDSenderToReceiverOptions(h.Options)
 	if err := c.rcc.OnRead(&FeedforwardHeader{ h.Type, h.X, h.SeqNo, h.CCVal, sropts, now, len(h.Data) }); err != nil {
@@ -164,7 +164,7 @@ func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) os.Error {
 		if err == ErrDrop {
 			return ErrDrop
 		}
-		log.Printf("unknown receiver cc read event")
+		c.logWarn("unknown receiver cc read event")
 	}
 	return nil
 }
@@ -205,7 +205,7 @@ func (c *Conn) step11_ProcessRESPOND(h *Header) os.Error {
 		c.inject(c.generateResponse(serviceCode))
 	} else {
 		if h.Type != Ack && h.Type != DataAck {
-			log.Printf("entering OPEN on a non-Ack, non-DataAck packet")
+			c.logWarn("entering OPEN on a non-Ack, non-DataAck packet")
 		}
 		c.gotoOPEN(h.SeqNo)
 	}
@@ -281,7 +281,7 @@ func (c *Conn) step16_ProcessData(h *Header) os.Error {
 		if len(c.readApp) < cap(c.readApp) {
 			c.readApp <- h.Data
 		} else {
-			log.Printf("dropping recvd packet, slow app\n")
+			c.logWarn("dropping recvd packet, slow app")
 		}
 	}
 	c.readAppLk.Unlock()

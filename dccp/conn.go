@@ -6,6 +6,7 @@ package dccp
 
 // Conn 
 type Conn struct {
+	name  string
 	hc    HeaderConn
 	scc   SenderCongestionControl
 	rcc   ReceiverCongestionControl
@@ -21,8 +22,9 @@ type Conn struct {
 	writeNonData   chan *Header // inject() sends wire-format non-Data packets (higher priority) to writeLoop()
 }
 
-func newConn(hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
+func newConn(name string, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
 	c := &Conn{
+		name:         name,
 		hc:           hc,
 		scc:          newSenderCCActuator(scc),
 		rcc:          newReceiverCCActuator(rcc),
@@ -48,8 +50,8 @@ func newConn(hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionC
 	return c
 }
 
-func NewConnServer(hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
-	c := newConn(hc, scc, rcc)
+func NewConnServer(name string, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
+	c := newConn(name, hc, scc, rcc)
 
 	c.Lock()
 	c.gotoLISTEN()
@@ -60,8 +62,8 @@ func NewConnServer(hc HeaderConn, scc SenderCongestionControl, rcc ReceiverConge
 	return c
 }
 
-func NewConnClient(hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl, serviceCode uint32) *Conn {
-	c := newConn(hc, scc, rcc)
+func NewConnClient(name string, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl, serviceCode uint32) *Conn {
+	c := newConn(name, hc, scc, rcc)
 
 	c.Lock()
 	c.gotoREQUEST(serviceCode)

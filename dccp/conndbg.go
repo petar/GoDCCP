@@ -7,6 +7,7 @@ package dccp
 import (
 	"bytes"
 	"fmt"
+	"log"
 )
 
 func (c *Conn) shortID() string {
@@ -22,33 +23,42 @@ func (c *Conn) shortID() string {
 	return string(w.Bytes())
 }
 
-func (c *Conn) logState() {
+func (c *Conn) stateString() string {
 	c.Lock()
-	state := c.socket.GetState()
-	id := c.shortID()
-	c.Unlock()
-	fmt.Printf("%s—%s\n", id, StateString(state))
+	defer c.Unlock()
+	return c.stateStringLocked()
+}
+
+func (c *Conn) stateStringLocked() string {
+	c.AssertLocked()
+	var w bytes.Buffer
+	fmt.Fprintf(&w, "%s @%-8s", c.name, StateString(c.socket.GetState()))
+	return string(w.Bytes())
+}
+
+func (c *Conn) logState() {
+	log.Printf(c.stateString())
 }
 
 func (c *Conn) logReadHeader(h *Header) {
-	c.Lock()
-	state := c.socket.GetState()
-	id := c.shortID()
-	c.Unlock()
-	fmt.Printf("%s/R/%s —— %s\n", id, StateString(state), h.String())
+	log.Printf("%s R —— %s\n", c.stateString(), h.String())
 }
 
 func (c *Conn) logWriteHeader(h *Header) {
-	c.Lock()
-	state := c.socket.GetState()
-	id := c.shortID()
-	c.Unlock()
-	fmt.Printf("%s/W/%s —— %s\n", id, StateString(state), h.String())
+	log.Printf("%s W —— %s\n", c.stateString(), h.String())
 }
 
 func (c *Conn) logWriteHeaderLocked(h *Header) {
 	c.AssertLocked()
-	state := c.socket.GetState()
-	id := c.shortID()
-	fmt.Printf("%s/W/%s —— %s\n", id, StateString(state), h.String())
+	log.Printf("%s W —— %s\n", c.stateStringLocked(), h.String())
+}
+
+func (c *Conn) logEvent(s string) {
+	c.AssertLocked()
+	log.Printf("%s * %s", c.stateStringLocked(), s)
+}
+
+func (c *Conn) logWarn(s string) {
+	c.AssertLocked()
+	log.Printf("%s · %s", c.stateStringLocked(), s)
 }

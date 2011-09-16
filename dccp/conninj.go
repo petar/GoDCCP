@@ -5,7 +5,6 @@
 package dccp
 
 import (
-	"log"
 	"os"
 	"time"
 )
@@ -50,7 +49,7 @@ func (c *Conn) inject(h *Header) {
 			c.logWriteHeaderLocked(h)
 		}
 	} else {
-		log.Printf("dropping non-data, congestion rate too slow\n")
+		c.logWarn("dropping non-data, congestion rate too slow")
 	}
 }
 

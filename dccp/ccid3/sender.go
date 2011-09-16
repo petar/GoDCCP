@@ -10,13 +10,14 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-func newSender() *sender {
-	return &sender{}
+func newSender(name string) *sender {
+	return &sender{name: name}
 }
 
 // —————
 // sender is a CCID3 congestion control sender
 type sender struct {
+	name string
 	strober
 	dccp.Mutex // Locks all fields below
 	rttSender
