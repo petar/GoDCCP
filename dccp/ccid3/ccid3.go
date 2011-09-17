@@ -11,10 +11,10 @@ import (
 
 type CCID3 struct {}
 
-func (CCID3) NewSender(name string) dccp.SenderCongestionControl { 
-	return newSender(name) 
+func (CCID3) NewSender() dccp.SenderCongestionControl { 
+	return newSender() 
 }
 
-func (CCID3) NewReceiver(name string) dccp.ReceiverCongestionControl { 
-	return newReceiver(name) 
+func (CCID3) NewReceiver() dccp.ReceiverCongestionControl { 
+	return newReceiver() 
 }

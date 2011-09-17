@@ -12,12 +12,12 @@ import (
 type CCFixed struct {
 }
 
-func (CCFixed) NewSender(name string) SenderCongestionControl { 
-	return newFixedRateSenderControl(name, 1e9) // one packet per second. sendsPerSecond
+func (CCFixed) NewSender() SenderCongestionControl { 
+	return newFixedRateSenderControl(1e9) // one packet per second. sendsPerSecond
 }
 
-func (CCFixed) NewReceiver(name string) ReceiverCongestionControl {
-	return newFixedRateReceiverControl(name)
+func (CCFixed) NewReceiver() ReceiverCongestionControl {
+	return newFixedRateReceiverControl()
 }
 
 // ---> Fixed-rate HC-Sender Congestion Control
@@ -29,7 +29,7 @@ type fixedRateSenderControl struct {
 	strobeWrite chan int
 }
 
-func newFixedRateSenderControl(name string, every int64) *fixedRateSenderControl {
+func newFixedRateSenderControl(every int64) *fixedRateSenderControl {
 	strobe := make(chan int)
 	return &fixedRateSenderControl{ every: every, strobeRead: strobe, strobeWrite: strobe }
 }
@@ -80,7 +80,7 @@ func (scc *fixedRateSenderControl) Close() {
 
 type fixedRateReceiverControl struct {}
 
-func newFixedRateReceiverControl(name string) *fixedRateReceiverControl {
+func newFixedRateReceiverControl() *fixedRateReceiverControl {
 	return &fixedRateReceiverControl{}
 }
 

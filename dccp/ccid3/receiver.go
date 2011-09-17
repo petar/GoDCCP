@@ -9,14 +9,13 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-func newReceiver(name string) *receiver {
-	return &receiver{name: name}
+func newReceiver() *receiver {
+	return &receiver{}
 }
 
 // —————
 // receiver is a CCID3 congestion control receiver
 type receiver struct {
-	name string
 	dccp.Mutex
 	rttReceiver
 	receiveRate

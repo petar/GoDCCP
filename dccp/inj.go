@@ -46,7 +46,7 @@ func (c *Conn) inject(h *Header) {
 		}
 		c.writeNonData <- h
 		if h != nil {
-			c.logWriteHeaderLocked(h)
+			c.logWriteHeader(h)
 		}
 	} else {
 		c.logWarn("dropping non-data, congestion rate too slow")

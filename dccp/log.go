@@ -5,60 +5,69 @@
 package dccp
 
 import (
-	"bytes"
 	"fmt"
-	"log"
+	"time"
+	"github.com/petar/GoGauge/context"
 )
 
-func (c *Conn) shortID() string {
-	c.AssertLocked()
-	var w bytes.Buffer
-	isServer := c.socket.IsServer()
-	p := c.hc.LocalLabel().Bytes()
-	if isServer {
-		fmt.Fprintf(&w, "S·%2x", p[0])
-	} else {
-		fmt.Fprintf(&w, "C·%2x", p[0])
+// logger is a logging facility
+type logger struct {
+	*context.Context
+}
+
+func (t *logger) Init(c *context.Context) {
+	t.Context = c
+}
+
+func (t *logger) GetState() string {
+	r := t.Context.GetRoot()
+	return r.GetAttr("state").(string)
+}
+
+func (t *logger) SetState(s int) {
+	t.Context.SetAttr("state", StateString(s))
+}
+
+func (t *logger) GetFullName() string {
+	cached := t.Context.GetAttr("full")
+	if cached != nil {
+		return cached.(string)
 	}
-	return string(w.Bytes())
+	p := t.Context.NamePath()
+	full := ""
+	for i := 0; i < len(p); i++ {
+		full = full + p[len(p)-1-i]
+		if i+1 < len(p) {
+			full += "_"
+		}
+	}
+	t.Context.SetAttr("full", full)
+	return full
 }
 
-func (c *Conn) stateString() string {
-	c.Lock()
-	defer c.Unlock()
-	return c.stateStringLocked()
+func (t *logger) Emit(typ string, s string) {
+	fmt.Printf("%d @%-8s %s %s %s", time.Nanoseconds(), t.GetState(), typ, t.GetFullName(), s)
 }
 
-func (c *Conn) stateStringLocked() string {
-	c.AssertLocked()
-	var w bytes.Buffer
-	fmt.Fprintf(&w, "%s @%-8s", c.name, StateString(c.socket.GetState()))
-	return string(w.Bytes())
-}
+// Logging utility functions
 
 func (c *Conn) logState() {
-	log.Printf(c.stateString())
+	c.AssertLocked()
+	c.log.SetState(c.socket.GetState())
 }
 
 func (c *Conn) logReadHeader(h *Header) {
-	log.Printf("%s R —— %s\n", c.stateString(), h.String())
+	c.log.Emit("R", h.String())
 }
 
 func (c *Conn) logWriteHeader(h *Header) {
-	log.Printf("%s W —— %s\n", c.stateString(), h.String())
-}
-
-func (c *Conn) logWriteHeaderLocked(h *Header) {
-	c.AssertLocked()
-	log.Printf("%s W —— %s\n", c.stateStringLocked(), h.String())
+	c.log.Emit("W", h.String())
 }
 
 func (c *Conn) logEvent(s string) {
-	c.AssertLocked()
-	log.Printf("%s * %s", c.stateStringLocked(), s)
+	c.log.Emit("E", s)
 }
 
 func (c *Conn) logWarn(s string) {
-	c.AssertLocked()
-	log.Printf("%s · %s", c.stateStringLocked(), s)
+	c.log.Emit("?", s)
 }

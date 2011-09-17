@@ -4,9 +4,12 @@
 
 package dccp
 
+import "github.com/petar/GoGauge/context"
+
 // Conn 
 type Conn struct {
-	name  string
+	log   logger
+
 	hc    HeaderConn
 	scc   SenderCongestionControl
 	rcc   ReceiverCongestionControl
@@ -24,7 +27,6 @@ type Conn struct {
 
 func newConn(name string, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
 	c := &Conn{
-		name:         name,
 		hc:           hc,
 		scc:          newSenderCCActuator(scc),
 		rcc:          newReceiverCCActuator(rcc),
@@ -32,6 +34,7 @@ func newConn(name string, hc HeaderConn, scc SenderCongestionControl, rcc Receiv
 		writeData:    make(chan []byte),
 		writeNonData: make(chan *Header, 5),
 	}
+	c.log.Init(context.NewContext(name))
 
 	c.Lock()
 	// Currently, CCID is not negotiated, rather both sides use the same
