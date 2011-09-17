@@ -10,25 +10,25 @@ import (
 	"github.com/petar/GoGauge/context"
 )
 
-// logger is a logging facility
-type logger struct {
+// Logger is a logging facility
+type Logger struct {
 	*context.Context
 }
 
-func (t *logger) Init(c *context.Context) {
+func (t *Logger) Init(c *context.Context) {
 	t.Context = c
 }
 
-func (t *logger) GetState() string {
+func (t *Logger) GetState() string {
 	r := t.Context.GetRoot()
 	return r.GetAttr("state").(string)
 }
 
-func (t *logger) SetState(s int) {
+func (t *Logger) SetState(s int) {
 	t.Context.SetAttr("state", StateString(s))
 }
 
-func (t *logger) GetFullName() string {
+func (t *Logger) GetFullName() string {
 	cached := t.Context.GetAttr("full")
 	if cached != nil {
 		return cached.(string)
@@ -45,7 +45,7 @@ func (t *logger) GetFullName() string {
 	return full
 }
 
-func (t *logger) Emit(typ string, s string) {
+func (t *Logger) Emit(typ string, s string) {
 	fmt.Printf("%d @%-8s %s %s %s\n", time.Nanoseconds(), t.GetState(), typ, t.GetFullName(), s)
 }
 

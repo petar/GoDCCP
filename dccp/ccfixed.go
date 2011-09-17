@@ -7,6 +7,7 @@ package dccp
 import (
 	"os"
 	"time"
+	"github.com/petar/GoGauge/context"
 )
 
 type CCFixed struct {
@@ -76,6 +77,8 @@ func (scc *fixedRateSenderControl) Close() {
 	}
 }
 
+func (scc *fixedRateSenderControl) SetLogger(*context.Context) {}
+
 // ---> Fixed-rate HC-Receiver Congestion Control
 
 type fixedRateReceiverControl struct {}
@@ -95,3 +98,5 @@ func (rcc *fixedRateReceiverControl) OnRead(ff *FeedforwardHeader) os.Error { re
 func (rcc *fixedRateReceiverControl) OnIdle(now int64) os.Error { return nil }
 
 func (rcc *fixedRateReceiverControl) Close() {}
+
+func (scc *fixedRateReceiverControl) SetLogger(*context.Context) {}

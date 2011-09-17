@@ -4,7 +4,10 @@
 
 package dccp
 
-import "os"
+import (
+	"os"
+	"github.com/petar/GoGauge/context"
+)
 
 // Regarding options and Half-Connection CCIDs (from Section 10.3):
 //
@@ -79,6 +82,8 @@ type SenderCongestionControl interface {
 
 	// Close terminates the half-connection congestion control when it is not needed any longer
 	Close()
+
+	SetLogger(c *context.Context)
 }
 
 // ReceiverCongestionControl specifies the interface for the congestion control logic of a DCCP
@@ -108,6 +113,8 @@ type ReceiverCongestionControl interface {
 
 	// Close terminates the half-connection congestion control when it is not needed any longer
 	Close()
+
+	SetLogger(c *context.Context)
 }
 
 // PreHeader contains the parts of the DCCP header than are fixed before the
