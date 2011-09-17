@@ -46,7 +46,7 @@ func (t *logger) GetFullName() string {
 }
 
 func (t *logger) Emit(typ string, s string) {
-	fmt.Printf("%d @%-8s %s %s %s", time.Nanoseconds(), t.GetState(), typ, t.GetFullName(), s)
+	fmt.Printf("%d @%-8s %s %s %s\n", time.Nanoseconds(), t.GetState(), typ, t.GetFullName(), s)
 }
 
 // Logging utility functions

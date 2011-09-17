@@ -13,6 +13,7 @@ func (c *Conn) gotoLISTEN() {
 	c.AssertLocked()
 	c.socket.SetServer(true)
 	c.socket.SetState(LISTEN)
+	c.logState()
 	go func() {
 		time.Sleep(REQUEST_BACKOFF_MAX)
 		c.Lock()
@@ -30,6 +31,7 @@ const RESPOND_TIMEOUT = 30e9 // Timeout in RESPOND state, 30 sec in nanoseconds
 func (c *Conn) gotoRESPOND(hServiceCode uint32, hSeqNo int64) {
 	c.AssertLocked()
 	c.socket.SetState(RESPOND)
+	c.logState()
 	iss := c.socket.ChooseISS()
 	c.socket.SetGAR(iss)
 	c.socket.SetISR(hSeqNo)
@@ -59,6 +61,7 @@ func (c *Conn) gotoREQUEST(serviceCode uint32) {
 	c.AssertLocked()
 	c.socket.SetServer(false)
 	c.socket.SetState(REQUEST)
+	c.logState()
 	c.socket.SetServiceCode(serviceCode)
 	iss := c.socket.ChooseISS()
 	c.socket.SetGAR(iss)
@@ -96,6 +99,7 @@ const (
 func (c *Conn) gotoPARTOPEN() {
 	c.AssertLocked()
 	c.socket.SetState(PARTOPEN)
+	c.logState()
 	c.scc.Open()
 	c.rcc.Open()
 	c.logEvent("CCID open")
@@ -132,6 +136,7 @@ func (c *Conn) gotoOPEN(hSeqNo int64) {
 	c.AssertLocked()
 	c.socket.SetOSR(hSeqNo)
 	c.socket.SetState(OPEN)
+	c.logState()
 	c.scc.Open()
 	c.rcc.Open()
 	c.inject(nil) // Unblocks the writeLoop select, so it can see the state change
@@ -141,6 +146,7 @@ func (c *Conn) gotoTIMEWAIT() {
 	c.AssertLocked()
 	c.teardownUser()
 	c.socket.SetState(TIMEWAIT)
+	c.logState()
 	c.scc.Close()
 	c.rcc.Close()
 	c.logEvent("CCID close ->TIMEWAIT")
@@ -154,6 +160,7 @@ func (c *Conn) gotoCLOSING() {
 	c.AssertLocked()
 	c.teardownUser()
 	c.socket.SetState(CLOSING)
+	c.logState()
 	c.scc.Close()
 	c.rcc.Close()
 	c.logEvent("CCID close ->CLOSING")
@@ -187,6 +194,7 @@ func (c *Conn) gotoCLOSING() {
 func (c *Conn) gotoCLOSED() {
 	c.AssertLocked()
 	c.socket.SetState(CLOSED)
+	c.logState()
 	c.teardownUser()
 	c.teardownWriteLoop()
 	c.scc.Close()
