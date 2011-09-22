@@ -4,11 +4,9 @@
 
 package dccp
 
-import "github.com/petar/GoGauge/context"
-
 // Conn 
 type Conn struct {
-	log   Logger
+	dlog  DLog
 
 	hc    HeaderConn
 	scc   SenderCongestionControl
@@ -34,7 +32,7 @@ func newConn(name string, hc HeaderConn, scc SenderCongestionControl, rcc Receiv
 		writeData:    make(chan []byte),
 		writeNonData: make(chan *Header, 5),
 	}
-	c.log.Init(context.NewContext(name))
+	c.dlog = DLog{name, "conn"}
 
 	c.Lock()
 	// Currently, CCID is not negotiated, rather both sides use the same
@@ -55,8 +53,8 @@ func newConn(name string, hc HeaderConn, scc SenderCongestionControl, rcc Receiv
 
 func NewConnServer(name string, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
 	c := newConn(name, hc, scc, rcc)
-	scc.SetLogger(c.log.Make("Sender"))
-	rcc.SetLogger(c.log.Make("Receiver"))
+	scc.SetDLog(c.dlog)
+	rcc.SetDLog(c.dlog)
 
 	c.Lock()
 	c.gotoLISTEN()
@@ -69,8 +67,8 @@ func NewConnServer(name string, hc HeaderConn, scc SenderCongestionControl, rcc 
 
 func NewConnClient(name string, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl, serviceCode uint32) *Conn {
 	c := newConn(name, hc, scc, rcc)
-	scc.SetLogger(c.log.Make("Sender"))
-	rcc.SetLogger(c.log.Make("Receiver"))
+	scc.SetDLog(c.dlog)
+	rcc.SetDLog(c.dlog)
 
 	c.Lock()
 	c.gotoREQUEST(serviceCode)
