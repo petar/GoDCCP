@@ -33,39 +33,38 @@ func (t DLog) SetState(s int) {
 func (t DLog) GetFullName() string {
 	ss := dyna.T(t).Strings()
 	full := ss[0]+":"
-	// Skip the "conn" literal
-	for i := 2; i < len(ss); i++ {
+	for i := 1; i < len(ss); i++ {
 		full += ss[i]
 		if i+1 < len(t) {
-			full += "—"
+			full += "·"
 		}
 	}
 	return full
 }
 
 func (t DLog) Emit(typ string, s string) {
-	fmt.Printf("%d @%-8s %s %s %s\n", time.Nanoseconds(), t.GetState(), typ, t.GetFullName(), s)
+	fmt.Printf("%d @%-8s %s %s —— %s\n", time.Nanoseconds(), t.GetState(), typ, t.GetFullName(), s)
 }
 
 // Logging utility functions
 
 func (c *Conn) logState() {
 	c.AssertLocked()
-	c.dlog.SetState(c.socket.GetState())
+	c.DLog.SetState(c.socket.GetState())
 }
 
 func (c *Conn) logReadHeader(h *Header) {
-	c.dlog.Emit("R", h.String())
+	c.DLog.Emit("R", h.String())
 }
 
 func (c *Conn) logWriteHeader(h *Header) {
-	c.dlog.Emit("W", h.String())
+	c.DLog.Emit("W", h.String())
 }
 
 func (c *Conn) logEvent(s string) {
-	c.dlog.Emit("E", s)
+	c.DLog.Emit("E", s)
 }
 
 func (c *Conn) logWarn(s string) {
-	c.dlog.Emit("?", s)
+	c.DLog.Emit("?", s)
 }

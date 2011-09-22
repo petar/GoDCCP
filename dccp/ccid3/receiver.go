@@ -7,7 +7,6 @@ package ccid3
 import (
 	"os"
 	"github.com/petar/GoDCCP/dccp"
-	"github.com/petar/GoGauge/context"
 )
 
 func newReceiver() *receiver {
@@ -17,7 +16,7 @@ func newReceiver() *receiver {
 // —————
 // receiver is a CCID3 congestion control receiver
 type receiver struct {
-	dccp.Logger
+	dccp.DLog
 	dccp.Mutex
 	rttReceiver
 	receiveRate
@@ -187,6 +186,6 @@ func (r *receiver) Close() {
 	r.open = false
 }
 
-func (r *receiver) SetLogger(c *context.Context) {
-	r.Logger.Init(c)
+func (r *receiver) SetDLog(dlog dccp.DLog) {
+	r.DLog.Init(dlog, "receiver")
 }

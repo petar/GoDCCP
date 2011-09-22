@@ -14,7 +14,7 @@ import (
 func TestDropRate(t *testing.T) {
 	hca, hcb, _ := NewLine(10)
 	ccid := ccid3.CCID3{}
-	/* cc := */ dccp.NewConnClient("Client", hca, ccid.NewSender(), ccid.NewReceiver(), 0)
-	/* cs := */ dccp.NewConnServer("Server", hcb, ccid.NewSender(), ccid.NewReceiver())
+	/* cc := */ dccp.NewConnClient("client", hca, ccid.NewSender(), ccid.NewReceiver(), 0)
+	/* cs := */ dccp.NewConnServer("server", hcb, ccid.NewSender(), ccid.NewReceiver())
 	time.Sleep(10e9)
 }

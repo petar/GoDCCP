@@ -6,7 +6,7 @@ package dccp
 
 // Conn 
 type Conn struct {
-	dlog  DLog
+	DLog
 
 	hc    HeaderConn
 	scc   SenderCongestionControl
@@ -32,7 +32,7 @@ func newConn(name string, hc HeaderConn, scc SenderCongestionControl, rcc Receiv
 		writeData:    make(chan []byte),
 		writeNonData: make(chan *Header, 5),
 	}
-	c.dlog = DLog{name, "conn"}
+	c.DLog = DLog{name, "conn"}
 
 	c.Lock()
 	// Currently, CCID is not negotiated, rather both sides use the same
@@ -53,8 +53,8 @@ func newConn(name string, hc HeaderConn, scc SenderCongestionControl, rcc Receiv
 
 func NewConnServer(name string, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
 	c := newConn(name, hc, scc, rcc)
-	scc.SetDLog(c.dlog)
-	rcc.SetDLog(c.dlog)
+	scc.SetDLog(c.DLog)
+	rcc.SetDLog(c.DLog)
 
 	c.Lock()
 	c.gotoLISTEN()
@@ -67,8 +67,8 @@ func NewConnServer(name string, hc HeaderConn, scc SenderCongestionControl, rcc 
 
 func NewConnClient(name string, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl, serviceCode uint32) *Conn {
 	c := newConn(name, hc, scc, rcc)
-	scc.SetDLog(c.dlog)
-	rcc.SetDLog(c.dlog)
+	scc.SetDLog(c.DLog)
+	rcc.SetDLog(c.DLog)
 
 	c.Lock()
 	c.gotoREQUEST(serviceCode)
