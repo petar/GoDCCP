@@ -13,6 +13,14 @@ import (
 // DLog is a logging facility
 type DLog dyna.T
 
+func (t *DLog) Init(parentDLog DLog, literals ...string) {
+	*t = DLog(append(dyna.T(parentDLog).Strings(), literals...))
+}
+
+func (t DLog) GetName() string {
+	return dyna.T(t).Get(0)
+}
+
 func (t DLog) GetState() string {
 	// The first literal holds the dynamic name for the connection
 	return dyna.GetAttr(dyna.T{dyna.T(t).Get(0), "conn"}, "state").(string)
@@ -25,7 +33,8 @@ func (t DLog) SetState(s int) {
 func (t DLog) GetFullName() string {
 	ss := dyna.T(t).Strings()
 	full := ss[0]+":"
-	for i := 1; i < len(ss); i++ {
+	// Skip the "conn" literal
+	for i := 2; i < len(ss); i++ {
 		full += ss[i]
 		if i+1 < len(t) {
 			full += "—"

@@ -7,7 +7,6 @@ package ccid3
 import (
 	"os"
 	"github.com/petar/GoDCCP/dccp"
-	"github.com/petar/GoGauge/context"
 )
 
 func newSender() *sender {
@@ -17,7 +16,7 @@ func newSender() *sender {
 // —————
 // sender is a CCID3 congestion control sender
 type sender struct {
-	dccp.Logger
+	dccp.DLog
 	strober
 	dccp.Mutex // Locks all fields below
 	rttSender
@@ -113,14 +112,14 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) os.Error {
 	// Update loss estimates
 	lossFeedback, err := s.lossTracker.OnRead(fb)
 	if err != nil {
-		s.Logger.Emit("?", "feedback packet with corrupt loss option")
+		s.DLog.Emit("?", "feedback packet with corrupt loss option")
 		return nil
 	}
 
 	// Update allowed sending rate
 	xrecv, err := readReceiveRate(fb)
 	if err != nil {
-		s.Logger.Emit("?", "feedback packet with corrupt receive rate option")
+		s.DLog.Emit("?", "feedback packet with corrupt receive rate option")
 		return nil
 	}
 	xf := &XFeedback{
@@ -197,6 +196,6 @@ func (s *sender) Close() {
 	s.open = false
 }
 
-func (s *sender) SetLogger(c *context.Context) {
-	s.Logger.Init(c)
+func (s *sender) SetDLog(dlog dccp.DLog) {
+	s.DLog.Init(dlog, "sender")
 }
