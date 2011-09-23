@@ -60,7 +60,7 @@ func (s *sender) Open() {
 	s.segmentSize.Init()
 	s.segmentSize.SetMPS(FixedSegmentSize)
 	s.lossTracker.Init()
-	s.rateCalculator.Init(FixedSegmentSize, rtt)
+	s.rateCalculator.Init(s.DLog, FixedSegmentSize, rtt)
 	s.strober.Init((int64(s.rateCalculator.X())*64) / FixedSegmentSize)
 	s.open = true
 }

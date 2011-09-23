@@ -14,7 +14,7 @@ import (
 type DLog dyna.T
 
 func (t *DLog) Init(parentDLog DLog, literals ...string) {
-	*t = DLog(append(dyna.T(parentDLog).Strings(), literals...))
+	*t = DLog(append([]string{dyna.T(parentDLog).Get(0)}, literals...))
 }
 
 func (t DLog) GetName() string {
@@ -43,7 +43,20 @@ func (t DLog) GetFullName() string {
 }
 
 func (t DLog) Emit(typ string, s string) {
+	if !dyna.T(t).Selected() {
+		return
+	}
 	fmt.Printf("%d @%-8s %s %s —— %s\n", time.Nanoseconds(), t.GetState(), typ, t.GetFullName(), s)
+}
+
+func (t DLog) Emitf(typ string, format string, v ...interface{}) {
+	if !dyna.T(t).Selected() {
+		return
+	}
+	fmt.Printf("%d @%-8s %s %s —— %s\n", 
+		time.Nanoseconds(), t.GetState(), typ, t.GetFullName(), 
+		fmt.Sprintf(format, v...),
+	)
 }
 
 // Logging utility functions

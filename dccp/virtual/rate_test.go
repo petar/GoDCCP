@@ -7,6 +7,7 @@ package virtual
 import (
 	"testing"
 	"time"
+	"github.com/petar/GoGauge/dyna"
 	"github.com/petar/GoDCCP/dccp"
 	"github.com/petar/GoDCCP/dccp/ccid3"
 )
@@ -14,6 +15,7 @@ import (
 func TestDropRate(t *testing.T) {
 	hca, hcb, _ := NewLine(10)
 	ccid := ccid3.CCID3{}
+	dyna.Select("client", "server", "conn", "sender", "sender-x")
 	/* cc := */ dccp.NewConnClient("client", hca, ccid.NewSender(), ccid.NewReceiver(), 0)
 	/* cs := */ dccp.NewConnServer("server", hcb, ccid.NewSender(), ccid.NewReceiver())
 	time.Sleep(10e9)
