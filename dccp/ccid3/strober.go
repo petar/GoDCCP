@@ -17,9 +17,15 @@ type strober struct {
 	last     int64
 }
 
+// Per64FromBPS converts a rate in byter per second to
+// packets of size ss per 64 seconds
+func Per64FromBPS(bps uint32, ss uint32) int64 {
+	return (64 * int64(bps)) / int64(ss)
+}
+
 // Init resets the strober instance for new use
-func (s *strober) Init(per64sec int64) {
-	s.SetRate(per64sec)
+func (s *strober) Init(bps uint32, ss uint32) {
+	s.SetRate(bps, ss)
 }
 
 // SetWait sets the strobing rate by setting the time interval between two strobes in nanoseconds
@@ -32,10 +38,10 @@ func (s *strober) SetInterval(interval int64) {
 
 // SetRate sets the strobing rate in strobes per 64 seconds
 // Rates below 1 strobe per 64 sec are not allowed by RFC 4342
-func (s *strober) SetRate(per64sec int64) {
+func (s *strober) SetRate(bps uint32, ss uint32) {
 	s.Lock()
 	defer s.Unlock()
-	s.interval = 64e9 / per64sec
+	s.interval = 64e9 / Per64FromBPS(bps, ss)
 	if s.interval == 0 {
 		panic("zero strobe rate")
 	}

@@ -18,5 +18,5 @@ func TestDropRate(t *testing.T) {
 	dyna.Select("client", "server", "conn", "sender", "sender-x")
 	/* cc := */ dccp.NewConnClient("client", hca, ccid.NewSender(), ccid.NewReceiver(), 0)
 	/* cs := */ dccp.NewConnServer("server", hcb, ccid.NewSender(), ccid.NewReceiver())
-	time.Sleep(10e9)
+	time.Sleep(6e9)
 }

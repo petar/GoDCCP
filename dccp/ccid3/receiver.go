@@ -16,7 +16,7 @@ func newReceiver() *receiver {
 // —————
 // receiver is a CCID3 congestion control receiver
 type receiver struct {
-	dccp.DLog
+	dccp.CLog
 	dccp.Mutex
 	rttReceiver
 	receiveRate
@@ -186,6 +186,6 @@ func (r *receiver) Close() {
 	r.open = false
 }
 
-func (r *receiver) SetDLog(dlog dccp.DLog) {
-	r.DLog.Init(dlog, "receiver")
+func (r *receiver) SetCLog(clog dccp.CLog) {
+	r.CLog = clog
 }

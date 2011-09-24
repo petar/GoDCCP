@@ -82,7 +82,7 @@ type SenderCongestionControl interface {
 	// Close terminates the half-connection congestion control when it is not needed any longer
 	Close()
 
-	SetDLog(connDLog DLog)
+	SetCLog(connCLog CLog)
 }
 
 // ReceiverCongestionControl specifies the interface for the congestion control logic of a DCCP
@@ -113,7 +113,7 @@ type ReceiverCongestionControl interface {
 	// Close terminates the half-connection congestion control when it is not needed any longer
 	Close()
 
-	SetDLog(connDLog DLog)
+	SetCLog(connCLog CLog)
 }
 
 // PreHeader contains the parts of the DCCP header than are fixed before the

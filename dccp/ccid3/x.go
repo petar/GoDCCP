@@ -12,7 +12,7 @@ import (
 
 // rateCaclulator computers the allowed sending rate of the sender
 type rateCalculator struct {
-	dccp.DLog
+	dccp.CLog
 	x           uint32 // Current allowed sending rate, in bytes per second
 	tld         int64  // Time Last Doubled (during slow start) or zero if unset; in ns since UTC zero
 	recvLimit   uint32 // Receive limit, in bytes per second
@@ -38,8 +38,8 @@ const (
 // allowed sending rate (in bytes per second). The latter is the rate
 // to be used before the first feedback packet is received and hence before
 // an RTT estimate is available.
-func (t *rateCalculator) Init(dlog dccp.DLog, ss uint32, rtt int64) {
-	t.DLog.Init(dlog, "sender-x")
+func (t *rateCalculator) Init(clog dccp.CLog, ss uint32, rtt int64) {
+	t.CLog = clog
 	// The allowed sending rate before the first feedback packet is received
 	// is one packet per second.
 	t.x = ss
@@ -66,7 +66,7 @@ func (t *rateCalculator) X() uint32 { return t.x }
 func (t *rateCalculator) onFirstRead(now int64) uint32 {
 	t.tld = now
 	t.x = initRate(t.ss, t.rtt)
-	t.DLog.Emitf("·", "init rate = %d bps", t.x)
+	t.CLog.Logf("sender-x", "Event", "Init rate = %d bps", t.x)
 	panic("a")
 	return t.x
 }

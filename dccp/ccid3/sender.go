@@ -16,7 +16,7 @@ func newSender() *sender {
 // —————
 // sender is a CCID3 congestion control sender
 type sender struct {
-	dccp.DLog
+	dccp.CLog
 	strober
 	dccp.Mutex // Locks all fields below
 	rttSender
@@ -60,8 +60,8 @@ func (s *sender) Open() {
 	s.segmentSize.Init()
 	s.segmentSize.SetMPS(FixedSegmentSize)
 	s.lossTracker.Init()
-	s.rateCalculator.Init(s.DLog, FixedSegmentSize, rtt)
-	s.strober.Init((int64(s.rateCalculator.X())*64) / FixedSegmentSize)
+	s.rateCalculator.Init(s.CLog, FixedSegmentSize, rtt)
+	s.strober.Init(s.rateCalculator.X(), FixedSegmentSize)
 	s.open = true
 }
 
@@ -112,14 +112,14 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) os.Error {
 	// Update loss estimates
 	lossFeedback, err := s.lossTracker.OnRead(fb)
 	if err != nil {
-		s.DLog.Emit("?", "feedback packet with corrupt loss option")
+		s.CLog.Logf("sender", "Warn", "Feedback packet with corrupt loss option")
 		return nil
 	}
 
 	// Update allowed sending rate
 	xrecv, err := readReceiveRate(fb)
 	if err != nil {
-		s.DLog.Emit("?", "feedback packet with corrupt receive rate option")
+		s.CLog.Logf("sender", "Warn", "Feedback packet with corrupt receive rate option")
 		return nil
 	}
 	xf := &XFeedback{
@@ -130,9 +130,7 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) os.Error {
 		LossFeedback: lossFeedback,
 	}
 	x := s.rateCalculator.OnRead(xf)
-
-	// Update rate at strober
-	s.strober.SetRate((int64(x)*64) / FixedSegmentSize)
+	s.strober.SetRate(x, FixedSegmentSize)
 
 	return nil
 }
@@ -165,6 +163,7 @@ func (s *sender) Strobe() {
 	}
 
 	s.strober.Strobe()
+	s.CLog.Logf("sender", "Event", "Strobe")
 }
 
 // OnIdle is called periodically. If the CC is not active, OnIdle MUST to return nil.
@@ -179,7 +178,8 @@ func (s *sender) OnIdle(now int64) os.Error {
 	if s.nofeedbackTimer.IsExpired(now) {
 		idleSince, nofeedbackSet := s.nofeedbackTimer.GetIdleSinceAndReset()
 		_, hasRTT := s.rttSender.RTT()
-		s.rateCalculator.OnNoFeedback(now, hasRTT, idleSince, nofeedbackSet)
+		x := s.rateCalculator.OnNoFeedback(now, hasRTT, idleSince, nofeedbackSet)
+		s.strober.SetRate(x, FixedSegmentSize)
 		s.nofeedbackTimer.Reset(now)
 	}
 
@@ -196,6 +196,6 @@ func (s *sender) Close() {
 	s.open = false
 }
 
-func (s *sender) SetDLog(dlog dccp.DLog) {
-	s.DLog.Init(dlog, "sender")
+func (s *sender) SetCLog(clog dccp.CLog) {
+	s.CLog = clog
 }

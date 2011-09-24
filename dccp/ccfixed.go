@@ -76,7 +76,7 @@ func (scc *fixedRateSenderControl) Close() {
 	}
 }
 
-func (scc *fixedRateSenderControl) SetDLog(DLog) {}
+func (scc *fixedRateSenderControl) SetCLog(CLog) {}
 
 // ---> Fixed-rate HC-Receiver Congestion Control
 
@@ -98,4 +98,4 @@ func (rcc *fixedRateReceiverControl) OnIdle(now int64) os.Error { return nil }
 
 func (rcc *fixedRateReceiverControl) Close() {}
 
-func (scc *fixedRateReceiverControl) SetDLog(DLog) {}
+func (scc *fixedRateReceiverControl) SetCLog(CLog) {}

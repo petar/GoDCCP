@@ -10,52 +10,36 @@ import (
 	"github.com/petar/GoGauge/dyna"
 )
 
-// DLog is a logging facility
-type DLog dyna.T
+// TODO:
+//   * fuse conn name and conn literal
 
-func (t *DLog) Init(parentDLog DLog, literals ...string) {
-	*t = DLog(append([]string{dyna.T(parentDLog).Get(0)}, literals...))
+// CLog is a logging facility
+type CLog string
+
+func (t *CLog) Init(name string) {
+	*t = CLog(name)
 }
 
-func (t DLog) GetName() string {
-	return dyna.T(t).Get(0)
+func (t CLog) GetName() string {
+	return string(t)
 }
 
-func (t DLog) GetState() string {
+func (t CLog) GetState() string {
 	// The first literal holds the dynamic name for the connection
-	return dyna.GetAttr(dyna.T{dyna.T(t).Get(0), "conn"}, "state").(string)
+	return dyna.GetAttr([]string{t.GetName()}, "state").(string)
 }
 
-func (t DLog) SetState(s int) {
-	dyna.SetAttr(dyna.T{dyna.T(t).Get(0), "conn"}, "state", StateString(s))
+func (t CLog) SetState(s int) {
+	dyna.SetAttr([]string{t.GetName()}, "state", StateString(s))
 }
 
-func (t DLog) GetFullName() string {
-	ss := dyna.T(t).Strings()
-	full := ss[0]+":"
-	for i := 1; i < len(ss); i++ {
-		full += ss[i]
-		if i+1 < len(t) {
-			full += "·"
-		}
-	}
-	return full
-}
-
-func (t DLog) Emit(typ string, s string) {
-	if !dyna.T(t).Selected() {
+func (t CLog) Logf(modifier string, typ string, format string, v ...interface{}) {
+	if !dyna.Selected(t.GetName(), modifier) {
 		return
 	}
-	fmt.Printf("%d @%-8s %s %s —— %s\n", time.Nanoseconds(), t.GetState(), typ, t.GetFullName(), s)
-}
-
-func (t DLog) Emitf(typ string, format string, v ...interface{}) {
-	if !dyna.T(t).Selected() {
-		return
-	}
-	fmt.Printf("%d @%-8s %s %s —— %s\n", 
-		time.Nanoseconds(), t.GetState(), typ, t.GetFullName(), 
-		fmt.Sprintf(format, v...),
+	fmt.Printf("%d  @%-8s  %6s:%-7s  %-5s  ——  %s\n", 
+		time.Nanoseconds(), t.GetState(), t.GetName(), modifier,
+		typ, fmt.Sprintf(format, v...),
 	)
 }
 
@@ -63,21 +47,21 @@ func (t DLog) Emitf(typ string, format string, v ...interface{}) {
 
 func (c *Conn) logState() {
 	c.AssertLocked()
-	c.DLog.SetState(c.socket.GetState())
+	c.CLog.SetState(c.socket.GetState())
 }
 
 func (c *Conn) logReadHeader(h *Header) {
-	c.DLog.Emit("R", h.String())
+	c.CLog.Logf("conn", "Read", h.String())
 }
 
 func (c *Conn) logWriteHeader(h *Header) {
-	c.DLog.Emit("W", h.String())
+	c.CLog.Logf("conn", "Write", h.String())
 }
 
 func (c *Conn) logEvent(s string) {
-	c.DLog.Emit("E", s)
+	c.CLog.Logf("conn", "Event", s)
 }
 
 func (c *Conn) logWarn(s string) {
-	c.DLog.Emit("?", s)
+	c.CLog.Logf("conn", "Warn", s)
 }
