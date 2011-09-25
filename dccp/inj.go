@@ -39,6 +39,10 @@ func (c *Conn) inject(h *Header) {
 	if c.writeNonData == nil {
 		return
 	}
+
+	// Catch packets
+	c.logCatchSeqNo(h, 161019, 161020, 161021)
+
 	// Dropping a nil is OK, since it happens only if there are other packets in the queue
 	if len(c.writeNonData) < cap(c.writeNonData) {
 		if h != nil {
@@ -49,7 +53,7 @@ func (c *Conn) inject(h *Header) {
 			c.logWriteHeader(h)
 		}
 	} else {
-		c.logWarn("dropping non-data, congestion rate too slow")
+		c.logWarn("Dropping non-data, congestion rate too slow")
 	}
 }
 
@@ -64,17 +68,17 @@ func (c *Conn) writeLoop(writeNonData chan *Header, writeData chan []byte) {
 
 	// The presence of multiple loops below allows user calls to WriteSegment to
 	// block in "writeNonData <-" while the connection moves into a state where
-	// it accepts app data (in Loop_II)
+	// it accepts app data (in _Loop_II)
 
 	// This loop is active until state OPEN or PARTOPEN is observed, when a
-	// transition to Loop II_is made
-	Loop_I:
+	// transition to _Loop II_is made
+	_Loop_I:
 
 	for {
 		h, ok := <-writeNonData
 		if !ok {
 			// Closing writeNonData means that the Conn is done and dead
-			goto Exit
+			goto _Exit
 		}
 		// We'll allow nil headers, since they can be used to trigger unblock
 		// from the above send operator and (without resulting into an actual
@@ -84,7 +88,7 @@ func (c *Conn) writeLoop(writeNonData chan *Header, writeData chan []byte) {
 			// If the underlying layer is broken, abort
 			if err != nil {
 				c.abortQuietly()
-				goto Exit
+				goto _Exit
 			}
 		}
 		c.Lock()
@@ -92,13 +96,13 @@ func (c *Conn) writeLoop(writeNonData chan *Header, writeData chan []byte) {
 		c.Unlock()
 		switch state {
 		case OPEN, PARTOPEN:
-			goto Loop_II
+			goto _Loop_II
 		}
-		continue Loop_I
+		continue _Loop_I
 	}
 
 	// This loop is active until writeData is not closed
-	Loop_II:
+	_Loop_II:
 
 	for {
 		var h *Header
@@ -109,15 +113,15 @@ func (c *Conn) writeLoop(writeNonData chan *Header, writeData chan []byte) {
 		case h, ok = <-writeNonData:
 			if !ok {
 				// Closing writeNonData means that the Conn is done and dead
-				goto Exit
+				goto _Exit
 			}
 		case appData, ok = <-writeData:
 			if !ok {
 				// When writeData is closed, we transition to the 3rd loop,
 				// which accepts only non-Data packets
-				goto Loop_III
+				goto _Loop_III
 			}
-			// By virtue of being in Loop_II (which implies we have been or are in OPEN
+			// By virtue of being in _Loop_II (which implies we have been or are in OPEN
 			// or PARTOPEN), we know that some packets of the other side have been
 			// received, and so AckNo can be filled in meaningfully (below) in the
 			// DataAck packet
@@ -130,24 +134,25 @@ func (c *Conn) writeLoop(writeNonData chan *Header, writeData chan []byte) {
 			h = c.generateDataAck(appData)
 			h = c.writeCCID(h)
 			c.Unlock()
+			c.logWriteHeader(h)
 		}
 		if h != nil {
 			err := c.write(h)
 			if err != nil {
 				c.abortQuietly()
-				goto Exit
+				goto _Exit
 			}
 		}
 	}
 
 	// This loop is active until writeNonData is not closed
-	Loop_III:
+	_Loop_III:
 
 	for {
 		h, ok := <-writeNonData
 		if !ok {
 			// Closing writeNonData means that the Conn is done and dead
-			goto Exit
+			goto _Exit
 		}
 		// We'll allow nil headers, since they can be used to trigger unblock
 		// from the above send operator
@@ -156,10 +161,10 @@ func (c *Conn) writeLoop(writeNonData chan *Header, writeData chan []byte) {
 			// If the underlying layer is broken, abort
 			if err != nil {
 				c.abortQuietly()
-				goto Exit
+				goto _Exit
 			}
 		}
 	}
 
-	Exit:
+	_Exit:
 }

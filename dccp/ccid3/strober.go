@@ -12,6 +12,7 @@ import (
 // strober is an object that produces regular strobe intervals at a specified rate.
 // A strober cannot be used before an initial call to SetInterval or SetRate.
 type strober struct {
+	dccp.CLog
 	dccp.Mutex
 	interval int64
 	last     int64
@@ -24,7 +25,8 @@ func Per64FromBPS(bps uint32, ss uint32) int64 {
 }
 
 // Init resets the strober instance for new use
-func (s *strober) Init(bps uint32, ss uint32) {
+func (s *strober) Init(clog dccp.CLog, bps uint32, ss uint32) {
+	s.CLog = clog
 	s.SetRate(bps, ss)
 }
 
@@ -59,7 +61,9 @@ func (s *strober) Strobe() {
 	s.Lock()
 	now := time.Nanoseconds()
 	delta := s.interval - (now - s.last)
+	dbgInterval := s.interval // DBG
 	s.Unlock()
+	defer s.CLog.Logf("sender-strober", "Event", "Strobe at %d pps", 1e9 / dbgInterval)
 	if delta > 0 {
 		<-time.NewTimer(delta).C
 	}

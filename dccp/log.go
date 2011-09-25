@@ -6,6 +6,7 @@ package dccp
 
 import (
 	"fmt"
+	"runtime/debug"
 	"time"
 	"github.com/petar/GoGauge/dyna"
 )
@@ -44,6 +45,19 @@ func (t CLog) Logf(modifier string, typ string, format string, v ...interface{})
 }
 
 // Logging utility functions
+
+func (c *Conn) logCatchSeqNo(h *Header, seqNos ...int64) {
+	if h == nil { 
+		return
+	}
+	for _, seqNo := range seqNos {
+		if h.SeqNo == seqNo {
+			c.CLog.Logf("conn", "Catch", "Caught SeqNo=%d: %s\n%s", 
+				seqNo, h.String(), string(debug.Stack()))
+			break
+		}
+	}
+}
 
 func (c *Conn) logState() {
 	c.AssertLocked()

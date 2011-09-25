@@ -61,7 +61,7 @@ func (s *sender) Open() {
 	s.segmentSize.SetMPS(FixedSegmentSize)
 	s.lossTracker.Init()
 	s.rateCalculator.Init(s.CLog, FixedSegmentSize, rtt)
-	s.strober.Init(s.rateCalculator.X(), FixedSegmentSize)
+	s.strober.Init(s.CLog, s.rateCalculator.X(), FixedSegmentSize)
 	s.open = true
 }
 
@@ -159,11 +159,11 @@ func (s *sender) Strobe() {
 	s.Unlock()
 
 	if !open {
+		s.CLog.Logf("sender", "Event", "Strobe immediate")
 		return
 	}
 
 	s.strober.Strobe()
-	s.CLog.Logf("sender", "Event", "Strobe")
 }
 
 // OnIdle is called periodically. If the CC is not active, OnIdle MUST to return nil.
