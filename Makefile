@@ -14,7 +14,7 @@ all: install
 
 DIRS=\
      	dccp\
-     	dccp/virtual\
+     	dccp/sandbox\
      	dccp/ccid3\
 	retransmit\
 

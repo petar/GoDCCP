@@ -2,6 +2,6 @@
 pushd ./
 make clean && make install \
 	&& cd ccid3 && make clean && make install \
-	&& cd ../virtual && make clean && make install \
+	&& cd ../sandbox && make clean && make install \
 	&& gotest
 popd

@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"runtime/debug"
 	"time"
-	"github.com/petar/GoGauge/dyna"
+	"github.com/petar/GoGauge/gauge"
 )
 
 // TODO:
@@ -26,16 +26,16 @@ func (t CLog) GetName() string {
 }
 
 func (t CLog) GetState() string {
-	// The first literal holds the dynamic name for the connection
-	return dyna.GetAttr([]string{t.GetName()}, "state").(string)
+	// The first literal holds the gaugemic name for the connection
+	return gauge.GetAttr([]string{t.GetName()}, "state").(string)
 }
 
 func (t CLog) SetState(s int) {
-	dyna.SetAttr([]string{t.GetName()}, "state", StateString(s))
+	gauge.SetAttr([]string{t.GetName()}, "state", StateString(s))
 }
 
 func (t CLog) Logf(modifier string, typ string, format string, v ...interface{}) {
-	if !dyna.Selected(t.GetName(), modifier) {
+	if !gauge.Selected(t.GetName(), modifier) {
 		return
 	}
 	fmt.Printf("%d  @%-8s  %6s:%-11s  %-5s  ——  %s\n", 

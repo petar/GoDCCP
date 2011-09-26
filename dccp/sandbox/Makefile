@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=github.com/petar/GoDCCP/dccp/virtual
+TARG=github.com/petar/GoDCCP/dccp/sandbox
 GOFILES=\
 	doc.go\
 	line.go\
