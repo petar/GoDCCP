@@ -9,8 +9,6 @@ import (
 	"time"
 )
 
-// TODO: Needs tests
-
 // backOff{}
 type backOff struct {
 	sleep       int64 // Duration of next sleep interval
@@ -37,9 +35,9 @@ func newBackOff(firstSleep, maxLifetime, backoffFreq int64) *backOff {
 // Sleep() blocks for the duration of the next sleep interval in the back-off 
 // sequence and return nil. If the maximum total sleep time has been reached,
 // Sleep() returns os.EOF without sleeping.
-func (b *backOff) Sleep() os.Error {
+func (b *backOff) Sleep() (os.Error, int64) {
 	if b.lifetime >= b.maxLifetime {
-		return os.EOF
+		return os.EOF, 0
 	}
 	time.Sleep(b.sleep)
 	b.lifetime += b.sleep
@@ -47,5 +45,5 @@ func (b *backOff) Sleep() os.Error {
 		b.sleep = (4 * b.sleep) / 3
 		b.lastBackoff = b.lifetime
 	}
-	return nil
+	return nil, time.Nanoseconds()
 }

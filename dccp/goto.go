@@ -71,7 +71,7 @@ func (c *Conn) gotoREQUEST(serviceCode uint32) {
 	go func() {
 		b := newBackOff(REQUEST_BACKOFF_FIRST, REQUEST_BACKOFF_MAX, REQUEST_BACKOFF_FREQ)
 		for {
-			err := b.Sleep()
+			err, _ := b.Sleep()
 			c.Lock()
 			state := c.socket.GetState()
 			c.Unlock()
@@ -108,12 +108,14 @@ func (c *Conn) gotoPARTOPEN() {
 	// Start PARTOPEN timer, according to Section 8.1.5
 	go func() {
 		b := newBackOff(PARTOPEN_BACKOFF_FIRST, PARTOPEN_BACKOFF_MAX, PARTOPEN_BACKOFF_FIRST)
+		c.CLog.Logf("conn", "Event", "PARTOPEN backoff %d start", time.Nanoseconds())
 		for {
-			err := b.Sleep()
+			err, btm := b.Sleep()
 			c.Lock()
 			state := c.socket.GetState()
 			c.Unlock()
 			if state != PARTOPEN {
+				c.CLog.Logf("conn", "Event", "PARTOPEN backoff EXIT via state change %d", btm)
 				break
 			}
 			// If the back-off timer has reached maximum wait. End the connection.
@@ -121,6 +123,7 @@ func (c *Conn) gotoPARTOPEN() {
 				c.abort()
 				break
 			}
+			c.CLog.Logf("conn", "Event", "PARTOPEN backoff %d", btm)
 			c.Lock()
 			c.inject(c.generateAck())
 			// XXX: This is a deviation from the RFC. The Sync packet necessitates a
@@ -170,7 +173,7 @@ func (c *Conn) gotoCLOSING() {
 		c.Unlock()
 		b := newBackOff(2*rtt, CLOSING_BACKOFF_MAX, CLOSING_BACKOFF_FREQ)
 		for {
-			err := b.Sleep()
+			err, _ := b.Sleep()
 			c.Lock()
 			state := c.socket.GetState()
 			c.Unlock()

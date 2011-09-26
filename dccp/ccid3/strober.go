@@ -63,7 +63,7 @@ func (s *strober) Strobe() {
 	delta := s.interval - (now - s.last)
 	dbgInterval := s.interval // DBG
 	s.Unlock()
-	defer s.CLog.Logf("sender-strober", "Event", "Strobe at %d pps", 1e9 / dbgInterval)
+	defer s.CLog.Logf("s-strober", "Event", "Strobe at %d pps", 1e9 / dbgInterval)
 	if delta > 0 {
 		<-time.NewTimer(delta).C
 	}

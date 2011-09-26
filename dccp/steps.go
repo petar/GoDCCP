@@ -205,6 +205,9 @@ func (c *Conn) step11_ProcessRESPOND(h *Header) os.Error {
 		c.inject(c.generateResponse(serviceCode))
 	} else {
 		if h.Type != Ack && h.Type != DataAck {
+			// This is not unusual. Our modification of DCCP has the client send a pair
+			// Ack, SyncAck to the server, after the server's Response.  If the Ack is
+			// dropped, the server will enter OPEN on a SyncAck.
 			c.logWarn("entering OPEN on a non-Ack, non-DataAck packet")
 		}
 		c.gotoOPEN(h.SeqNo)

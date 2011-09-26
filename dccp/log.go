@@ -38,7 +38,7 @@ func (t CLog) Logf(modifier string, typ string, format string, v ...interface{})
 	if !dyna.Selected(t.GetName(), modifier) {
 		return
 	}
-	fmt.Printf("%d  @%-8s  %6s:%-7s  %-5s  ——  %s\n", 
+	fmt.Printf("%d  @%-8s  %6s:%-11s  %-5s  ——  %s\n", 
 		time.Nanoseconds(), t.GetState(), t.GetName(), modifier,
 		typ, fmt.Sprintf(format, v...),
 	)
