@@ -27,7 +27,11 @@ func (t CLog) GetName() string {
 
 func (t CLog) GetState() string {
 	// The first literal holds the gaugemic name for the connection
-	return gauge.GetAttr([]string{t.GetName()}, "state").(string)
+	g := gauge.GetAttr([]string{t.GetName()}, "state")
+	if g == nil {
+		return ""
+	}
+	return g.(string)
 }
 
 func (t CLog) SetState(s int) {

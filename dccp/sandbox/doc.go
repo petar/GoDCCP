@@ -6,4 +6,4 @@
 	This package contains utilities for testing DCCP and CCID in a controlled and simulated
 	environment.
 */
-package virtual
+package sandbox
