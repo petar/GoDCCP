@@ -1,0 +1,12 @@
+
+-- TEST BEHAVIOR
+
+* Why doesn't CCID kick in? Why does sender receive bad LossIntervals option?
+	* SyncAck and Ack packets don't count against loss intervals and receive rate?
+
+* Verify that I see two closely-spaced strobes for the two closely-spaced packets that
+come out of client and get rejected by the sandbox line.
+
+-- TEST INFRASTRCTURE
+
+* Make sandbox's absolute time relative to the start, so experiments are reproducible

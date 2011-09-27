@@ -106,8 +106,17 @@ func (r *receiver) OnWrite(ph *dccp.PreHeader) (options []*dccp.Option) {
 		if r.gsr > 0 {
 			opts := make([]*dccp.Option, 3)
 			opts[0] = encodeOption(r.makeElapsedTimeOption(ph.AckNo, ph.Time))
+			if opts[0] == nil {
+				r.CLog.Logf("r", "Warn", "ElapsedTime option encoding == nil")
+			}
 			opts[1] = encodeOption(r.receiveRate.Flush(rtt, ph.Time))
+			if opts[1] == nil {
+				r.CLog.Logf("r", "Warn", "ReceiveRate option encoding == nil")
+			}
 			opts[2] = encodeOption(r.lossReceiver.LossIntervalsOption(ph.AckNo))
+			if opts[2] == nil {
+				r.CLog.Logf("r", "Warn", "LossIntervals option encoding == nil")
+			}
 			return opts
 		}
 		return nil

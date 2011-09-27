@@ -59,7 +59,7 @@ func (s *sender) Open() {
 	s.nofeedbackTimer.Init()
 	s.segmentSize.Init()
 	s.segmentSize.SetMPS(FixedSegmentSize)
-	s.lossTracker.Init()
+	s.lossTracker.Init(s.CLog)
 	s.rateCalculator.Init(s.CLog, FixedSegmentSize, rtt)
 	s.strober.Init(s.CLog, s.rateCalculator.X(), FixedSegmentSize)
 	s.open = true
@@ -112,7 +112,7 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) os.Error {
 	// Update loss estimates
 	lossFeedback, err := s.lossTracker.OnRead(fb)
 	if err != nil {
-		s.CLog.Logf("s", "Warn", "Feedback packet with corrupt loss option")
+		s.CLog.Logf("s", "Warn", "lossTracker.OnRead err (%s)", err)
 		return nil
 	}
 

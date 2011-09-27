@@ -13,13 +13,15 @@ import (
 // lossTracker processes loss intervals options received at the sender and maintains relevant loss
 // statistics.
 type lossTracker struct {
+	dccp.CLog
 	lastAckNo   int64   // SeqNo of the last ack'd segment; equals the AckNo of the last feedback
 	lastRateInv uint32  // Last known value of loss event rate inverse
 	lossRateCalculator
 }
 
 // Init resets the lossTracker instance for new use
-func (t *lossTracker) Init() {
+func (t *lossTracker) Init(clog dccp.CLog) {
+	t.CLog = clog
 	t.lastAckNo = 0
 	t.lastRateInv = UnknownLossEventRateInv
 	t.lossRateCalculator.Init(NINTERVAL)
@@ -45,7 +47,9 @@ func (t *lossTracker) OnRead(fb *dccp.FeedbackHeader) (LossFeedback, os.Error) {
 		return LossFeedback{}, ErrNoAck
 	}
 	var lossIntervals *LossIntervalsOption
-	for _, opt := range fb.Options {
+	t.CLog.Logf("s-tracker", "Event", "Encoded option count = %d", len(fb.Options))
+	for i, opt := range fb.Options {
+		t.CLog.Logf("s-tracker", "Event", "Decoding option %d", i)
 		if lossIntervals = DecodeLossIntervalsOption(opt); lossIntervals != nil {
 			break
 		}

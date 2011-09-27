@@ -96,13 +96,33 @@ const (
 	PARTOPEN_BACKOFF_MAX   = 4 * MSL  // 8 mins in nanoseconds, Section 8.1.5
 )
 
+func (c *Conn) openCCID() {
+	c.AssertLocked()
+	if c.ccidOpen {
+		return
+	}
+	c.scc.Open()
+	c.rcc.Open()
+	c.ccidOpen = true
+	c.logEvent("CCID open")
+}
+
+func (c *Conn) closeCCID() {
+	c.AssertLocked()
+	if !c.ccidOpen {
+		return
+	}
+	c.scc.Close()
+	c.rcc.Close()
+	c.ccidOpen = false
+	c.logEvent("CCID close")
+}
+
 func (c *Conn) gotoPARTOPEN() {
 	c.AssertLocked()
 	c.socket.SetState(PARTOPEN)
 	c.logState()
-	c.scc.Open()
-	c.rcc.Open()
-	c.logEvent("CCID open")
+	c.openCCID()
 	c.inject(nil) // Unblocks the writeLoop select, so it can see the state change
 
 	// Start PARTOPEN timer, according to Section 8.1.5
@@ -140,8 +160,7 @@ func (c *Conn) gotoOPEN(hSeqNo int64) {
 	c.socket.SetOSR(hSeqNo)
 	c.socket.SetState(OPEN)
 	c.logState()
-	c.scc.Open()
-	c.rcc.Open()
+	c.openCCID()
 	c.inject(nil) // Unblocks the writeLoop select, so it can see the state change
 }
 
@@ -150,9 +169,7 @@ func (c *Conn) gotoTIMEWAIT() {
 	c.teardownUser()
 	c.socket.SetState(TIMEWAIT)
 	c.logState()
-	c.scc.Close()
-	c.rcc.Close()
-	c.logEvent("CCID close ->TIMEWAIT")
+	c.closeCCID()
 	go func() {
 		time.Sleep(2 * MSL)
 		c.abortQuietly()
@@ -164,9 +181,7 @@ func (c *Conn) gotoCLOSING() {
 	c.teardownUser()
 	c.socket.SetState(CLOSING)
 	c.logState()
-	c.scc.Close()
-	c.rcc.Close()
-	c.logEvent("CCID close ->CLOSING")
+	c.closeCCID()
 	go func() {
 		c.Lock()
 		rtt := c.socket.GetRTT()
@@ -200,7 +215,5 @@ func (c *Conn) gotoCLOSED() {
 	c.logState()
 	c.teardownUser()
 	c.teardownWriteLoop()
-	c.scc.Close()
-	c.rcc.Close()
-	c.logEvent("CCID close ->CLOSED")
+	c.closeCCID()
 }

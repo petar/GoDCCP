@@ -14,6 +14,7 @@ type Conn struct {
 
 	Mutex // Protects access to socket
 	socket
+	ccidOpen       bool         // True if the sender and receiver CCID's have been opened
 
 	readAppLk      Mutex
 	readApp        chan []byte  // readLoop() sends application data to Read()
@@ -26,8 +27,9 @@ type Conn struct {
 func newConn(name string, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
 	c := &Conn{
 		hc:           hc,
-		scc:          newSenderCCActuator(scc),
-		rcc:          newReceiverCCActuator(rcc),
+		scc:          scc,
+		rcc:          rcc,
+		ccidOpen:     false,
 		readApp:      make(chan []byte, 5),
 		writeData:    make(chan []byte),
 		writeNonData: make(chan *Header, 5),

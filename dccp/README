@@ -1,5 +1,3 @@
-* automatic hierarchical logging, so that that strober.log(..) prints out the right thing
-
 * replace all time.Nanoseconds() with func args?
 * dynamically changing SWAF/SWBF
 * Conn.SetReadTimeout
