@@ -1,3 +1,6 @@
+
+* address Ack-Sync pair in client connection establishement, marked XXX in code
+
 * replace all time.Nanoseconds() with func args?
 * dynamically changing SWAF/SWBF
 * Conn.SetReadTimeout
