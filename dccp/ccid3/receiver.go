@@ -119,6 +119,7 @@ func (r *receiver) OnWrite(ph *dccp.PreHeader) (options []*dccp.Option) {
 			}
 			return opts
 		}
+		r.CLog.Logf("r", "Info", "OnWrite SeqNo=%d, Not seen packs before", ph.SeqNo)
 		return nil
 
 	case dccp.Data, dccp.DataAck:

@@ -24,6 +24,7 @@ func (c *Conn) writeCCID(h *Header) *Header {
 	}
 	// XXX: Also check option compatibility with respect to packet type (Data vs. other)
 	h.Options = append(h.Options, append(sropts, rsopts...)...)
+	c.CLog.Logf("conn", "Peek", "OnWrite SeqNo=%d, Opts=%v", h.SeqNo, h.Options)
 	return h
 }
 

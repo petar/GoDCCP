@@ -1,8 +1,12 @@
 
 -- TEST BEHAVIOR
 
-* Why doesn't CCID kick in? Why does sender receive bad LossIntervals option?
-	* SyncAck and Ack packets don't count against loss intervals and receive rate?
+* why does packet exchange stop in 6 seconds
+
+* ensure behavior stabilizes if both sides remain silent after connect and connection does not close
+perpetually
+	* write test for this
+	* ponder event emit protocol for test writing
 
 -- TEST INFRASTRCTURE
 
