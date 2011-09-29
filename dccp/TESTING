@@ -16,6 +16,4 @@ perpetually
 
 -- TEST INFRASTRCTURE
 
-* specify sandbox line rate by (interval, packets per interval) so it allows small bursts
-
 * Make sandbox's absolute time relative to the start, so experiments are reproducible

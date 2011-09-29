@@ -18,13 +18,13 @@ type Line struct {
 	ha, hb headerHalfLine
 }
 
-func NewLine(name string, na, nb string, sps uint32) (a, b dccp.HeaderConn, line *Line) {
+func NewLine(name string, na, nb string, gap int64, packetsPerGap uint32) (a, b dccp.HeaderConn, line *Line) {
 	ab := make(chan *dccp.Header)
 	ba := make(chan *dccp.Header)
 	line = &Line{}
 	line.CLog.Init(name)
-	line.ha.Init(na, line.CLog, ba, ab, sps)
-	line.hb.Init(nb, line.CLog, ab, ba, sps)
+	line.ha.Init(na, line.CLog, ba, ab, gap, packetsPerGap)
+	line.hb.Init(nb, line.CLog, ab, ba, gap, packetsPerGap)
 	return &line.ha, &line.hb, line
 }
 
@@ -38,17 +38,20 @@ type headerHalfLine struct {
 	write chan<- *dccp.Header
 
 	glock   sync.Mutex
-	gap     int64 // Maximum time interval that can have at most one segment transmission
-	gapCtr  int64 // UTC time in gap units
-	gapFill int   // Number of segments transmitted during the gap in gapCtr
+	gap           int64  // Length of time interval for ...
+	packetsPerGap uint32
+	gapCounter    int64  // UTC time in gap units
+	gapFill       uint32 // Number of segments transmitted during the gap in gapCounter
 }
 
-func (hhl *headerHalfLine) Init(name string, clog dccp.CLog, r <-chan *dccp.Header, w chan<- *dccp.Header, sps uint32) {
+func (hhl *headerHalfLine) Init(name string, clog dccp.CLog, 
+	r <-chan *dccp.Header, w chan<- *dccp.Header, gap int64, packetsPerGap uint32) {
+
 	hhl.name = name
 	hhl.CLog = clog
 	hhl.read = r
 	hhl.write = w
-	hhl.SetRate(sps)
+	hhl.SetRate(gap, packetsPerGap)
 }
 
 func (hhl *headerHalfLine) GetMTU() int {
@@ -65,11 +68,12 @@ func (hhl *headerHalfLine) ReadHeader() (h *dccp.Header, err os.Error) {
 	return h, nil
 }
 
-func (hhl *headerHalfLine) SetRate(segmentsPerSecond uint32) {
+func (hhl *headerHalfLine) SetRate(gap int64, packetsPerGap uint32) {
 	hhl.glock.Lock()
 	defer hhl.glock.Unlock()
-	hhl.gap = 1e9 / int64(segmentsPerSecond)
-	hhl.gapCtr = 0
+	hhl.gap = gap
+	hhl.packetsPerGap = packetsPerGap
+	hhl.gapCounter = 0
 	hhl.gapFill = 0
 }
 
@@ -97,11 +101,11 @@ func (hhl *headerHalfLine) rateFilter() bool {
 
 	now := time.Nanoseconds()
 	gctr := now / hhl.gap
-	if gctr != hhl.gapCtr {
-		hhl.gapCtr = gctr
+	if gctr != hhl.gapCounter {
+		hhl.gapCounter = gctr
 		hhl.gapFill = 1
 		return true
-	} else if hhl.gapFill < 1 {
+	} else if hhl.gapFill < hhl.packetsPerGap {
 		hhl.gapFill++
 		return true
 	}
