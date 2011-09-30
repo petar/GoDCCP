@@ -7,7 +7,6 @@ package dccp
 import (
 	"log"
 	"os"
-	"time"
 )
 
 // Step 2, Section 8.5: Check ports and process TIMEWAIT state
@@ -137,7 +136,7 @@ func (c *Conn) step7_CheckUnexpectedTypes(h *Header) os.Error {
 func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) os.Error {
 
 	defer c.syncWithCongestionControl()
-	now := time.Nanoseconds()
+	now := c.Time.Nanoseconds()
 	rsopts := filterCCIDReceiverToSenderOptions(h.Options)
 	if err := c.scc.OnRead(&FeedbackHeader{ h.Type, h.X, h.SeqNo, rsopts, h.AckNo, now }); err != nil {
 		if re, ok := err.(CongestionReset); ok {

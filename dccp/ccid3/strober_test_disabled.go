@@ -11,10 +11,9 @@ import (
 )
 
 func TestStrober(t *testing.T) {
-	var clog dccp.CLog
-	clog.Init("x")
+	var logger dccp.Logger = dccp.NewDetailLogger(?, ?)
 	var s strober
-	s.Init(clog, 1024, 1024)
+	s.Init(logger, 1024, 1024)
 	for {
 		s.Strobe()
 		fmt.Printf("*")

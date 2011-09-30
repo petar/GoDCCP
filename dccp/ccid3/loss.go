@@ -204,7 +204,7 @@ func (t *lossRateCalculator) CalcLossEventRateInv(history []*LossIntervalDetail)
 	for i := 1; i < k; i++ {
 		I_tot1 += h[i] * t.w[i-1]
 	}
-	I_tot := math.Fmax(I_tot0, I_tot1)
+	I_tot := math.Max(I_tot0, I_tot1)
 	I_mean := I_tot / W_tot
 
 	if I_mean < 1.0 {

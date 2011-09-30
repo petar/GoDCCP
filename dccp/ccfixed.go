@@ -6,32 +6,32 @@ package dccp
 
 import (
 	"os"
-	"time"
 )
 
 type CCFixed struct {
 }
 
-func (CCFixed) NewSender() SenderCongestionControl { 
-	return newFixedRateSenderControl(1e9) // one packet per second. sendsPerSecond
+func (CCFixed) NewSender(time Time, logger Logger) SenderCongestionControl { 
+	return newFixedRateSenderControl(time, 1e9) // one packet per second. sendsPerSecond
 }
 
-func (CCFixed) NewReceiver() ReceiverCongestionControl {
-	return newFixedRateReceiverControl()
+func (CCFixed) NewReceiver(time Time, logger Logger) ReceiverCongestionControl {
+	return newFixedRateReceiverControl(time)
 }
 
 // ---> Fixed-rate HC-Sender Congestion Control
 
 type fixedRateSenderControl struct {
+	Time
 	Mutex
 	every  int64 // Strobe every every nanoseconds
 	strobeRead  chan int
 	strobeWrite chan int
 }
 
-func newFixedRateSenderControl(every int64) *fixedRateSenderControl {
+func newFixedRateSenderControl(time Time, every int64) *fixedRateSenderControl {
 	strobe := make(chan int)
-	return &fixedRateSenderControl{ every: every, strobeRead: strobe, strobeWrite: strobe }
+	return &fixedRateSenderControl{ Time: time, every: every, strobeRead: strobe, strobeWrite: strobe }
 }
 
 func (scc *fixedRateSenderControl) Open() {
@@ -44,7 +44,7 @@ func (scc *fixedRateSenderControl) Open() {
 			}
 			scc.strobeWrite <- 1
 			scc.Unlock()
-			time.Sleep(scc.every)
+			scc.Time.Sleep(scc.every)
 		}
 	}()
 }
@@ -76,14 +76,14 @@ func (scc *fixedRateSenderControl) Close() {
 	}
 }
 
-func (scc *fixedRateSenderControl) SetCLog(CLog) {}
-
 // ---> Fixed-rate HC-Receiver Congestion Control
 
-type fixedRateReceiverControl struct {}
+type fixedRateReceiverControl struct {
+	Time
+}
 
-func newFixedRateReceiverControl() *fixedRateReceiverControl {
-	return &fixedRateReceiverControl{}
+func newFixedRateReceiverControl(time Time) *fixedRateReceiverControl {
+	return &fixedRateReceiverControl{Time: time}
 }
 
 func (rcc *fixedRateReceiverControl) Open() {}
@@ -97,5 +97,3 @@ func (rcc *fixedRateReceiverControl) OnRead(ff *FeedforwardHeader) os.Error { re
 func (rcc *fixedRateReceiverControl) OnIdle(now int64) os.Error { return nil }
 
 func (rcc *fixedRateReceiverControl) Close() {}
-
-func (scc *fixedRateReceiverControl) SetCLog(CLog) {}

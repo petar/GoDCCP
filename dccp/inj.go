@@ -6,11 +6,10 @@ package dccp
 
 import (
 	"os"
-	"time"
 )
 
 func (c *Conn) writeCCID(h *Header) *Header {
-	now := time.Nanoseconds()
+	now := c.Time.Nanoseconds()
 	// HC-Sender CCID
 	ccval, sropts := c.scc.OnWrite(&PreHeader{Type: h.Type, X: h.X, SeqNo: h.SeqNo, AckNo: h.AckNo, Time: now})
 	if !validateCCIDSenderToReceiver(sropts) {
@@ -24,7 +23,7 @@ func (c *Conn) writeCCID(h *Header) *Header {
 	}
 	// XXX: Also check option compatibility with respect to packet type (Data vs. other)
 	h.Options = append(h.Options, append(sropts, rsopts...)...)
-	c.CLog.Logf("conn", "Peek", "OnWrite SeqNo=%d, Opts=%v", h.SeqNo, h.Options)
+	c.Logger.Logf("conn", "Peek", "OnWrite SeqNo=%d, Opts=%v", h.SeqNo, h.Options)
 	return h
 }
 

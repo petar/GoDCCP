@@ -31,7 +31,8 @@ func (s *Stack) Dial(addr net.Addr, serviceCode uint32) (c SegmentConn, err os.E
 		return nil, err
 	}
 	hc := NewHeaderConn(bc)
-	c = NewConnClient("", hc, s.ccid.NewSender(), s.ccid.NewReceiver(), serviceCode)
+	c = NewConnClient(RealTime{}, NoLogging{}, hc, 
+		s.ccid.NewSender(RealTime{}, NoLogging{}), s.ccid.NewReceiver(RealTime{}, NoLogging{}), serviceCode)
 	return c, nil
 }
 
@@ -43,6 +44,7 @@ func (s *Stack) Accept() (c SegmentConn, err os.Error) {
 		return nil, err
 	}
 	hc := NewHeaderConn(bc)
-	c = NewConnServer("", hc, s.ccid.NewSender(), s.ccid.NewReceiver())
+	c = NewConnServer(RealTime{}, NoLogging{}, hc, 
+		s.ccid.NewSender(RealTime{}, NoLogging{}), s.ccid.NewReceiver(RealTime{}, NoLogging{}))
 	return c, nil
 }

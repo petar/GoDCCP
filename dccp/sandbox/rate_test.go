@@ -13,10 +13,10 @@ import (
 )
 
 func TestDropRate(t *testing.T) {
-	hca, hcb, _ := NewLine("line", "client", "server", 1e9, 10)
+	hca, hcb, _ := NewLine(dccp.NewLogger(NewTime(), "line"), "client", "server", 1e9, 10)
 	ccid := ccid3.CCID3{}
-	gauge.Select("client", "server", /* "line",*/ "conn", "s", "s-x", "s-strober", "s-tracker", "r")
+	gauge.Select("client", "server", "line", "conn", "s", "s-x", "s-strober", "s-tracker", "r")
 	/* cc := */ dccp.NewConnClient("client", hca, ccid.NewSender(), ccid.NewReceiver(), 0)
 	/* cs := */ dccp.NewConnServer("server", hcb, ccid.NewSender(), ccid.NewReceiver())
-	time.Sleep(30e9)
+	time.Sleep(1e9)
 }

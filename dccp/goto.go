@@ -6,7 +6,6 @@ package dccp
 
 import (
 	"log"
-	"time"
 )
 
 func (c *Conn) gotoLISTEN() {
@@ -15,7 +14,7 @@ func (c *Conn) gotoLISTEN() {
 	c.socket.SetState(LISTEN)
 	c.logState()
 	go func() {
-		time.Sleep(REQUEST_BACKOFF_MAX)
+		c.Time.Sleep(REQUEST_BACKOFF_MAX)
 		c.Lock()
 		state := c.socket.GetState()
 		c.Unlock()
@@ -41,7 +40,7 @@ func (c *Conn) gotoRESPOND(hServiceCode uint32, hSeqNo int64) {
 	c.socket.SetServiceCode(hServiceCode)
 
 	go func() {
-		time.Sleep(RESPOND_TIMEOUT)
+		c.Time.Sleep(RESPOND_TIMEOUT)
 		c.Lock()
 		state := c.socket.GetState()
 		c.Unlock()
@@ -69,7 +68,7 @@ func (c *Conn) gotoREQUEST(serviceCode uint32) {
 
 	// Resend Request using exponential backoff, if no response
 	go func() {
-		b := newBackOff(REQUEST_BACKOFF_FIRST, REQUEST_BACKOFF_MAX, REQUEST_BACKOFF_FREQ)
+		b := newBackOff(c.Time, REQUEST_BACKOFF_FIRST, REQUEST_BACKOFF_MAX, REQUEST_BACKOFF_FREQ)
 		for {
 			err, _ := b.Sleep()
 			c.Lock()
@@ -127,15 +126,15 @@ func (c *Conn) gotoPARTOPEN() {
 
 	// Start PARTOPEN timer, according to Section 8.1.5
 	go func() {
-		b := newBackOff(PARTOPEN_BACKOFF_FIRST, PARTOPEN_BACKOFF_MAX, PARTOPEN_BACKOFF_FIRST)
-		c.CLog.Logf("conn", "Event", "PARTOPEN backoff %d start", time.Nanoseconds())
+		b := newBackOff(c.Time, PARTOPEN_BACKOFF_FIRST, PARTOPEN_BACKOFF_MAX, PARTOPEN_BACKOFF_FIRST)
+		c.Logger.Logf("conn", "Event", "PARTOPEN backoff %d start", c.Time.Nanoseconds())
 		for {
 			err, btm := b.Sleep()
 			c.Lock()
 			state := c.socket.GetState()
 			c.Unlock()
 			if state != PARTOPEN {
-				c.CLog.Logf("conn", "Event", "PARTOPEN backoff EXIT via state change %d", btm)
+				c.Logger.Logf("conn", "Event", "PARTOPEN backoff EXIT via state change %d", btm)
 				break
 			}
 			// If the back-off timer has reached maximum wait. End the connection.
@@ -143,7 +142,7 @@ func (c *Conn) gotoPARTOPEN() {
 				c.abort()
 				break
 			}
-			c.CLog.Logf("conn", "Event", "PARTOPEN backoff %d", btm)
+			c.Logger.Logf("conn", "Event", "PARTOPEN backoff %d", btm)
 			c.Lock()
 			c.inject(c.generateAck())
 			// XXX: This is a deviation from the RFC. The Sync packet necessitates a
@@ -171,7 +170,7 @@ func (c *Conn) gotoTIMEWAIT() {
 	c.logState()
 	c.closeCCID()
 	go func() {
-		time.Sleep(2 * MSL)
+		c.Time.Sleep(2 * MSL)
 		c.abortQuietly()
 	}()
 }
@@ -186,7 +185,7 @@ func (c *Conn) gotoCLOSING() {
 		c.Lock()
 		rtt := c.socket.GetRTT()
 		c.Unlock()
-		b := newBackOff(2*rtt, CLOSING_BACKOFF_MAX, CLOSING_BACKOFF_FREQ)
+		b := newBackOff(c.Time, 2*rtt, CLOSING_BACKOFF_MAX, CLOSING_BACKOFF_FREQ)
 		for {
 			err, _ := b.Sleep()
 			c.Lock()

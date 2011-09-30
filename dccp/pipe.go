@@ -7,7 +7,6 @@ package dccp
 import (
 	"log"
 	"os"
-	"time"
 )
 
 func (c *Conn) readHeader() (h *Header, err os.Error) {
@@ -117,7 +116,7 @@ func (c *Conn) readLoop() {
 }
 
 func (c *Conn) pollCongestionControl() {
-	now := time.Nanoseconds()
+	now := c.Time.Nanoseconds()
 	if e := c.scc.OnIdle(now); e != nil {
 		if re, ok := e.(CongestionReset); ok {
 			c.abortWith(re.ResetCode())

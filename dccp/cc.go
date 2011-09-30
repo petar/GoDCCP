@@ -81,8 +81,6 @@ type SenderCongestionControl interface {
 
 	// Close terminates the half-connection congestion control when it is not needed any longer
 	Close()
-
-	SetCLog(connCLog CLog)
 }
 
 // ReceiverCongestionControl specifies the interface for the congestion control logic of a DCCP
@@ -112,8 +110,6 @@ type ReceiverCongestionControl interface {
 
 	// Close terminates the half-connection congestion control when it is not needed any longer
 	Close()
-
-	SetCLog(connCLog CLog)
 }
 
 // PreHeader contains the parts of the DCCP header than are fixed before the
@@ -160,8 +156,8 @@ type FeedforwardHeader struct {
 
 // CCID is a factory type that creates instances of sender and receiver CCIDs
 type CCID interface {
-	NewSender(args ...interface{}) SenderCongestionControl
-	NewReceiver(args ...interface{}) ReceiverCongestionControl
+	NewSender(time Time, logger Logger, args ...interface{}) SenderCongestionControl
+	NewReceiver(time Time, logger Logger, args ...interface{}) ReceiverCongestionControl
 }
 
 const (

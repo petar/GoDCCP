@@ -6,7 +6,8 @@ package dccp
 
 // Conn 
 type Conn struct {
-	CLog
+	Logger
+	Time
 
 	hc    HeaderConn
 	scc   SenderCongestionControl
@@ -24,8 +25,10 @@ type Conn struct {
 	writeNonData   chan *Header // inject() sends wire-format non-Data packets (higher priority) to writeLoop()
 }
 
-func newConn(name string, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
+func newConn(time Time, logger Logger, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
 	c := &Conn{
+		Time:         time,
+		Logger:       logger,
 		hc:           hc,
 		scc:          scc,
 		rcc:          rcc,
@@ -34,7 +37,6 @@ func newConn(name string, hc HeaderConn, scc SenderCongestionControl, rcc Receiv
 		writeData:    make(chan []byte),
 		writeNonData: make(chan *Header, 5),
 	}
-	c.CLog.Init(name)
 
 	c.Lock()
 	// Currently, CCID is not negotiated, rather both sides use the same
@@ -53,10 +55,10 @@ func newConn(name string, hc HeaderConn, scc SenderCongestionControl, rcc Receiv
 	return c
 }
 
-func NewConnServer(name string, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
-	c := newConn(name, hc, scc, rcc)
-	scc.SetCLog(c.CLog)
-	rcc.SetCLog(c.CLog)
+func NewConnServer(time Time, logger Logger, hc HeaderConn, 
+	scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
+
+	c := newConn(time, logger, hc, scc, rcc)
 
 	c.Lock()
 	c.gotoLISTEN()
@@ -67,10 +69,10 @@ func NewConnServer(name string, hc HeaderConn, scc SenderCongestionControl, rcc 
 	return c
 }
 
-func NewConnClient(name string, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl, serviceCode uint32) *Conn {
-	c := newConn(name, hc, scc, rcc)
-	scc.SetCLog(c.CLog)
-	rcc.SetCLog(c.CLog)
+func NewConnClient(time Time, logger Logger, hc HeaderConn, 
+	scc SenderCongestionControl, rcc ReceiverCongestionControl, serviceCode uint32) *Conn {
+
+	c := newConn(time, logger, hc, scc, rcc)
 
 	c.Lock()
 	c.gotoREQUEST(serviceCode)

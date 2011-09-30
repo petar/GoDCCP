@@ -5,5 +5,6 @@ GOFILES=\
 	doc.go\
 	line.go\
 	pipe.go\
+	time.go\
 
 include $(GOROOT)/src/Make.pkg

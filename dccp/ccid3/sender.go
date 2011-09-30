@@ -9,14 +9,15 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-func newSender() *sender {
-	return &sender{}
+func newSender(time dccp.Time, logger dccp.Logger) *sender {
+	return &sender{ Time: time, Logger: logger }
 }
 
 // —————
 // sender is a CCID3 congestion control sender
 type sender struct {
-	dccp.CLog
+	dccp.Time
+	dccp.Logger
 	strober
 	dccp.Mutex // Locks all fields below
 	rttSender
@@ -59,9 +60,9 @@ func (s *sender) Open() {
 	s.nofeedbackTimer.Init()
 	s.segmentSize.Init()
 	s.segmentSize.SetMPS(FixedSegmentSize)
-	s.lossTracker.Init(s.CLog)
-	s.rateCalculator.Init(s.CLog, FixedSegmentSize, rtt)
-	s.strober.Init(s.CLog, s.rateCalculator.X(), FixedSegmentSize)
+	s.lossTracker.Init(s.Logger)
+	s.rateCalculator.Init(s.Logger, FixedSegmentSize, rtt)
+	s.strober.Init(s.Time, s.Logger, s.rateCalculator.X(), FixedSegmentSize)
 	s.open = true
 }
 
@@ -112,14 +113,14 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) os.Error {
 	// Update loss estimates
 	lossFeedback, err := s.lossTracker.OnRead(fb)
 	if err != nil {
-		s.CLog.Logf("s", "Warn", "lossTracker.OnRead err (%s)", err)
+		s.Logger.Logf("s", "Warn", "lossTracker.OnRead err (%s)", err)
 		return nil
 	}
 
 	// Update allowed sending rate
 	xrecv, err := readReceiveRate(fb)
 	if err != nil {
-		s.CLog.Logf("s", "Warn", "Feedback packet with corrupt receive rate option")
+		s.Logger.Logf("s", "Warn", "Feedback packet with corrupt receive rate option")
 		return nil
 	}
 	xf := &XFeedback{
@@ -159,7 +160,7 @@ func (s *sender) Strobe() {
 	s.Unlock()
 
 	if !open {
-		s.CLog.Logf("s", "Event", "Strobe immediate")
+		s.Logger.Logf("s", "Event", "Strobe immediate")
 		return
 	}
 
@@ -194,8 +195,4 @@ func (s *sender) Close() {
 		panic("closing a non-open ccid3 sender")
 	}
 	s.open = false
-}
-
-func (s *sender) SetCLog(clog dccp.CLog) {
-	s.CLog = clog
 }

@@ -3,17 +3,17 @@
 
 * why does packet exchange stop in 6 seconds
 
-* make clog object unique. keep track of last logf and emit time in terms of difference and in terms
-of duration since start of 0
-
-* timer/sleeper interface for DCCP
-	* accelerated synthetic timer instance for the sandbox
-
 * ensure behavior stabilizes if both sides remain silent after connect and connection does not close
 perpetually
 	* write test for this
 	* ponder event emit protocol for test writing
 
 -- TEST INFRASTRCTURE
+
+* timer/sleeper interface for DCCP
+	* accelerated synthetic timer instance for the sandbox
+
+* make clog object unique. keep track of last logf and emit time in terms of difference and in terms
+of duration since start of 0
 
 * Make sandbox's absolute time relative to the start, so experiments are reproducible
