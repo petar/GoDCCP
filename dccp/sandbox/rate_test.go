@@ -13,10 +13,19 @@ import (
 )
 
 func TestDropRate(t *testing.T) {
-	hca, hcb, _ := NewLine(dccp.NewLogger(NewTime(), "line"), "client", "server", 1e9, 10)
-	ccid := ccid3.CCID3{}
+
 	gauge.Select("client", "server", "line", "conn", "s", "s-x", "s-strober", "s-tracker", "r")
-	/* cc := */ dccp.NewConnClient("client", hca, ccid.NewSender(), ccid.NewReceiver(), 0)
-	/* cs := */ dccp.NewConnServer("server", hcb, ccid.NewSender(), ccid.NewReceiver())
-	time.Sleep(1e9)
+
+	var tt dccp.Time = dccp.RealTime{}
+
+	hca, hcb, _ := NewLine(dccp.NewLogger(tt, "line"), "client", "server", 1e9, 10)
+	ccid := ccid3.CCID3{}
+
+	clog := dccp.NewLogger(tt, "client")
+	/* cc := */ dccp.NewConnClient(tt, clog, hca, ccid.NewSender(tt, clog), ccid.NewReceiver(tt, clog), 0)
+
+	slog := dccp.NewLogger(tt, "server")
+	/* cs := */ dccp.NewConnServer(tt, slog, hcb, ccid.NewSender(tt, slog), ccid.NewReceiver(tt, slog))
+
+	time.Sleep(10e9)
 }
