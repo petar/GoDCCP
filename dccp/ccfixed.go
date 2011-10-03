@@ -11,27 +11,26 @@ import (
 type CCFixed struct {
 }
 
-func (CCFixed) NewSender(time Time, logger Logger) SenderCongestionControl { 
-	return newFixedRateSenderControl(time, 1e9) // one packet per second. sendsPerSecond
+func (CCFixed) NewSender(logger Logger) SenderCongestionControl { 
+	return newFixedRateSenderControl(1e9) // one packet per second. sendsPerSecond
 }
 
-func (CCFixed) NewReceiver(time Time, logger Logger) ReceiverCongestionControl {
-	return newFixedRateReceiverControl(time)
+func (CCFixed) NewReceiver(logger Logger) ReceiverCongestionControl {
+	return newFixedRateReceiverControl()
 }
 
 // ---> Fixed-rate HC-Sender Congestion Control
 
 type fixedRateSenderControl struct {
-	Time
 	Mutex
 	every  int64 // Strobe every every nanoseconds
 	strobeRead  chan int
 	strobeWrite chan int
 }
 
-func newFixedRateSenderControl(time Time, every int64) *fixedRateSenderControl {
+func newFixedRateSenderControl(every int64) *fixedRateSenderControl {
 	strobe := make(chan int)
-	return &fixedRateSenderControl{ Time: time, every: every, strobeRead: strobe, strobeWrite: strobe }
+	return &fixedRateSenderControl{ every: every, strobeRead: strobe, strobeWrite: strobe }
 }
 
 func (scc *fixedRateSenderControl) Open() {
@@ -44,7 +43,7 @@ func (scc *fixedRateSenderControl) Open() {
 			}
 			scc.strobeWrite <- 1
 			scc.Unlock()
-			scc.Time.Sleep(scc.every)
+			GetTime().Sleep(scc.every)
 		}
 	}()
 }
@@ -78,12 +77,10 @@ func (scc *fixedRateSenderControl) Close() {
 
 // ---> Fixed-rate HC-Receiver Congestion Control
 
-type fixedRateReceiverControl struct {
-	Time
-}
+type fixedRateReceiverControl struct {}
 
-func newFixedRateReceiverControl(time Time) *fixedRateReceiverControl {
-	return &fixedRateReceiverControl{Time: time}
+func newFixedRateReceiverControl() *fixedRateReceiverControl {
+	return &fixedRateReceiverControl{}
 }
 
 func (rcc *fixedRateReceiverControl) Open() {}

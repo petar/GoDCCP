@@ -14,7 +14,7 @@ func (c *Conn) gotoLISTEN() {
 	c.socket.SetState(LISTEN)
 	c.logState()
 	go func() {
-		c.Time.Sleep(REQUEST_BACKOFF_MAX)
+		GetTime().Sleep(REQUEST_BACKOFF_MAX)
 		c.Lock()
 		state := c.socket.GetState()
 		c.Unlock()
@@ -40,7 +40,7 @@ func (c *Conn) gotoRESPOND(hServiceCode uint32, hSeqNo int64) {
 	c.socket.SetServiceCode(hServiceCode)
 
 	go func() {
-		c.Time.Sleep(RESPOND_TIMEOUT)
+		GetTime().Sleep(RESPOND_TIMEOUT)
 		c.Lock()
 		state := c.socket.GetState()
 		c.Unlock()
@@ -68,7 +68,7 @@ func (c *Conn) gotoREQUEST(serviceCode uint32) {
 
 	// Resend Request using exponential backoff, if no response
 	go func() {
-		b := newBackOff(c.Time, REQUEST_BACKOFF_FIRST, REQUEST_BACKOFF_MAX, REQUEST_BACKOFF_FREQ)
+		b := newBackOff(GetTime(), REQUEST_BACKOFF_FIRST, REQUEST_BACKOFF_MAX, REQUEST_BACKOFF_FREQ)
 		for {
 			err, _ := b.Sleep()
 			c.Lock()
@@ -126,8 +126,8 @@ func (c *Conn) gotoPARTOPEN() {
 
 	// Start PARTOPEN timer, according to Section 8.1.5
 	go func() {
-		b := newBackOff(c.Time, PARTOPEN_BACKOFF_FIRST, PARTOPEN_BACKOFF_MAX, PARTOPEN_BACKOFF_FIRST)
-		c.Logger.Logf("conn", "Event", "PARTOPEN backoff %d start", c.Time.Nanoseconds())
+		b := newBackOff(GetTime(), PARTOPEN_BACKOFF_FIRST, PARTOPEN_BACKOFF_MAX, PARTOPEN_BACKOFF_FIRST)
+		c.Logger.Logf("conn", "Event", "PARTOPEN backoff %d start", GetTime().Nanoseconds())
 		for {
 			err, btm := b.Sleep()
 			c.Lock()
@@ -170,7 +170,7 @@ func (c *Conn) gotoTIMEWAIT() {
 	c.logState()
 	c.closeCCID()
 	go func() {
-		c.Time.Sleep(2 * MSL)
+		GetTime().Sleep(2 * MSL)
 		c.abortQuietly()
 	}()
 }
@@ -185,7 +185,7 @@ func (c *Conn) gotoCLOSING() {
 		c.Lock()
 		rtt := c.socket.GetRTT()
 		c.Unlock()
-		b := newBackOff(c.Time, 2*rtt, CLOSING_BACKOFF_MAX, CLOSING_BACKOFF_FREQ)
+		b := newBackOff(GetTime(), 2*rtt, CLOSING_BACKOFF_MAX, CLOSING_BACKOFF_FREQ)
 		for {
 			err, _ := b.Sleep()
 			c.Lock()

@@ -5,7 +5,7 @@
 package dccp
 
 import (
-	"runtime"
+	goruntime "runtime"
 	"sync/atomic"
 )
 
@@ -31,7 +31,7 @@ func (m *Mutex) Lock() {
 		// changed from 0 to 1; we hold lock
 		return
 	}
-	runtime.Semacquire(&m.sema)
+	goruntime.Semacquire(&m.sema)
 }
 
 func (m *Mutex) AssertLocked() {
@@ -56,5 +56,5 @@ func (m *Mutex) Unlock() {
 		// (or there are 4 billion goroutines waiting)
 		panic("sync: unlock of unlocked mutex")
 	}
-	runtime.Semrelease(&m.sema)
+	goruntime.Semrelease(&m.sema)
 }

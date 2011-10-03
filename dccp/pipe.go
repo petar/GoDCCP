@@ -116,7 +116,7 @@ func (c *Conn) readLoop() {
 }
 
 func (c *Conn) pollCongestionControl() {
-	now := c.Time.Nanoseconds()
+	now := GetTime().Nanoseconds()
 	if e := c.scc.OnIdle(now); e != nil {
 		if re, ok := e.(CongestionReset); ok {
 			c.abortWith(re.ResetCode())

@@ -7,7 +7,6 @@ package dccp
 // Conn 
 type Conn struct {
 	Logger
-	Time
 
 	hc    HeaderConn
 	scc   SenderCongestionControl
@@ -25,9 +24,8 @@ type Conn struct {
 	writeNonData   chan *Header // inject() sends wire-format non-Data packets (higher priority) to writeLoop()
 }
 
-func newConn(time Time, logger Logger, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
+func newConn(logger Logger, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
 	c := &Conn{
-		Time:         time,
 		Logger:       logger,
 		hc:           hc,
 		scc:          scc,
@@ -55,10 +53,10 @@ func newConn(time Time, logger Logger, hc HeaderConn, scc SenderCongestionContro
 	return c
 }
 
-func NewConnServer(time Time, logger Logger, hc HeaderConn, 
+func NewConnServer(logger Logger, hc HeaderConn, 
 	scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
 
-	c := newConn(time, logger, hc, scc, rcc)
+	c := newConn(logger, hc, scc, rcc)
 
 	c.Lock()
 	c.gotoLISTEN()
@@ -69,10 +67,10 @@ func NewConnServer(time Time, logger Logger, hc HeaderConn,
 	return c
 }
 
-func NewConnClient(time Time, logger Logger, hc HeaderConn, 
+func NewConnClient(logger Logger, hc HeaderConn, 
 	scc SenderCongestionControl, rcc ReceiverCongestionControl, serviceCode uint32) *Conn {
 
-	c := newConn(time, logger, hc, scc, rcc)
+	c := newConn(logger, hc, scc, rcc)
 
 	c.Lock()
 	c.gotoREQUEST(serviceCode)

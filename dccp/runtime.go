@@ -8,6 +8,19 @@ import (
 	"time"
 )
 
+func SetTime(time Time) {
+	runtime.Time = time
+}
+
+func GetTime() Time {
+	return runtime.Time
+}
+
+var runtime struct {
+	Time
+}
+
+// Time is an interface for interacting time
 type Time interface {
 	// Nanoseconds returns the current time in nanoseconds since UTC zero
 	Nanoseconds() int64
@@ -16,12 +29,14 @@ type Time interface {
 	Sleep(ns int64)
 }
 
-type RealTime struct {}
+type realTime struct {}
 
-func (RealTime) Nanoseconds() int64 {
+var RealTime realTime
+
+func (realTime) Nanoseconds() int64 {
 	return time.Nanoseconds()
 }
 
-func (RealTime) Sleep(ns int64) {
+func (realTime) Sleep(ns int64) {
 	<-time.NewTimer(ns).C
 }

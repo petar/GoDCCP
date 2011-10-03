@@ -9,14 +9,13 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-func newReceiver(time dccp.Time, logger dccp.Logger) *receiver {
-	return &receiver{ Time: time, Logger: logger }
+func newReceiver(logger dccp.Logger) *receiver {
+	return &receiver{ Logger: logger }
 }
 
 // —————
 // receiver is a CCID3 congestion control receiver
 type receiver struct {
-	dccp.Time
 	dccp.Logger
 	dccp.Mutex
 	rttReceiver

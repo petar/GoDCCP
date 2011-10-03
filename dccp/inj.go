@@ -9,7 +9,7 @@ import (
 )
 
 func (c *Conn) writeCCID(h *Header) *Header {
-	now := c.Time.Nanoseconds()
+	now := GetTime().Nanoseconds()
 	// HC-Sender CCID
 	ccval, sropts := c.scc.OnWrite(&PreHeader{Type: h.Type, X: h.X, SeqNo: h.SeqNo, AckNo: h.AckNo, Time: now})
 	if !validateCCIDSenderToReceiver(sropts) {

@@ -41,6 +41,7 @@ GOFILES=\
 	udplink.go\
 	wire.go\
 	write.go\
-	time.go\
+	runtime.go\
+	gauge.go\
 
 include $(GOROOT)/src/Make.pkg

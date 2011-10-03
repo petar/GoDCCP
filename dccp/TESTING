@@ -10,8 +10,7 @@ perpetually
 
 -- TEST INFRASTRCTURE
 
-* timer/sleeper interface for DCCP
-	* accelerated synthetic timer instance for the sandbox
+* accelerated synthetic timer instance for the sandbox
 
 * make clog object unique. keep track of last logf and emit time in terms of difference and in terms
 of duration since start of 0

@@ -11,7 +11,6 @@ import (
 // strober is an object that produces regular strobe intervals at a specified rate.
 // A strober cannot be used before an initial call to SetInterval or SetRate.
 type strober struct {
-	dccp.Time
 	dccp.Logger
 	dccp.Mutex
 	interval int64
@@ -25,8 +24,7 @@ func Per64FromBPS(bps uint32, ss uint32) int64 {
 }
 
 // Init resets the strober instance for new use
-func (s *strober) Init(time dccp.Time, logger dccp.Logger, bps uint32, ss uint32) {
-	s.Time = time
+func (s *strober) Init(logger dccp.Logger, bps uint32, ss uint32) {
 	s.Logger = logger
 	s.SetRate(bps, ss)
 }
@@ -60,15 +58,15 @@ func (s *strober) SetRate(bps uint32, ss uint32) {
 // TODO: This routine should be optimized
 func (s *strober) Strobe() {
 	s.Lock()
-	now := s.Time.Nanoseconds()
+	now := dccp.GetTime().Nanoseconds()
 	delta := s.interval - (now - s.last)
 	dbgInterval := s.interval // DBG
 	s.Unlock()
 	defer s.Logger.Logf("s-strober", "Event", "Strobe at %d pps", 1e9 / dbgInterval)
 	if delta > 0 {
-		s.Time.Sleep(delta)
+		dccp.GetTime().Sleep(delta)
 	}
 	s.Lock()
-	s.last = s.Time.Nanoseconds()
+	s.last = dccp.GetTime().Nanoseconds()
 	s.Unlock()
 }

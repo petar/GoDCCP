@@ -9,14 +9,13 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-func newSender(time dccp.Time, logger dccp.Logger) *sender {
-	return &sender{ Time: time, Logger: logger }
+func newSender(logger dccp.Logger) *sender {
+	return &sender{ Logger: logger }
 }
 
 // —————
 // sender is a CCID3 congestion control sender
 type sender struct {
-	dccp.Time
 	dccp.Logger
 	strober
 	dccp.Mutex // Locks all fields below
@@ -62,7 +61,7 @@ func (s *sender) Open() {
 	s.segmentSize.SetMPS(FixedSegmentSize)
 	s.lossTracker.Init(s.Logger)
 	s.rateCalculator.Init(s.Logger, FixedSegmentSize, rtt)
-	s.strober.Init(s.Time, s.Logger, s.rateCalculator.X(), FixedSegmentSize)
+	s.strober.Init(s.Logger, s.rateCalculator.X(), FixedSegmentSize)
 	s.open = true
 }
 
