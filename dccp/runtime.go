@@ -5,19 +5,44 @@
 package dccp
 
 import (
+	"sync"
 	"time"
 )
 
 func SetTime(time Time) {
+	runtime.Lock()
+	defer runtime.Unlock()
+
 	runtime.Time = time
+	runtime.timeZero = time.Nanoseconds()
 }
 
 func GetTime() Time {
+	runtime.Lock()
+	defer runtime.Unlock()
+
 	return runtime.Time
 }
 
+func SnapLog() (sinceZero int64, sinceLast int64) {
+	runtime.Lock()
+	defer runtime.Unlock()
+
+	logTime := runtime.Time.Nanoseconds()
+	lastTime := runtime.timeLastLog
+	if lastTime == 0 {
+		lastTime = logTime
+	}
+	runtime.timeLastLog = logTime
+	return logTime - runtime.timeZero, logTime - lastTime
+}
+
+// runtime ...
 var runtime struct {
+	sync.Mutex
 	Time
+	timeZero    int64 // Time when execution started
+	timeLastLog int64 // Time of last log message
 }
 
 // Time is an interface for interacting time

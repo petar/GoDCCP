@@ -11,8 +11,3 @@ perpetually
 -- TEST INFRASTRCTURE
 
 * accelerated synthetic timer instance for the sandbox
-
-* make clog object unique. keep track of last logf and emit time in terms of difference and in terms
-of duration since start of 0
-
-* Make sandbox's absolute time relative to the start, so experiments are reproducible

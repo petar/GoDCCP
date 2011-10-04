@@ -36,8 +36,35 @@ func (t Logger) Logf(modifier string, typ string, format string, v ...interface{
 	if !gauge.Selected(t.GetName(), modifier) {
 		return
 	}
-	fmt.Printf("%d  @%-8s  %6s:%-11s  %-5s  ——  %s\n", 
-		runtime.Time.Nanoseconds(), t.GetState(), t.GetName(), modifier,
+	sinceZero, sinceLast := SnapLog()
+	fmt.Printf("%15s %15s  @%-8s  %6s:%-11s  %-5s  ——  %s\n", 
+		nstoa(sinceZero), nstoa(sinceLast), t.GetState(), t.GetName(), modifier,
 		typ, fmt.Sprintf(format, v...),
 	)
+}
+
+const nsAlpha = "0123456789"
+
+func nstoa(ns int64) string {
+	if ns < 0 {
+		panic("negative time")
+	}
+	if ns == 0 {
+		return "0"
+	}
+	b := make([]byte, 32)
+	z := len(b) - 1
+	i := 0
+	j := 0
+	for ns != 0 {
+		if j % 3 == 0 && j > 0 {
+			b[z-i] = ','
+			i++
+		}
+		b[z-i] = nsAlpha[ns % 10]
+		j++
+		i++
+		ns /= 10
+	}
+	return string(b[z-i+1:])
 }
