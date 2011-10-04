@@ -14,7 +14,7 @@ import (
 
 func TestDropRate(t *testing.T) {
 
-	gauge.Select("client", "server", "line", "conn", "s", "s-x", "s-strober", "s-tracker", "r")
+	gauge.Select("client", "server", /* "line", */ "conn", "s", "s-x", "s-strober", "s-tracker", "r")
 
 	dccp.SetTime(dccp.RealTime)
 

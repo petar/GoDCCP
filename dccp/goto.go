@@ -68,7 +68,7 @@ func (c *Conn) gotoREQUEST(serviceCode uint32) {
 
 	// Resend Request using exponential backoff, if no response
 	go func() {
-		b := newBackOff(GetTime(), REQUEST_BACKOFF_FIRST, REQUEST_BACKOFF_MAX, REQUEST_BACKOFF_FREQ)
+		b := newBackOff(REQUEST_BACKOFF_FIRST, REQUEST_BACKOFF_MAX, REQUEST_BACKOFF_FREQ)
 		for {
 			err, _ := b.Sleep()
 			c.Lock()
@@ -126,7 +126,7 @@ func (c *Conn) gotoPARTOPEN() {
 
 	// Start PARTOPEN timer, according to Section 8.1.5
 	go func() {
-		b := newBackOff(GetTime(), PARTOPEN_BACKOFF_FIRST, PARTOPEN_BACKOFF_MAX, PARTOPEN_BACKOFF_FIRST)
+		b := newBackOff(PARTOPEN_BACKOFF_FIRST, PARTOPEN_BACKOFF_MAX, PARTOPEN_BACKOFF_FIRST)
 		c.Logger.Logf("conn", "Event", "PARTOPEN backoff %d start", GetTime().Nanoseconds())
 		for {
 			err, btm := b.Sleep()
@@ -134,7 +134,7 @@ func (c *Conn) gotoPARTOPEN() {
 			state := c.socket.GetState()
 			c.Unlock()
 			if state != PARTOPEN {
-				c.Logger.Logf("conn", "Event", "PARTOPEN backoff EXIT via state change %d", btm)
+				c.Logger.Logf("conn", "Event", "PARTOPEN backoff EXIT via state change")
 				break
 			}
 			// If the back-off timer has reached maximum wait. End the connection.
@@ -185,7 +185,7 @@ func (c *Conn) gotoCLOSING() {
 		c.Lock()
 		rtt := c.socket.GetRTT()
 		c.Unlock()
-		b := newBackOff(GetTime(), 2*rtt, CLOSING_BACKOFF_MAX, CLOSING_BACKOFF_FREQ)
+		b := newBackOff(2*rtt, CLOSING_BACKOFF_MAX, CLOSING_BACKOFF_FREQ)
 		for {
 			err, _ := b.Sleep()
 			c.Lock()
