@@ -37,10 +37,20 @@ func (t Logger) Logf(modifier string, typ string, format string, v ...interface{
 		return
 	}
 	sinceZero, sinceLast := SnapLog()
-	fmt.Printf("%15s %15s  @%-8s  %6s:%-11s  %-5s  ——  %s\n", 
-		nstoa(sinceZero), nstoa(sinceLast), t.GetState(), t.GetName(), modifier,
-		typ, fmt.Sprintf(format, v...),
+	fmt.Printf("%15s %15s  @%-8s  %6s:%-11s  %-7s  ——  %s\n", 
+		nstoa(sinceZero), nstoa(sinceLast), t.GetState(), t.GetName(), 
+		modifier, indentType(typ), fmt.Sprintf(format, v...),
 	)
+}
+
+func indentType(typ string) string {
+	switch typ {
+	case "Write", "Read", "Strobe":
+		return typ
+	default:
+		return "  " + typ
+	}
+	panic("")
 }
 
 const nsAlpha = "0123456789"

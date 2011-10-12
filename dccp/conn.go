@@ -64,6 +64,7 @@ func NewConnServer(logger Logger, hc HeaderConn,
 
 	go c.writeLoop(c.writeNonData, c.writeData)
 	go c.readLoop()
+	go c.idleLoop()
 	return c
 }
 
@@ -78,5 +79,6 @@ func NewConnClient(logger Logger, hc HeaderConn,
 
 	go c.writeLoop(c.writeNonData, c.writeData)
 	go c.readLoop()
+	go c.idleLoop()
 	return c
 }

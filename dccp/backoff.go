@@ -38,11 +38,11 @@ func (b *backOff) Sleep() (os.Error, int64) {
 	if b.lifetime >= b.maxLifetime {
 		return os.EOF, 0
 	}
-	GetTime().Sleep(b.sleep)
+	Sleep(b.sleep)
 	b.lifetime += b.sleep
 	if b.lifetime - b.lastBackoff >= b.backoffFreq {
 		b.sleep = (4 * b.sleep) / 3
 		b.lastBackoff = b.lifetime
 	}
-	return nil, GetTime().Nanoseconds()
+	return nil, Nanoseconds()
 }

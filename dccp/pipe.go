@@ -27,6 +27,23 @@ func (c *Conn) readHeader() (h *Header, err os.Error) {
 // How often we exit from a blocking call to readHeader, 1 sec in nanoseconds
 const READ_TIMEOUT = 1e9 
 
+// idleLoop polls the congestion control OnIdle method at regular intervals
+// of approximately one RTT.
+func (c *Conn) idleLoop() {
+	for {
+		c.Lock()
+		c.pollCongestionControl()
+		c.syncWithCongestionControl()
+		rtt := c.socket.GetRTT()
+		state := c.socket.GetState()
+		c.Unlock()
+		if state == CLOSED {
+			break
+		}
+		Sleep(max(RTT_MIN, min(rtt, RTT_DEFAULT)))
+	}
+}
+
 func (c *Conn) readLoop() {
 	for {
 		c.Lock()

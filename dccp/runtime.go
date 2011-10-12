@@ -24,6 +24,20 @@ func GetTime() Time {
 	return runtime.Time
 }
 
+func Nanoseconds() int64 {
+	runtime.Lock()
+	defer runtime.Unlock()
+
+	return runtime.Time.Nanoseconds()
+}
+
+func Sleep(ns int64) {
+	runtime.Lock()
+	defer runtime.Unlock()
+
+	return runtime.Time.Sleep(ns)
+}
+
 func SnapLog() (sinceZero int64, sinceLast int64) {
 	runtime.Lock()
 	defer runtime.Unlock()
