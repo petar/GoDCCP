@@ -43,5 +43,6 @@ GOFILES=\
 	write.go\
 	runtime.go\
 	gauge.go\
+	util.go\
 
 include $(GOROOT)/src/Make.pkg

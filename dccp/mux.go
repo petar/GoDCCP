@@ -346,10 +346,3 @@ func (m *Mux) write(msg *muxMsg, block []byte, addr net.Addr) os.Error {
 	}
 	return err
 }
-
-func max(i, j int) int {
-	if i > j {
-		return i
-	}
-	return j
-}

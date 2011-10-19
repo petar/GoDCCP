@@ -4,16 +4,13 @@
 
 package dccp
 
-import (
-	"log"
-	"os"
-)
+import "os"
 
 func (c *Conn) readHeader() (h *Header, err os.Error) {
 	h, err = c.hc.ReadHeader()
 	if err != nil {
 		if err != ErrTimeout {
-			log.Printf("dropping\n")
+			c.logWarn("dropping\n")
 		}
 		return nil, err
 	}
@@ -40,7 +37,8 @@ func (c *Conn) idleLoop() {
 		if state == CLOSED {
 			break
 		}
-		Sleep(max(RTT_MIN, min(rtt, RTT_DEFAULT)))
+		c.logWarn("idle loop")
+		Sleep(max64(RTT_MIN, min64(rtt, RTT_DEFAULT)))
 	}
 }
 
@@ -56,7 +54,7 @@ func (c *Conn) readLoop() {
 
 		// Adjust read timeout
 		if err := c.hc.SetReadTimeout(5 * rtt); err != nil {
-			log.Printf("SetReadTimeout failed")
+			c.logWarn("SetReadTimeout failed")
 			c.abortQuietly()
 			return
 		}
@@ -145,7 +143,7 @@ func (c *Conn) pollCongestionControl() {
 			c.Unlock()
 			return
 		}
-		log.Printf("unknown sender cc idle event")
+		c.logWarn("unknown sender cc idle event")
 	}
 	if e := c.rcc.OnIdle(now); e != nil {
 		if re, ok := e.(CongestionReset); ok {
@@ -158,7 +156,7 @@ func (c *Conn) pollCongestionControl() {
 			c.Unlock()
 			return
 		}
-		log.Printf("unknown receiver cc idle event")
+		c.logWarn("unknown receiver cc idle event")
 	}
 }
 

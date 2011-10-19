@@ -171,27 +171,6 @@ func (s *socket) GetGAR() int64     { return s.GAR }
 func (s *socket) SetGAR(v int64)    { s.GAR = v }
 func (s *socket) UpdateGAR(v int64) { s.GAR = max64(s.GAR, v) }
 
-func max64(x, y int64) int64 {
-	if x > y {
-		return x
-	}
-	return y
-}
-
-func max32(x, y int32) int32 {
-	if x > y {
-		return x
-	}
-	return y
-}
-
-func min32(x, y int32) int32 {
-	if x < y {
-		return x
-	}
-	return y
-}
-
 // TODO: Address the last paragraph of Section 7.5.1 regarding SWL,AWL calculation
 
 func (s *socket) SetSWAF(v int64) { s.SWAF = v }

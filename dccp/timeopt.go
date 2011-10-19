@@ -181,17 +181,3 @@ func TenUSFromNS(ns int64) uint32 {
 func NSFromTenUS(tus uint32) int64 {
 	return min64(int64(tus)*TenMicroInNano, MaxElapsedTime*TenMicroInNano)
 }
-
-func min64(x, y int64) int64 {
-	if x < y {
-		return x
-	}
-	return y
-}
-
-func minu32(x, y uint32) uint32 {
-	if x < y {
-		return x
-	}
-	return y
-}

@@ -4,10 +4,7 @@
 
 package dccp
 
-import (
-	"log"
-	"os"
-)
+import "os"
 
 // Step 2, Section 8.5: Check ports and process TIMEWAIT state
 func (c *Conn) step2_ProcessTIMEWAIT(h *Header) os.Error {
@@ -195,7 +192,7 @@ func (c *Conn) step11_ProcessRESPOND(h *Header) os.Error {
 	}
 	if h.Type == Request {
 		if c.socket.GetGSR() != h.SeqNo {
-			log.Panic("GSR != h.SeqNo")
+			panic("GSR != h.SeqNo")
 		}
 		serviceCode := c.socket.GetServiceCode()
 		if h.ServiceCode != serviceCode {

@@ -35,7 +35,7 @@ func Sleep(ns int64) {
 	runtime.Lock()
 	defer runtime.Unlock()
 
-	return runtime.Time.Sleep(ns)
+	runtime.Time.Sleep(ns)
 }
 
 func SnapLog() (sinceZero int64, sinceLast int64) {

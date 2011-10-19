@@ -4,10 +4,6 @@
 
 package dccp
 
-import (
-	"log"
-)
-
 func (c *Conn) gotoLISTEN() {
 	c.AssertLocked()
 	c.socket.SetServer(true)
@@ -83,7 +79,7 @@ func (c *Conn) gotoREQUEST(serviceCode uint32) {
 				break
 			}
 			c.Lock()
-			log.Printf("resend Request\n")
+			c.logWarn("resend Request")
 			c.inject(c.generateRequest(serviceCode))
 			c.Unlock()
 		}
