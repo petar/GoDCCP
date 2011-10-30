@@ -14,7 +14,7 @@ func (c *Conn) logCatchSeqNo(h *Header, seqNos ...int64) {
 	}
 	for _, seqNo := range seqNos {
 		if h.SeqNo == seqNo {
-			c.Logger.Logf("conn", "Catch", "Caught SeqNo=%d: %s\n%s", 
+			c.Logger.Logf("conn", "Catch", h.SeqNo, h.AckNo, "Caught SeqNo=%d: %s\n%s", 
 				seqNo, h.String(), string(debug.Stack()))
 			break
 		}
@@ -27,17 +27,17 @@ func (c *Conn) logState() {
 }
 
 func (c *Conn) logReadHeader(h *Header) {
-	c.Logger.Logf("conn", "Read", h.String())
+	c.Logger.Logf("conn", "Read", h.SeqNo, h.AckNo, h.String())
 }
 
 func (c *Conn) logWriteHeader(h *Header) {
-	c.Logger.Logf("conn", "Write", h.String())
+	c.Logger.Logf("conn", "Write", h.SeqNo, h.AckNo, h.String())
 }
 
 func (c *Conn) logEvent(s string) {
-	c.Logger.Logf("conn", "Event", s)
+	c.Logger.Logf("conn", "Event", 0, 0, s)
 }
 
 func (c *Conn) logWarn(s string) {
-	c.Logger.Logf("conn", "Warn", s)
+	c.Logger.Logf("conn", "Warn", 0, 0, s)
 }

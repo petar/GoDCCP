@@ -61,10 +61,10 @@ func (hhl *headerHalfLine) GetMTU() int {
 func (hhl *headerHalfLine) ReadHeader() (h *dccp.Header, err os.Error) {
 	h, ok := <-hhl.read
 	if !ok {
-		hhl.Logger.Logf(hhl.name, "Warn", "Read EOF")
+		hhl.Logger.Logf(hhl.name, "Warn", h.SeqNo, h.AckNo, "Read EOF")
 		return nil, os.EOF
 	}
-	hhl.Logger.Logf(hhl.name, "Read", "SeqNo=%d", h.SeqNo)
+	hhl.Logger.Logf(hhl.name, "Read", h.SeqNo, h.AckNo, "SeqNo=%d", h.SeqNo)
 	return h, nil
 }
 
@@ -82,15 +82,15 @@ func (hhl *headerHalfLine) WriteHeader(h *dccp.Header) (err os.Error) {
 	defer hhl.wlock.Unlock()
 
 	if hhl.write == nil {
-		hhl.Logger.Logf(hhl.name, "Drop", "SeqNo=%d EBADF", h.SeqNo)
+		hhl.Logger.Logf(hhl.name, "Drop", h.SeqNo, h.AckNo, "SeqNo=%d EBADF", h.SeqNo)
 		return os.EBADF
 	}
 	
 	if hhl.rateFilter() {
 		hhl.write <- h
-		hhl.Logger.Logf(hhl.name, "Write", "SeqNo=%d", h.SeqNo)
+		hhl.Logger.Logf(hhl.name, "Write", h.SeqNo, h.AckNo, "SeqNo=%d", h.SeqNo)
 	} else {
-		hhl.Logger.Logf(hhl.name, "Drop", "SeqNo=%d", h.SeqNo)
+		hhl.Logger.Logf(hhl.name, "Drop", h.SeqNo, h.AckNo, "SeqNo=%d", h.SeqNo)
 	}
 	return nil
 }
@@ -117,13 +117,13 @@ func (hhl *headerHalfLine) Close() os.Error {
 	defer hhl.wlock.Unlock()
 
 	if hhl.write == nil {
-		hhl.Logger.Logf(hhl.name, "Warn", "Close EBADF")
+		hhl.Logger.Logf(hhl.name, "Warn", 0, 0, "Close EBADF")
 		return os.EBADF
 	}
 	close(hhl.write)
 	hhl.write = nil
 
-	hhl.Logger.Logf(hhl.name, "Event", "Close")
+	hhl.Logger.Logf(hhl.name, "Event", 0, 0, "Close")
 	return nil
 }
 

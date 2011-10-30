@@ -6,6 +6,9 @@ package dccp
 
 import (
 	"fmt"
+	"json"
+	"os"
+	"strings"
 	"github.com/petar/GoGauge/gauge"
 )
 
@@ -29,18 +32,46 @@ func (t Logger) SetState(s int) {
 	gauge.SetAttr([]string{t.GetName()}, "state", StateString(s))
 }
 
-func (t Logger) Logf(modifier string, typ string, format string, v ...interface{}) {
+// LogRecord stores a log event. It can be used to marshal to JSON and pass to external
+// visualisation tools.
+type LogRecord struct {
+	Time      int64   // Time of event
+	SeqNo     int64   // SeqNo, if applicable; zero otherwise
+	AckNo     int64   // AckNo, if applicable; zero otherwise
+	Module    string  // Module where event occurred, e.g. "server", "client", "line"
+	Submodule string  // Submodule where event occurred, e.g. "s-strober"
+	Type      string  // Type of event
+	State     string  // State of module
+	Comment   string  // Textual comment describing the event
+}
+
+func (t Logger) Logf(submodule string, typ string, seqno, ackno int64, comment string, v ...interface{}) {
 	if t == "" {
 		return
 	}
-	if !gauge.Selected(t.GetName(), modifier) {
+	if !gauge.Selected(t.GetName(), submodule) {
 		return
 	}
 	sinceZero, sinceLast := SnapLog()
-	fmt.Printf("%15s %15s  @%-8s  %6s:%-11s  %-7s  ——  %s\n", 
-		nstoa(sinceZero), nstoa(sinceLast), t.GetState(), t.GetName(), 
-		modifier, indentType(typ), fmt.Sprintf(format, v...),
-	)
+	r := &LogRecord {
+		Time:      sinceZero,
+		SeqNo:     seqno,
+		AckNo:     ackno,
+		Module:    t.GetName(),
+		Submodule: submodule,
+		Type:      typ,
+		State:     t.GetState(),
+		Comment:   comment,
+	}
+	if strings.ToLower(os.Getenv("DCCPLOG")) == "json" {
+		js, _ := json.MarshalIndent(r, "", "\t")
+		fmt.Println(js)	
+	} else {
+		fmt.Printf("%15s %15s  %-8s  %6s:%-11s  %-7s  ——  %s\n", 
+			nstoa(sinceZero), nstoa(sinceLast), t.GetState(), t.GetName(), 
+			submodule, indentType(typ), fmt.Sprintf(comment, v...),
+		)
+	}
 }
 
 func indentType(typ string) string {

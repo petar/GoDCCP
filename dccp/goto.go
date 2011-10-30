@@ -123,14 +123,14 @@ func (c *Conn) gotoPARTOPEN() {
 	// Start PARTOPEN timer, according to Section 8.1.5
 	go func() {
 		b := newBackOff(PARTOPEN_BACKOFF_FIRST, PARTOPEN_BACKOFF_MAX, PARTOPEN_BACKOFF_FIRST)
-		c.Logger.Logf("conn", "Event", "PARTOPEN backoff %d start", GetTime().Nanoseconds())
+		c.Logger.Logf("conn", "Event", 0, 0, "PARTOPEN backoff %d start", GetTime().Nanoseconds())
 		for {
 			err, btm := b.Sleep()
 			c.Lock()
 			state := c.socket.GetState()
 			c.Unlock()
 			if state != PARTOPEN {
-				c.Logger.Logf("conn", "Event", "PARTOPEN backoff EXIT via state change")
+				c.Logger.Logf("conn", "Event", 0, 0, "PARTOPEN backoff EXIT via state change")
 				break
 			}
 			// If the back-off timer has reached maximum wait. End the connection.
@@ -138,7 +138,7 @@ func (c *Conn) gotoPARTOPEN() {
 				c.abort()
 				break
 			}
-			c.Logger.Logf("conn", "Event", "PARTOPEN backoff %d", btm)
+			c.Logger.Logf("conn", "Event", 0, 0, "PARTOPEN backoff %d", btm)
 			c.Lock()
 			c.inject(c.generateAck())
 			// XXX: This is a deviation from the RFC. The Sync packet necessitates a
