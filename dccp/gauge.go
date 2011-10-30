@@ -53,19 +53,19 @@ func (t Logger) Logf(submodule string, typ string, seqno, ackno int64, comment s
 		return
 	}
 	sinceZero, sinceLast := SnapLog()
-	r := &LogRecord {
-		Time:      sinceZero,
-		SeqNo:     seqno,
-		AckNo:     ackno,
-		Module:    t.GetName(),
-		Submodule: submodule,
-		Type:      typ,
-		State:     t.GetState(),
-		Comment:   comment,
-	}
 	if strings.ToLower(os.Getenv("DCCPLOG")) == "json" {
+		r := &LogRecord {
+			Time:      sinceZero,
+			SeqNo:     seqno,
+			AckNo:     ackno,
+			Module:    t.GetName(),
+			Submodule: submodule,
+			Type:      typ,
+			State:     t.GetState(),
+			Comment:   fmt.Sprintf(comment, v...),
+		}
 		js, _ := json.MarshalIndent(r, "", "\t")
-		fmt.Println(js)	
+		fmt.Println(string(js))	
 	} else {
 		fmt.Printf("%15s %15s  %-8s  %6s:%-11s  %-7s  ——  %s\n", 
 			nstoa(sinceZero), nstoa(sinceLast), t.GetState(), t.GetName(), 
