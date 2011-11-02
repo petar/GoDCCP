@@ -4,10 +4,6 @@
 
 package dccp
 
-import (
-	"os"
-)
-
 func (c *Conn) writeCCID(h *Header) *Header {
 	now := GetTime().Nanoseconds()
 	// HC-Sender CCID
@@ -57,7 +53,7 @@ func (c *Conn) inject(h *Header) {
 	}
 }
 
-func (c *Conn) write(h *Header) os.Error {
+func (c *Conn) write(h *Header) error {
 	c.scc.Strobe()
 	return c.hc.WriteHeader(h)
 }
@@ -72,7 +68,7 @@ func (c *Conn) writeLoop(writeNonData chan *Header, writeData chan []byte) {
 
 	// This loop is active until state OPEN or PARTOPEN is observed, when a
 	// transition to _Loop II_is made
-	_Loop_I:
+_Loop_I:
 
 	for {
 		h, ok := <-writeNonData
@@ -102,7 +98,7 @@ func (c *Conn) writeLoop(writeNonData chan *Header, writeData chan []byte) {
 	}
 
 	// This loop is active until writeData is not closed
-	_Loop_II:
+_Loop_II:
 
 	for {
 		var h *Header
@@ -146,7 +142,7 @@ func (c *Conn) writeLoop(writeNonData chan *Header, writeData chan []byte) {
 	}
 
 	// This loop is active until writeNonData is not closed
-	_Loop_III:
+_Loop_III:
 
 	for {
 		h, ok := <-writeNonData
@@ -166,5 +162,5 @@ func (c *Conn) writeLoop(writeNonData chan *Header, writeData chan []byte) {
 		}
 	}
 
-	_Exit:
+_Exit:
 }

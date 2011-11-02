@@ -4,9 +4,7 @@
 
 package dccp
 
-import (
-	"os"
-)
+import "io"
 
 // backOff{}
 type backOff struct {
@@ -34,13 +32,13 @@ func newBackOff(firstSleep, maxLifetime, backoffFreq int64) *backOff {
 // Sleep() blocks for the duration of the next sleep interval in the back-off 
 // sequence and return nil. If the maximum total sleep time has been reached,
 // Sleep() returns os.EOF without sleeping.
-func (b *backOff) Sleep() (os.Error, int64) {
+func (b *backOff) Sleep() (error, int64) {
 	if b.lifetime >= b.maxLifetime {
-		return os.EOF, 0
+		return io.EOF, 0
 	}
 	Sleep(b.sleep)
 	b.lifetime += b.sleep
-	if b.lifetime - b.lastBackoff >= b.backoffFreq {
+	if b.lifetime-b.lastBackoff >= b.backoffFreq {
 		b.sleep = (4 * b.sleep) / 3
 		b.lastBackoff = b.lifetime
 	}

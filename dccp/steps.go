@@ -4,10 +4,8 @@
 
 package dccp
 
-import "os"
-
 // Step 2, Section 8.5: Check ports and process TIMEWAIT state
-func (c *Conn) step2_ProcessTIMEWAIT(h *Header) os.Error {
+func (c *Conn) step2_ProcessTIMEWAIT(h *Header) error {
 	if c.socket.GetState() != TIMEWAIT {
 		return nil
 	}
@@ -20,7 +18,7 @@ func (c *Conn) step2_ProcessTIMEWAIT(h *Header) os.Error {
 }
 
 // Step 3, Section 8.5: Process LISTEN state
-func (c *Conn) step3_ProcessLISTEN(h *Header) os.Error {
+func (c *Conn) step3_ProcessLISTEN(h *Header) error {
 	if c.socket.GetState() != LISTEN {
 		return nil
 	}
@@ -38,7 +36,7 @@ func (c *Conn) step3_ProcessLISTEN(h *Header) os.Error {
 }
 
 // Step 4, Section 8.5: Prepare sequence numbers in REQUEST
-func (c *Conn) step4_PrepSeqNoREQUEST(h *Header) os.Error {
+func (c *Conn) step4_PrepSeqNoREQUEST(h *Header) error {
 	if c.socket.GetState() != REQUEST {
 		return nil
 	}
@@ -56,7 +54,7 @@ func (c *Conn) step4_PrepSeqNoREQUEST(h *Header) os.Error {
 }
 
 // Step 5, Section 8.5: Prepare sequence numbers for Sync
-func (c *Conn) step5_PrepSeqNoForSync(h *Header) os.Error {
+func (c *Conn) step5_PrepSeqNoForSync(h *Header) error {
 	if h.Type != Sync && h.Type != SyncAck {
 		return nil
 	}
@@ -69,7 +67,7 @@ func (c *Conn) step5_PrepSeqNoForSync(h *Header) os.Error {
 }
 
 // Step 6, Section 8.5: Check sequence numbers
-func (c *Conn) step6_CheckSeqNo(h *Header) os.Error {
+func (c *Conn) step6_CheckSeqNo(h *Header) error {
 	// We don't support short sequence numbers
 	if !h.X {
 		return ErrDrop
@@ -110,7 +108,7 @@ func (c *Conn) step6_CheckSeqNo(h *Header) os.Error {
 }
 
 // Step 7, Section 8.5: Check for unexpected packet types
-func (c *Conn) step7_CheckUnexpectedTypes(h *Header) os.Error {
+func (c *Conn) step7_CheckUnexpectedTypes(h *Header) error {
 	isServer := c.socket.IsServer()
 	state := c.socket.GetState()
 	osr := c.socket.GetOSR()
@@ -130,12 +128,12 @@ func (c *Conn) step7_CheckUnexpectedTypes(h *Header) os.Error {
 
 // Step 8, Section 8.5: Process options and mark acknowledgeable
 // Section 7.4: A received packet becomes acknowledgeable when Step 8 is reached.
-func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) os.Error {
+func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) error {
 
 	defer c.syncWithCongestionControl()
 	now := GetTime().Nanoseconds()
 	rsopts := filterCCIDReceiverToSenderOptions(h.Options)
-	if err := c.scc.OnRead(&FeedbackHeader{ h.Type, h.X, h.SeqNo, rsopts, h.AckNo, now }); err != nil {
+	if err := c.scc.OnRead(&FeedbackHeader{h.Type, h.X, h.SeqNo, rsopts, h.AckNo, now}); err != nil {
 		if re, ok := err.(CongestionReset); ok {
 			c.abortWithUnderLock(re.ResetCode())
 			return ErrDrop
@@ -149,7 +147,7 @@ func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) os.Error {
 		c.logWarn("unknown sender cc read event")
 	}
 	sropts := filterCCIDSenderToReceiverOptions(h.Options)
-	if err := c.rcc.OnRead(&FeedforwardHeader{ h.Type, h.X, h.SeqNo, h.CCVal, sropts, now, len(h.Data) }); err != nil {
+	if err := c.rcc.OnRead(&FeedforwardHeader{h.Type, h.X, h.SeqNo, h.CCVal, sropts, now, len(h.Data)}); err != nil {
 		if re, ok := err.(CongestionReset); ok {
 			c.abortWithUnderLock(re.ResetCode())
 			return ErrDrop
@@ -166,7 +164,7 @@ func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) os.Error {
 }
 
 // Step 9, Section 8.5: Process Reset
-func (c *Conn) step9_ProcessReset(h *Header) os.Error {
+func (c *Conn) step9_ProcessReset(h *Header) error {
 	if h.Type != Reset {
 		return nil
 	}
@@ -176,7 +174,7 @@ func (c *Conn) step9_ProcessReset(h *Header) os.Error {
 }
 
 // Step 10, Section 8.5: Process REQUEST state (second part)
-func (c *Conn) step10_ProcessREQUEST2(h *Header) os.Error {
+func (c *Conn) step10_ProcessREQUEST2(h *Header) error {
 	if c.socket.GetState() != REQUEST {
 		return nil
 	}
@@ -186,7 +184,7 @@ func (c *Conn) step10_ProcessREQUEST2(h *Header) os.Error {
 }
 
 // Step 11, Section 8.5: Process RESPOND state
-func (c *Conn) step11_ProcessRESPOND(h *Header) os.Error {
+func (c *Conn) step11_ProcessRESPOND(h *Header) error {
 	if c.socket.GetState() != RESPOND {
 		return nil
 	}
@@ -212,7 +210,7 @@ func (c *Conn) step11_ProcessRESPOND(h *Header) os.Error {
 }
 
 // Step 12, Section 8.5: Process PARTOPEN state
-func (c *Conn) step12_ProcessPARTOPEN(h *Header) os.Error {
+func (c *Conn) step12_ProcessPARTOPEN(h *Header) error {
 	if c.socket.GetState() != PARTOPEN {
 		return nil
 	}
@@ -232,7 +230,7 @@ func (c *Conn) step12_ProcessPARTOPEN(h *Header) os.Error {
 }
 
 // Step 13, Section 8.5: Process CloseReq
-func (c *Conn) step13_ProcessCloseReq(h *Header) os.Error {
+func (c *Conn) step13_ProcessCloseReq(h *Header) error {
 	if h.Type == CloseReq && c.socket.GetState() < CLOSEREQ {
 		c.inject(c.generateClose())
 		c.gotoCLOSING()
@@ -241,7 +239,7 @@ func (c *Conn) step13_ProcessCloseReq(h *Header) os.Error {
 }
 
 // Step 14, Section 8.5: Process Close
-func (c *Conn) step14_ProcessClose(h *Header) os.Error {
+func (c *Conn) step14_ProcessClose(h *Header) error {
 	if h.Type != Close {
 		return nil
 	}
@@ -253,7 +251,7 @@ func (c *Conn) step14_ProcessClose(h *Header) os.Error {
 }
 
 // Step 15, Section 8.5: Process Sync
-func (c *Conn) step15_ProcessSync(h *Header) os.Error {
+func (c *Conn) step15_ProcessSync(h *Header) error {
 	if h.Type == Sync {
 		c.inject(c.generateSyncAck(h))
 	}
@@ -261,7 +259,7 @@ func (c *Conn) step15_ProcessSync(h *Header) os.Error {
 }
 
 // Step 16, Section 8.5: Process Data
-func (c *Conn) step16_ProcessData(h *Header) os.Error {
+func (c *Conn) step16_ProcessData(h *Header) error {
 	// At this point any application data on P can be passed to the
 	// application, except that the application MUST NOT receive data from
 	// more than one Request or Response

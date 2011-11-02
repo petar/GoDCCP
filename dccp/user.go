@@ -23,7 +23,7 @@ func (c *Conn) GetMTU() int {
 }
 
 // WriteSegment blocks until the slice b is sent.
-func (c *Conn) WriteSegment(b []byte) os.Error {
+func (c *Conn) WriteSegment(b []byte) error {
 	c.writeDataLk.Lock()
 	defer c.writeDataLk.Unlock()
 	if c.writeData == nil {
@@ -35,7 +35,7 @@ func (c *Conn) WriteSegment(b []byte) os.Error {
 
 // ReadSegment blocks until the next packet of application data is received.
 // It returns a non-nil error only if the connection has been closed.
-func (c *Conn) ReadSegment() (b []byte, err os.Error) {
+func (c *Conn) ReadSegment() (b []byte, err error) {
 	b, ok := <-c.readApp
 	if !ok {
 		// The connection has been closed
@@ -45,7 +45,7 @@ func (c *Conn) ReadSegment() (b []byte, err os.Error) {
 }
 
 // Close closes the connection, Section 8.3
-func (c *Conn) Close() os.Error {
+func (c *Conn) Close() error {
 	c.Lock()
 	defer c.Unlock()
 	switch c.socket.GetState() {
@@ -70,6 +70,6 @@ func (c *Conn) LocalLabel() Bytes { return c.hc.LocalLabel() }
 
 func (c *Conn) RemoteLabel() Bytes { return c.hc.RemoteLabel() }
 
-func (c *Conn) SetReadTimeout(nsec int64) os.Error {
+func (c *Conn) SetReadTimeout(nsec int64) error {
 	panic("un")
 }

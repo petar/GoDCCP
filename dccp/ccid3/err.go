@@ -4,10 +4,10 @@
 
 package ccid3
 
-import "os"
+import "errors"
 
 // TODO: Annotate each error with the circumstances that can cause it
 var (
-	ErrMissingOption = os.NewError("missing option")
-	ErrNoAck         = os.NewError("packet is not an ack")
+	ErrMissingOption = errors.New("missing option")
+	ErrNoAck         = errors.New("packet is not an ack")
 )

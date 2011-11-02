@@ -5,7 +5,7 @@
 package dccp
 
 import (
-	"os"
+	"errors"
 	"strconv"
 	"strings"
 )
@@ -30,7 +30,7 @@ func (addr *Addr) String() string {
 func (addr *Addr) Address() string { return addr.String() }
 
 // ParseAddr() parses a link address from s@ in string format
-func ParseAddr(s string) (addr *Addr, n int, err os.Error) {
+func ParseAddr(s string) (addr *Addr, n int, err error) {
 	var label *Label
 	label, n, err = ParseLabel(s)
 	if err != nil {
@@ -38,10 +38,10 @@ func ParseAddr(s string) (addr *Addr, n int, err os.Error) {
 	}
 	s = s[n:]
 	if len(s) == 0 {
-		return nil, 0, os.NewError("link addr missing port")
+		return nil, 0, errors.New("link addr missing port")
 	}
 	if s[0] != ':' {
-		return nil, 0, os.NewError("link addr expecting ':'")
+		return nil, 0, errors.New("link addr expecting ':'")
 	}
 	n += 1
 	s = s[1:]
@@ -60,7 +60,7 @@ func ParseAddr(s string) (addr *Addr, n int, err os.Error) {
 }
 
 // Read() reads a link address from p@ in wire format
-func ReadAddr(p []byte) (addr *Addr, n int, err os.Error) {
+func ReadAddr(p []byte) (addr *Addr, n int, err error) {
 	var label *Label
 	label, n, err = ReadLabel(p)
 	if err != nil {
@@ -68,20 +68,20 @@ func ReadAddr(p []byte) (addr *Addr, n int, err os.Error) {
 	}
 	p = p[n:]
 	if len(p) < 2 {
-		return nil, 0, os.NewError("link addr missing port")
+		return nil, 0, errors.New("link addr missing port")
 	}
 	return &Addr{label, Decode2ByteUint(p[0:2])}, n + 2, nil
 }
 
 // Write() writes the link address to p@ in wire format
-func (addr *Addr) Write(p []byte) (n int, err os.Error) {
+func (addr *Addr) Write(p []byte) (n int, err error) {
 	n, err = addr.Label.Write(p)
 	if err != nil {
 		return 0, err
 	}
 	p = p[n:]
 	if len(p) < 2 {
-		return 0, os.NewError("link addr can't fit port")
+		return 0, errors.New("link addr can't fit port")
 	}
 	Encode2ByteUint(addr.Port, p[0:2])
 	return n + 2, nil

@@ -6,7 +6,7 @@ package ccid3
 
 import (
 	//"log"
-	"os"
+
 	"math"
 	"github.com/petar/GoDCCP/dccp"
 )
@@ -40,7 +40,7 @@ func (t *lossReceiver) Init() {
 // returns potentially another header (if available) whose SeqNo is no later.
 // Every header is returned exactly once.
 func (t *lossReceiver) pushPopHeader(ff *dccp.FeedforwardHeader) *dccp.FeedforwardHeader {
-	var popSeqNo int64 = dccp.SEQNOMAX+1
+	var popSeqNo int64 = dccp.SEQNOMAX + 1
 	var pop int
 	for i, ge := range t.pastHeaders {
 		if ge == nil {
@@ -77,7 +77,7 @@ func (t *lossReceiver) skipLength(ackno int64) byte {
 }
 
 // receiver calls OnRead every time a new packet arrives
-func (t *lossReceiver) OnRead(ff *dccp.FeedforwardHeader, rtt int64) os.Error {
+func (t *lossReceiver) OnRead(ff *dccp.FeedforwardHeader, rtt int64) error {
 	ff = t.pushPopHeader(ff)
 	if ff != nil {
 		t.evolveInterval.OnRead(ff, rtt)
@@ -135,7 +135,7 @@ func (t *lossReceiver) LossDigestOption() *LossDigestOption {
 	return &LossDigestOption{
 		// RateInv is the inverse of the loss event rate, rounded UP, as calculated by the receiver.
 		// A value of UnknownLossEventRateInv indicates that no loss events have been observed.
-		RateInv:      t.LossEventRateInv(),
+		RateInv: t.LossEventRateInv(),
 		// NewLoss indicates how many new loss events are reported by the feedback packet carrying this option
 		NewLossCount: 0, // TODO: This is not implemented
 	}
@@ -169,7 +169,7 @@ func (t *lossRateCalculator) Init(nInterval int) {
 }
 
 func intervalWeight(i, nInterval int) float64 {
-	if i < nInterval / 2 {
+	if i < nInterval/2 {
 		return 1.0
 	}
 	return 2.0 * float64(nInterval-i) / float64(nInterval+2)
@@ -222,7 +222,7 @@ type lossHistory struct {
 	pastIntervals []*LossIntervalDetail
 
 	// pushCount equals the total number of intervals pushed onto pastIntervals so far
-	pushCount     int64
+	pushCount int64
 }
 
 const NINTERVAL = 8
@@ -235,7 +235,7 @@ func (h *lossHistory) Init(nInterval int) {
 
 // pushInterval saves li as the most recent finalized loss interval
 func (h *lossHistory) Push(lid *LossIntervalDetail) {
-	h.pastIntervals[int(h.pushCount % int64(len(h.pastIntervals)))] = lid
+	h.pastIntervals[int(h.pushCount%int64(len(h.pastIntervals)))] = lid
 	h.pushCount++
 }
 
@@ -247,5 +247,5 @@ func (h *lossHistory) Len() int {
 // Get returns the i-th element in the history. The 0-th element is the most recent.
 func (h *lossHistory) Get(i int) *LossIntervalDetail {
 	l := int64(len(h.pastIntervals))
-	return h.pastIntervals[int((h.pushCount-1-int64(i)) % l)]
+	return h.pastIntervals[int((h.pushCount-1-int64(i))%l)]
 }

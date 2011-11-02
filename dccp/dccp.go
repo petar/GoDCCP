@@ -4,15 +4,12 @@
 
 package dccp
 
-import (
-	"net"
-	"os"
-)
+import "net"
 
 type Stack struct {
-	mux   *Mux
-	link  Link
-	ccid  CCID
+	mux  *Mux
+	link Link
+	ccid CCID
 }
 
 // NewStack creates a new connection-handling object.
@@ -25,7 +22,7 @@ func NewStack(link Link, ccid CCID) *Stack {
 }
 
 // Dial initiates a new connection to the specified Link-layer address.
-func (s *Stack) Dial(addr net.Addr, serviceCode uint32) (c SegmentConn, err os.Error) {
+func (s *Stack) Dial(addr net.Addr, serviceCode uint32) (c SegmentConn, err error) {
 	bc, err := s.mux.Dial(addr)
 	if err != nil {
 		return nil, err
@@ -37,7 +34,7 @@ func (s *Stack) Dial(addr net.Addr, serviceCode uint32) (c SegmentConn, err os.E
 
 // Accept blocks until a new connecion is established. It then
 // returns the connection.
-func (s *Stack) Accept() (c SegmentConn, err os.Error) {
+func (s *Stack) Accept() (c SegmentConn, err error) {
 	bc, err := s.mux.Accept()
 	if err != nil {
 		return nil, err

@@ -6,7 +6,7 @@ package dccp
 
 import "os"
 
-func (c *Conn) readHeader() (h *Header, err os.Error) {
+func (c *Conn) readHeader() (h *Header, err error) {
 	h, err = c.hc.ReadHeader()
 	if err != nil {
 		if err != ErrTimeout {
@@ -22,7 +22,7 @@ func (c *Conn) readHeader() (h *Header, err os.Error) {
 }
 
 // How often we exit from a blocking call to readHeader, 1 sec in nanoseconds
-const READ_TIMEOUT = 1e9 
+const READ_TIMEOUT = 1e9
 
 // idleLoop polls the congestion control OnIdle method at regular intervals
 // of approximately one RTT.

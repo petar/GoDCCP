@@ -4,13 +4,9 @@
 
 package dccp
 
-import (
-	"os"
-)
-
 const (
-	TenMicroInNano = 1e4 // 10 microseconds in nanoseconds
-	OneSecInTenMicro  = 1e5 // 1 seconds in ten microsecond units
+	TenMicroInNano   = 1e4 // 10 microseconds in nanoseconds
+	OneSecInTenMicro = 1e5 // 1 seconds in ten microsecond units
 )
 
 // —————
@@ -21,7 +17,7 @@ type TimestampOption struct {
 	Timestamp uint32
 }
 
-func (opt *TimestampOption) Encode() (*Option, os.Error) {
+func (opt *TimestampOption) Encode() (*Option, error) {
 	return &Option{
 		Type:      OptionTimestamp,
 		Data:      encodeTimestamp(opt.Timestamp, make([]byte, 4)),
@@ -66,7 +62,7 @@ type ElapsedTimeOption struct {
 
 const MaxElapsedTime = 4294967295 // Maximum distinguishable elapsed time in ten microsecond units
 
-func (opt *ElapsedTimeOption) Encode() (*Option, os.Error) {
+func (opt *ElapsedTimeOption) Encode() (*Option, error) {
 	return &Option{
 		Type:      OptionElapsedTime,
 		Data:      encodeElapsed(opt.Elapsed, make([]byte, 4)),
@@ -103,7 +99,7 @@ func DecodeElapsedTimeOption(opt *Option) *ElapsedTimeOption {
 	}
 }
 
-func decodeElapsed(d []byte) (uint32, os.Error) {
+func decodeElapsed(d []byte) (uint32, error) {
 	var t uint32
 	switch len(d) {
 	case 2:
@@ -123,17 +119,17 @@ type TimestampEchoOption struct {
 	// The timestamp echo option value in 10 microsecond circular units
 	Timestamp uint32
 	// The elapsed time in nanoseconds
-	Elapsed   uint32
+	Elapsed uint32
 }
 
-func (opt *TimestampEchoOption) Encode() (*Option, os.Error) {
+func (opt *TimestampEchoOption) Encode() (*Option, error) {
 	d := make([]byte, 8)
 	encodeTimestamp(opt.Timestamp, d[0:4])
 	if opt.Elapsed == 0 {
 		d = d[0:4]
 	} else {
 		l := len(encodeElapsed(opt.Elapsed, d[4:]))
-		d = d[0:4+l]
+		d = d[0 : 4+l]
 	}
 	// The size of d can be 4, 6 or 8
 	return &Option{
@@ -151,7 +147,7 @@ func DecodeTimestampEchoOption(opt *Option) *TimestampEchoOption {
 	}
 	var elapsed uint32
 	if len(opt.Data) > 4 {
-		var err os.Error
+		var err error
 		elapsed, err = decodeElapsed(opt.Data[4:])
 		if err != nil {
 			return nil

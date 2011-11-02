@@ -4,18 +4,15 @@
 
 package ccid3
 
-import (
-	"os"
-	"github.com/petar/GoDCCP/dccp"
-)
+import "github.com/petar/GoDCCP/dccp"
 
 // —————
 // lossTracker processes loss intervals options received at the sender and maintains relevant loss
 // statistics.
 type lossTracker struct {
 	dccp.Logger
-	lastAckNo   int64   // SeqNo of the last ack'd segment; equals the AckNo of the last feedback
-	lastRateInv uint32  // Last known value of loss event rate inverse
+	lastAckNo   int64  // SeqNo of the last ack'd segment; equals the AckNo of the last feedback
+	lastRateInv uint32 // Last known value of loss event rate inverse
 	lossRateCalculator
 }
 
@@ -34,13 +31,13 @@ func (t *lossTracker) calcRateInv(details []*LossIntervalDetail) uint32 {
 
 // LossFeedback contains summary of loss information updates returned by OnRead
 type LossFeedback struct {
-	RateInv      uint32  // Loss event rate inverse
+	RateInv      uint32 // Loss event rate inverse
 	NewLossCount byte   // Number of loss events reported in this feedback packet
-	RateInc      bool    // Has the loss rate increased since the last feedback packet
+	RateInc      bool   // Has the loss rate increased since the last feedback packet
 }
 
 // Sender calls OnRead whenever a new feedback packet arrives
-func (t *lossTracker) OnRead(fb *dccp.FeedbackHeader) (LossFeedback, os.Error) {
+func (t *lossTracker) OnRead(fb *dccp.FeedbackHeader) (LossFeedback, error) {
 
 	// Read the loss options
 	if fb.Type != dccp.Ack && fb.Type != dccp.DataAck {
@@ -62,7 +59,7 @@ func (t *lossTracker) OnRead(fb *dccp.FeedbackHeader) (LossFeedback, os.Error) {
 	var r LossFeedback
 	details := recoverIntervalDetails(fb.AckNo, lossIntervals.SkipLength, lossIntervals.LossIntervals)
 	r.NewLossCount = calcNewLossCount(details, t.lastAckNo)
-	
+
 	// Calculate new rate inverse
 	rateInv := t.calcRateInv(details)
 	r.RateInv = rateInv

@@ -4,8 +4,6 @@
 
 package dccp
 
-import "os"
-
 // We use a subset of DCCP, defined as follows:
 //	X=1
 //      allowShortSeqNoFeature=0
@@ -18,19 +16,19 @@ import "os"
 // (3) Application Data
 
 type Header struct {
-	SourcePort  uint16   // Sender port
-	DestPort    uint16   // Receiver port
-	CCVal       byte     // Used by the HC-Sender's CCID to transmit 4-bit values
-	CsCov       byte     // Specifies the parts of packet covered by the checksum
-	Type        byte     // Packet type: Data, Ack, Sync, etc.
-	X           bool     // Extended seq numbers: generally always true (for us)
-	SeqNo       int64    // 48-bit if X=1
-	AckNo       int64    // 48-bit if X=1
-	ServiceCode uint32   // ServiceCode: Applicaton level service (in Req,Resp pkts)
-	ResetCode   byte     // ResetCode: Reason for reset (in Reset pkts)
-	ResetData   []byte   // ResetData: Additional reset info (in Reset pkts)
+	SourcePort  uint16    // Sender port
+	DestPort    uint16    // Receiver port
+	CCVal       byte      // Used by the HC-Sender's CCID to transmit 4-bit values
+	CsCov       byte      // Specifies the parts of packet covered by the checksum
+	Type        byte      // Packet type: Data, Ack, Sync, etc.
+	X           bool      // Extended seq numbers: generally always true (for us)
+	SeqNo       int64     // 48-bit if X=1
+	AckNo       int64     // 48-bit if X=1
+	ServiceCode uint32    // ServiceCode: Applicaton level service (in Req,Resp pkts)
+	ResetCode   byte      // ResetCode: Reason for reset (in Reset pkts)
+	ResetData   []byte    // ResetData: Additional reset info (in Reset pkts)
 	Options     []*Option // Used for feature negotiation, padding, mandatory flags
-	Data        []byte   // Application data (in Req, Resp, Data, DataAck pkts) 
+	Data        []byte    // Application data (in Req, Resp, Data, DataAck pkts) 
 	// Ignored (in Ack, Close, CloseReq, Sync, SyncAck pkts)
 	// Error text (in Reset pkts)
 }
@@ -200,7 +198,7 @@ const (
 
 // getChecksumAppCoverage() computes how many bytes of the
 // app data is covered by the checksum, not counting neccessary padding
-func getChecksumAppCoverage(CsCov byte, dataLen int) (int, os.Error) {
+func getChecksumAppCoverage(CsCov byte, dataLen int) (int, error) {
 	if CsCov > 15 {
 		return 0, ErrCsCov
 	}

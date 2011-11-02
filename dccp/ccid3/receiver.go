@@ -4,13 +4,10 @@
 
 package ccid3
 
-import (
-	"os"
-	"github.com/petar/GoDCCP/dccp"
-)
+import "github.com/petar/GoDCCP/dccp"
 
 func newReceiver(logger dccp.Logger) *receiver {
-	return &receiver{ Logger: logger }
+	return &receiver{Logger: logger}
 }
 
 // —————
@@ -22,26 +19,26 @@ type receiver struct {
 	receiveRate
 	lossReceiver
 
-	open                 bool     // Whether the CC is active
+	open bool // Whether the CC is active
 
-	lastWrite            int64    // The timestamp of the last call to OnWrite
-	lastAck              int64    // The timestamp of the last call to OnWrite with an Ack packet type
-	dataSinceAck         bool     // True if data packets have been received since the last Ack
-	lastLossEventRateInv uint32   // The inverse loss event rate sent in the last Ack packet
+	lastWrite            int64  // The timestamp of the last call to OnWrite
+	lastAck              int64  // The timestamp of the last call to OnWrite with an Ack packet type
+	dataSinceAck         bool   // True if data packets have been received since the last Ack
+	lastLossEventRateInv uint32 // The inverse loss event rate sent in the last Ack packet
 
 	// The following fields are used to compute ElapsedTime options
-	gsr                  int64    // Greatest sequence number of packet received via OnRead
-	gsrTimestamp         int64    // Timestamp of packet with greatest sequence number received via OnRead
+	gsr          int64 // Greatest sequence number of packet received via OnRead
+	gsrTimestamp int64 // Timestamp of packet with greatest sequence number received via OnRead
 
 	// The greatest received value of the window counter since the last feedback message was sent
-	lastCCVal            byte
+	lastCCVal byte
 	// The window counter of the latest received packet. Used internally to update lastCCVal.
-	latestCCVal          byte
+	latestCCVal byte
 }
 
 // GetID() returns the CCID of this congestion control algorithm
-func (r *receiver) GetID() byte { 
-	return dccp.CCID3 
+func (r *receiver) GetID() byte {
+	return dccp.CCID3
 }
 
 // Open tells the Congestion Control that the connection has entered
@@ -78,8 +75,8 @@ func (r *receiver) makeElapsedTimeOption(ackNo int64, now int64) *dccp.ElapsedTi
 	if ackNo != r.gsr {
 		panic("ccid3 receiver: GSR != AckNo")
 	}
-	elapsedNS := max64(0, now - r.gsrTimestamp)
-	return &dccp.ElapsedTimeOption{ dccp.TenUSFromNS(elapsedNS) }
+	elapsedNS := max64(0, now-r.gsrTimestamp)
+	return &dccp.ElapsedTimeOption{dccp.TenUSFromNS(elapsedNS)}
 }
 
 // Conn calls OnWrite before a packet is sent to give CongestionControl
@@ -93,7 +90,7 @@ func (r *receiver) OnWrite(ph *dccp.PreHeader) (options []*dccp.Option) {
 	if !r.open {
 		return nil
 	}
-	
+
 	switch ph.Type {
 	case dccp.Ack:
 		// Record last Ack write separately from last writes (in general)
@@ -133,7 +130,7 @@ func (r *receiver) OnWrite(ph *dccp.PreHeader) (options []*dccp.Option) {
 // Conn calls OnRead after a packet has been accepted and validated
 // If OnRead returns ErrDrop, the packet will be dropped and no further processing
 // will occur. If the CC is not active, OnRead MUST return nil.
-func (r *receiver) OnRead(ff *dccp.FeedforwardHeader) os.Error {
+func (r *receiver) OnRead(ff *dccp.FeedforwardHeader) error {
 	r.Lock()
 	defer r.Unlock()
 	if !r.open {
@@ -159,7 +156,7 @@ func (r *receiver) OnRead(ff *dccp.FeedforwardHeader) os.Error {
 	// (Feedback-Condition-III) If receive window counter increases by 4 or more on a data
 	// packet, since last time feedback was sent
 	if ff.Type == dccp.Data || ff.Type == dccp.DataAck {
-		if !lessWindowCounterMod(ff.CCVal, (r.lastCCVal+4) % WindowCounterMod) {
+		if !lessWindowCounterMod(ff.CCVal, (r.lastCCVal+4)%WindowCounterMod) {
 			return dccp.CongestionAck
 		}
 	}
@@ -168,7 +165,7 @@ func (r *receiver) OnRead(ff *dccp.FeedforwardHeader) os.Error {
 }
 
 // OnIdle behaves identically to the same method of the HC-Sender CCID
-func (r *receiver) OnIdle(now int64) os.Error {
+func (r *receiver) OnIdle(now int64) error {
 	r.Lock()
 	defer r.Unlock()
 	if !r.open {
@@ -179,7 +176,7 @@ func (r *receiver) OnIdle(now int64) os.Error {
 
 	// (Feedback-Condition-I) If one (estimated) round-trip time time has expired since last Ack
 	// AND data packets have been received in the meantime
-	if r.dataSinceAck && now - r.lastWrite > r.rttReceiver.RTT(now) {
+	if r.dataSinceAck && now-r.lastWrite > r.rttReceiver.RTT(now) {
 		return dccp.CongestionAck
 	}
 

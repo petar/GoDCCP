@@ -58,7 +58,7 @@ func NewMux(link Link) *Mux {
 }
 
 // Accept() returns the first incoming flow request
-func (m *Mux) Accept() (c SegmentConn, err os.Error) {
+func (m *Mux) Accept() (c SegmentConn, err error) {
 	f, ok := <-m.acceptChan
 	if !ok {
 		return nil, os.EBADF
@@ -67,7 +67,7 @@ func (m *Mux) Accept() (c SegmentConn, err os.Error) {
 }
 
 // Dial opens a packet-based connection to the Link-layer addr
-func (m *Mux) Dial(addr net.Addr) (c SegmentConn, err os.Error) {
+func (m *Mux) Dial(addr net.Addr) (c SegmentConn, err error) {
 	ch := make(chan muxHeader)
 	local := ChooseLabel()
 	f := newFlow(addr, m, ch, m.cargoMaxLen(), local, nil)
@@ -81,7 +81,7 @@ func (m *Mux) Dial(addr net.Addr) (c SegmentConn, err os.Error) {
 
 // Close() closes the mux and signals all outstanding connections
 // that it is time to terminate
-func (m *Mux) Close() os.Error {
+func (m *Mux) Close() error {
 	m.Lock()
 	link := m.link
 	m.link = nil
@@ -109,7 +109,7 @@ func (m *Mux) readLoop() {
 		}
 
 		// Read incoming packet
-		buf := make([]byte, m.link.GetMTU() + MuxReadSafety)
+		buf := make([]byte, m.link.GetMTU()+MuxReadSafety)
 		n, addr, err := link.ReadFrom(buf)
 		if err != nil {
 			break
@@ -201,7 +201,7 @@ func (m *Mux) accept(remote *Label, addr net.Addr) *flow {
 }
 
 // readMuxHeader() reads a header consisting of mux-specific flow information followed by data
-func readMuxHeader(p []byte) (msg *muxMsg, cargo []byte, err os.Error) {
+func readMuxHeader(p []byte) (msg *muxMsg, cargo []byte, err error) {
 	msg, n, err := readMuxMsg(p)
 	if err != nil {
 		return nil, nil, err
@@ -294,12 +294,12 @@ func (m *Mux) expireLingeringLoop() {
 		m.Lock()
 		for h, t := range m.lingerLocal {
 			if now-t >= MuxLingerTime {
-				m.lingerLocal[h] = 0, false
+				delete(m.lingerLocal, h)
 			}
 		}
 		for h, t := range m.lingerRemote {
 			if now-t >= MuxLingerTime {
-				m.lingerRemote[h] = 0, false
+				delete(m.lingerRemote, h)
 			}
 		}
 		m.Unlock()
@@ -313,13 +313,13 @@ func (m *Mux) del(local *Label, remote *Label) {
 
 	now := time.Nanoseconds()
 	if local != nil {
-		m.flowsLocal[local.Hash()] = nil, false
+		delete(m.flowsLocal, local.Hash())
 		if _, alreadyClosed := m.lingerLocal[local.Hash()]; !alreadyClosed {
 			m.lingerLocal[local.Hash()] = now
 		}
 	}
 	if remote != nil {
-		m.flowsRemote[remote.Hash()] = nil, false
+		delete(m.flowsRemote, remote.Hash())
 		if _, alreadyClosed := m.lingerRemote[remote.Hash()]; !alreadyClosed {
 			m.lingerRemote[remote.Hash()] = now
 		}
@@ -328,7 +328,7 @@ func (m *Mux) del(local *Label, remote *Label) {
 
 func (m *Mux) cargoMaxLen() int { return m.link.GetMTU() - muxMsgFootprint }
 
-func (m *Mux) write(msg *muxMsg, block []byte, addr net.Addr) os.Error {
+func (m *Mux) write(msg *muxMsg, block []byte, addr net.Addr) error {
 	m.Lock()
 	link := m.link
 	m.Unlock()

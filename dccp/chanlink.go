@@ -21,15 +21,15 @@ func NewChanPipe() (p, q *ChanLink) {
 	return &ChanLink{in: c0, out: c1}, &ChanLink{in: c1, out: c0}
 }
 
-func (l *ChanLink) GetMTU() int { 
-	return 1500 
+func (l *ChanLink) GetMTU() int {
+	return 1500
 }
 
-func (l *ChanLink) SetReadTimeout(nsec int64) os.Error {
+func (l *ChanLink) SetReadTimeout(nsec int64) error {
 	return nil
 }
 
-func (l *ChanLink) ReadFrom(buf []byte) (n int, addr net.Addr, err os.Error) {
+func (l *ChanLink) ReadFrom(buf []byte) (n int, addr net.Addr, err error) {
 	l.Lock()
 	in := l.in
 	l.Unlock()
@@ -48,7 +48,7 @@ func (l *ChanLink) ReadFrom(buf []byte) (n int, addr net.Addr, err os.Error) {
 	return len(p), nil, nil
 }
 
-func (l *ChanLink) WriteTo(buf []byte, addr net.Addr) (n int, err os.Error) {
+func (l *ChanLink) WriteTo(buf []byte, addr net.Addr) (n int, err error) {
 	l.Lock()
 	out := l.out
 	l.Unlock()
@@ -62,7 +62,7 @@ func (l *ChanLink) WriteTo(buf []byte, addr net.Addr) (n int, err os.Error) {
 	return len(buf), nil
 }
 
-func (l *ChanLink) Close() os.Error {
+func (l *ChanLink) Close() error {
 	l.Lock()
 	defer l.Unlock()
 

@@ -4,8 +4,6 @@
 
 package dccp
 
-import "os"
-
 // muxMsg{} contains the source and destination labels of a flow.
 type muxMsg struct {
 	Source, Sink *Label
@@ -14,7 +12,7 @@ type muxMsg struct {
 const muxMsgFootprint = 2 * labelFootprint
 
 // readMuxMsg() decodes a muxMsg{} from wire format
-func readMuxMsg(p []byte) (msg *muxMsg, n int, err os.Error) {
+func readMuxMsg(p []byte) (msg *muxMsg, n int, err error) {
 	source, n0, err := ReadLabel(p)
 	if err != nil {
 		return nil, 0, err
@@ -27,7 +25,7 @@ func readMuxMsg(p []byte) (msg *muxMsg, n int, err os.Error) {
 }
 
 // Write() encodes the muxMsg{} to p@ in wire format
-func (msg *muxMsg) Write(p []byte) (n int, err os.Error) {
+func (msg *muxMsg) Write(p []byte) (n int, err error) {
 	n0, err := msg.Source.Write(p)
 	if err != nil {
 		return 0, err

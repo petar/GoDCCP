@@ -4,13 +4,10 @@
 
 package ccid3
 
-import (
-	"os"
-	"github.com/petar/GoDCCP/dccp"
-)
+import "github.com/petar/GoDCCP/dccp"
 
 func newSender(logger dccp.Logger) *sender {
-	return &sender{ Logger: logger }
+	return &sender{Logger: logger}
 }
 
 // —————
@@ -36,10 +33,10 @@ func (s *sender) GetID() byte { return dccp.CCID3 }
 func (s *sender) GetCCMPS() int32 { return FixedSegmentSize }
 
 // GetRTT returns the Round-Trip Time as measured by this CCID
-func (s *sender) GetRTT() int64 { 
+func (s *sender) GetRTT() int64 {
 	s.Lock()
 	defer s.Unlock()
-	rtt, _ := s.rttSender.RTT() 
+	rtt, _ := s.rttSender.RTT()
 	return rtt
 }
 
@@ -87,7 +84,7 @@ func (s *sender) OnWrite(ph *dccp.PreHeader) (ccval byte, options []*dccp.Option
 // If OnRead returns ErrDrop, the packet will be dropped and no further processing
 // will occur. If OnRead returns ResetError, the connection will be reset.
 // If the CC is not active, OnRead MUST return nil.
-func (s *sender) OnRead(fb *dccp.FeedbackHeader) os.Error {
+func (s *sender) OnRead(fb *dccp.FeedbackHeader) error {
 	s.Lock()
 	defer s.Unlock()
 
@@ -108,7 +105,7 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) os.Error {
 
 	// Window counter update
 	s.windowCounter.OnRead(fb.AckNo)
-	
+
 	// Update loss estimates
 	lossFeedback, err := s.lossTracker.OnRead(fb)
 	if err != nil {
@@ -135,7 +132,7 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) os.Error {
 	return nil
 }
 
-func readReceiveRate(fb *dccp.FeedbackHeader) (xrecv uint32, err os.Error) {
+func readReceiveRate(fb *dccp.FeedbackHeader) (xrecv uint32, err error) {
 	if fb.Type != dccp.Ack && fb.Type != dccp.DataAck {
 		return 0, ErrNoAck
 	}
@@ -167,14 +164,14 @@ func (s *sender) Strobe() {
 }
 
 // OnIdle is called periodically. If the CC is not active, OnIdle MUST to return nil.
-func (s *sender) OnIdle(now int64) os.Error {
+func (s *sender) OnIdle(now int64) error {
 	s.Lock()
 	defer s.Unlock()
 
 	if !s.open {
 		return nil
 	}
-	
+
 	if s.nofeedbackTimer.IsExpired(now) {
 		idleSince, nofeedbackSet := s.nofeedbackTimer.GetIdleSinceAndReset()
 		_, hasRTT := s.rttSender.RTT()

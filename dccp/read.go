@@ -4,13 +4,10 @@
 
 package dccp
 
-import (
-	//"fmt"
-	"os"
-)
+//"fmt"
 
 // verifyIPAndProto() checks that both sourceIP# and destIP# are valid for protoNo#
-func verifyIPAndProto(sourceIP, destIP []byte, protoNo byte) os.Error {
+func verifyIPAndProto(sourceIP, destIP []byte, protoNo byte) error {
 	if sourceIP == nil || destIP == nil {
 		return ErrIPFormat
 	}
@@ -23,7 +20,7 @@ func verifyIPAndProto(sourceIP, destIP []byte, protoNo byte) os.Error {
 func ReadHeader(buf []byte,
 	sourceIP, destIP []byte,
 	protoNo byte,
-	allowShortSeqNoFeature bool) (header *Header, err os.Error) {
+	allowShortSeqNoFeature bool) (header *Header, err error) {
 
 	err = verifyIPAndProto(sourceIP, destIP, protoNo)
 	if err != nil {
@@ -160,7 +157,7 @@ func ReadHeader(buf []byte,
 	return gh, nil
 }
 
-func readOptions(buf []byte) ([]*Option, os.Error) {
+func readOptions(buf []byte) ([]*Option, error) {
 	if len(buf)&0x3 != 0 {
 		return nil, ErrAlign
 	}
@@ -205,7 +202,7 @@ func readOptions(buf []byte) ([]*Option, os.Error) {
 	return opts[0:j], nil
 }
 
-func sanitizeOptionsAfterReading(Type byte, opts []*Option) ([]*Option, os.Error) {
+func sanitizeOptionsAfterReading(Type byte, opts []*Option) ([]*Option, error) {
 	r := make([]*Option, len(opts))
 	j := 0
 

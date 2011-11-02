@@ -4,8 +4,6 @@
 
 package dccp
 
-import "os"
-
 // After '8.1.2. Service Codes'
 
 func isValidServiceCode(sc uint32) bool { return sc != 4294967295 }
@@ -61,7 +59,7 @@ func ServiceCodeString(code uint32) string {
 	return "SC:" + string(serviceCodeToSlice(code))
 }
 
-func ParseServiceCode(p []byte) (uint32, os.Error) {
+func ParseServiceCode(p []byte) (uint32, error) {
 	if len(p) != 7 {
 		return 0, ErrSyntax
 	}

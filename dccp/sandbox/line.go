@@ -5,6 +5,7 @@
 package sandbox
 
 import (
+	"io"
 	"os"
 	"sync"
 	"time"
@@ -37,14 +38,14 @@ type headerHalfLine struct {
 	wlock sync.Mutex
 	write chan<- *dccp.Header
 
-	glock   sync.Mutex
-	gap           int64  // Length of time interval for ...
+	glock         sync.Mutex
+	gap           int64 // Length of time interval for ...
 	packetsPerGap uint32
 	gapCounter    int64  // UTC time in gap units
 	gapFill       uint32 // Number of segments transmitted during the gap in gapCounter
 }
 
-func (hhl *headerHalfLine) Init(name string, logger dccp.Logger, 
+func (hhl *headerHalfLine) Init(name string, logger dccp.Logger,
 	r <-chan *dccp.Header, w chan<- *dccp.Header, gap int64, packetsPerGap uint32) {
 
 	hhl.name = name
@@ -58,11 +59,11 @@ func (hhl *headerHalfLine) GetMTU() int {
 	return SegmentSize
 }
 
-func (hhl *headerHalfLine) ReadHeader() (h *dccp.Header, err os.Error) {
+func (hhl *headerHalfLine) ReadHeader() (h *dccp.Header, err error) {
 	h, ok := <-hhl.read
 	if !ok {
 		hhl.Logger.Logf(hhl.name, "Warn", h.SeqNo, h.AckNo, "Read EOF")
-		return nil, os.EOF
+		return nil, io.EOF
 	}
 	hhl.Logger.Logf(hhl.name, "Read", h.SeqNo, h.AckNo, "SeqNo=%d", h.SeqNo)
 	return h, nil
@@ -77,7 +78,7 @@ func (hhl *headerHalfLine) SetRate(gap int64, packetsPerGap uint32) {
 	hhl.gapFill = 0
 }
 
-func (hhl *headerHalfLine) WriteHeader(h *dccp.Header) (err os.Error) {
+func (hhl *headerHalfLine) WriteHeader(h *dccp.Header) (err error) {
 	hhl.wlock.Lock()
 	defer hhl.wlock.Unlock()
 
@@ -85,7 +86,7 @@ func (hhl *headerHalfLine) WriteHeader(h *dccp.Header) (err os.Error) {
 		hhl.Logger.Logf(hhl.name, "Drop", h.SeqNo, h.AckNo, "SeqNo=%d EBADF", h.SeqNo)
 		return os.EBADF
 	}
-	
+
 	if hhl.rateFilter() {
 		hhl.write <- h
 		hhl.Logger.Logf(hhl.name, "Write", h.SeqNo, h.AckNo, "SeqNo=%d", h.SeqNo)
@@ -112,7 +113,7 @@ func (hhl *headerHalfLine) rateFilter() bool {
 	return false
 }
 
-func (hhl *headerHalfLine) Close() os.Error { 
+func (hhl *headerHalfLine) Close() error {
 	hhl.wlock.Lock()
 	defer hhl.wlock.Unlock()
 
@@ -127,14 +128,14 @@ func (hhl *headerHalfLine) Close() os.Error {
 	return nil
 }
 
-func (hhl *headerHalfLine) LocalLabel() dccp.Bytes { 
+func (hhl *headerHalfLine) LocalLabel() dccp.Bytes {
 	return &dccp.Label{}
 }
 
-func (hhl *headerHalfLine) RemoteLabel() dccp.Bytes { 
+func (hhl *headerHalfLine) RemoteLabel() dccp.Bytes {
 	return &dccp.Label{}
 }
 
-func (hhl *headerHalfLine) SetReadTimeout(nsec int64) os.Error { 
+func (hhl *headerHalfLine) SetReadTimeout(nsec int64) error {
 	return nil
 }

@@ -4,14 +4,11 @@
 
 package dccp
 
-import (
-	//"fmt"
-	"os"
-)
+//"fmt"
 
 // getFootprint() retutns the option's wire footprint, which includes
 // a preceding Mandatory option on the wire, if necessary
-func (opt *Option) getFootprint() (int, os.Error) {
+func (opt *Option) getFootprint() (int, error) {
 	if opt.Type == OptionPadding || opt.Type == OptionMandatory {
 		return 0, ErrOption
 	}
@@ -40,7 +37,7 @@ func (opt *Option) getFootprint() (int, os.Error) {
 // getOptionsFootprint() returns the size of the options part of the header,
 // while not including any space for options whose type is not compatible with
 // the type of the header
-func (gh *Header) getOptionsFootprint() (int, os.Error) {
+func (gh *Header) getOptionsFootprint() (int, error) {
 	if gh.Options == nil {
 		return 0, nil
 	}
@@ -65,7 +62,7 @@ func (gh *Header) getOptionsFootprint() (int, os.Error) {
 }
 
 // getHeaderFootprint() returns the size of the wire-format packet header (excluding app data)
-func (gh *Header) getHeaderFootprint(allowShortSeqNoFeature bool) (int, os.Error) {
+func (gh *Header) getHeaderFootprint(allowShortSeqNoFeature bool) (int, error) {
 
 	// Check that X and Type are compatible
 	if !areTypeAndXCompatible(gh.Type, gh.X, allowShortSeqNoFeature) {
@@ -94,7 +91,7 @@ func (gh *Header) getHeaderFootprint(allowShortSeqNoFeature bool) (int, os.Error
 // part which simply equals the slice Header.Data
 func (gh *Header) Write(sourceIP, destIP []byte,
 	protoNo byte,
-	allowShortSeqNoFeature bool) (header []byte, err os.Error) {
+	allowShortSeqNoFeature bool) (header []byte, err error) {
 
 	err = verifyIPAndProto(sourceIP, destIP, protoNo)
 	if err != nil {
@@ -214,7 +211,7 @@ func (gh *Header) Write(sourceIP, destIP []byte,
 }
 
 func writeOptions(opts []*Option, buf []byte, Type byte) {
-	if len(buf) & 0x3 != 0 {
+	if len(buf)&0x3 != 0 {
 		panic("logic")
 	}
 	k := 0

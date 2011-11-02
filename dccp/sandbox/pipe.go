@@ -5,6 +5,7 @@
 package sandbox
 
 import (
+	"io"
 	"os"
 	"sync"
 	"github.com/petar/GoDCCP/dccp"
@@ -19,9 +20,9 @@ func NewHeaderPipe() (ha, hb dccp.HeaderConn) {
 }
 
 type headerHalfPipe struct {
-	read  <-chan *dccp.Header
+	read       <-chan *dccp.Header
 	sync.Mutex // Lock for manipulating the write channel
-	write chan<- *dccp.Header
+	write      chan<- *dccp.Header
 }
 
 const SegmentSize = 1500
@@ -30,15 +31,15 @@ func (hhp *headerHalfPipe) GetMTU() int {
 	return SegmentSize
 }
 
-func (hhp *headerHalfPipe) ReadHeader() (h *dccp.Header, err os.Error) {
+func (hhp *headerHalfPipe) ReadHeader() (h *dccp.Header, err error) {
 	h, ok := <-hhp.read
 	if !ok {
-		return nil, os.EOF
+		return nil, io.EOF
 	}
 	return h, nil
 }
 
-func (hhp *headerHalfPipe) WriteHeader(h *dccp.Header) (err os.Error) {
+func (hhp *headerHalfPipe) WriteHeader(h *dccp.Header) (err error) {
 	hhp.Lock()
 	defer hhp.Unlock()
 	if hhp.write == nil {
@@ -48,7 +49,7 @@ func (hhp *headerHalfPipe) WriteHeader(h *dccp.Header) (err os.Error) {
 	return nil
 }
 
-func (hhp *headerHalfPipe) Close() os.Error { 
+func (hhp *headerHalfPipe) Close() error {
 	hhp.Lock()
 	defer hhp.Unlock()
 
@@ -60,14 +61,14 @@ func (hhp *headerHalfPipe) Close() os.Error {
 	return nil
 }
 
-func (hhp *headerHalfPipe) LocalLabel() dccp.Bytes { 
+func (hhp *headerHalfPipe) LocalLabel() dccp.Bytes {
 	return &dccp.Label{}
 }
 
-func (hhp *headerHalfPipe) RemoteLabel() dccp.Bytes { 
+func (hhp *headerHalfPipe) RemoteLabel() dccp.Bytes {
 	return &dccp.Label{}
 }
 
-func (hhp *headerHalfPipe) SetReadTimeout(nsec int64) os.Error { 
+func (hhp *headerHalfPipe) SetReadTimeout(nsec int64) error {
 	return nil
 }

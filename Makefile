@@ -14,6 +14,7 @@ all: install
 
 DIRS=\
      	dccp\
+     	dccp/gauge\
      	dccp/sandbox\
      	dccp/ccid3\
 	retransmit\

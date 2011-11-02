@@ -4,14 +4,11 @@
 
 package dccp
 
-import (
-	"os"
-)
-
 type CCFixed struct {
+
 }
 
-func (CCFixed) NewSender(logger Logger) SenderCongestionControl { 
+func (CCFixed) NewSender(logger Logger) SenderCongestionControl {
 	return newFixedRateSenderControl(1e9) // one packet per second. sendsPerSecond
 }
 
@@ -23,14 +20,14 @@ func (CCFixed) NewReceiver(logger Logger) ReceiverCongestionControl {
 
 type fixedRateSenderControl struct {
 	Mutex
-	every  int64 // Strobe every every nanoseconds
+	every       int64 // Strobe every every nanoseconds
 	strobeRead  chan int
 	strobeWrite chan int
 }
 
 func newFixedRateSenderControl(every int64) *fixedRateSenderControl {
 	strobe := make(chan int)
-	return &fixedRateSenderControl{ every: every, strobeRead: strobe, strobeWrite: strobe }
+	return &fixedRateSenderControl{every: every, strobeRead: strobe, strobeWrite: strobe}
 }
 
 func (scc *fixedRateSenderControl) Open() {
@@ -56,28 +53,30 @@ func (scc *fixedRateSenderControl) GetCCMPS() int32 { return 1e9 }
 
 func (scc *fixedRateSenderControl) GetRTT() int64 { return RTT_DEFAULT }
 
-func (scc *fixedRateSenderControl) OnWrite(ph *PreHeader) (ccval byte, options []*Option) { return 0, nil }
-
-func (scc *fixedRateSenderControl) OnRead(fb *FeedbackHeader) os.Error { return nil }
-
-func (scc *fixedRateSenderControl) OnIdle(now int64) os.Error { return nil }
-
-func (scc *fixedRateSenderControl) Strobe() {
-	<-scc.strobeRead 
+func (scc *fixedRateSenderControl) OnWrite(ph *PreHeader) (ccval byte, options []*Option) {
+	return 0, nil
 }
 
-func (scc *fixedRateSenderControl) Close() { 
+func (scc *fixedRateSenderControl) OnRead(fb *FeedbackHeader) error { return nil }
+
+func (scc *fixedRateSenderControl) OnIdle(now int64) error { return nil }
+
+func (scc *fixedRateSenderControl) Strobe() {
+	<-scc.strobeRead
+}
+
+func (scc *fixedRateSenderControl) Close() {
 	scc.Lock()
 	defer scc.Unlock()
 	if scc.strobeWrite != nil {
-		close(scc.strobeWrite) 
+		close(scc.strobeWrite)
 		scc.strobeWrite = nil
 	}
 }
 
 // ---> Fixed-rate HC-Receiver Congestion Control
 
-type fixedRateReceiverControl struct {}
+type fixedRateReceiverControl struct{}
 
 func newFixedRateReceiverControl() *fixedRateReceiverControl {
 	return &fixedRateReceiverControl{}
@@ -89,8 +88,8 @@ func (rcc *fixedRateReceiverControl) GetID() byte { return CCID_FIXED }
 
 func (rcc *fixedRateReceiverControl) OnWrite(ph *PreHeader) (options []*Option) { return nil }
 
-func (rcc *fixedRateReceiverControl) OnRead(ff *FeedforwardHeader) os.Error { return nil }
+func (rcc *fixedRateReceiverControl) OnRead(ff *FeedforwardHeader) error { return nil }
 
-func (rcc *fixedRateReceiverControl) OnIdle(now int64) os.Error { return nil }
+func (rcc *fixedRateReceiverControl) OnIdle(now int64) error { return nil }
 
 func (rcc *fixedRateReceiverControl) Close() {}

@@ -4,10 +4,7 @@
 
 package dccp
 
-import (
-	"net"
-	"os"
-)
+import "net"
 
 // Link is an abstract interface to a physical connection-less packet layer which sends and
 // receives packets
@@ -15,17 +12,17 @@ type Link interface {
 
 	// Returns the Maximum Transmission Unit
 	// Writes smaller than this are guaranteed to be sent whole
-	GetMTU() int                                              
+	GetMTU() int
 
 	// ReadFrom receives the next packet of data
-	ReadFrom(buf []byte) (n int, addr net.Addr, err os.Error)
+	ReadFrom(buf []byte) (n int, addr net.Addr, err error)
 
 	// WriteTo sends a packet of data
-	WriteTo(buf []byte, addr net.Addr) (n int, err os.Error)
+	WriteTo(buf []byte, addr net.Addr) (n int, err error)
 
 	// SetReadTimeout has the same meaning as net.Conn.SetReadTimeout
-	SetReadTimeout(nsec int64) os.Error
+	SetReadTimeout(nsec int64) error
 
 	// Close terminates the link gracefully
-	Close() os.Error
+	Close() error
 }

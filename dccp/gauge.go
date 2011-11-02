@@ -6,9 +6,6 @@ package dccp
 
 import (
 	"fmt"
-	"json"
-	"os"
-	"strings"
 	"github.com/petar/GoGauge/gauge"
 )
 
@@ -53,8 +50,8 @@ func (t Logger) Logf(submodule string, typ string, seqno, ackno int64, comment s
 		return
 	}
 	sinceZero, sinceLast := SnapLog()
-	if strings.ToLower(os.Getenv("DCCPLOG")) == "json" {
-		r := &LogRecord {
+	if emitter != nil {
+		emitter.Emit(&LogRecord{
 			Time:      sinceZero,
 			SeqNo:     seqno,
 			AckNo:     ackno,
@@ -63,9 +60,7 @@ func (t Logger) Logf(submodule string, typ string, seqno, ackno int64, comment s
 			Type:      typ,
 			State:     t.GetState(),
 			Comment:   fmt.Sprintf(comment, v...),
-		}
-		js, _ := json.MarshalIndent(r, "", "\t")
-		fmt.Println(string(js))	
+		})
 	} else {
 		fmt.Printf("%15s %15s  %-8s  %6s:%-11s  %-7s  ——  %s\n", 
 			nstoa(sinceZero), nstoa(sinceLast), t.GetState(), t.GetName(), 
@@ -109,3 +104,13 @@ func nstoa(ns int64) string {
 	}
 	return string(b[z-i+1:])
 }
+
+// LogEmitter is a type that consumes log entries.
+type LogEmitter interface {
+	Emit(*LogRecord)
+}
+
+var emitter LogEmitter
+
+// SetLogEmitter sets the DCCP-wide LogEmitter facility
+func SetLogEmitter(e LogEmitter) { emitter = e }

@@ -7,7 +7,6 @@ package ccid3
 import (
 	"fmt"
 	"math"
-	"os"
 	"github.com/petar/GoDCCP/dccp"
 )
 
@@ -17,13 +16,13 @@ const (
 	OptionLossIntervals = 193
 	OptionReceiveRate   = 194
 	// OptionLossDigest IS NOT a part of CCID3. It is an experimental extension.
-	OptionLossDigest    = 210
+	OptionLossDigest = 210
 )
 
 // —————
 // Unencoded option is a type that knows how to encode itself into a dccp.Option
 type UnencodedOption interface {
-	Encode() (*dccp.Option, os.Error)
+	Encode() (*dccp.Option, error)
 }
 
 func encodeOption(u UnencodedOption) *dccp.Option {
@@ -61,7 +60,7 @@ func DecodeLossEventRateOption(opt *dccp.Option) *LossEventRateOption {
 	return &LossEventRateOption{RateInv: dccp.Decode4ByteUint(opt.Data[0:4])}
 }
 
-func (opt *LossEventRateOption) Encode() (*dccp.Option, os.Error) {
+func (opt *LossEventRateOption) Encode() (*dccp.Option, error) {
 	d := make([]byte, 4)
 	dccp.Encode4ByteUint(opt.RateInv, d)
 	return &dccp.Option{
@@ -70,7 +69,6 @@ func (opt *LossEventRateOption) Encode() (*dccp.Option, os.Error) {
 		Mandatory: false,
 	}, nil
 }
-
 
 // —————
 // RFC 4342, Section 8.6
@@ -115,7 +113,7 @@ func DecodeLossIntervalsOption(opt *dccp.Option) *LossIntervalsOption {
 	}
 }
 
-func (opt *LossIntervalsOption) Encode() (*dccp.Option, os.Error) {
+func (opt *LossIntervalsOption) Encode() (*dccp.Option, error) {
 	if opt.SkipLength > NDUPACK {
 		return nil, dccp.ErrOverflow
 	}
@@ -142,8 +140,8 @@ type LossInterval struct {
 	LosslessLength uint32 // Lossless Length, a 24-bit number, RFC 4342, Section 8.6.1
 	LossLength     uint32 // Loss Length, a 23-bit number, RFC 4342, Section 8.6.1
 	DataLength     uint32 // Data Length, a 24-bit number, RFC 4342, Section 8.6.1.
-	                      // Specifies loss interval's data length, as defined in Section 6.1.1.
-	ECNNonceEcho   bool   // ECN Nonce Echo, RFC 4342, Section 8.6.1
+	// Specifies loss interval's data length, as defined in Section 6.1.1.
+	ECNNonceEcho bool // ECN Nonce Echo, RFC 4342, Section 8.6.1
 }
 
 const _24thBit = 1 << 23
@@ -153,7 +151,7 @@ func (li *LossInterval) SeqLen() uint32 {
 	return li.LosslessLength + li.LossLength
 }
 
-func (li *LossInterval) encode(p []byte) os.Error {
+func (li *LossInterval) encode(p []byte) error {
 	if len(p) != 9 {
 		return dccp.ErrSize
 	}
@@ -184,12 +182,11 @@ func decodeLossInterval(p []byte) *LossInterval {
 	return li
 }
 
-
 // —————
 // RFC 4342, Section 8.3
 type ReceiveRateOption struct {
 	// The rate at which receiver has received data since it last send an Ack; in bytes per second
-	Rate uint32 
+	Rate uint32
 }
 
 func DecodeReceiveRateOption(opt *dccp.Option) *ReceiveRateOption {
@@ -199,7 +196,7 @@ func DecodeReceiveRateOption(opt *dccp.Option) *ReceiveRateOption {
 	return &ReceiveRateOption{Rate: dccp.Decode4ByteUint(opt.Data[0:4])}
 }
 
-func (opt *ReceiveRateOption) Encode() (*dccp.Option, os.Error) {
+func (opt *ReceiveRateOption) Encode() (*dccp.Option, error) {
 	d := make([]byte, 4)
 	dccp.Encode4ByteUint(opt.Rate, d)
 	return &dccp.Option{
@@ -216,7 +213,7 @@ func (opt *ReceiveRateOption) Encode() (*dccp.Option, os.Error) {
 type LossDigestOption struct {
 	// RateInv is the inverse of the loss event rate, rounded UP, as calculated by the receiver.
 	// A value of UnknownLossEventRateInv indicates that no loss events have been observed.
-	RateInv      uint32
+	RateInv uint32
 
 	// NewLoss indicates how many new loss events are reported by the feedback packet carrying this option
 	NewLossCount byte
@@ -232,7 +229,7 @@ func DecodeLossDigestOption(opt *dccp.Option) *LossDigestOption {
 	}
 }
 
-func (opt *LossDigestOption) Encode() (*dccp.Option, os.Error) {
+func (opt *LossDigestOption) Encode() (*dccp.Option, error) {
 	d := make([]byte, 5)
 	dccp.Encode4ByteUint(opt.RateInv, d)
 	dccp.Encode1ByteUint(opt.NewLossCount, d[4:])

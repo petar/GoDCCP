@@ -50,7 +50,7 @@ func newFlow(addr net.Addr, m *Mux, ch chan muxHeader, mtu int, local, remote *L
 func (f *flow) GetMTU() int { return f.mtu }
 
 // SetReadTimeout implements net.Conn.SetReadTimeout
-func (f *flow) SetReadTimeout(nsec int64) os.Error {
+func (f *flow) SetReadTimeout(nsec int64) error {
 	if nsec < 0 {
 		return os.EINVAL
 	}
@@ -101,7 +101,7 @@ func (f *flow) String() string {
 	return f.getLocal().String() + "--" + f.getRemote().String()
 }
 
-func (f *flow) WriteSegment(block []byte) os.Error {
+func (f *flow) WriteSegment(block []byte) error {
 	f.Lock()
 	m := f.m
 	f.Unlock()
@@ -117,7 +117,7 @@ func (f *flow) WriteSegment(block []byte) os.Error {
 	return err
 }
 
-func (f *flow) ReadSegment() (block []byte, err os.Error) {
+func (f *flow) ReadSegment() (block []byte, err error) {
 	f.rlk.Lock()
 	defer f.rlk.Unlock()
 
@@ -165,7 +165,7 @@ func (f *flow) foreclose() {
 	}
 }
 
-func (f *flow) Close() os.Error {
+func (f *flow) Close() error {
 	f.Lock()
 	if f.ch != nil {
 		close(f.ch)

@@ -6,9 +6,9 @@ package dccp
 
 import (
 	"bytes"
+	"errors"
 	"hash/crc64"
 	"rand"
-	"os"
 	"strings"
 )
 
@@ -35,8 +35,8 @@ func (label *Label) Bytes() []byte {
 	return LabelZero.data[:]
 }
 
-func (label *Label) hash() { 
-	label.h = crc64.Checksum(label.data[:], labelCRC64Table) 
+func (label *Label) hash() {
+	label.h = crc64.Checksum(label.data[:], labelCRC64Table)
 }
 
 func isZero(bb []byte) bool {
@@ -62,8 +62,8 @@ func ChooseLabel() *Label {
 }
 
 // Hash() returns the hash code of this label
-func (label *Label) Hash() uint64 { 
-	return label.h 
+func (label *Label) Hash() uint64 {
+	return label.h
 }
 
 // Equal() performs a deep check for equality with q@
@@ -77,9 +77,9 @@ func (label *Label) Equal(q *Label) bool {
 }
 
 // ReadLabel() reads and creates a new label from a wire format representation in p@
-func ReadLabel(p []byte) (label *Label, n int, err os.Error) {
+func ReadLabel(p []byte) (label *Label, n int, err error) {
 	if len(p) < LabelLen {
-		return nil, 0, os.NewError("label too short")
+		return nil, 0, errors.New("label too short")
 	}
 	label = &Label{}
 	copy(label.data[:], p[:LabelLen])
@@ -91,12 +91,12 @@ func ReadLabel(p []byte) (label *Label, n int, err os.Error) {
 }
 
 // Write() writes the wire format representation of the label into p@
-func (label *Label) Write(p []byte) (n int, err os.Error) {
+func (label *Label) Write(p []byte) (n int, err error) {
 	if label == nil {
 		label = &LabelZero
 	}
 	if len(p) < LabelLen {
-		return 0, os.NewError("label can't fit")
+		return 0, errors.New("label can't fit")
 	}
 	copy(p, label.data[:])
 	return LabelLen, nil
@@ -117,15 +117,15 @@ func (label *Label) String() string {
 	return string(w.Bytes())
 }
 
-func (label *Label) Address() string { 
-	return label.String() 
+func (label *Label) Address() string {
+	return label.String()
 }
 
 // ParseLabel() parses and creates a new label from the string representation in s@
-func ParseLabel(s string) (label *Label, n int, err os.Error) {
+func ParseLabel(s string) (label *Label, n int, err error) {
 	l := LabelLen*2 + LabelLen/2 - 1
 	if len(s) < l {
-		return nil, 0, os.NewError("bad string label len")
+		return nil, 0, errors.New("bad string label len")
 	}
 	s = strings.ToLower(s)
 	label = &Label{}
@@ -133,7 +133,7 @@ func ParseLabel(s string) (label *Label, n int, err os.Error) {
 	for i := 0; i < LabelLen; {
 		if i%2 == 0 && i > 0 {
 			if s[i] != '`' {
-				return nil, 0, os.NewError("missing label dot")
+				return nil, 0, errors.New("missing label dot")
 			}
 			i++
 			continue
@@ -163,19 +163,19 @@ func btox(b byte) string {
 	return string(r)
 }
 
-func xtohb(a byte) (b byte, err os.Error) {
+func xtohb(a byte) (b byte, err error) {
 	if a >= '0' && a <= '9' {
 		return a - '0', nil
 	}
 	if a >= 'a' && a <= 'f' {
 		return 9 + a - 'a', nil
 	}
-	return 0, os.NewError("xtohb invalid char")
+	return 0, errors.New("xtohb invalid char")
 }
 
-func xtob(s string) (b byte, err os.Error) {
+func xtob(s string) (b byte, err error) {
 	if len(s) != 2 {
-		return 0, os.NewError("xtob len error")
+		return 0, errors.New("xtob len error")
 	}
 	b0, err := xtohb(s[1])
 	if err != nil {

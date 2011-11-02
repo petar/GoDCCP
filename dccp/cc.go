@@ -4,10 +4,6 @@
 
 package dccp
 
-import (
-	"os"
-)
-
 // Regarding options and Half-Connection CCIDs (from Section 10.3):
 //
 // Any packet may contain information meant for either half-connection,
@@ -33,7 +29,6 @@ import (
 //    Change L(192) option was sent by the HC-Receiver.  Similarly,
 //    Change R(128) options are sent by the HC-Receiver, while Change
 //    R(192) options are sent by the HC-Sender.
-
 
 // SenderCongestionControl specifies the interface for the congestion control logic of a DCCP
 // sender (aka Half-Connection Sender CCID)
@@ -66,7 +61,7 @@ type SenderCongestionControl interface {
 	// If OnRead returns ErrDrop, the packet will be dropped and no further processing
 	// will occur. If OnRead returns ResetError, the connection will be reset.
 	// NOTE: If the CC is not active, OnRead MUST return nil.
-	OnRead(fb *FeedbackHeader) os.Error
+	OnRead(fb *FeedbackHeader) error
 
 	// Strobe blocks until a new packet can be sent without violating the
 	// congestion control rate limit. 
@@ -74,10 +69,10 @@ type SenderCongestionControl interface {
 	Strobe()
 
 	// OnIdle is called periodically, giving the CC a chance to:
-        // (a) Request a connection reset by returning a CongestionReset, or
+	// (a) Request a connection reset by returning a CongestionReset, or
 	// (b) Request the injection of an Ack packet by returning a CongestionAck
 	// NOTE: If the CC is not active, OnIdle MUST to return nil.
-	OnIdle(now int64) os.Error
+	OnIdle(now int64) error
 
 	// Close terminates the half-connection congestion control when it is not needed any longer
 	Close()
@@ -103,10 +98,10 @@ type ReceiverCongestionControl interface {
 	// If OnRead returns ErrDrop, the packet will be dropped and no further processing
 	// will occur. 
 	// NOTE: If the CC is not active, OnRead MUST return nil.
-	OnRead(ff *FeedforwardHeader) os.Error
+	OnRead(ff *FeedforwardHeader) error
 
 	// OnIdle behaves identically to the same method of the HC-Sender CCID
-	OnIdle(now int64) os.Error
+	OnIdle(now int64) error
 
 	// Close terminates the half-connection congestion control when it is not needed any longer
 	Close()
@@ -115,25 +110,25 @@ type ReceiverCongestionControl interface {
 // PreHeader contains the parts of the DCCP header than are fixed before the
 // CCID has made its changes to CCVal and Options.
 type PreHeader struct {
-	Type     byte
-	X        bool
-	SeqNo    int64
-	AckNo    int64
+	Type  byte
+	X     bool
+	SeqNo int64
+	AckNo int64
 
-	Time     int64
+	Time int64
 }
 
 // FeedbackHeader encloses the parts of the packet header that
 // are sent by the HC-Receiver and received by the HC-Sender
 type FeedbackHeader struct {
-	Type     byte
-	X        bool
-	SeqNo    int64
-	Options  []*Option
-	AckNo    int64
+	Type    byte
+	X       bool
+	SeqNo   int64
+	Options []*Option
+	AckNo   int64
 
 	// Time when header received
-	Time     int64
+	Time int64
 }
 
 // FeedforwardHeader encloses the parts of the packet header that
@@ -148,7 +143,7 @@ type FeedforwardHeader struct {
 	Options []*Option
 
 	// Time when header received
-	Time    int64
+	Time int64
 
 	// Length of application data in bytes
 	DataLen int
@@ -161,6 +156,6 @@ type CCID interface {
 }
 
 const (
-	CCID2      = 2 // TCP-like Congestion Control, RFC 4341
-	CCID3      = 3 // TCP-Friendly Rate Control (TFRC), RFC 4342
+	CCID2 = 2 // TCP-like Congestion Control, RFC 4341
+	CCID3 = 3 // TCP-Friendly Rate Control (TFRC), RFC 4342
 )
