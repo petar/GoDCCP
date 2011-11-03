@@ -5,6 +5,7 @@
 package gauge
 
 import (
+	"sort"
 	"sync"
 	"github.com/petar/GoDCCP/dccp"
 )
@@ -24,8 +25,12 @@ type Place struct {
 }
 
 type Trip struct {
-	Source string
-	?
+	SeqNo    int64
+	Forward  []*dccp.LogRecord
+	Backward []*dccp.LogRecord
+	Source   string
+	Sink     string
+	Round    bool
 }
 
 func NewLogReducer() *LogReducer {
@@ -41,6 +46,9 @@ func (t *LogReducer) Emit(r *dccp.LogRecord) {
 	defer t.Unlock()
 
 	// Check-ins update
+	if r.Module == "" {
+		panic("empty string module")
+	}
 	t.checkIns = append(t.checkIns, r)
 
 	// Places update
@@ -48,7 +56,7 @@ func (t *LogReducer) Emit(r *dccp.LogRecord) {
 	if !ok {
 		p = &Place{ 
 			latest:   0,
-			CheckIns: make([]*dccp.LogRecord, 0, 4) 
+			CheckIns: make([]*dccp.LogRecord, 0),
 		}
 		t.places[r.Module] = p
 	}
@@ -63,7 +71,57 @@ func (t *LogReducer) Emit(r *dccp.LogRecord) {
 	}
 
 	// Trips update
-	?
+	if r.SeqNo != 0 {
+		t.tripForward(r)
+	}
+	if r.AckNo != 0 {
+		t.tripBackward(r)
+	}
+}
+
+func (t *LogReducer) tripForward(r *dccp.LogRecord) {
+	x, ok := t.trips[r.SeqNo]
+	if !ok {
+		x = &Trip{
+			SeqNo:    r.SeqNo,
+			Forward:  make([]*dccp.LogRecord, 0),
+			Backward: make([]*dccp.LogRecord, 0),
+		}
+		t.trips[r.SeqNo] = x
+	}
+
+	x.Forward = append(x.Forward, r)
+	sort.Sort(LogRecordChrono(x.Forward))
+	x.Source = x.Forward[0].Module
+	
+	updateTrip(x)
+}
+
+func (t *LogReducer) tripBackward(r *dccp.LogRecord) {
+	y, ok := t.trips[r.AckNo]
+	if !ok {
+		y = &Trip{
+			SeqNo:    r.AckNo,
+			Forward:  make([]*dccp.LogRecord, 0),
+			Backward: make([]*dccp.LogRecord, 0),
+		}
+		t.trips[r.AckNo] = y
+	}
+
+	y.Backward = append(y.Backward, r)
+	sort.Sort(LogRecordChrono(y.Backward))
+	y.Sink = y.Backward[len(y.Backward)-1].Module
+
+	updateTrip(y)
+}
+
+func updateTrip(t *Trip) {
+	if t.Source == "" {
+		return
+	}
+	if t.Source == t.Sink {
+		t.Round = true
+	}
 }
 
 // CheckIns returns a list of all check-ins
@@ -91,4 +149,19 @@ func (t *LogReducer) Trips() map[int64]*Trip {
 	defer t.Unlock()
 	
 	return t.trips
+}
+
+// LogRecordChrono is a chronological sort driver for []*dccp.LogRecord
+type LogRecordChrono []*dccp.LogRecord
+
+func (t LogRecordChrono) Len() int {
+	return len(t)
+}
+
+func (t LogRecordChrono) Less(i, j int) bool {
+	return t[i].Time < t[j].Time
+}
+
+func (t LogRecordChrono) Swap(i, j int) {
+	t[i], t[j] = t[j], t[i]
 }
