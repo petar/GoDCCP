@@ -10,9 +10,13 @@ import (
 	"github.com/petar/GoGauge/gauge"
 	"github.com/petar/GoDCCP/dccp"
 	"github.com/petar/GoDCCP/dccp/ccid3"
+	dgauge "github.com/petar/GoDCCP/dccp/gauge"
 )
 
 func TestDropRate(t *testing.T) {
+
+	logEmitter := dgauge.NewLogReducer()
+	dccp.SetLogEmitter(logEmitter)
 
 	gauge.Select("client", "server", "line", "conn", "s", "s-x", "s-strober", "s-tracker", "r")
 
