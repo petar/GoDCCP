@@ -1,5 +1,6 @@
 #!/bin/sh
 pushd ./
+rm log
 make clean && make install \
 	&& cd gauge && make clean && make install \
 	&& cd ../ccid3 && make clean && make install \

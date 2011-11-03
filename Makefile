@@ -17,7 +17,6 @@ DIRS=\
      	dccp/gauge\
      	dccp/sandbox\
      	dccp/ccid3\
-	retransmit\
 
 TEST=\
 	$(filter-out $(NOTEST),$(DIRS))

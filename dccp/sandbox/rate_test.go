@@ -5,6 +5,8 @@
 package sandbox
 
 import (
+	"fmt"
+	"json"
 	"testing"
 	"time"
 	"github.com/petar/GoGauge/gauge"
@@ -15,7 +17,7 @@ import (
 
 func TestDropRate(t *testing.T) {
 
-	logEmitter := dgauge.NewLogReducer()
+	logEmitter := dgauge.NewD3() // dgauge.NewLogReducer()
 	dccp.SetLogEmitter(logEmitter)
 
 	gauge.Select("client", "server", "line", "conn", "s", "s-x", "s-strober", "s-tracker", "r")
@@ -32,4 +34,11 @@ func TestDropRate(t *testing.T) {
 	/* cs := */ dccp.NewConnServer(slog, hcb, ccid.NewSender(slog), ccid.NewReceiver(slog))
 
 	time.Sleep(10e9)
+
+	logData := logEmitter.Close()
+	b, err := json.MarshalIndent(logData, "", "\t")
+	if err != nil {
+		panic("json err")
+	}
+	fmt.Println(string(b))
 }

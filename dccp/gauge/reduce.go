@@ -24,6 +24,7 @@ type Place struct {
 	CheckIns []*dccp.LogRecord
 }
 
+// A Trip instance captures all packet check-ins whose SeqNo or AckNo are related
 type Trip struct {
 	SeqNo    int64
 	Forward  []*dccp.LogRecord
@@ -34,11 +35,15 @@ type Trip struct {
 }
 
 func NewLogReducer() *LogReducer {
-	return &LogReducer{
-		checkIns: make([]*dccp.LogRecord, 0, 16),
-		places:   make(map[string]*Place),
-		trips:    make(map[int64]*Trip),
-	}
+	t := &LogReducer{}
+	t.Init()
+	return t
+}
+
+func (t *LogReducer) Init() {
+	t.checkIns = make([]*dccp.LogRecord, 0, 16)
+	t.places = make(map[string]*Place)
+	t.trips = make(map[int64]*Trip)
 }
 
 func (t *LogReducer) Emit(r *dccp.LogRecord) {
