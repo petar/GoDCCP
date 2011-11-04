@@ -5,8 +5,6 @@
 package sandbox
 
 import (
-	"fmt"
-	"json"
 	"testing"
 	"time"
 	"github.com/petar/GoGauge/gauge"
@@ -36,9 +34,5 @@ func TestDropRate(t *testing.T) {
 	time.Sleep(10e9)
 
 	logData := logEmitter.Close()
-	b, err := json.MarshalIndent(logData, "", "\t")
-	if err != nil {
-		panic("json err")
-	}
-	fmt.Println(string(b))
+	dgauge.OutToFile("DCCPD3", logData)
 }
