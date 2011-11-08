@@ -71,9 +71,9 @@ func (t *LogReducer) Emit(r *dccp.LogRecord) {
 	}
 	p.latest = r.Time
 
-	if len(p.CheckIns) == 0 || p.CheckIns[len(p.CheckIns)-1].State != r.State {
+	//if len(p.CheckIns) == 0 || p.CheckIns[len(p.CheckIns)-1].State != r.State {
 		p.CheckIns = append(p.CheckIns, r)
-	}
+	//}
 
 	// Trips update
 	if r.SeqNo != 0 {
@@ -135,6 +135,7 @@ func (t *LogReducer) CheckIns() []*dccp.LogRecord {
 	defer func() { t.checkIns = nil }()  // So Emit does not try to update after this call accidentally
 	defer t.Unlock()
 
+	sort.Sort(LogRecordChrono(t.checkIns))
 	return t.checkIns
 }
 

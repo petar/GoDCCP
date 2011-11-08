@@ -61,12 +61,11 @@ func (t Logger) Logf(submodule string, typ string, seqno, ackno int64, comment s
 			State:     t.GetState(),
 			Comment:   fmt.Sprintf(comment, v...),
 		})
-	} else {
-		fmt.Printf("%15s %15s  %-8s  %6s:%-11s  %-7s  ——  %s\n", 
-			nstoa(sinceZero), nstoa(sinceLast), t.GetState(), t.GetName(), 
-			submodule, indentType(typ), fmt.Sprintf(comment, v...),
-		)
 	}
+	fmt.Printf("%15s %15s  %-8s  %6s:%-11s  %-7s  ——  %s\n", 
+		nstoa(sinceZero), nstoa(sinceLast), t.GetState(), t.GetName(), 
+		submodule, indentType(typ), fmt.Sprintf(comment, v...),
+	)
 }
 
 func indentType(typ string) string {

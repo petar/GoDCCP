@@ -8,6 +8,7 @@ import (
 	"json"
 	"os"
 	"unsafe"
+	//"text/template"
 	"github.com/petar/GoDCCP/dccp"
 )
 
@@ -34,6 +35,7 @@ func (t *D3) Emit(r *dccp.LogRecord) {
 // D3Data is a JSON structure passed to the D3-based visualizer
 type D3Data struct {
 	CheckIns  []*D3CheckIn  `json:"check_ins"`
+	Places    []*D3Place    `json:"places"`
 }
 
 type D3CheckIn struct {
@@ -47,14 +49,56 @@ type D3CheckIn struct {
 	Comment   string  `json:"comment"`
 }
 
+type D3Place struct {
+	Name      string        `json:"name"`
+	Intervals []D3Interval  `json:"intervals"`
+}
+
+type D3Interval struct {
+	State string  `json:"state"`
+	Start int64   `json:"start"`
+	End   int64   `json:"end"`
+}
+
 func (t *D3) Close() *D3Data {
 	d := &D3Data{}
+
+	// Check-ins
 	checkins := t.reducer.CheckIns()
 	d.CheckIns = make([]*D3CheckIn, len(checkins))
 	for i, rec := range checkins {
 		d.CheckIns[i] = (*D3CheckIn)(unsafe.Pointer(rec))
 	}
+
+	// Places
+	places := t.reducer.Places()
+	d.Places = make([]*D3Place, len(places))
+	var i int
+	for name, place := range places {
+		d3p := &D3Place{}
+		d3p.Name = name
+		d.Places[i] = d3p
+		d3p.Intervals = make([]D3Interval, len(place.CheckIns))
+		var prevInterval *D3Interval
+		for j, placeCheckIn := range place.CheckIns {
+			d3p.Intervals[j].State = placeCheckIn.State
+			d3p.Intervals[j].Start = placeCheckIn.Time
+			if prevInterval != nil {
+				prevInterval.End = placeCheckIn.Time
+			}
+			d3p.Intervals[j].End = placeCheckIn.Time
+			prevInterval = &d3p.Intervals[j]
+		}
+		i++
+	}
+
+	// Trips
+
 	return d
+}
+
+func (t *D3) GetHTML() string {
+	panic("un")
 }
 
 func OutToFile(env string, doc interface{}) error {
