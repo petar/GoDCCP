@@ -75,13 +75,32 @@ d3places = gplaces.selectAll("XXX")
 d3places.selectAll("XXX")
 		.data(function(d) { return d.intervals; })
 	.enter().append("svg:rect")
-		.attr("x", -3)
+		.attr("x", -6)
 		.attr("y", function(d) { return YOfTime(d.start) })
-		.attr("width", 7)
+		.attr("width", 13)
 		.attr("height", function(d) { return YOfTime(d.end) - YOfTime(d.start); })
 		.attr("fill", function(d) { return ColorOfState(d.state) })
 		//.attr("stroke", "#000")
 		.style("opacity", "0.3");
+
+// Trips
+
+var line = d3.svg.line()
+	.x(function(d) { return XOfPlace(d.place); })
+	.y(function(d) { return YOfTime(d.time); })
+	.interpolate("linear");
+
+gtrips = g.append("svg:g");
+gtrips.selectAll("XXX")
+		.data(data["trips"])
+	.enter().append("svg:path")
+		.attr("d", function(d) { return line(d.path) })
+		.attr("stroke", "#000")
+		.attr("stroke-width", "5")
+		.attr("stroke-linecap", "round")
+		.attr("stroke-linejoin", "round")
+		.attr("fill", "none")
+		.style("opacity", "0.2");
 
 // Nodes
 
@@ -92,8 +111,8 @@ d3nodes = gnodes.selectAll("XXX")
 		.attr("transform", function(d) { return "translate("+XOfPlace(d.place)+","+YOfTime(d.time)+")" } );
 
 d3nodes.append("svg:circle")
-		.attr("r", 7)
-		.attr("stroke", "#bbb")
+		.attr("r", 9)
+		.attr("stroke", "#fff")
 		.attr("stroke-width", "2")
 		.attr("fill", "#000");
 
@@ -120,22 +139,3 @@ d3nodes.append("svg:text")
 		.style("text-anchor", "start")
 		.attr("fill", "#c55")
 		.text(function(d) { return "SeqNo: " + d.seqno + ", AckNo:" + d.ackno });
-
-// Polygons
-/*
-var data_polygons = [
-	[{x:0, y:30}, {x:100, y:60}, {x:100, y:80}, {x:0, y:170}]
-	];
-
-var line = d3.svg.line()
-	.x(function(d) { return d.x; })
-	.y(function(d) { return d.y; })
-	.interpolate("basis");
-
-g.selectAll("__polygon")
-		.data(data_polygons)
-	.enter().append("svg:path")
-		.attr("d", function(d) { return poly(d) + "Z"; })
-		.attr("stroke", "#c88")
-		.attr("fill", "#fdd");
-*/

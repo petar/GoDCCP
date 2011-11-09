@@ -36,6 +36,7 @@ func (t *D3) Emit(r *dccp.LogRecord) {
 type D3Data struct {
 	CheckIns  []*D3CheckIn  `json:"check_ins"`
 	Places    []*D3Place    `json:"places"`
+	Trips     []*D3Trip     `json:"trips"`
 }
 
 type D3CheckIn struct {
@@ -58,6 +59,16 @@ type D3Interval struct {
 	State string  `json:"state"`
 	Start int64   `json:"start"`
 	End   int64   `json:"end"`
+}
+
+type D3Trip struct {
+	SeqNo int64    `json:"seqno"`
+	Path  []D3Stop `json:"path"`
+}
+
+type D3Stop struct {
+	Place string  `json:"place"`
+	Time  int64   `json:"time"`
 }
 
 func (t *D3) Close() *D3Data {
@@ -93,6 +104,26 @@ func (t *D3) Close() *D3Data {
 	}
 
 	// Trips
+	trips := t.reducer.Trips()
+	d.Trips = make([]*D3Trip, len(trips))
+	i = 0
+	for seqno, trip := range trips {
+		d3t := &D3Trip{}
+		d3t.SeqNo = seqno
+		d.Trips[i] = d3t
+		d3t.Path = make([]D3Stop, len(trip.Forward)/*+len(trip.Backward)*/)
+		for j, chk := range trip.Forward {
+			d3t.Path[j].Place = chk.Module
+			d3t.Path[j].Time = chk.Time
+		}
+		/*
+		for j, chk := range trip.Backward {
+			d3t.Path[len(trip.Forward) + j].Place = chk.Module
+			d3t.Path[len(trip.Forward) + j].Time = chk.Time
+		}
+		*/
+		i++
+	}
 
 	return d
 }
