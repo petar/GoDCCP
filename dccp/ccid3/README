@@ -1,18 +1,11 @@
 
-* (Virtual) Timer interface for DCCP framework
-* Rename segment<->header connection
-* Eavesdropper pipe. Knobs:
-	* virtual time duration
-	* inject drops by time or packet number
+TODO PRE-RELEASE
 
-===========================================================================================
-
-* For testing: mechanism for communicating various events like tmo expiration, etc.
 * Add check on AckNo's to make sure they are not smaller than the initial sequence number
-* Reduce calls to time.Nanoseconds in dccp
+
 * Fix for circular arithmetic everywhere where SeqNo and AckNo are involved: loss.go, etc.
 
-————— LONG-TERM —————
+TODO LONG-TERM
 
 * Idle and application limited periods
    (5.1) The allowed sending rate is never reduced to less than the [RFC3390]
@@ -24,13 +17,8 @@
    the idle period, then it should not be reduced below the initial
    sending rate no matter how long the idle period lasts.
 
-* Add backup RTT calculation in receiver based on Timestamps
-	* Measure RTT based on CCVal and Timestamp opts and print head-to-head
+* TimestampEcho option and RTT estimates based on timestamps
 
-————— FEATURES NOT CURRENTLY SUPPORTED —————
-
-* TimestampEcho option and RTT estimates based on it
 * Data Dropped Option
-* Slow Receiver Option
 
-————— DEVIATIONS FROM DCCP —————
+* Slow Receiver Option

@@ -5,14 +5,13 @@
 package gauge
 
 import (
-	"json"
+	"encoding/json"
 	"os"
 	"unsafe"
-	//"text/template"
 	"github.com/petar/GoDCCP/dccp"
 )
 
-// D3 is a dccp.LogEmitter which processes the log stream into a JSON structure convenient
+// D3 is a dccp.LogWriter which processes the log stream into a JSON structure convenient
 // for input into a D3 visualization.
 type D3 struct {
 	reducer LogReducer
@@ -28,8 +27,8 @@ func (t *D3) Init() {
 	t.reducer.Init()
 }
 
-func (t *D3) Emit(r *dccp.LogRecord) {
-	t.reducer.Emit(r)
+func (t *D3) Write(r *dccp.LogRecord) {
+	t.reducer.Write(r)
 }
 
 // D3Data is a JSON structure passed to the D3-based visualizer

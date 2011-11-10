@@ -50,8 +50,8 @@ func (t Logger) Logf(submodule string, typ string, seqno, ackno int64, comment s
 		return
 	}
 	sinceZero, sinceLast := SnapLog()
-	if emitter != nil {
-		emitter.Emit(&LogRecord{
+	if logWriter != nil {
+		logWriter.Write(&LogRecord{
 			Time:      sinceZero,
 			SeqNo:     seqno,
 			AckNo:     ackno,
@@ -104,12 +104,12 @@ func nstoa(ns int64) string {
 	return string(b[z-i+1:])
 }
 
-// LogEmitter is a type that consumes log entries.
-type LogEmitter interface {
-	Emit(*LogRecord)
+// LogWriter is a type that consumes log entries.
+type LogWriter interface {
+	Write(*LogRecord)
 }
 
-var emitter LogEmitter
+var logWriter LogWriter
 
-// SetLogEmitter sets the DCCP-wide LogEmitter facility
-func SetLogEmitter(e LogEmitter) { emitter = e }
+// SetLogWriter sets the DCCP-wide LogWriter facility
+func SetLogWriter(e LogWriter) { logWriter = e }

@@ -10,7 +10,7 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-// LogReducer is a dccp.LogEmitter which processes the logs to a form
+// LogReducer is a dccp.LogWriter which processes the logs to a form
 // that is convenient to illustrate via tools like D3 (Data-Driven Design).
 type LogReducer struct {
 	sync.Mutex
@@ -46,7 +46,7 @@ func (t *LogReducer) Init() {
 	t.trips = make(map[int64]*Trip)
 }
 
-func (t *LogReducer) Emit(r *dccp.LogRecord) {
+func (t *LogReducer) Write(r *dccp.LogRecord) {
 	t.Lock()
 	defer t.Unlock()
 
@@ -132,7 +132,7 @@ func updateTrip(t *Trip) {
 // CheckIns returns a list of all check-ins
 func (t *LogReducer) CheckIns() []*dccp.LogRecord {
 	t.Lock()
-	defer func() { t.checkIns = nil }()  // So Emit does not try to update after this call accidentally
+	defer func() { t.checkIns = nil }()  // So Write does not try to update after this call accidentally
 	defer t.Unlock()
 
 	sort.Sort(LogRecordChrono(t.checkIns))

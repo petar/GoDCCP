@@ -7,7 +7,7 @@ package dccp
 import (
 	"bytes"
 	"fmt"
-	"rand"
+	"math/rand"
 )
 
 // socket is a data structure, maintaining the DCCP socket variables.

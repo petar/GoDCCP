@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"errors"
 	"hash/crc64"
-	"rand"
+	"math/rand"
 	"strings"
 )
 
