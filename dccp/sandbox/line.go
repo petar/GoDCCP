@@ -12,8 +12,6 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-// TODO: Specify rate by (interval, maximum # packets per interval)
-
 type Line struct {
 	dccp.Logger
 	ha, hb headerHalfLine
@@ -39,7 +37,7 @@ type headerHalfLine struct {
 	write chan<- *dccp.Header
 
 	glock         sync.Mutex
-	gap           int64 // Length of time interval for ...
+	gap           int64  // Length of time interval for ...
 	packetsPerGap uint32
 	gapCounter    int64  // UTC time in gap units
 	gapFill       uint32 // Number of segments transmitted during the gap in gapCounter
@@ -62,10 +60,10 @@ func (hhl *headerHalfLine) GetMTU() int {
 func (hhl *headerHalfLine) ReadHeader() (h *dccp.Header, err error) {
 	h, ok := <-hhl.read
 	if !ok {
-		hhl.Logger.Logf(hhl.name, "Warn", h.SeqNo, h.AckNo, "Read EOF")
+		hhl.Logger.Logf(hhl.name, "Warn", h, "Read EOF")
 		return nil, io.EOF
 	}
-	hhl.Logger.Logf(hhl.name, "Read", h.SeqNo, h.AckNo, "SeqNo=%d", h.SeqNo)
+	hhl.Logger.Logf(hhl.name, "Read", h, "SeqNo=%d", h.SeqNo)
 	return h, nil
 }
 
@@ -83,15 +81,15 @@ func (hhl *headerHalfLine) WriteHeader(h *dccp.Header) (err error) {
 	defer hhl.wlock.Unlock()
 
 	if hhl.write == nil {
-		hhl.Logger.Logf(hhl.name, "Drop", h.SeqNo, h.AckNo, "SeqNo=%d EBADF", h.SeqNo)
+		hhl.Logger.Logf(hhl.name, "Drop", h, "SeqNo=%d EBADF", h.SeqNo)
 		return os.EBADF
 	}
 
 	if hhl.rateFilter() {
 		hhl.write <- h
-		hhl.Logger.Logf(hhl.name, "Write", h.SeqNo, h.AckNo, "SeqNo=%d", h.SeqNo)
+		hhl.Logger.Logf(hhl.name, "Write", h, "SeqNo=%d", h.SeqNo)
 	} else {
-		hhl.Logger.Logf(hhl.name, "Drop", h.SeqNo, h.AckNo, "SeqNo=%d", h.SeqNo)
+		hhl.Logger.Logf(hhl.name, "Drop", h, "SeqNo=%d", h.SeqNo)
 	}
 	return nil
 }
@@ -118,13 +116,13 @@ func (hhl *headerHalfLine) Close() error {
 	defer hhl.wlock.Unlock()
 
 	if hhl.write == nil {
-		hhl.Logger.Logf(hhl.name, "Warn", 0, 0, "Close EBADF")
+		hhl.Logger.Logf(hhl.name, "Warn", nil, "Close EBADF")
 		return os.EBADF
 	}
 	close(hhl.write)
 	hhl.write = nil
 
-	hhl.Logger.Logf(hhl.name, "Event", 0, 0, "Close")
+	hhl.Logger.Logf(hhl.name, "Event", nil, "Close")
 	return nil
 }
 

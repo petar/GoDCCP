@@ -6,6 +6,8 @@ package dccp
 
 import (
 	"fmt"
+	"encoding/json"
+	"os"
 	"github.com/petar/GoGauge/gauge"
 )
 
@@ -33,16 +35,18 @@ func (t Logger) SetState(s int) {
 // visualisation tools.
 type LogRecord struct {
 	Time      int64   // Time of event
-	SeqNo     int64   // SeqNo, if applicable; zero otherwise
-	AckNo     int64   // AckNo, if applicable; zero otherwise
 	Module    string  // Module where event occurred, e.g. "server", "client", "line"
 	Submodule string  // Submodule where event occurred, e.g. "s-strober"
-	Type      string  // Type of event
+	Event     string  // Type of event
 	State     string  // State of module
 	Comment   string  // Textual comment describing the event
+
+	Type     string
+	SeqNo    int64
+	AckNo    int64
 }
 
-func (t Logger) Logf(submodule string, typ string, seqno, ackno int64, comment string, v ...interface{}) {
+func (t Logger) Logf(submodule string, event string, h interface{}, comment string, v ...interface{}) {
 	if t == "" {
 		return
 	}
@@ -50,30 +54,50 @@ func (t Logger) Logf(submodule string, typ string, seqno, ackno int64, comment s
 		return
 	}
 	sinceZero, sinceLast := SnapLog()
+	var hType string
+	var hSeqNo, hAckNo int64
+	switch t := h.(type) {
+	case *Header:
+		hSeqNo, hAckNo = t.SeqNo, t.AckNo
+		hType = typeString(t.Type)
+	case *PreHeader:
+		hSeqNo, hAckNo = t.SeqNo, t.AckNo
+		hType = typeString(t.Type)
+	case *FeedbackHeader:
+		hSeqNo, hAckNo = t.SeqNo, t.AckNo
+		hType = typeString(t.Type)
+	case *FeedforwardHeader:
+		hSeqNo = t.SeqNo
+		hType = typeString(t.Type)
+	}
 	if logWriter != nil {
-		logWriter.Write(&LogRecord{
+		r := &LogRecord{
 			Time:      sinceZero,
-			SeqNo:     seqno,
-			AckNo:     ackno,
 			Module:    t.GetName(),
 			Submodule: submodule,
-			Type:      typ,
+			Event:     event,
 			State:     t.GetState(),
 			Comment:   fmt.Sprintf(comment, v...),
-		})
+			Type:      hType,
+			SeqNo:     hSeqNo,
+			AckNo:     hAckNo,
+		}
+		logWriter.Write(r)
 	}
-	fmt.Printf("%15s %15s  %-8s  %6s:%-11s  %-7s  ——  %s\n", 
+	fmt.Printf("%15s %15s  %-8s  %6s:%-11s  %-7s  %8s  %8d·%-8d  ——  %s\n", 
 		nstoa(sinceZero), nstoa(sinceLast), t.GetState(), t.GetName(), 
-		submodule, indentType(typ), fmt.Sprintf(comment, v...),
+		submodule, event, 
+		hType, hSeqNo, hAckNo,
+		fmt.Sprintf(comment, v...),
 	)
 }
 
-func indentType(typ string) string {
-	switch typ {
+func indentEvent(event string) string {
+	switch event {
 	case "Write", "Read", "Strobe":
-		return typ
+		return event
 	default:
-		return "  " + typ
+		return "  " + event
 	}
 	panic("")
 }
@@ -109,7 +133,28 @@ type LogWriter interface {
 	Write(*LogRecord)
 }
 
-var logWriter LogWriter
+// FileLogWriter saves all log entries to a file in JSON format
+type FileLogWriter struct {
+	f   *os.File
+	enc *json.Encoder
+}
+
+func NewFileLogWriter(name string) *FileLogWriter {
+	f, err := os.Create(name)
+	if err != nil {
+		panic("cannot create log file")
+	}
+	return &FileLogWriter{f, json.NewEncoder(f)}
+}
+
+func (t *FileLogWriter) Write(r *LogRecord) {
+	err := t.enc.Encode(r)
+	if err != nil {
+		panic("error encoding log entry")
+	}
+}
+
+var logWriter LogWriter = NewFileLogWriter(os.Getenv("DCCPLOG"))
 
 // SetLogWriter sets the DCCP-wide LogWriter facility
 func SetLogWriter(e LogWriter) { logWriter = e }

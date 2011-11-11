@@ -66,7 +66,7 @@ func (t *rateCalculator) X() uint32 { return t.x }
 func (t *rateCalculator) onFirstRead(now int64) uint32 {
 	t.tld = now
 	t.x = initRate(t.ss, t.rtt)
-	t.Logger.Logf("s-x", "Event", 0, 0, "Init rate = %d bps", t.x)
+	t.Logger.Logf("s-x", "Event", nil, "Init rate = %d bps", t.x)
 	panic("a")
 	return t.x
 }

@@ -109,14 +109,14 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) error {
 	// Update loss estimates
 	lossFeedback, err := s.lossTracker.OnRead(fb)
 	if err != nil {
-		s.Logger.Logf("s", "Warn", fb.SeqNo, fb.AckNo, "lossTracker.OnRead err (%s)", err)
+		s.Logger.Logf("s", "Warn", fb, "lossTracker.OnRead err (%s)", err)
 		return nil
 	}
 
 	// Update allowed sending rate
 	xrecv, err := readReceiveRate(fb)
 	if err != nil {
-		s.Logger.Logf("s", "Warn", fb.SeqNo, fb.AckNo, "Feedback packet with corrupt receive rate option")
+		s.Logger.Logf("s", "Warn", fb, "Feedback packet with corrupt receive rate option")
 		return nil
 	}
 	xf := &XFeedback{
@@ -156,7 +156,7 @@ func (s *sender) Strobe() {
 	s.Unlock()
 
 	if !open {
-		s.Logger.Logf("s", "Event", 0, 0, "Strobe immediate")
+		s.Logger.Logf("s", "Event", nil, "Strobe immediate")
 		return
 	}
 
