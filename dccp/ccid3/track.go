@@ -44,9 +44,9 @@ func (t *lossTracker) OnRead(fb *dccp.FeedbackHeader) (LossFeedback, error) {
 		return LossFeedback{}, ErrNoAck
 	}
 	var lossIntervals *LossIntervalsOption
-	t.Logger.Logf("s-tracker", "Event", fb, "Encoded option count = %d", len(fb.Options))
+	t.Logger.Emit("s-tracker", "Event", fb, "Encoded option count = %d", len(fb.Options))
 	for i, opt := range fb.Options {
-		t.Logger.Logf("s-tracker", "Event", fb, "Decoding option %d", i)
+		t.Logger.Emit("s-tracker", "Event", fb, "Decoding option %d", i)
 		if lossIntervals = DecodeLossIntervalsOption(opt); lossIntervals != nil {
 			break
 		}

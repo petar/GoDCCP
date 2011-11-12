@@ -14,7 +14,7 @@ func (c *Conn) logCatchSeqNo(h *Header, seqNos ...int64) {
 	}
 	for _, seqNo := range seqNos {
 		if h.SeqNo == seqNo {
-			c.Logger.Logf("conn", "Catch", h, "Caught SeqNo=%d: %s\n%s", 
+			c.Logger.Emit("conn", "Catch", h, "Caught SeqNo=%d: %s\n%s", 
 				seqNo, h.String(), string(debug.Stack()))
 			break
 		}

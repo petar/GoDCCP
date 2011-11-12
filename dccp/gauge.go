@@ -51,7 +51,7 @@ type LogRecord struct {
 	SourceLine int
 }
 
-func (t Logger) Logf(submodule string, event string, h interface{}, comment string, v ...interface{}) {
+func (t Logger) Emit(submodule string, event string, h interface{}, comment string, v ...interface{}) {
 	if t == "" {
 		return
 	}

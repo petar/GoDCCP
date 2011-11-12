@@ -79,7 +79,7 @@ func (c *Conn) gotoREQUEST(serviceCode uint32) {
 				break
 			}
 			c.Lock()
-			c.Logger.Logf("conn", "Event", nil, "Request resend")
+			c.Logger.Emit("conn", "Event", nil, "Request resend")
 			c.inject(c.generateRequest(serviceCode))
 			c.Unlock()
 		}
@@ -99,7 +99,7 @@ func (c *Conn) openCCID() {
 	c.scc.Open()
 	c.rcc.Open()
 	c.ccidOpen = true
-	c.Logger.Logf("conn", "Event", nil, "CCID open")
+	c.Logger.Emit("conn", "Event", nil, "CCID open")
 }
 
 func (c *Conn) closeCCID() {
@@ -110,7 +110,7 @@ func (c *Conn) closeCCID() {
 	c.scc.Close()
 	c.rcc.Close()
 	c.ccidOpen = false
-	c.Logger.Logf("conn", "Event", nil, "CCID close")
+	c.Logger.Emit("conn", "Event", nil, "CCID close")
 }
 
 func (c *Conn) gotoPARTOPEN() {
@@ -123,14 +123,14 @@ func (c *Conn) gotoPARTOPEN() {
 	// Start PARTOPEN timer, according to Section 8.1.5
 	go func() {
 		b := newBackOff(PARTOPEN_BACKOFF_FIRST, PARTOPEN_BACKOFF_MAX, PARTOPEN_BACKOFF_FIRST)
-		c.Logger.Logf("conn", "Event", nil, "PARTOPEN backoff start")
+		c.Logger.Emit("conn", "Event", nil, "PARTOPEN backoff start")
 		for {
 			err, btm := b.Sleep()
 			c.Lock()
 			state := c.socket.GetState()
 			c.Unlock()
 			if state != PARTOPEN {
-				c.Logger.Logf("conn", "Event", nil, "PARTOPEN backoff EXIT via state change")
+				c.Logger.Emit("conn", "Event", nil, "PARTOPEN backoff EXIT via state change")
 				break
 			}
 			// If the back-off timer has reached maximum wait. End the connection.
@@ -138,7 +138,7 @@ func (c *Conn) gotoPARTOPEN() {
 				c.abort()
 				break
 			}
-			c.Logger.Logf("conn", "Event", nil, "PARTOPEN backoff %d", btm)
+			c.Logger.Emit("conn", "Event", nil, "PARTOPEN backoff %d", btm)
 			c.Lock()
 			c.inject(c.generateAck())
 			// XXX: This is a deviation from the RFC. The Sync packet necessitates a

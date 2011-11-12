@@ -62,7 +62,7 @@ func (s *strober) Strobe() {
 	delta := s.interval - (now - s.last)
 	dbgInterval := s.interval // DBG
 	s.Unlock()
-	defer s.Logger.Logf("s-strober", "Event", nil, "Strobe at %d pps", 1e9 / dbgInterval)
+	defer s.Logger.Emit("s-strober", "Event", nil, "Strobe at %d pps", 1e9 / dbgInterval)
 	if delta > 0 {
 		dccp.GetTime().Sleep(delta)
 	}
