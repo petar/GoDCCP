@@ -17,9 +17,8 @@ func (c *Conn) writeCCID(h *Header) *Header {
 	if !validateCCIDReceiverToSender(rsopts) {
 		panic("receiver congestion control writes disallowed options")
 	}
-	// XXX: Also check option compatibility with respect to packet type (Data vs. other)
+	// TODO: Also check option compatibility with respect to packet type (Data vs. other)
 	h.Options = append(h.Options, append(sropts, rsopts...)...)
-	c.Logger.Logf("conn", "Peek", h, "OnWrite Opts=%v", h.Options)
 	return h
 }
 
@@ -46,10 +45,10 @@ func (c *Conn) inject(h *Header) {
 		}
 		c.writeNonData <- h
 		if h != nil {
-			c.logWriteHeader(h)
+			c.Logger.Logf("conn", "Write", h, "Wrote to injection queue")
 		}
 	} else {
-		c.logWarn("Dropping non-data, congestion rate too slow")
+		c.Logger.Logf("conn", "Drop", h, "Dropping non-data. Slow strobe.")
 	}
 }
 
@@ -130,7 +129,7 @@ _Loop_II:
 			h = c.generateDataAck(appData)
 			h = c.writeCCID(h)
 			c.Unlock()
-			c.logWriteHeader(h)
+			c.Logger.Logf("conn", "Write", h, "Data pre-strobe")
 		}
 		if h != nil {
 			err := c.write(h)

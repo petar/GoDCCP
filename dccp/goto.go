@@ -47,8 +47,8 @@ func (c *Conn) gotoRESPOND(hServiceCode uint32, hSeqNo int64) {
 }
 
 const (
-	REQUEST_BACKOFF_FIRST = 1e9 // Initial re-send period for client Request resends is 1 sec, in nanoseconds
-	REQUEST_BACKOFF_MAX   = 120e9 // Request re-sends quit after 2 mins, in nanoseconds
+	REQUEST_BACKOFF_FIRST = 1e9  // Initial re-send period for client Request resends is 1 sec, in nanoseconds
+	REQUEST_BACKOFF_MAX   = 60e9 // Request re-sends quit after 1 mins, in nanoseconds
 	REQUEST_BACKOFF_FREQ  = 10e9 // Back-off Request resend every 10 secs, in nanoseconds
 )
 
@@ -79,7 +79,7 @@ func (c *Conn) gotoREQUEST(serviceCode uint32) {
 				break
 			}
 			c.Lock()
-			c.logWarn("resend Request")
+			c.Logger.Logf("conn", "Event", nil, "Request resend")
 			c.inject(c.generateRequest(serviceCode))
 			c.Unlock()
 		}
@@ -99,7 +99,7 @@ func (c *Conn) openCCID() {
 	c.scc.Open()
 	c.rcc.Open()
 	c.ccidOpen = true
-	c.logEvent("CCID open")
+	c.Logger.Logf("conn", "Event", nil, "CCID open")
 }
 
 func (c *Conn) closeCCID() {
@@ -110,7 +110,7 @@ func (c *Conn) closeCCID() {
 	c.scc.Close()
 	c.rcc.Close()
 	c.ccidOpen = false
-	c.logEvent("CCID close")
+	c.Logger.Logf("conn", "Event", nil, "CCID close")
 }
 
 func (c *Conn) gotoPARTOPEN() {

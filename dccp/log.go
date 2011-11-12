@@ -25,19 +25,3 @@ func (c *Conn) logState() {
 	c.AssertLocked()
 	c.Logger.SetState(c.socket.GetState())
 }
-
-func (c *Conn) logReadHeader(h *Header) {
-	c.Logger.Logf("conn", "Read", h, "")
-}
-
-func (c *Conn) logWriteHeader(h *Header) {
-	c.Logger.Logf("conn", "Write", h, "")
-}
-
-func (c *Conn) logEvent(s string) {
-	c.Logger.Logf("conn", "Event", nil, s)
-}
-
-func (c *Conn) logWarn(s string) {
-	c.Logger.Logf("conn", "Warn", nil, s)
-}

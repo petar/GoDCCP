@@ -187,8 +187,5 @@ func (r *receiver) OnIdle(now int64) error {
 func (r *receiver) Close() {
 	r.Lock()
 	defer r.Unlock()
-	if !r.open {
-		panic("closing a closed ccid3 receiver")
-	}
 	r.open = false
 }

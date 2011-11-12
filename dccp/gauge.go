@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"encoding/json"
 	"os"
+	"path"
+	goruntime "runtime"
 	"github.com/petar/GoGauge/gauge"
 )
 
@@ -44,6 +46,9 @@ type LogRecord struct {
 	Type     string
 	SeqNo    int64
 	AckNo    int64
+
+	SourceFile string
+	SourceLine int
 }
 
 func (t Logger) Logf(submodule string, event string, h interface{}, comment string, v ...interface{}) {
@@ -54,6 +59,8 @@ func (t Logger) Logf(submodule string, event string, h interface{}, comment stri
 		return
 	}
 	sinceZero, sinceLast := SnapLog()
+
+	// Extract header information
 	var hType string
 	var hSeqNo, hAckNo int64
 	switch t := h.(type) {
@@ -70,22 +77,34 @@ func (t Logger) Logf(submodule string, event string, h interface{}, comment stri
 		hSeqNo = t.SeqNo
 		hType = typeString(t.Type)
 	}
+
+	_, sfile, sline, _ := goruntime.Caller(1)
+	sdir, sfile := path.Split(sfile)
+	if len(sdir) > 0 {
+		_, sdir = path.Split(sdir[:len(sdir)-1])
+	}
+	sfile = path.Join(sdir, sfile)
+
 	if logWriter != nil {
 		r := &LogRecord{
-			Time:      sinceZero,
-			Module:    t.GetName(),
-			Submodule: submodule,
-			Event:     event,
-			State:     t.GetState(),
-			Comment:   fmt.Sprintf(comment, v...),
-			Type:      hType,
-			SeqNo:     hSeqNo,
-			AckNo:     hAckNo,
+			Time:       sinceZero,
+			Module:     t.GetName(),
+			Submodule:  submodule,
+			Event:      event,
+			State:      t.GetState(),
+			Comment:    fmt.Sprintf(comment, v...),
+			Type:       hType,
+			SeqNo:      hSeqNo,
+			AckNo:      hAckNo,
+			SourceFile: sfile,
+			SourceLine: sline,
 		}
 		logWriter.Write(r)
 	}
-	fmt.Printf("%15s %15s  %-8s  %6s:%-11s  %-7s  %8s  %8d·%-8d  ——  %s\n", 
-		nstoa(sinceZero), nstoa(sinceLast), t.GetState(), t.GetName(), 
+	fmt.Printf("%15s %15s %18s:%-3d %-8s %6s:%-11s %-7s %8s %8d-%-8d * %s\n", 
+		nstoa(sinceZero), nstoa(sinceLast), 
+		sfile, sline,
+		t.GetState(), t.GetName(), 
 		submodule, event, 
 		hType, hSeqNo, hAckNo,
 		fmt.Sprintf(comment, v...),

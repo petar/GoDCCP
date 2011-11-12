@@ -1,4 +1,8 @@
 
+TODO TESTING
+
+* after 1sec, CCID has not been open on server
+
 TODO PRE-RELEASE
 
 * address Ack-Sync pair in client connection establishement, marked XXX in code

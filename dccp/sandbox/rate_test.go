@@ -27,7 +27,7 @@ func TestOpenClose(t *testing.T) {
 	go func() {
 		time.Sleep(1e9)
 		_, err := clientConn.ReadSegment()
-		fmt.Printf("client/read err = %s\n", err)
+		fmt.Printf("client/read err = %v\n", err)
 	}()
 
 	slog := dccp.Logger("server")
@@ -35,7 +35,7 @@ func TestOpenClose(t *testing.T) {
 	go func() {
 		time.Sleep(1e9)
 		err := serverConn.Close()
-		fmt.Printf("server/close err = %s\n", err)
+		fmt.Printf("server/close err = %v\n", err)
 	}()
 
 	time.Sleep(10e9)

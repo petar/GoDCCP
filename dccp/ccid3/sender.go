@@ -187,8 +187,5 @@ func (s *sender) OnIdle(now int64) error {
 func (s *sender) Close() {
 	s.Lock()
 	defer s.Unlock()
-	if !s.open {
-		panic("closing a non-open ccid3 sender")
-	}
 	s.open = false
 }

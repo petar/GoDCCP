@@ -12,6 +12,8 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
+// BUG: WriteHeader blocks if rate exceeded. MUST drop instead.
+
 type Line struct {
 	dccp.Logger
 	ha, hb headerHalfLine
