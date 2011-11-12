@@ -1,5 +1,8 @@
 
--- TEST BEHAVIOR
+* injection queue is not flushed. c.write() is hanging. fix line to drop, not delay when rate
+exceeds.
+
+* after 1sec, CCID has not been open on server
 
 * why does packet exchange stop in 6 seconds
 	* because OnIdle is not called regularly, which is the case because SetReadTimeout is not
@@ -10,7 +13,3 @@
 perpetually
 	* write test for this
 	* ponder event emit protocol for test writing
-
--- TEST INFRASTRCTURE
-
-* accelerated synthetic timer instance for the sandbox (not critical)

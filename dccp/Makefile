@@ -10,7 +10,7 @@ GOFILES=\
 	chanlink.go\
 	checksum.go\
 	conn.go\
-	log.go\
+	emit.go\
 	gen.go\
 	goto.go\
 	inj.go\

@@ -52,6 +52,10 @@ type LogRecord struct {
 }
 
 func (t Logger) Emit(submodule string, event string, h interface{}, comment string, v ...interface{}) {
+	t.EmitCaller(1, submodule, event, h, comment, v...)
+}
+
+func (t Logger) EmitCaller(level int, submodule string, event string, h interface{}, comment string, v ...interface{}) {
 	if t == "" {
 		return
 	}
@@ -78,12 +82,16 @@ func (t Logger) Emit(submodule string, event string, h interface{}, comment stri
 		hType = typeString(t.Type)
 	}
 
-	_, sfile, sline, _ := goruntime.Caller(1)
+	_, sfile, sline, _ := goruntime.Caller(1+level)
 	sdir, sfile := path.Split(sfile)
 	if len(sdir) > 0 {
 		_, sdir = path.Split(sdir[:len(sdir)-1])
 	}
 	sfile = path.Join(sdir, sfile)
+
+	if len(v) > 0 {
+		comment = fmt.Sprintf(comment, v...)
+	}
 
 	if logWriter != nil {
 		r := &LogRecord{
@@ -92,7 +100,7 @@ func (t Logger) Emit(submodule string, event string, h interface{}, comment stri
 			Submodule:  submodule,
 			Event:      event,
 			State:      t.GetState(),
-			Comment:    fmt.Sprintf(comment, v...),
+			Comment:    comment,
 			Type:       hType,
 			SeqNo:      hSeqNo,
 			AckNo:      hAckNo,
@@ -107,7 +115,7 @@ func (t Logger) Emit(submodule string, event string, h interface{}, comment stri
 		t.GetState(), t.GetName(), 
 		submodule, event, 
 		hType, hSeqNo, hAckNo,
-		fmt.Sprintf(comment, v...),
+		comment,
 	)
 }
 

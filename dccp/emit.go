@@ -8,20 +8,20 @@ import (
 	"runtime/debug"
 )
 
-func (c *Conn) logCatchSeqNo(h *Header, seqNos ...int64) {
+func (c *Conn) emitCatchSeqNo(h *Header, seqNos ...int64) {
 	if h == nil { 
 		return
 	}
 	for _, seqNo := range seqNos {
 		if h.SeqNo == seqNo {
-			c.Logger.Emit("conn", "Catch", h, "Caught SeqNo=%d: %s\n%s", 
+			c.Logger.EmitCaller(1, "conn", "Catch", h, "Caught SeqNo=%d: %s\n%s", 
 				seqNo, h.String(), string(debug.Stack()))
 			break
 		}
 	}
 }
 
-func (c *Conn) logState() {
+func (c *Conn) emitSetState() {
 	c.AssertLocked()
 	c.Logger.SetState(c.socket.GetState())
 }

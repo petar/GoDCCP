@@ -36,7 +36,7 @@ func (c *Conn) inject(h *Header) {
 	}
 
 	// Catch outgoing non-Data packets for debug purposes here
-	// c.logCatchSeqNo(h, 161019, 161020, 161021)
+	// c.emitCatchSeqNo(h, 161019, 161020, 161021)
 
 	// Dropping a nil is OK, since it happens only if there are other packets in the queue
 	if len(c.writeNonData) < cap(c.writeNonData) {

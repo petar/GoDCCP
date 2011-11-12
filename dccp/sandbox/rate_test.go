@@ -19,7 +19,7 @@ func TestOpenClose(t *testing.T) {
 
 	dccp.SetTime(dccp.RealTime)
 
-	hca, hcb, _ := NewLine("line", "client", "server", 1e9, 10)
+	hca, hcb, _ := NewLine("line", "client", "server", 1e9, 10)  // 10 packets per second
 	ccid := ccid3.CCID3{}
 
 	clog := dccp.Logger("client")
@@ -34,8 +34,9 @@ func TestOpenClose(t *testing.T) {
 	serverConn := dccp.NewConnServer(slog, hcb, ccid.NewSender(slog), ccid.NewReceiver(slog))
 	go func() {
 		time.Sleep(1e9)
-		err := serverConn.Close()
-		fmt.Printf("server/close err = %v\n", err)
+		if err := serverConn.Close(); err != nil {
+			t.Errorf("server close error (%s)", err)
+		}
 	}()
 
 	time.Sleep(10e9)

@@ -8,7 +8,7 @@ func (c *Conn) gotoLISTEN() {
 	c.AssertLocked()
 	c.socket.SetServer(true)
 	c.socket.SetState(LISTEN)
-	c.logState()
+	c.emitSetState()
 	go func() {
 		GetTime().Sleep(REQUEST_BACKOFF_MAX)
 		c.Lock()
@@ -26,7 +26,7 @@ const RESPOND_TIMEOUT = 30e9 // Timeout in RESPOND state, 30 sec in nanoseconds
 func (c *Conn) gotoRESPOND(hServiceCode uint32, hSeqNo int64) {
 	c.AssertLocked()
 	c.socket.SetState(RESPOND)
-	c.logState()
+	c.emitSetState()
 	iss := c.socket.ChooseISS()
 	c.socket.SetGAR(iss)
 	c.socket.SetISR(hSeqNo)
@@ -56,7 +56,7 @@ func (c *Conn) gotoREQUEST(serviceCode uint32) {
 	c.AssertLocked()
 	c.socket.SetServer(false)
 	c.socket.SetState(REQUEST)
-	c.logState()
+	c.emitSetState()
 	c.socket.SetServiceCode(serviceCode)
 	iss := c.socket.ChooseISS()
 	c.socket.SetGAR(iss)
@@ -116,7 +116,7 @@ func (c *Conn) closeCCID() {
 func (c *Conn) gotoPARTOPEN() {
 	c.AssertLocked()
 	c.socket.SetState(PARTOPEN)
-	c.logState()
+	c.emitSetState()
 	c.openCCID()
 	c.inject(nil) // Unblocks the writeLoop select, so it can see the state change
 
@@ -154,7 +154,7 @@ func (c *Conn) gotoOPEN(hSeqNo int64) {
 	c.AssertLocked()
 	c.socket.SetOSR(hSeqNo)
 	c.socket.SetState(OPEN)
-	c.logState()
+	c.emitSetState()
 	c.openCCID()
 	c.inject(nil) // Unblocks the writeLoop select, so it can see the state change
 }
@@ -163,7 +163,7 @@ func (c *Conn) gotoTIMEWAIT() {
 	c.AssertLocked()
 	c.teardownUser()
 	c.socket.SetState(TIMEWAIT)
-	c.logState()
+	c.emitSetState()
 	c.closeCCID()
 	go func() {
 		GetTime().Sleep(2 * MSL)
@@ -175,7 +175,7 @@ func (c *Conn) gotoCLOSING() {
 	c.AssertLocked()
 	c.teardownUser()
 	c.socket.SetState(CLOSING)
-	c.logState()
+	c.emitSetState()
 	c.closeCCID()
 	go func() {
 		c.Lock()
@@ -207,7 +207,7 @@ func (c *Conn) gotoCLOSING() {
 func (c *Conn) gotoCLOSED() {
 	c.AssertLocked()
 	c.socket.SetState(CLOSED)
-	c.logState()
+	c.emitSetState()
 	c.teardownUser()
 	c.teardownWriteLoop()
 	c.closeCCID()
