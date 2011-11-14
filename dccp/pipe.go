@@ -28,8 +28,8 @@ const READ_TIMEOUT = 1e9
 // of approximately one RTT.
 func (c *Conn) idleLoop() {
 	for {
-		c.Lock()
 		c.pollCongestionControl()
+		c.Lock()
 		c.syncWithCongestionControl()
 		rtt := c.socket.GetRTT()
 		state := c.socket.GetState()
@@ -131,7 +131,7 @@ func (c *Conn) readLoop() {
 }
 
 func (c *Conn) pollCongestionControl() {
-	now := GetTime().Nanoseconds()
+	now := Nanoseconds()
 	if e := c.scc.OnIdle(now); e != nil {
 		if re, ok := e.(CongestionReset); ok {
 			c.abortWith(re.ResetCode())

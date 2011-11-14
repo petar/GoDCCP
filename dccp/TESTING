@@ -1,6 +1,5 @@
 
-* injection queue is not flushed. c.write() is hanging. fix line to drop, not delay when rate
-exceeds.
+* the time between inject() and retrieval in <-writeNonData is 1 sec. why?
 
 * after 1sec, CCID has not been open on server
 

@@ -69,17 +69,25 @@ func (t Logger) EmitCaller(level int, submodule string, event string, h interfac
 	var hSeqNo, hAckNo int64
 	switch t := h.(type) {
 	case *Header:
-		hSeqNo, hAckNo = t.SeqNo, t.AckNo
-		hType = typeString(t.Type)
+		if t != nil {
+			hSeqNo, hAckNo = t.SeqNo, t.AckNo
+			hType = typeString(t.Type)
+		}
 	case *PreHeader:
-		hSeqNo, hAckNo = t.SeqNo, t.AckNo
-		hType = typeString(t.Type)
+		if t != nil {
+			hSeqNo, hAckNo = t.SeqNo, t.AckNo
+			hType = typeString(t.Type)
+		}
 	case *FeedbackHeader:
-		hSeqNo, hAckNo = t.SeqNo, t.AckNo
-		hType = typeString(t.Type)
+		if t != nil {
+			hSeqNo, hAckNo = t.SeqNo, t.AckNo
+			hType = typeString(t.Type)
+		}
 	case *FeedforwardHeader:
-		hSeqNo = t.SeqNo
-		hType = typeString(t.Type)
+		if t != nil {
+			hSeqNo = t.SeqNo
+			hType = typeString(t.Type)
+		}
 	}
 
 	_, sfile, sline, _ := goruntime.Caller(1+level)

@@ -43,7 +43,9 @@ func (c *Conn) inject(h *Header) {
 		if h != nil {
 			h = c.writeCCID(h)
 		}
+		c.Logger.Emit("conn", "---", h, "writeNonData<- PRE")
 		c.writeNonData <- h
+		c.Logger.Emit("conn", "---", h, "writeNonData<- POST")
 		if h != nil {
 			c.Logger.Emit("conn", "Write", h, "Wrote to injection queue")
 		}
@@ -71,6 +73,7 @@ _Loop_I:
 
 	for {
 		h, ok := <-writeNonData
+		c.Logger.Emit("conn", "XXX", h, "<-writeNonData")
 		if !ok {
 			// Closing writeNonData means that the Conn is done and dead
 			goto _Exit

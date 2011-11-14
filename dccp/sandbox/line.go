@@ -8,20 +8,19 @@ import (
 	"io"
 	"os"
 	"sync"
-	"time"
 	"github.com/petar/GoDCCP/dccp"
 )
-
-// BUG: WriteHeader blocks if rate exceeded. MUST drop instead.
 
 type Line struct {
 	dccp.Logger
 	ha, hb headerHalfLine
 }
 
+const LineBufferLen = 2
+
 func NewLine(logger dccp.Logger, aName, bName string, gap int64, packetsPerGap uint32) (a, b dccp.HeaderConn, line *Line) {
-	ab := make(chan *dccp.Header)
-	ba := make(chan *dccp.Header)
+	ab := make(chan *dccp.Header, LineBufferLen)
+	ba := make(chan *dccp.Header, LineBufferLen)
 	line = &Line{}
 	line.Logger = logger
 	line.ha.Init(aName, line.Logger, ba, ab, gap, packetsPerGap)
@@ -88,10 +87,14 @@ func (hhl *headerHalfLine) WriteHeader(h *dccp.Header) (err error) {
 	}
 
 	if hhl.rateFilter() {
-		hhl.write <- h
-		hhl.Logger.Emit(hhl.name, "Write", h, "SeqNo=%d", h.SeqNo)
+		if len(hhl.write) >= cap(hhl.write) {
+			hhl.Logger.Emit(hhl.name, "Drop", h, "Slow reader")
+		} else {
+			hhl.write <- h
+			hhl.Logger.Emit(hhl.name, "Write", h, "SeqNo=%d", h.SeqNo)
+		}
 	} else {
-		hhl.Logger.Emit(hhl.name, "Drop", h, "SeqNo=%d", h.SeqNo)
+		hhl.Logger.Emit(hhl.name, "Drop", h, "Fast writer")
 	}
 	return nil
 }
@@ -100,7 +103,7 @@ func (hhl *headerHalfLine) rateFilter() bool {
 	hhl.glock.Lock()
 	defer hhl.glock.Unlock()
 
-	now := time.Nanoseconds()
+	now := dccp.Nanoseconds()
 	gctr := now / hhl.gap
 	if gctr != hhl.gapCounter {
 		hhl.gapCounter = gctr
