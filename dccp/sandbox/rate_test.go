@@ -6,6 +6,7 @@ package sandbox
 
 import (
 	"fmt"
+	"os"
 	"testing"
 	"time"
 	"github.com/petar/GoGauge/gauge"
@@ -15,6 +16,7 @@ import (
 
 func TestOpenClose(t *testing.T) {
 
+	dccp.SetLogWriter(dccp.NewFileLogWriter(os.Getenv("DCCPLOG")))
 	gauge.Select("client", "server", "line", "conn", "s", "s-x", "s-strober", "s-tracker", "r")
 
 	dccp.SetTime(dccp.RealTime)

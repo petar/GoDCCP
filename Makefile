@@ -15,8 +15,10 @@ all: install
 DIRS=\
      	dccp\
      	dccp/gauge\
-     	dccp/sandbox\
+     	dccp/gauge/inspector\
      	dccp/ccid3\
+     	dccp/sandbox\
+     	dccp/sandbox/openclose\
 
 TEST=\
 	$(filter-out $(NOTEST),$(DIRS))

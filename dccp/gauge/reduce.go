@@ -157,6 +157,16 @@ func (t *LogReducer) Trips() map[int64]*Trip {
 	return t.trips
 }
 
+func TripMapToSlice(m map[int64]*Trip) []*Trip {
+	s := make([]*Trip, len(m))
+	var i int
+	for _, t := range m {
+		s[i] = t
+		i++
+	}
+	return s
+}
+
 // LogRecordChrono is a chronological sort driver for []*dccp.LogRecord
 type LogRecordChrono []*dccp.LogRecord
 

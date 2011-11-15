@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"github.com/petar/GoGauge/gauge"
 	"github.com/petar/GoDCCP/dccp/sandbox"
 	"github.com/petar/GoDCCP/dccp"
@@ -14,6 +15,7 @@ import (
 
 func main() {
 	dccp.InstallCtrlCPanic()
+	dccp.SetLogWriter(dccp.NewFileLogWriter(os.Getenv("DCCPLOG")))
 
 	gauge.Select("client", "server", "line", "conn", "s", "s-x", "s-strober", "s-tracker", "r")
 

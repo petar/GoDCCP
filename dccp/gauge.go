@@ -118,7 +118,7 @@ func (t Logger) EmitCaller(level int, submodule string, event string, h interfac
 		logWriter.Write(r)
 	}
 	fmt.Printf("%15s %15s %18s:%-3d %-8s %6s:%-11s %-7s %8s %8d-%-8d * %s\n", 
-		nstoa(sinceZero), nstoa(sinceLast), 
+		Nstoa(sinceZero), Nstoa(sinceLast), 
 		sfile, sline,
 		t.GetState(), t.GetName(), 
 		submodule, event, 
@@ -139,7 +139,7 @@ func indentEvent(event string) string {
 
 const nsAlpha = "0123456789"
 
-func nstoa(ns int64) string {
+func Nstoa(ns int64) string {
 	if ns < 0 {
 		panic("negative time")
 	}
@@ -189,7 +189,7 @@ func (t *FileLogWriter) Write(r *LogRecord) {
 	}
 }
 
-var logWriter LogWriter = NewFileLogWriter(os.Getenv("DCCPLOG"))
+var logWriter LogWriter
 
 // SetLogWriter sets the DCCP-wide LogWriter facility
 func SetLogWriter(e LogWriter) { logWriter = e }
