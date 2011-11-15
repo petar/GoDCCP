@@ -5,5 +5,6 @@ make clean && make install \
 	&& cd gauge && make clean && make install \
 	&& cd ../ccid3 && make clean && make install \
 	&& cd ../sandbox && make clean && make install \
-	&& gotest -test.cpuprofile=cpu.out
+	&& cd openclose && make clean && make install \
+	&& ./openclose
 popd

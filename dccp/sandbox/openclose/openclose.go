@@ -13,6 +13,7 @@ import (
 )
 
 func main() {
+	dccp.InstallCtrlCPanic()
 
 	gauge.Select("client", "server", "line", "conn", "s", "s-x", "s-strober", "s-tracker", "r")
 
@@ -38,5 +39,5 @@ func main() {
 		}
 	}()
 
-	dccp.Sleep(40e9)
+	dccp.Sleep(10e9)
 }
