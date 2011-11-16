@@ -45,10 +45,10 @@ func (c *Conn) inject(h *Header) {
 		}
 		c.writeNonData <- h
 		if h != nil {
-			c.Logger.Emit("conn", "Write", h, "Wrote to injection queue")
+			c.Logger.Emit("conn", "Write", h, "Non-data to injection queue")
 		}
 	} else {
-		c.Logger.Emit("conn", "Drop", h, "Dropping non-data. Slow strobe.")
+		c.Logger.Emit("conn", "Drop", h, "Non-data; Slow strobe")
 	}
 }
 
@@ -129,7 +129,7 @@ _Loop_II:
 			h = c.generateDataAck(appData)
 			h = c.writeCCID(h)
 			c.Unlock()
-			c.Logger.Emit("conn", "Write", h, "Data pre-strobe")
+			c.Logger.Emit("conn", "Write", h, "Data")
 		}
 		if h != nil {
 			err := c.write(h)

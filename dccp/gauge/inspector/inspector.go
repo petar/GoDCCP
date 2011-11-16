@@ -63,7 +63,7 @@ func printBasic(log []*dccp.LogRecord) {
 	for _, t := range trips {
 		p := MakeOneWayTripPrint(t)
 		if p != nil {
-			prints = append(prints, p)
+			prints = append(prints, p...)
 		}
 	}
 	Print(prints)
@@ -71,7 +71,8 @@ func printBasic(log []*dccp.LogRecord) {
 
 // MakeOneWayTripPrint prepares a print record for a one-way packet
 // trip that reaches the destination. Otherwise, it returns nil.
-func MakeOneWayTripPrint(t *dccp_gauge.Trip) *PrintRecord {
+func MakeOneWayTripPrint(t *dccp_gauge.Trip) []*PrintRecord {
+	// Find write record
 	var start *dccp.LogRecord
 	for _, s := range t.Forward {
 		if s.Event == "Write" && (s.Module == "client" || s.Module == "server") {
@@ -79,10 +80,19 @@ func MakeOneWayTripPrint(t *dccp_gauge.Trip) *PrintRecord {
 			break
 		}
 	}
-	if start == nil {
+	if start == nil || start.Module == "line" {
 		fmt.Printf("Trip with no start\n")
 		return nil
 	}
+	// Find drop record
+	var drop *dccp.LogRecord
+	for _, s := range t.Forward {
+		if s.Event == "Drop" {
+			drop = s
+			break
+		}
+	}
+	// Find read record
 	var end *dccp.LogRecord
 	for i := 0; i < len(t.Forward); i++ {
 		s := t.Forward[len(t.Forward)-1-i]
@@ -91,42 +101,55 @@ func MakeOneWayTripPrint(t *dccp_gauge.Trip) *PrintRecord {
 			break
 		}
 	}
-	if end == nil {
-		return nil
+	// Make print records
+	var rightleft bool
+	if start.Module == "server" {
+		rightleft = true
 	}
-	if start.Type != end.Type {
-		fmt.Printf("Start and end types differ\n")
-		return nil
+	var ps []*PrintRecord = make([]*PrintRecord, 3)
+	var pi int
+	const flushRight = "                                                                                    "
+	const flushMiddle = "                                       "
+	// Print start record
+	if rightleft {
+		ps[pi] = &PrintRecord{}
+		ps[pi].Time = start.Time
+		pkt := fmt.Sprintf(" %8s %06x·%06x ", start.Type, start.SeqNo, start.AckNo)
+		ps[pi].Text = fmt.Sprintf("%15s %s <———%s<——— %-8s", dccp.Nstoa(start.Time), flushRight, pkt, start.State)
+		pi++
+	} else {
+		ps[pi] = &PrintRecord{}
+		ps[pi].Time = start.Time
+		pkt := fmt.Sprintf(" %8s %06x·%06x ", start.Type, start.SeqNo, start.AckNo)
+		ps[pi].Text = fmt.Sprintf("%15s %-8s ———>%s———>", dccp.Nstoa(start.Time), start.State, pkt)
+		pi++
 	}
-	var text string
-	switch {
-	case start.Module == "client" && end.Module == "server":
-		text = fmt.Sprintf("%15s:%-8s ---- %8s %8d (%8d) ---> %-8s:%15s",
-			dccp.Nstoa(start.Time), start.State,
-			start.Type, start.SeqNo, start.AckNo,
-			end.State, dccp.Nstoa(end.Time),
-		)
-	case start.Module == "server" && end.Module == "client":
-		text = fmt.Sprintf("%15s:%-8s <--- (%8d) %8d %8s ---- %-8s:%15s",
-			dccp.Nstoa(end.Time), end.State,
-			start.AckNo, start.SeqNo, start.Type,
-			start.State, dccp.Nstoa(start.Time),
-		)
-	default:
-		fmt.Printf("Start and end modules are the same\n")
-		return nil
+	// Print end record
+	if end != nil {
+		if rightleft {
+			ps[pi] = &PrintRecord{}
+			ps[pi].Time = end.Time
+			pkt := fmt.Sprintf(" %8s %06x·%06x ", end.Type, end.SeqNo, end.AckNo)
+			ps[pi].Text = fmt.Sprintf("%15s %-8s <———%s<———", dccp.Nstoa(end.Time), end.State, pkt)
+			pi++
+		} else {
+			ps[pi] = &PrintRecord{}
+			ps[pi].Time = end.Time
+			pkt := fmt.Sprintf(" %8s %06x·%06x ", end.Type, end.SeqNo, end.AckNo)
+			ps[pi].Text = fmt.Sprintf("%15s %s ———>%s———> %-8s", dccp.Nstoa(end.Time), flushRight, pkt, end.State)
+			pi++
+		}
 	}
-	return &PrintRecord{
-		Time: start.Time,
-		Text: text,
-	}
+
+	drop, end = end, drop
+	return ps[:pi]
 }
 
 // Print orders a sequence of print recors by time and prints them to standard output
 func Print(records []*PrintRecord) {
 	sort.Sort(PrintTimeSort(records))
 	for _, r := range records {
-		fmt.Printf("%15s %s\n", dccp.Nstoa(r.Time), r.Text)
+		fmt.Printf("%s\n", r.Text)
 	}
 }
 
