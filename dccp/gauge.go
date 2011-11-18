@@ -117,7 +117,7 @@ func (t Logger) EmitCaller(level int, submodule string, event string, h interfac
 		}
 		logWriter.Write(r)
 	}
-	fmt.Printf("%15s %15s %18s:%-3d %-8s %6s:%-11s %-7s %8s %8d-%-8d * %s\n", 
+	fmt.Printf("%15s %15s %18s:%-3d %-8s %6s:%-11s %-7s %8s %6x|%-6x * %s\n", 
 		Nstoa(sinceZero), Nstoa(sinceLast), 
 		sfile, sline,
 		t.GetState(), t.GetName(), 
@@ -175,11 +175,17 @@ type FileLogWriter struct {
 }
 
 func NewFileLogWriter(name string) *FileLogWriter {
+	os.Remove(name)
 	f, err := os.Create(name)
 	if err != nil {
 		panic("cannot create log file")
 	}
-	return &FileLogWriter{f, json.NewEncoder(f)}
+	w := &FileLogWriter{f, json.NewEncoder(f)}
+	goruntime.SetFinalizer(w, func(w *FileLogWriter) { 
+		fmt.Printf("Flushing log\n")
+		w.f.Close() 
+	})
+	return w
 }
 
 func (t *FileLogWriter) Write(r *LogRecord) {

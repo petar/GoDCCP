@@ -39,14 +39,12 @@ func (c *Conn) inject(h *Header) {
 	// c.emitCatchSeqNo(h, 161019, 161020, 161021)
 
 	// Dropping a nil is OK, since it happens only if there are other packets in the queue
+	c.Logger.Emit("conn", "Write", h, "Non-data to injection queue")
 	if len(c.writeNonData) < cap(c.writeNonData) {
 		if h != nil {
 			h = c.writeCCID(h)
 		}
 		c.writeNonData <- h
-		if h != nil {
-			c.Logger.Emit("conn", "Write", h, "Non-data to injection queue")
-		}
 	} else {
 		c.Logger.Emit("conn", "Drop", h, "Non-data; Slow strobe")
 	}

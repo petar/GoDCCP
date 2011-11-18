@@ -5,6 +5,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"flag"
@@ -38,12 +39,12 @@ func main() {
 	var log []*dccp.LogRecord = make([]*dccp.LogRecord, 0)
 	for {
 		rec := &dccp.LogRecord{}
-		if logDec.Decode(rec) != nil {
+		if err = logDec.Decode(rec); err != nil {
 			break
 		}
 		log = append(log, rec)
 	}
-	fmt.Printf("Read %d records\n", len(log))
+	fmt.Printf("Read %d records. EOF = %v\n", len(log), err)
 
 	// Basic
 	if *flagBasic {
@@ -81,7 +82,7 @@ func MakeOneWayTripPrint(t *dccp_gauge.Trip) []*PrintRecord {
 		}
 	}
 	if start == nil || start.Module == "line" {
-		fmt.Printf("Trip with no start\n")
+		fmt.Printf("Trip with no start, seqno=%06x\n", t.SeqNo)
 		return nil
 	}
 	// Find drop record
@@ -108,41 +109,81 @@ func MakeOneWayTripPrint(t *dccp_gauge.Trip) []*PrintRecord {
 	}
 	var ps []*PrintRecord = make([]*PrintRecord, 3)
 	var pi int
-	const flushRight = "                                                                                    "
-	const flushMiddle = "                                       "
 	// Print start record
+	const flushRight = "                                                                                    "
+	p := &PrintRecord{}
+	p.Time = start.Time
+	ps[pi] = p
+	pi++
 	if rightleft {
-		ps[pi] = &PrintRecord{}
-		ps[pi].Time = start.Time
-		pkt := fmt.Sprintf(" %8s %06x·%06x ", start.Type, start.SeqNo, start.AckNo)
-		ps[pi].Text = fmt.Sprintf("%15s %s <———%s<——— %-8s", dccp.Nstoa(start.Time), flushRight, pkt, start.State)
-		pi++
+		p.Text = fmt.Sprintf("%15s %s %s<——W %-8s", 
+			dccp.Nstoa(start.Time), flushRight, sprintPacket(start), start.State)
 	} else {
-		ps[pi] = &PrintRecord{}
-		ps[pi].Time = start.Time
-		pkt := fmt.Sprintf(" %8s %06x·%06x ", start.Type, start.SeqNo, start.AckNo)
-		ps[pi].Text = fmt.Sprintf("%15s %-8s ———>%s———>", dccp.Nstoa(start.Time), start.State, pkt)
+		p.Text = fmt.Sprintf("%15s %-8s W——>%s", 
+			dccp.Nstoa(start.Time), start.State, sprintPacket(start))
+	}
+	// Print drop record
+	const (
+		flushMiddle      = "                                       "
+		flushRightMiddle = "                                  "
+		flushLeftMiddle  = "     "
+	)
+	if drop != nil {
+		p = &PrintRecord{}
+		p.Time = drop.Time
+		ps[pi] = p
 		pi++
+		switch drop.Module {
+		case "line":
+			if rightleft {
+				p.Text = fmt.Sprintf("%15s %s D<——%s<———",
+					dccp.Nstoa(drop.Time), flushMiddle, sprintPacket(drop))
+			} else {
+				p.Text = fmt.Sprintf("%15s %s ———>%s——>D",
+					dccp.Nstoa(drop.Time), flushMiddle, sprintPacket(drop))
+			}
+		case "client":
+			if rightleft {
+				p.Text = fmt.Sprintf("%15s %-8s %s D<——%s<———",
+					dccp.Nstoa(drop.Time), drop.State, flushLeftMiddle, sprintPacket(drop))
+			} else {
+				p.Text = fmt.Sprintf("%15s %-8s %s ———>%s——>D",
+					dccp.Nstoa(drop.Time), drop.State, flushLeftMiddle, sprintPacket(drop))
+			}
+		case "server":
+			if rightleft {
+				p.Text = fmt.Sprintf("%15s %s D<——%s<——— %8s",
+					dccp.Nstoa(drop.Time), flushRightMiddle, sprintPacket(drop), drop.State)
+			} else {
+				p.Text = fmt.Sprintf("%15s %s ———>%s——>D %8s",
+					dccp.Nstoa(drop.Time), flushRightMiddle, sprintPacket(drop), drop.State)
+			}
+		}
 	}
 	// Print end record
 	if end != nil {
+		p = &PrintRecord{}
+		p.Time = end.Time
+		ps[pi] = p
+		pi++
 		if rightleft {
-			ps[pi] = &PrintRecord{}
-			ps[pi].Time = end.Time
-			pkt := fmt.Sprintf(" %8s %06x·%06x ", end.Type, end.SeqNo, end.AckNo)
-			ps[pi].Text = fmt.Sprintf("%15s %-8s <———%s<———", dccp.Nstoa(end.Time), end.State, pkt)
-			pi++
+			p.Text = fmt.Sprintf("%15s %-8s R<——%s", 
+				dccp.Nstoa(end.Time), end.State, sprintPacket(end))
 		} else {
-			ps[pi] = &PrintRecord{}
-			ps[pi].Time = end.Time
-			pkt := fmt.Sprintf(" %8s %06x·%06x ", end.Type, end.SeqNo, end.AckNo)
-			ps[pi].Text = fmt.Sprintf("%15s %s ———>%s———> %-8s", dccp.Nstoa(end.Time), flushRight, pkt, end.State)
-			pi++
+			p.Text = fmt.Sprintf("%15s %s %s——>R %-8s", 
+				dccp.Nstoa(end.Time), flushRight, sprintPacket(end), end.State)
 		}
 	}
-
-	drop, end = end, drop
 	return ps[:pi]
+}
+
+func sprintPacket(r *dccp.LogRecord) string {
+	var w bytes.Buffer
+	w.WriteString(r.Type)
+	for i := 0; i < 9-len(r.Type); i++ {
+		w.WriteRune('·')
+	}
+	return fmt.Sprintf(" %9s%06x|%06x ", string(w.Bytes()), r.SeqNo, r.AckNo)
 }
 
 // Print orders a sequence of print recors by time and prints them to standard output
