@@ -46,7 +46,7 @@ func (c *Conn) inject(h *Header) {
 		}
 		c.writeNonData <- h
 	} else {
-		c.Logger.Emit("conn", "Drop", h, "Non-data; Slow strobe")
+		c.Logger.Emit("conn", "Drop", h, "Slow strobe")
 	}
 }
 

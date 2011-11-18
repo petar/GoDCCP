@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"flag"
+	"io"
 	"os"
 	"sort"
 	//"github.com/petar/GoGauge/gauge"
@@ -44,7 +45,10 @@ func main() {
 		}
 		log = append(log, rec)
 	}
-	fmt.Printf("Read %d records. EOF = %v\n", len(log), err)
+	fmt.Fprintf(os.Stderr, "Read %d records.\n", len(log))
+	if err != io.EOF {
+		fmt.Fprintf(os.Stderr, "Terminated unexpectedly (%s).\n", err)
+	}
 
 	// Basic
 	if *flagBasic {
@@ -52,7 +56,8 @@ func main() {
 	}
 }
 
-func printBasic(log []*dccp.LogRecord) {
+/*
+func printTrips(log []*dccp.LogRecord) {
 	reducer := dccp_gauge.NewLogReducer()
 	for _, rec := range log {
 		reducer.Write(rec)
@@ -102,79 +107,156 @@ func MakeOneWayTripPrint(t *dccp_gauge.Trip) []*PrintRecord {
 			break
 		}
 	}
-	// Make print records
-	var rightleft bool
-	if start.Module == "server" {
-		rightleft = true
-	}
-	var ps []*PrintRecord = make([]*PrintRecord, 3)
-	var pi int
-	// Print start record
-	const flushRight = "                                                                                    "
-	p := &PrintRecord{}
-	p.Time = start.Time
-	ps[pi] = p
-	pi++
-	if rightleft {
-		p.Text = fmt.Sprintf("%15s %s %s<——W %-8s", 
-			dccp.Nstoa(start.Time), flushRight, sprintPacket(start), start.State)
-	} else {
-		p.Text = fmt.Sprintf("%15s %-8s W——>%s", 
-			dccp.Nstoa(start.Time), start.State, sprintPacket(start))
-	}
-	// Print drop record
-	const (
-		flushMiddle      = "                                       "
-		flushRightMiddle = "                                  "
-		flushLeftMiddle  = "     "
-	)
-	if drop != nil {
-		p = &PrintRecord{}
-		p.Time = drop.Time
-		ps[pi] = p
-		pi++
-		switch drop.Module {
-		case "line":
-			if rightleft {
-				p.Text = fmt.Sprintf("%15s %s D<——%s<———",
-					dccp.Nstoa(drop.Time), flushMiddle, sprintPacket(drop))
-			} else {
-				p.Text = fmt.Sprintf("%15s %s ———>%s——>D",
-					dccp.Nstoa(drop.Time), flushMiddle, sprintPacket(drop))
-			}
-		case "client":
-			if rightleft {
-				p.Text = fmt.Sprintf("%15s %-8s %s D<——%s<———",
-					dccp.Nstoa(drop.Time), drop.State, flushLeftMiddle, sprintPacket(drop))
-			} else {
-				p.Text = fmt.Sprintf("%15s %-8s %s ———>%s——>D",
-					dccp.Nstoa(drop.Time), drop.State, flushLeftMiddle, sprintPacket(drop))
-			}
-		case "server":
-			if rightleft {
-				p.Text = fmt.Sprintf("%15s %s D<——%s<——— %8s",
-					dccp.Nstoa(drop.Time), flushRightMiddle, sprintPacket(drop), drop.State)
-			} else {
-				p.Text = fmt.Sprintf("%15s %s ———>%s——>D %8s",
-					dccp.Nstoa(drop.Time), flushRightMiddle, sprintPacket(drop), drop.State)
-			}
+	...
+}
+*/
+
+func printBasic(log []*dccp.LogRecord) {
+	prints := make([]*PrintRecord, 0)
+	for _, t := range log {
+		var p *PrintRecord
+		switch t.Event {
+		case "Write":
+			p = printWrite(t)
+		case "Read":
+			p = printRead(t)
+		case "Drop":
+			p = printDrop(t)
+		case "Idle":
+			p = printIdle(t)
+		default:
+			p = printGeneric(t)
+		}
+		if p != nil {
+			prints = append(prints, p)
 		}
 	}
-	// Print end record
-	if end != nil {
-		p = &PrintRecord{}
-		p.Time = end.Time
-		ps[pi] = p
-		pi++
-		if rightleft {
-			p.Text = fmt.Sprintf("%15s %-8s R<——%s", 
-				dccp.Nstoa(end.Time), end.State, sprintPacket(end))
+	Print(prints)
+}
+
+const (
+	skip = "                                  "
+	skipState = "         "
+)
+
+func printWrite(r *dccp.LogRecord) *PrintRecord {
+	switch r.Module {
+	case "server":
+		return &PrintRecord{
+			Log:  r,
+			Text: fmt.Sprintf("%s|%s|%s|     %s<——W | %-8s", 
+				skipState, skip, skip, sprintPacket(r), r.State),
+		}
+	case "client":
+		return &PrintRecord{
+			Log:  r,
+			Text: fmt.Sprintf("%8s | W——>%s     |%s|%s|%s", 
+				r.State, sprintPacket(r), skip, skip, skipState),
+		}
+	}
+	return nil
+}
+
+func printRead(r *dccp.LogRecord) *PrintRecord {
+	switch r.Module {
+	case "client":
+		return &PrintRecord{
+			Log:  r,
+			Text: fmt.Sprintf("%8s | R<——%s     |%s|%s|%s", 
+				r.State, sprintPacket(r), skip, skip, skipState),
+		}
+	case "server":
+		return &PrintRecord{
+			Log:  r,
+			Text: fmt.Sprintf("%s|%s|%s|     %s——>R | %-8s", 
+				skipState, skip, skip, sprintPacket(r), r.State),
+		}
+	}
+	return nil
+}
+
+func printDrop(r *dccp.LogRecord) *PrintRecord {
+	var text string
+	switch r.Module {
+	case "line":
+		if r.Submodule == "server" {
+			text = fmt.Sprintf("%s|%s| D<——%s     |%s|%s",
+				skipState, skip, sprintPacket(r), skip, skipState)
 		} else {
-			p.Text = fmt.Sprintf("%15s %s %s——>R %-8s", 
-				dccp.Nstoa(end.Time), flushRight, sprintPacket(end), end.State)
+			text = fmt.Sprintf("%s|%s|     %s——>D |%s|%s",
+				skipState, skip, sprintPacket(r), skip, skipState)
+		}
+	case "client":
+		switch r.Comment {
+		case "Slow app":
+			text = fmt.Sprintf("%8s |     %sD<—— |%s|%s|%s",
+				r.State, sprintPacket(r), skip, skip, skipState)
+		case "Slow strobe":
+			text = fmt.Sprintf("%8s |     %s——>D |%s|%s|%s",
+				r.State, sprintPacket(r), skip, skip, skipState)
+		}
+	case "server":
+		switch r.Comment {
+		case "Slow strobe":
+			text = fmt.Sprintf("%s|%s|%s| D<——%s     | %-8s",
+				skipState, skip, skip, sprintPacket(r), r.State)
+		case "Slow app":
+			text = fmt.Sprintf("%s|%s|%s|     %s——>D | %-8s",
+				skipState, skip, skip, sprintPacket(r), r.State)
 		}
 	}
-	return ps[:pi]
+	if text == "" {
+		return nil
+	}
+	return &PrintRecord{
+		Log:  r,
+		Text: text,
+	}
+}
+
+func printIdle(r *dccp.LogRecord) *PrintRecord {
+	var text string
+	switch r.Module {
+	case "client":
+		text = fmt.Sprintf("%8s |—%s—|%s|%s|%s",
+			r.State, sprintIdle(r), skip, skip, skipState)
+	case "server":
+		text = fmt.Sprintf("%s|%s|%s|—%s—| %-8s",
+			skipState, skip, skip, sprintIdle(r), r.State)
+	}
+	if text == "" {
+		return nil
+	}
+	return &PrintRecord{
+		Log:  r,
+		Text: text,
+	}
+}
+
+func printGeneric(r *dccp.LogRecord) *PrintRecord {
+	var text string
+	switch r.Module {
+	case "client":
+		text = fmt.Sprintf("%8s |-%s-|%s|%s|%s",
+			r.State, sprintPacketEventComment(r), skip, skip, skipState)
+	case "server":
+		text = fmt.Sprintf("%s|%s|%s|-%s-| %-8s",
+			skipState, skip, skip, sprintPacketEventComment(r), r.State)
+	case "line":
+		text = fmt.Sprintf("%s|%s|-%s-|%s|%s",
+			skipState, skip, sprintPacketEventComment(r), skip, skipState)
+	}
+	if text == "" {
+		return nil
+	}
+	return &PrintRecord{
+		Log:  r,
+		Text: text,
+	}
+}
+
+func sprintIdle(r *dccp.LogRecord) string {
+	return "————————————————————————————————"
 }
 
 func sprintPacket(r *dccp.LogRecord) string {
@@ -183,19 +265,39 @@ func sprintPacket(r *dccp.LogRecord) string {
 	for i := 0; i < 9-len(r.Type); i++ {
 		w.WriteRune('·')
 	}
-	return fmt.Sprintf(" %9s%06x|%06x ", string(w.Bytes()), r.SeqNo, r.AckNo)
+	return fmt.Sprintf(" %9s%06x·%06x ", string(w.Bytes()), r.SeqNo, r.AckNo)
+}
+
+func sprintPacketEventComment(r *dccp.LogRecord) string {
+	var w bytes.Buffer
+	fmt.Fprintf(&w, "-----%4s:%-17s-----", cut(r.Event, 4), cut(r.Comment, 17))
+	//var p = 32 - w.Len()
+	//for i := 0; i < p; i++ {
+	//	w.WriteRune('·')
+	//}
+	return string(w.Bytes())
+}
+
+func cut(s string, n int) string {
+	if n >= len(s) {
+		return s
+	}
+	return s[:n]
 }
 
 // Print orders a sequence of print recors by time and prints them to standard output
 func Print(records []*PrintRecord) {
 	sort.Sort(PrintTimeSort(records))
+	var last int64
 	for _, r := range records {
-		fmt.Printf("%s\n", r.Text)
+		fmt.Printf("%15s   %s   %18s:%-3d\n", 
+			dccp.Nstoa(r.Log.Time - last), r.Text, r.Log.SourceFile, r.Log.SourceLine)
+		last = r.Log.Time
 	}
 }
 
 type PrintRecord struct {
-	Time int64
+	Log  *dccp.LogRecord
 	Text string
 }
 
@@ -207,7 +309,7 @@ func (t PrintTimeSort) Len() int {
 }
 
 func (t PrintTimeSort) Less(i, j int) bool {
-	return t[i].Time < t[j].Time
+	return t[i].Log.Time < t[j].Log.Time
 }
 
 func (t PrintTimeSort) Swap(i, j int) {

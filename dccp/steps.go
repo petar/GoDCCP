@@ -278,7 +278,7 @@ func (c *Conn) step16_ProcessData(h *Header) error {
 		if len(c.readApp) < cap(c.readApp) {
 			c.readApp <- h.Data
 		} else {
-			c.Logger.Emit("conn", "Drop", nil, "Received packet. Slow app.")
+			c.Logger.Emit("conn", "Drop", nil, "Slow app")
 		}
 	}
 	c.readAppLk.Unlock()

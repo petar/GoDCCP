@@ -36,19 +36,19 @@ func (t Logger) SetState(s int) {
 // LogRecord stores a log event. It can be used to marshal to JSON and pass to external
 // visualisation tools.
 type LogRecord struct {
-	Time      int64   // Time of event
-	Module    string  // Module where event occurred, e.g. "server", "client", "line"
-	Submodule string  // Submodule where event occurred, e.g. "s-strober"
-	Event     string  // Type of event
-	State     string  // State of module
-	Comment   string  // Textual comment describing the event
+	Time      int64   //`json:"t"`   // Time of event
+	Module    string  //`json:"m"`   // Module where event occurred, e.g. "server", "client", "line"
+	Submodule string  //`json:"sm"`  // Submodule where event occurred, e.g. "s-strober"
+	Event     string  //`json:"e"`   // Type of event
+	State     string  //`json:"s"`   // State of module
+	Comment   string  //`json:"c"`   // Textual comment describing the event
 
-	Type     string
-	SeqNo    int64
-	AckNo    int64
+	Type      string  //`json:"t"`
+	SeqNo     int64   //`json:"sn"`
+	AckNo     int64   //`json:"an"`
 
-	SourceFile string
-	SourceLine int
+	SourceFile string //`json:"sf"`
+	SourceLine int    //`json:"sl"`
 }
 
 func (t Logger) Emit(submodule string, event string, h interface{}, comment string, v ...interface{}) {
@@ -65,7 +65,7 @@ func (t Logger) EmitCaller(level int, submodule string, event string, h interfac
 	sinceZero, sinceLast := SnapLog()
 
 	// Extract header information
-	var hType string
+	var hType string = "NIL"
 	var hSeqNo, hAckNo int64
 	switch t := h.(type) {
 	case *Header:
