@@ -237,13 +237,13 @@ func printGeneric(r *dccp.LogRecord) *PrintRecord {
 	var text string
 	switch r.Module {
 	case "client":
-		text = fmt.Sprintf("%8s |-%s-|%s|%s|%s",
+		text = fmt.Sprintf("%8s | %s |%s|%s|%s",
 			r.State, sprintPacketEventComment(r), skip, skip, skipState)
 	case "server":
-		text = fmt.Sprintf("%s|%s|%s|-%s-| %-8s",
+		text = fmt.Sprintf("%s|%s|%s| %s | %-8s",
 			skipState, skip, skip, sprintPacketEventComment(r), r.State)
 	case "line":
-		text = fmt.Sprintf("%s|%s|-%s-|%s|%s",
+		text = fmt.Sprintf("%s|%s| %s |%s|%s",
 			skipState, skip, sprintPacketEventComment(r), skip, skipState)
 	}
 	if text == "" {
@@ -265,17 +265,14 @@ func sprintPacket(r *dccp.LogRecord) string {
 	for i := 0; i < 9-len(r.Type); i++ {
 		w.WriteRune('·')
 	}
-	return fmt.Sprintf(" %9s%06x·%06x ", string(w.Bytes()), r.SeqNo, r.AckNo)
+	return fmt.Sprintf(" %9s%06x/%06x ", string(w.Bytes()), r.SeqNo, r.AckNo)
 }
 
 func sprintPacketEventComment(r *dccp.LogRecord) string {
-	var w bytes.Buffer
-	fmt.Fprintf(&w, "-----%4s:%-17s-----", cut(r.Event, 4), cut(r.Comment, 17))
-	//var p = 32 - w.Len()
-	//for i := 0; i < p; i++ {
-	//	w.WriteRune('·')
-	//}
-	return string(w.Bytes())
+	if r.SeqNo == 0 {
+		return fmt.Sprintf("     %-22s     ", cut(r.Comment, 22))
+	}
+	return fmt.Sprintf("     %-14s %06x/     ", cut(r.Comment, 14), r.SeqNo)
 }
 
 func cut(s string, n int) string {
