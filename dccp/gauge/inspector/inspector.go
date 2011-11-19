@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	flagBasic *bool = flag.Bool("basic", true, "Basic format")
+	flagFmt *string = flag.String("fmt", "basic", "Format: basic, trip")
 )
 
 func main() {
@@ -50,14 +50,33 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Terminated unexpectedly (%s).\n", err)
 	}
 
-	// Basic
-	if *flagBasic {
+	switch *flagFmt {
+	case "basic":
 		printBasic(log)
+	case "trip":
+		printTrip(log)
 	}
 }
 
-/*
-func printTrips(log []*dccp.LogRecord) {
+var (
+	printTripSep = &PrintRecord{
+		Text: 
+			"——————————————————————————————————————————————" +
+			"——————————————————————————————————————————————" +
+			"———————————————————————————————",
+	}
+	printHalveSep = &PrintRecord{
+		Text: fmt.Sprintf("%s=%s=%s=%s=%s", skipState, skip, skip, skip, skipState),
+		/*
+			"----------------------------------------------" +
+			"----------------------------------------------" +
+			"-------------------------------",
+			*/
+	}
+	printNop = &PrintRecord{}
+)
+
+func printTrip(log []*dccp.LogRecord) {
 	reducer := dccp_gauge.NewLogReducer()
 	for _, rec := range log {
 		reducer.Write(rec)
@@ -67,71 +86,51 @@ func printTrips(log []*dccp.LogRecord) {
 	
 	prints := make([]*PrintRecord, 0)
 	for _, t := range trips {
-		p := MakeOneWayTripPrint(t)
-		if p != nil {
-			prints = append(prints, p...)
+		prints = append(prints, printNop)
+		for _, r := range t.Forward {
+			p := printRecord(r)
+			if p != nil {
+				prints = append(prints, p)
+			}
 		}
+		prints = append(prints, printHalveSep)
+		for _, r := range t.Backward {
+			p := printRecord(r)
+			if p != nil {
+				prints = append(prints, p)
+			}
+		}
+		prints = append(prints, printNop)
+		prints = append(prints, printTripSep)
 	}
-	Print(prints)
+	Print(prints, false)
 }
-
-// MakeOneWayTripPrint prepares a print record for a one-way packet
-// trip that reaches the destination. Otherwise, it returns nil.
-func MakeOneWayTripPrint(t *dccp_gauge.Trip) []*PrintRecord {
-	// Find write record
-	var start *dccp.LogRecord
-	for _, s := range t.Forward {
-		if s.Event == "Write" && (s.Module == "client" || s.Module == "server") {
-			start = s
-			break
-		}
-	}
-	if start == nil || start.Module == "line" {
-		fmt.Printf("Trip with no start, seqno=%06x\n", t.SeqNo)
-		return nil
-	}
-	// Find drop record
-	var drop *dccp.LogRecord
-	for _, s := range t.Forward {
-		if s.Event == "Drop" {
-			drop = s
-			break
-		}
-	}
-	// Find read record
-	var end *dccp.LogRecord
-	for i := 0; i < len(t.Forward); i++ {
-		s := t.Forward[len(t.Forward)-1-i]
-		if s.Event == "Read" && (s.Module == "client" || s.Module == "server") {
-			end = s
-			break
-		}
-	}
-	...
-}
-*/
 
 func printBasic(log []*dccp.LogRecord) {
 	prints := make([]*PrintRecord, 0)
 	for _, t := range log {
-		var p *PrintRecord
-		switch t.Event {
-		case "Write":
-			p = printWrite(t)
-		case "Read":
-			p = printRead(t)
-		case "Drop":
-			p = printDrop(t)
-		case "Idle":
-			p = printIdle(t)
-		default:
-			p = printGeneric(t)
-		}
+		var p *PrintRecord = printRecord(t)
 		if p != nil {
 			prints = append(prints, p)
 		}
 	}
-	Print(prints)
+	Print(prints, true)
+}
+
+func printRecord(t *dccp.LogRecord) *PrintRecord {
+	switch t.Event {
+	case "Write":
+		return printWrite(t)
+	case "Read":
+		return printRead(t)
+	case "Drop":
+		return printDrop(t)
+	case "Idle":
+		return printIdle(t)
+	default:
+		return printGeneric(t)
+	}
+	panic("unreach")
 }
 
 const (
@@ -283,13 +282,28 @@ func cut(s string, n int) string {
 }
 
 // Print orders a sequence of print recors by time and prints them to standard output
-func Print(records []*PrintRecord) {
-	sort.Sort(PrintTimeSort(records))
+func Print(records []*PrintRecord, srt bool) {
+	if srt {
+		sort.Sort(PrintTimeSort(records))
+	}
 	var last int64
+	var sec  int64
+	var sflag rune = ' '
 	for _, r := range records {
-		fmt.Printf("%15s   %s   %18s:%-3d\n", 
-			dccp.Nstoa(r.Log.Time - last), r.Text, r.Log.SourceFile, r.Log.SourceLine)
-		last = r.Log.Time
+		if r.Log != nil {
+			fmt.Printf("%15s %c  %s   %18s:%-3d\n", 
+				dccp.Nstoa(r.Log.Time - last), sflag, r.Text, r.Log.SourceFile, r.Log.SourceLine)
+			sflag = ' '
+			last = r.Log.Time
+			if last / 1e9 > sec {
+				sflag = '*'
+				sec = last / 1e9
+			}
+		} else {
+			fmt.Printf("                   %s\n", r.Text)
+			sflag = ' '
+			last = 0
+		}
 	}
 }
 

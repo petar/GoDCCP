@@ -90,8 +90,8 @@ func (hhl *headerHalfLine) WriteHeader(h *dccp.Header) (err error) {
 		if len(hhl.write) >= cap(hhl.write) {
 			hhl.Logger.Emit(hhl.name, "Drop", h, "Slow reader")
 		} else {
-			hhl.write <- h
 			hhl.Logger.Emit(hhl.name, "Write", h, "SeqNo=%d", h.SeqNo)
+			hhl.write <- h
 		}
 	} else {
 		hhl.Logger.Emit(hhl.name, "Drop", h, "Fast writer")
