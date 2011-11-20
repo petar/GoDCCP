@@ -65,6 +65,7 @@ func (c *Conn) writeLoop(writeNonData chan *Header, writeData chan []byte) {
 
 	// This loop is active until state OPEN or PARTOPEN is observed, when a
 	// transition to _Loop II_is made
+	c.Logger.Emit("conn", "Event", nil, "Write Loop I")
 _Loop_I:
 
 	for {
@@ -95,6 +96,7 @@ _Loop_I:
 	}
 
 	// This loop is active until writeData is not closed
+	c.Logger.Emit("conn", "Event", nil, "Write Loop II")
 _Loop_II:
 
 	for {
@@ -139,6 +141,7 @@ _Loop_II:
 	}
 
 	// This loop is active until writeNonData is not closed
+	c.Logger.Emit("conn", "Event", nil, "Write Loop III")
 _Loop_III:
 
 	for {
@@ -160,4 +163,5 @@ _Loop_III:
 	}
 
 _Exit:
+	c.Logger.Emit("conn", "Event", nil, "Write loop EXIT")
 }

@@ -70,10 +70,7 @@ func (t *LogReducer) Write(r *dccp.LogRecord) {
 		panic("backward time in reducer")
 	}
 	p.latest = r.Time
-
-	//if len(p.CheckIns) == 0 || p.CheckIns[len(p.CheckIns)-1].State != r.State {
-		p.CheckIns = append(p.CheckIns, r)
-	//}
+	p.CheckIns = append(p.CheckIns, r)
 
 	// Trips update
 	if r.SeqNo != 0 {

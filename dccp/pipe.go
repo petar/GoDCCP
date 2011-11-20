@@ -128,6 +128,7 @@ func (c *Conn) readLoop() {
 	Done:
 		c.Unlock()
 	}
+	c.Logger.Emit("conn", "Event", nil, "Read loop EXIT")
 }
 
 func (c *Conn) pollCongestionControl() {

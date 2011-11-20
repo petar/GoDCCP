@@ -67,11 +67,6 @@ var (
 	}
 	printHalveSep = &PrintRecord{
 		Text: fmt.Sprintf("%s=%s=%s=%s=%s", skipState, skip, skip, skip, skipState),
-		/*
-			"----------------------------------------------" +
-			"----------------------------------------------" +
-			"-------------------------------",
-			*/
 	}
 	printNop = &PrintRecord{}
 )
