@@ -1,10 +1,5 @@
 
-* after 1sec, CCID has not been open on server
-
-* why does packet exchange stop in 6 seconds
-	* because OnIdle is not called regularly, which is the case because SetReadTimeout is not
-	implemented by the HeaderConn.
-	* Add a runtime check in readLoop that SetReadTimeout works roughly correctly?
+* implement SetReadTimeout
 
 * ensure behavior stabilizes if both sides remain silent after connect and connection does not close
 perpetually

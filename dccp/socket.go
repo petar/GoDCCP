@@ -76,7 +76,7 @@ const (
 	RTT_MIN                = 2e6      // ...
 	MSL                    = 2 * 60e9 // 2 mins in nanoseconds, Maximum Segment Lifetime, Section 3.4
 	CLOSING_BACKOFF_FREQ   = 64e9     // Backoff frequency of CLOSING timer, 64 seconds, Section 8.3
-	CLOSING_BACKOFF_MAX    = MSL      // Maximum amount of time in CLOSING timer
+	CLOSING_BACKOFF_MAX    = MSL/4    // Maximum time in CLOSING (RFC recommends MSL, but seems too long)
 	MAX_OPTIONS_SIZE       = 128
 )
 

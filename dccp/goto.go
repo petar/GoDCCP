@@ -117,7 +117,7 @@ func (c *Conn) gotoPARTOPEN() {
 	c.AssertLocked()
 	c.socket.SetState(PARTOPEN)
 	c.emitSetState()
-	c.openCCID()
+	// c.openCCID()
 	c.inject(nil) // Unblocks the writeLoop select, so it can see the state change
 
 	// Start PARTOPEN timer, according to Section 8.1.5
@@ -181,6 +181,7 @@ func (c *Conn) gotoCLOSING() {
 		c.Lock()
 		rtt := c.socket.GetRTT()
 		c.Unlock()
+		c.Logger.Emit("conn", "Event", nil, "CLOSING RTT=%dns", rtt)
 		b := newBackOff(2*rtt, CLOSING_BACKOFF_MAX, CLOSING_BACKOFF_FREQ)
 		for {
 			err, _ := b.Sleep()
