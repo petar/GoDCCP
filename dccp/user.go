@@ -36,7 +36,13 @@ func (c *Conn) WriteSegment(b []byte) error {
 // ReadSegment blocks until the next packet of application data is received.
 // It returns a non-nil error only if the connection has been closed.
 func (c *Conn) ReadSegment() (b []byte, err error) {
-	b, ok := <-c.readApp
+	c.readAppLk.Lock()
+	readApp := c.readApp
+	c.readAppLk.Unlock()
+	if readApp == nil {
+		return nil, os.EBADF
+	}
+	b, ok := <-readApp
 	if !ok {
 		// The connection has been closed
 		return nil, os.EBADF

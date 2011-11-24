@@ -5,7 +5,6 @@
 package sandbox
 
 import (
-	"fmt"
 	"os"
 	"testing"
 	"github.com/petar/GoGauge/gauge"
@@ -34,15 +33,13 @@ func makeEnds(logname string) (clientConn, serverConn *dccp.Conn, log *dccp.File
 
 func TestOpenClose(t *testing.T) {
 
+	dccp.InstallCtrlCPanic()
 	clientConn, serverConn, logf := makeEnds("openclose")
 
 	cchan := make(chan int, 1)
 	go func() {
-		fmt.Printf("client pre-sleep\n")
 		dccp.Sleep(2e9)
-		fmt.Printf("< clientConn Sleep(2e9)\n")
 		_, err := clientConn.ReadSegment()
-		fmt.Printf("< clientConn.ReadSegment()")
 		if err != os.EBADF {
 			t.Errorf("client read error (%s), expected EBADF", err)
 		}
@@ -52,9 +49,7 @@ func TestOpenClose(t *testing.T) {
 
 	schan := make(chan int, 1)
 	go func() {
-		fmt.Printf("server pre-sleep\n")
 		dccp.Sleep(1e9)
-		fmt.Printf("< serverConn Sleep(1e9)\n")
 		if err := serverConn.Close(); err != nil {
 			t.Errorf("server close error (%s)", err)
 		}
@@ -64,10 +59,8 @@ func TestOpenClose(t *testing.T) {
 
 	<-cchan
 	<-schan
-	fmt.Printf("pre abort\n")
 	clientConn.Abort()
 	serverConn.Abort()
-	fmt.Printf("post abort\n")
 	if err := logf.Close(); err != nil {
 		t.Errorf("Error closing log (%s)", err)
 	}
