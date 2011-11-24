@@ -26,20 +26,27 @@ func main() {
 
 	clog := dccp.Logger("client")
 	clientConn := dccp.NewConnClient(clog, hca, ccid.NewSender(clog), ccid.NewReceiver(clog), 0)
+	cchan := make(chan int, 1)
 	go func() {
 		dccp.Sleep(1e9)
 		_, err := clientConn.ReadSegment()
 		fmt.Printf("client/read err = %v\n", err)
+		cchan <- 1
+		close(cchan)
 	}()
 
 	slog := dccp.Logger("server")
 	serverConn := dccp.NewConnServer(slog, hcb, ccid.NewSender(slog), ccid.NewReceiver(slog))
+	schan := make(chan int, 1)
 	go func() {
 		dccp.Sleep(1e9)
 		if err := serverConn.Close(); err != nil {
 			fmt.Printf("server close error (%s)\n", err)
 		}
+		schan <- 1
+		close(schan)
 	}()
 
-	dccp.Sleep(10e9)
+	<-cchan
+	<-schan
 }

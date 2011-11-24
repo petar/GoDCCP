@@ -56,6 +56,8 @@ func main() {
 	case "trip":
 		printTrip(log)
 	}
+
+	printStats(log)
 }
 
 var (
@@ -99,6 +101,17 @@ func printTrip(log []*dccp.LogRecord) {
 		prints = append(prints, printTripSep)
 	}
 	Print(prints, false)
+}
+
+func printStats(log []*dccp.LogRecord) {
+	reducer := dccp_gauge.NewLogReducer()
+	for _, rec := range log {
+		reducer.Write(rec)
+	}
+	trips := dccp_gauge.TripMapToSlice(reducer.Trips())
+	sort.Sort(TripSeqNoSort(trips))
+	sr, rr := dccp_gauge.CalcRates(trips)
+	fmt.Printf("Send rate: %g pkt/sec, Receive rate: %g pkt/sec\n", sr, rr)
 }
 
 func printBasic(log []*dccp.LogRecord) {

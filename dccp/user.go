@@ -66,6 +66,10 @@ func (c *Conn) Close() error {
 	panic("unknown state")
 }
 
+func (c *Conn) Abort() {
+	c.abortWith(ResetAborted)
+}
+
 func (c *Conn) LocalLabel() Bytes { return c.hc.LocalLabel() }
 
 func (c *Conn) RemoteLabel() Bytes { return c.hc.RemoteLabel() }

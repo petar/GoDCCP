@@ -117,14 +117,16 @@ func (t Logger) EmitCaller(level int, submodule string, event string, h interfac
 		}
 		logWriter.Write(r)
 	}
-	fmt.Printf("%15s %15s %18s:%-3d %-8s %6s:%-11s %-7s %8s %6x|%-6x * %s\n", 
-		Nstoa(sinceZero), Nstoa(sinceLast), 
-		sfile, sline,
-		t.GetState(), t.GetName(), 
-		submodule, event, 
-		hType, hSeqNo, hAckNo,
-		comment,
-	)
+	if os.Getenv("DCCPRAW") != "" {
+		fmt.Printf("%15s %15s %18s:%-3d %-8s %6s:%-11s %-7s %8s %6x|%-6x * %s\n", 
+			Nstoa(sinceZero), Nstoa(sinceLast), 
+			sfile, sline,
+			t.GetState(), t.GetName(), 
+			submodule, event, 
+			hType, hSeqNo, hAckNo,
+			comment,
+		)
+	}
 }
 
 func indentEvent(event string) string {
@@ -193,6 +195,14 @@ func (t *FileLogWriter) Write(r *LogRecord) {
 	if err != nil {
 		panic("error encoding log entry")
 	}
+}
+
+func (t *FileLogWriter) Sync() error {
+	return t.f.Sync()
+}
+
+func (t *FileLogWriter) Close() error {
+	return t.f.Close()
 }
 
 var logWriter LogWriter
