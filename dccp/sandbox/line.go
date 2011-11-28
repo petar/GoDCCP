@@ -12,26 +12,29 @@ import (
 )
 
 type Line struct {
-	dccp.Logger
+	logger *dccp.Logger
 	ha, hb headerHalfLine
 }
 
 const LineBufferLen = 2
 
-func NewLine(logger dccp.Logger, aName, bName string, gap int64, packetsPerGap uint32) (a, b dccp.HeaderConn, line *Line) {
+func NewLine(run *dccp.Runtime, logger *dccp.Logger, 
+	aName, bName string, gap int64, packetsPerGap uint32) (a, b dccp.HeaderConn, line *Line) {
+
 	ab := make(chan *dccp.Header, LineBufferLen)
 	ba := make(chan *dccp.Header, LineBufferLen)
 	line = &Line{}
-	line.Logger = logger
-	line.ha.Init(aName, line.Logger, ba, ab, gap, packetsPerGap)
-	line.hb.Init(bName, line.Logger, ab, ba, gap, packetsPerGap)
+	line.logger = logger
+	line.ha.Init(aName, run, line.logger, ba, ab, gap, packetsPerGap)
+	line.hb.Init(bName, run, line.logger, ab, ba, gap, packetsPerGap)
 	return &line.ha, &line.hb, line
 }
 
 // headerHalfLine enforces rate-limiting on its write side
 type headerHalfLine struct {
-	name string
-	dccp.Logger
+	name   string
+	run    *dccp.Runtime
+	logger *dccp.Logger
 
 	read  <-chan *dccp.Header
 	wlock sync.Mutex
@@ -44,11 +47,12 @@ type headerHalfLine struct {
 	gapFill       uint32 // Number of segments transmitted during the gap in gapCounter
 }
 
-func (hhl *headerHalfLine) Init(name string, logger dccp.Logger,
+func (hhl *headerHalfLine) Init(name string, run *dccp.Runtime, logger *dccp.Logger,
 	r <-chan *dccp.Header, w chan<- *dccp.Header, gap int64, packetsPerGap uint32) {
 
 	hhl.name = name
-	hhl.Logger = logger
+	hhl.run = run
+	hhl.logger = logger
 	hhl.read = r
 	hhl.write = w
 	hhl.SetRate(gap, packetsPerGap)
@@ -61,10 +65,10 @@ func (hhl *headerHalfLine) GetMTU() int {
 func (hhl *headerHalfLine) ReadHeader() (h *dccp.Header, err error) {
 	h, ok := <-hhl.read
 	if !ok {
-		hhl.Logger.Emit(hhl.name, "Warn", h, "Read EOF")
+		hhl.logger.Emit(hhl.name, "Warn", h, "Read EOF")
 		return nil, io.EOF
 	}
-	hhl.Logger.Emit(hhl.name, "Read", h, "SeqNo=%d", h.SeqNo)
+	hhl.logger.Emit(hhl.name, "Read", h, "SeqNo=%d", h.SeqNo)
 	return h, nil
 }
 
@@ -82,19 +86,19 @@ func (hhl *headerHalfLine) WriteHeader(h *dccp.Header) (err error) {
 	defer hhl.wlock.Unlock()
 
 	if hhl.write == nil {
-		hhl.Logger.Emit(hhl.name, "Drop", h, "SeqNo=%d EBADF", h.SeqNo)
+		hhl.logger.Emit(hhl.name, "Drop", h, "SeqNo=%d EBADF", h.SeqNo)
 		return os.EBADF
 	}
 
 	if hhl.rateFilter() {
 		if len(hhl.write) >= cap(hhl.write) {
-			hhl.Logger.Emit(hhl.name, "Drop", h, "Slow reader")
+			hhl.logger.Emit(hhl.name, "Drop", h, "Slow reader")
 		} else {
-			hhl.Logger.Emit(hhl.name, "Write", h, "SeqNo=%d", h.SeqNo)
+			hhl.logger.Emit(hhl.name, "Write", h, "SeqNo=%d", h.SeqNo)
 			hhl.write <- h
 		}
 	} else {
-		hhl.Logger.Emit(hhl.name, "Drop", h, "Fast writer")
+		hhl.logger.Emit(hhl.name, "Drop", h, "Fast writer")
 	}
 	return nil
 }
@@ -103,7 +107,7 @@ func (hhl *headerHalfLine) rateFilter() bool {
 	hhl.glock.Lock()
 	defer hhl.glock.Unlock()
 
-	now := dccp.Nanoseconds()
+	now := hhl.run.Nanoseconds()
 	gctr := now / hhl.gap
 	if gctr != hhl.gapCounter {
 		hhl.gapCounter = gctr
@@ -121,13 +125,13 @@ func (hhl *headerHalfLine) Close() error {
 	defer hhl.wlock.Unlock()
 
 	if hhl.write == nil {
-		hhl.Logger.Emit(hhl.name, "Warn", nil, "Close EBADF")
+		hhl.logger.Emit(hhl.name, "Warn", nil, "Close EBADF")
 		return os.EBADF
 	}
 	close(hhl.write)
 	hhl.write = nil
 
-	hhl.Logger.Emit(hhl.name, "Event", nil, "Close")
+	hhl.logger.Emit(hhl.name, "Event", nil, "Close")
 	return nil
 }
 

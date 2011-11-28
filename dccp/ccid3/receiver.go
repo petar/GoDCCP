@@ -6,14 +6,15 @@ package ccid3
 
 import "github.com/petar/GoDCCP/dccp"
 
-func newReceiver(logger dccp.Logger) *receiver {
-	return &receiver{Logger: logger}
+func newReceiver(run *dccp.Runtime, logger *dccp.Logger) *receiver {
+	return &receiver{ run: run, logger: logger }
 }
 
 // —————
 // receiver is a CCID3 congestion control receiver
 type receiver struct {
-	dccp.Logger
+	run    *dccp.Runtime
+	logger *dccp.Logger
 	dccp.Mutex
 	rttReceiver
 	receiveRate
@@ -104,19 +105,19 @@ func (r *receiver) OnWrite(ph *dccp.PreHeader) (options []*dccp.Option) {
 			opts := make([]*dccp.Option, 3)
 			opts[0] = encodeOption(r.makeElapsedTimeOption(ph.AckNo, ph.Time))
 			if opts[0] == nil {
-				r.Logger.Emit("r", "Warn", ph, "ElapsedTime option encoding == nil")
+				r.logger.Emit("r", "Warn", ph, "ElapsedTime option encoding == nil")
 			}
 			opts[1] = encodeOption(r.receiveRate.Flush(rtt, ph.Time))
 			if opts[1] == nil {
-				r.Logger.Emit("r", "Warn", ph, "ReceiveRate option encoding == nil")
+				r.logger.Emit("r", "Warn", ph, "ReceiveRate option encoding == nil")
 			}
 			opts[2] = encodeOption(r.lossReceiver.LossIntervalsOption(ph.AckNo))
 			if opts[2] == nil {
-				r.Logger.Emit("r", "Warn", ph, "LossIntervals option encoding == nil")
+				r.logger.Emit("r", "Warn", ph, "LossIntervals option encoding == nil")
 			}
 			return opts
 		}
-		r.Logger.Emit("r", "Info", ph, "OnWrite SeqNo=%d, Not seen packs before", ph.SeqNo)
+		r.logger.Emit("r", "Info", ph, "OnWrite SeqNo=%d, Not seen packs before", ph.SeqNo)
 		return nil
 
 	case dccp.Data, dccp.DataAck:

@@ -10,10 +10,10 @@ import (
 
 type CCID3 struct {}
 
-func (CCID3) NewSender(logger dccp.Logger) dccp.SenderCongestionControl { 
-	return newSender(logger)
+func (CCID3) NewSender(run *dccp.Runtime, logger *dccp.Logger) dccp.SenderCongestionControl { 
+	return newSender(run, logger)
 }
 
-func (CCID3) NewReceiver(logger dccp.Logger) dccp.ReceiverCongestionControl { 
-	return newReceiver(logger)
+func (CCID3) NewReceiver(run *dccp.Runtime, logger *dccp.Logger) dccp.ReceiverCongestionControl { 
+	return newReceiver(run, logger)
 }

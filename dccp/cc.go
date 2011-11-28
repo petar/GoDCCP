@@ -151,8 +151,8 @@ type FeedforwardHeader struct {
 
 // CCID is a factory type that creates instances of sender and receiver CCIDs
 type CCID interface {
-	NewSender(logger Logger, args ...interface{}) SenderCongestionControl
-	NewReceiver(logger Logger, args ...interface{}) ReceiverCongestionControl
+	NewSender(run *Runtime, logger *Logger, args ...interface{}) SenderCongestionControl
+	NewReceiver(run *Runtime, logger *Logger, args ...interface{}) ReceiverCongestionControl
 }
 
 const (

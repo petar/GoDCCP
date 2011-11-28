@@ -10,15 +10,15 @@ import "github.com/petar/GoDCCP/dccp"
 // lossTracker processes loss intervals options received at the sender and maintains relevant loss
 // statistics.
 type lossTracker struct {
-	dccp.Logger
+	logger *dccp.Logger
 	lastAckNo   int64  // SeqNo of the last ack'd segment; equals the AckNo of the last feedback
 	lastRateInv uint32 // Last known value of loss event rate inverse
 	lossRateCalculator
 }
 
 // Init resets the lossTracker instance for new use
-func (t *lossTracker) Init(logger dccp.Logger) {
-	t.Logger = logger
+func (t *lossTracker) Init(logger *dccp.Logger) {
+	t.logger = logger
 	t.lastAckNo = 0
 	t.lastRateInv = UnknownLossEventRateInv
 	t.lossRateCalculator.Init(NINTERVAL)
@@ -44,9 +44,9 @@ func (t *lossTracker) OnRead(fb *dccp.FeedbackHeader) (LossFeedback, error) {
 		return LossFeedback{}, ErrNoAck
 	}
 	var lossIntervals *LossIntervalsOption
-	t.Logger.Emit("s-tracker", "Event", fb, "Encoded option count = %d", len(fb.Options))
+	t.logger.Emit("s-tracker", "Event", fb, "Encoded option count = %d", len(fb.Options))
 	for i, opt := range fb.Options {
-		t.Logger.Emit("s-tracker", "Event", fb, "Decoding option %d", i)
+		t.logger.Emit("s-tracker", "Event", fb, "Decoding option %d", i)
 		if lossIntervals = DecodeLossIntervalsOption(opt); lossIntervals != nil {
 			break
 		}

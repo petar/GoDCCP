@@ -14,7 +14,7 @@ func (c *Conn) emitCatchSeqNo(h *Header, seqNos ...int64) {
 	}
 	for _, seqNo := range seqNos {
 		if h.SeqNo == seqNo {
-			c.Logger.EmitCaller(1, "conn", "Catch", h, "Caught SeqNo=%d: %s\n%s", 
+			c.logger.EmitCaller(1, "conn", "Catch", h, "Caught SeqNo=%d: %s\n%s", 
 				seqNo, h.String(), string(debug.Stack()))
 			break
 		}
@@ -23,5 +23,5 @@ func (c *Conn) emitCatchSeqNo(h *Header, seqNos ...int64) {
 
 func (c *Conn) emitSetState() {
 	c.AssertLocked()
-	c.Logger.SetState(c.socket.GetState())
+	c.logger.SetState(c.socket.GetState())
 }

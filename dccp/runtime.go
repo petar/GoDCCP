@@ -7,58 +7,65 @@ package dccp
 import (
 	"sync"
 	"time"
+	"github.com/petar/GoGauge/filter"
 )
 
-func SetTime(time Time) {
-	runtime.Lock()
-	defer runtime.Unlock()
+// Runtime encapsulates the runtime environment of a DCCP endpoint.  It includes a pluggable
+// time interface, in order to allow for use of real as well as synthetic (accelerated) time
+// (for testing purposes), as well as a logger interface.
+type Runtime struct {
+	time   Time
+	writer LogWriter
+	filter *filter.Filter
 
-	runtime.Time = time
-	runtime.timeZero = time.Nanoseconds()
+	sync.Mutex
+	timeZero int64 // Time when execution started
+	timeLast int64 // Time of last log message
 }
 
-func GetTime() Time {
-	runtime.Lock()
-	defer runtime.Unlock()
-
-	return runtime.Time
+func NewRuntime(time Time, writer LogWriter) *Runtime {
+	return &Runtime{
+		time:   time,
+		writer: writer,
+		filter: filter.NewFilter(),
+	}
 }
 
-func Nanoseconds() int64 {
-	runtime.Lock()
-	t := runtime.Time
-	runtime.Unlock()
+func (t *Runtime) Writer() LogWriter {
+	return t.writer
+}
 
+func (t *Runtime) Filter() *filter.Filter {
+	return t.filter
+}
+
+func (t *Runtime) Sync() error {
+	return t.writer.Sync()
+}
+
+func (t *Runtime) Close() error {
+	return t.writer.Close()
+}
+
+func (t *Runtime) Nanoseconds() int64 {
 	return t.Nanoseconds()
 }
 
-func Sleep(ns int64) {
-	runtime.Lock()
-	t := runtime.Time
-	runtime.Unlock()
-
+func (t *Runtime) Sleep(ns int64) {
 	t.Sleep(ns)
 }
 
-func SnapLog() (sinceZero int64, sinceLast int64) {
-	runtime.Lock()
-	defer runtime.Unlock()
+func (t *Runtime) Snap() (sinceZero int64, sinceLast int64) {
+	t.Lock()
+	defer t.Unlock()
 
-	logTime := runtime.Time.Nanoseconds()
-	lastTime := runtime.timeLastLog
+	logTime := t.Nanoseconds()
+	lastTime := t.timeLast
 	if lastTime == 0 {
 		lastTime = logTime
 	}
-	runtime.timeLastLog = logTime
-	return logTime - runtime.timeZero, logTime - lastTime
-}
-
-// runtime ...
-var runtime struct {
-	sync.Mutex
-	Time
-	timeZero    int64 // Time when execution started
-	timeLastLog int64 // Time of last log message
+	t.timeLast = logTime
+	return logTime - t.timeZero, logTime - lastTime
 }
 
 // Time is an interface for interacting time
@@ -70,9 +77,11 @@ type Time interface {
 	Sleep(ns int64)
 }
 
+// RealTime is an implementation of Time that represents real time
+var RealTime realTime
+
 type realTime struct {}
 
-var RealTime realTime
 
 func (realTime) Nanoseconds() int64 {
 	return time.Nanoseconds()

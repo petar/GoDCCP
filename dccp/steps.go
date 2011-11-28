@@ -131,7 +131,7 @@ func (c *Conn) step7_CheckUnexpectedTypes(h *Header) error {
 func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) error {
 
 	defer c.syncWithCongestionControl()
-	now := GetTime().Nanoseconds()
+	now := c.run.Nanoseconds()
 	rsopts := filterCCIDReceiverToSenderOptions(h.Options)
 	if err := c.scc.OnRead(&FeedbackHeader{h.Type, h.X, h.SeqNo, rsopts, h.AckNo, now}); err != nil {
 		if re, ok := err.(CongestionReset); ok {
@@ -144,7 +144,7 @@ func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) error {
 		if err == ErrDrop {
 			return ErrDrop
 		}
-		c.Logger.Emit("conn", "Error", h, "Sender CC unknown read error")
+		c.logger.Emit("conn", "Error", h, "Sender CC unknown read error")
 	}
 	sropts := filterCCIDSenderToReceiverOptions(h.Options)
 	if err := c.rcc.OnRead(&FeedforwardHeader{h.Type, h.X, h.SeqNo, h.CCVal, sropts, now, len(h.Data)}); err != nil {
@@ -158,7 +158,7 @@ func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) error {
 		if err == ErrDrop {
 			return ErrDrop
 		}
-		c.Logger.Emit("conn", "Error", h, "Receiver CC unknown read error")
+		c.logger.Emit("conn", "Error", h, "Receiver CC unknown read error")
 	}
 	return nil
 }
@@ -202,7 +202,7 @@ func (c *Conn) step11_ProcessRESPOND(h *Header) error {
 			// This is not unusual. Our modification of DCCP has the client send a pair
 			// Ack, SyncAck to the server, after the server's Response.  If the Ack is
 			// dropped, the server will enter OPEN on a SyncAck.
-			c.Logger.Emit("conn", "Event", h, "Entering OPEN on non-Ack packet")
+			c.logger.Emit("conn", "Event", h, "Entering OPEN on non-Ack packet")
 		}
 		c.gotoOPEN(h.SeqNo)
 	}
@@ -278,7 +278,7 @@ func (c *Conn) step16_ProcessData(h *Header) error {
 		if len(c.readApp) < cap(c.readApp) {
 			c.readApp <- h.Data
 		} else {
-			c.Logger.Emit("conn", "Drop", nil, "Slow app")
+			c.logger.Emit("conn", "Drop", nil, "Slow app")
 		}
 	}
 	c.readAppLk.Unlock()

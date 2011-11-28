@@ -5,7 +5,7 @@
 package dccp
 
 func (c *Conn) writeCCID(h *Header) *Header {
-	now := GetTime().Nanoseconds()
+	now := c.run.Nanoseconds()
 	// HC-Sender CCID
 	ccval, sropts := c.scc.OnWrite(&PreHeader{Type: h.Type, X: h.X, SeqNo: h.SeqNo, AckNo: h.AckNo, Time: now})
 	if !validateCCIDSenderToReceiver(sropts) {
@@ -39,14 +39,14 @@ func (c *Conn) inject(h *Header) {
 	// c.emitCatchSeqNo(h, 161019, 161020, 161021)
 
 	// Dropping a nil is OK, since it happens only if there are other packets in the queue
-	c.Logger.Emit("conn", "Write", h, "Non-data to injection queue")
+	c.logger.Emit("conn", "Write", h, "Non-data to injection queue")
 	if len(c.writeNonData) < cap(c.writeNonData) {
 		if h != nil {
 			h = c.writeCCID(h)
 		}
 		c.writeNonData <- h
 	} else {
-		c.Logger.Emit("conn", "Drop", h, "Slow strobe")
+		c.logger.Emit("conn", "Drop", h, "Slow strobe")
 	}
 }
 
@@ -65,7 +65,7 @@ func (c *Conn) writeLoop(writeNonData chan *Header, writeData chan []byte) {
 
 	// This loop is active until state OPEN or PARTOPEN is observed, when a
 	// transition to _Loop II_is made
-	c.Logger.Emit("conn", "Event", nil, "Write Loop I")
+	c.logger.Emit("conn", "Event", nil, "Write Loop I")
 _Loop_I:
 
 	for {
@@ -96,7 +96,7 @@ _Loop_I:
 	}
 
 	// This loop is active until writeData is not closed
-	c.Logger.Emit("conn", "Event", nil, "Write Loop II")
+	c.logger.Emit("conn", "Event", nil, "Write Loop II")
 _Loop_II:
 
 	for {
@@ -129,7 +129,7 @@ _Loop_II:
 			h = c.generateDataAck(appData)
 			h = c.writeCCID(h)
 			c.Unlock()
-			c.Logger.Emit("conn", "Write", h, "Data")
+			c.logger.Emit("conn", "Write", h, "Data")
 		}
 		if h != nil {
 			err := c.write(h)
@@ -141,7 +141,7 @@ _Loop_II:
 	}
 
 	// This loop is active until writeNonData is not closed
-	c.Logger.Emit("conn", "Event", nil, "Write Loop III")
+	c.logger.Emit("conn", "Event", nil, "Write Loop III")
 _Loop_III:
 
 	for {
@@ -163,5 +163,5 @@ _Loop_III:
 	}
 
 _Exit:
-	c.Logger.Emit("conn", "Event", nil, "Write loop EXIT")
+	c.logger.Emit("conn", "Event", nil, "Write loop EXIT")
 }

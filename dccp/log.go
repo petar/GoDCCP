@@ -10,28 +10,8 @@ import (
 	"os"
 	"path"
 	goruntime "runtime"
-	"github.com/petar/GoGauge/gauge"
+	"github.com/petar/GoGauge/filter"
 )
-
-type Logger string
-
-var NoLogging Logger = ""
-
-func (t Logger) GetName() string {
-	return string(t)
-}
-
-func (t Logger) GetState() string {
-	g := gauge.GetAttr([]string{t.GetName()}, "state")
-	if g == nil {
-		return ""
-	}
-	return g.(string)
-}
-
-func (t Logger) SetState(s int) {
-	gauge.SetAttr([]string{t.GetName()}, "state", StateString(s))
-}
 
 // LogRecord stores a log event. It can be used to marshal to JSON and pass to external
 // visualisation tools.
@@ -51,18 +31,59 @@ type LogRecord struct {
 	SourceLine int    //`json:"sl"`
 }
 
-func (t Logger) Emit(submodule string, event string, h interface{}, comment string, v ...interface{}) {
+// Logger is capable of emitting structured logs, which are consequently used for debuging
+// and analysis purposes. It lives in the context of a shared time framework and a shared
+// filter framework, which may filter some logs out
+type Logger struct {
+	run  *Runtime
+	name string
+}
+
+// A zero-value Logger ignores all Emits
+var NoLogging *Logger = &Logger{}
+
+func NewLogger(name string, run *Runtime) *Logger {
+	return &Logger{ run: run, name: name }
+}
+
+func (t *Logger) Name() string {
+	return t.name
+}
+
+func (t *Logger) Filter() *filter.Filter {
+	return t.run.Filter()
+}
+
+func (t *Logger) GetState() string {
+	if t.run == nil {
+		return ""
+	}
+	g := t.run.Filter().GetAttr([]string{t.Name()}, "state")
+	if g == nil {
+		return ""
+	}
+	return g.(string)
+}
+
+func (t *Logger) SetState(s int) {
+	if t.run == nil {
+		return
+	}
+	t.run.Filter().SetAttr([]string{t.Name()}, "state", StateString(s))
+}
+
+func (t *Logger) Emit(submodule string, event string, h interface{}, comment string, v ...interface{}) {
 	t.EmitCaller(1, submodule, event, h, comment, v...)
 }
 
-func (t Logger) EmitCaller(level int, submodule string, event string, h interface{}, comment string, v ...interface{}) {
-	if t == "" {
+func (t *Logger) EmitCaller(level int, submodule string, event string, h interface{}, comment string, v ...interface{}) {
+	if t.run == nil {
 		return
 	}
-	if !gauge.Selected(t.GetName(), submodule) {
+	if !t.run.Filter().Selected(t.Name(), submodule) {
 		return
 	}
-	sinceZero, sinceLast := SnapLog()
+	sinceZero, sinceLast := t.run.Snap()
 
 	// Extract header information
 	var hType string = "NIL"
@@ -101,10 +122,10 @@ func (t Logger) EmitCaller(level int, submodule string, event string, h interfac
 		comment = fmt.Sprintf(comment, v...)
 	}
 
-	if logWriter != nil {
+	if t.run.Writer() != nil {
 		r := &LogRecord{
 			Time:       sinceZero,
-			Module:     t.GetName(),
+			Module:     t.Name(),
 			Submodule:  submodule,
 			Event:      event,
 			State:      t.GetState(),
@@ -115,13 +136,13 @@ func (t Logger) EmitCaller(level int, submodule string, event string, h interfac
 			SourceFile: sfile,
 			SourceLine: sline,
 		}
-		logWriter.Write(r)
+		t.run.Writer().Write(r)
 	}
 	if os.Getenv("DCCPRAW") != "" {
 		fmt.Printf("%15s %15s %18s:%-3d %-8s %6s:%-11s %-7s %8s %6x|%-6x * %s\n", 
 			Nstoa(sinceZero), Nstoa(sinceLast), 
 			sfile, sline,
-			t.GetState(), t.GetName(), 
+			t.GetState(), t.Name(), 
 			submodule, event, 
 			hType, hSeqNo, hAckNo,
 			comment,
@@ -168,6 +189,8 @@ func Nstoa(ns int64) string {
 // LogWriter is a type that consumes log entries.
 type LogWriter interface {
 	Write(*LogRecord)
+	Sync() error
+	Close() error
 }
 
 // FileLogWriter saves all log entries to a file in JSON format
@@ -176,6 +199,7 @@ type FileLogWriter struct {
 	enc *json.Encoder
 }
 
+// NewFileLogWriter creates a new log writer. It panics if the file cannot be created.
 func NewFileLogWriter(name string) *FileLogWriter {
 	os.Remove(name)
 	f, err := os.Create(name)
@@ -204,8 +228,3 @@ func (t *FileLogWriter) Sync() error {
 func (t *FileLogWriter) Close() error {
 	return t.f.Close()
 }
-
-var logWriter LogWriter
-
-// SetLogWriter sets the DCCP-wide LogWriter facility
-func SetLogWriter(e LogWriter) { logWriter = e }

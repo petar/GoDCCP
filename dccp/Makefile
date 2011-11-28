@@ -42,7 +42,7 @@ GOFILES=\
 	wire.go\
 	write.go\
 	runtime.go\
-	gauge.go\
+	log.go\
 	util.go\
 
 include $(GOROOT)/src/Make.pkg
