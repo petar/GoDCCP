@@ -24,10 +24,13 @@ type Runtime struct {
 }
 
 func NewRuntime(time Time, writer LogWriter) *Runtime {
+	now := time.Nanoseconds()
 	return &Runtime{
-		time:   time,
-		writer: writer,
-		filter: filter.NewFilter(),
+		time:     time,
+		writer:   writer,
+		filter:   filter.NewFilter(),
+		timeZero: now,
+		timeLast: now,
 	}
 }
 
@@ -44,15 +47,16 @@ func (t *Runtime) Sync() error {
 }
 
 func (t *Runtime) Close() error {
+	// ? XXX
 	return t.writer.Close()
 }
 
 func (t *Runtime) Nanoseconds() int64 {
-	return t.Nanoseconds()
+	return t.time.Nanoseconds()
 }
 
 func (t *Runtime) Sleep(ns int64) {
-	t.Sleep(ns)
+	t.time.Sleep(ns)
 }
 
 func (t *Runtime) Snap() (sinceZero int64, sinceLast int64) {
@@ -60,12 +64,9 @@ func (t *Runtime) Snap() (sinceZero int64, sinceLast int64) {
 	defer t.Unlock()
 
 	logTime := t.Nanoseconds()
-	lastTime := t.timeLast
-	if lastTime == 0 {
-		lastTime = logTime
-	}
+	timeLast := t.timeLast
 	t.timeLast = logTime
-	return logTime - t.timeZero, logTime - lastTime
+	return logTime - t.timeZero, logTime - timeLast
 }
 
 // Time is an interface for interacting time
@@ -84,9 +85,9 @@ type realTime struct {}
 
 
 func (realTime) Nanoseconds() int64 {
-	return time.Nanoseconds()
+	return time.Now().UnixNano()
 }
 
 func (realTime) Sleep(ns int64) {
-	<-time.NewTimer(ns).C
+	<-time.NewTimer(time.Duration(ns)).C
 }

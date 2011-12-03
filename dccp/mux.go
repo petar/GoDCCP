@@ -23,8 +23,8 @@ type Mux struct {
 	link         Link
 	flowsLocal   map[uint64]*flow // Active flows hashed by local label
 	flowsRemote  map[uint64]*flow
-	lingerLocal  map[uint64]int64 // Local labels of recently-closed flows mapped to time of closure
-	lingerRemote map[uint64]int64
+	lingerLocal  map[uint64]time.Time // Local labels of recently-closed flows mapped to time of closure
+	lingerRemote map[uint64]time.Time
 	acceptChan   chan *flow
 }
 
@@ -47,8 +47,8 @@ func NewMux(link Link) *Mux {
 		link:         link,
 		flowsLocal:   make(map[uint64]*flow),
 		flowsRemote:  make(map[uint64]*flow),
-		lingerLocal:  make(map[uint64]int64),
-		lingerRemote: make(map[uint64]int64),
+		lingerLocal:  make(map[uint64]time.Time),
+		lingerRemote: make(map[uint64]time.Time),
 		acceptChan:   make(chan *flow),
 	}
 	go m.readLoop()
@@ -245,11 +245,11 @@ func (m *Mux) expireLoop() {
 			break
 		}
 
-		now := time.Nanoseconds()
+		now := time.Now()
 		m.Lock()
 		// All active flows have local labels, so it's enough to iterate just flowsLocal[]
 		for _, f := range m.flowsLocal {
-			if now-f.LastWriteTime() > MuxExpireTime {
+			if now.Sub(f.LastWriteTime()) > MuxExpireTime {
 				f.foreclose()
 			}
 		}
@@ -290,15 +290,15 @@ func (m *Mux) expireLingeringLoop() {
 			break
 		}
 
-		now := time.Nanoseconds()
+		now := time.Now()
 		m.Lock()
 		for h, t := range m.lingerLocal {
-			if now-t >= MuxLingerTime {
+			if now.Sub(t) >= MuxLingerTime {
 				delete(m.lingerLocal, h)
 			}
 		}
 		for h, t := range m.lingerRemote {
-			if now-t >= MuxLingerTime {
+			if now.Sub(t) >= MuxLingerTime {
 				delete(m.lingerRemote, h)
 			}
 		}
@@ -311,7 +311,7 @@ func (m *Mux) del(local *Label, remote *Label) {
 	m.Lock()
 	defer m.Unlock()
 
-	now := time.Nanoseconds()
+	now := time.Now()
 	if local != nil {
 		delete(m.flowsLocal, local.Hash())
 		if _, alreadyClosed := m.lingerLocal[local.Hash()]; !alreadyClosed {

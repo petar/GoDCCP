@@ -217,7 +217,7 @@ func NewFileLogWriter(name string) *FileLogWriter {
 func (t *FileLogWriter) Write(r *LogRecord) {
 	err := t.enc.Encode(r)
 	if err != nil {
-		panic("error encoding log entry")
+		panic(fmt.Sprintf("error encoding log entry (%s)", err))
 	}
 }
 

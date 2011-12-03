@@ -20,9 +20,9 @@ type flow struct {
 	Mutex       // protects the variables below
 	local       *Label
 	remote      *Label
-	lastRead    int64
-	lastWrite   int64
-	readTimeout int64
+	lastRead    time.Time
+	lastWrite   time.Time
+	readTimeout time.Duration
 
 	rlk Mutex // synchronizes calls to Read()
 }
@@ -32,7 +32,7 @@ type flow struct {
 // of the connection. The remote label is not known until a packet is received
 // from the other side.
 func newFlow(addr net.Addr, m *Mux, ch chan muxHeader, mtu int, local, remote *Label) *flow {
-	now := time.Nanoseconds()
+	now := time.Now()
 	return &flow{
 		addr:        addr,
 		local:       local,
@@ -56,19 +56,19 @@ func (f *flow) SetReadTimeout(nsec int64) error {
 	}
 	f.Lock()
 	defer f.Unlock()
-	f.readTimeout = nsec
+	f.readTimeout = time.Duration(nsec)
 	return nil
 }
 
 // LastRead() returns the timestamp of the last successful read operation
-func (f *flow) LastReadTime() int64 {
+func (f *flow) LastReadTime() time.Time {
 	f.Lock()
 	defer f.Unlock()
 	return f.lastRead
 }
 
 // LastWrite() returns the timestamp of the last successful write operation
-func (f *flow) LastWriteTime() int64 {
+func (f *flow) LastWriteTime() time.Time {
 	f.Lock()
 	defer f.Unlock()
 	return f.lastWrite
@@ -111,7 +111,7 @@ func (f *flow) WriteSegment(block []byte) error {
 	err := m.write(&muxMsg{f.getLocal(), f.getRemote()}, block, f.addr)
 	if err != nil {
 		f.Lock()
-		f.lastWrite = time.Nanoseconds()
+		f.lastWrite = time.Now()
 		f.Unlock()
 	}
 	return err
@@ -130,7 +130,7 @@ func (f *flow) ReadSegment() (block []byte, err error) {
 	}
 
 	var timer *time.Timer
-	var tmoch <-chan int64
+	var tmoch <-chan time.Time
 	if readTimeout > 0 {
 		timer = time.NewTimer(readTimeout)
 		defer timer.Stop()
@@ -149,7 +149,7 @@ func (f *flow) ReadSegment() (block []byte, err error) {
 	}
 
 	f.Lock()
-	f.lastRead = time.Nanoseconds()
+	f.lastRead = time.Now()
 	f.Unlock()
 
 	return header.Cargo, nil

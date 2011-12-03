@@ -36,5 +36,6 @@ func SavePanicTrace() {
 		panic("dumper (no file) " + r.(fmt.Stringer).String())
 	}
 	syscall.Dup2(file.Fd(), os.Stderr.Fd())
+	// TRY: defer func() { file.Close() }()
 	panic("dumper " + r.(string))
 }

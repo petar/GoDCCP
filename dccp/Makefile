@@ -44,5 +44,6 @@ GOFILES=\
 	runtime.go\
 	log.go\
 	util.go\
+	routine.go\
 
 include $(GOROOT)/src/Make.pkg
