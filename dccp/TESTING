@@ -1,6 +1,5 @@
 
-* log framework per-instance, so concurrent tests don't pollute each other's logs
-	* also time framework
+* move goroutine execution framework to runtime
 
 * method for immediate termination of DCCP (loop, TIMEWAIT and all)
 * why does idleness for 1 minute produce no heartbeats?

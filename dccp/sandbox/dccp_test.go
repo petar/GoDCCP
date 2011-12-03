@@ -31,6 +31,7 @@ func makeEnds(logname string) (clientConn, serverConn *dccp.Conn, run *dccp.Runt
 	return clientConn, serverConn, run
 }
 
+/*
 func TestOpenClose(t *testing.T) {
 
 	dccp.InstallCtrlCPanic()
@@ -68,21 +69,20 @@ func TestOpenClose(t *testing.T) {
 	}
 }
 
-/*
 func TestIdle(t *testing.T) {
 
 	clientConn, serverConn, run := makeEnds("idle")
 
 	cchan := make(chan int, 1)
 	go func() {
-		dccp.Sleep(5e9) // Stay idle for 5sec
+		run.Sleep(5e9) // Stay idle for 5sec
 		cchan <- 1
 		close(cchan)
 	}()
 
 	schan := make(chan int, 1)
 	go func() {
-		dccp.Sleep(5e9) // Stay idle for 5sec
+		run.Sleep(5e9) // Stay idle for 5sec
 		schan <- 1
 		close(schan)
 	}()
