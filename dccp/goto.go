@@ -9,7 +9,7 @@ func (c *Conn) gotoLISTEN() {
 	c.socket.SetServer(true)
 	c.socket.SetState(LISTEN)
 	c.emitSetState()
-	go func() {
+	c.routines.Go(func() {
 		c.run.Sleep(REQUEST_BACKOFF_MAX)
 		c.Lock()
 		state := c.socket.GetState()
@@ -18,7 +18,7 @@ func (c *Conn) gotoLISTEN() {
 			return
 		}
 		c.abortQuietly()
-	}()
+	})
 }
 
 const RESPOND_TIMEOUT = 30e9 // Timeout in RESPOND state, 30 sec in nanoseconds
@@ -35,7 +35,7 @@ func (c *Conn) gotoRESPOND(hServiceCode uint32, hSeqNo int64) {
 	// otherwise check that h.ServiceCode matches socket service code
 	c.socket.SetServiceCode(hServiceCode)
 
-	go func() {
+	c.routines.Go(func() {
 		c.run.Sleep(RESPOND_TIMEOUT)
 		c.Lock()
 		state := c.socket.GetState()
@@ -43,7 +43,7 @@ func (c *Conn) gotoRESPOND(hServiceCode uint32, hSeqNo int64) {
 		if state == RESPOND {
 			c.abortQuietly()
 		}
-	}()
+	})
 }
 
 const (
@@ -63,7 +63,7 @@ func (c *Conn) gotoREQUEST(serviceCode uint32) {
 	c.inject(c.generateRequest(serviceCode))
 
 	// Resend Request using exponential backoff, if no response
-	go func() {
+	c.routines.Go(func() {
 		b := newBackOff(c.run, REQUEST_BACKOFF_FIRST, REQUEST_BACKOFF_MAX, REQUEST_BACKOFF_FREQ)
 		for {
 			err, _ := b.Sleep()
@@ -83,7 +83,7 @@ func (c *Conn) gotoREQUEST(serviceCode uint32) {
 			c.inject(c.generateRequest(serviceCode))
 			c.Unlock()
 		}
-	}()
+	})
 }
 
 const (
@@ -121,7 +121,7 @@ func (c *Conn) gotoPARTOPEN() {
 	c.inject(nil) // Unblocks the writeLoop select, so it can see the state change
 
 	// Start PARTOPEN timer, according to Section 8.1.5
-	go func() {
+	c.routines.Go(func() {
 		b := newBackOff(c.run, PARTOPEN_BACKOFF_FIRST, PARTOPEN_BACKOFF_MAX, PARTOPEN_BACKOFF_FIRST)
 		c.logger.Emit("conn", "Event", nil, "PARTOPEN backoff start")
 		for {
@@ -147,7 +147,7 @@ func (c *Conn) gotoPARTOPEN() {
 			c.inject(c.generateSync())
 			c.Unlock()
 		}
-	}()
+	})
 }
 
 func (c *Conn) gotoOPEN(hSeqNo int64) {
@@ -165,10 +165,10 @@ func (c *Conn) gotoTIMEWAIT() {
 	c.socket.SetState(TIMEWAIT)
 	c.emitSetState()
 	c.closeCCID()
-	go func() {
+	c.routines.Go(func() {
 		c.run.Sleep(2 * MSL)
 		c.abortQuietly()
-	}()
+	})
 }
 
 func (c *Conn) gotoCLOSING() {
@@ -177,7 +177,7 @@ func (c *Conn) gotoCLOSING() {
 	c.socket.SetState(CLOSING)
 	c.emitSetState()
 	c.closeCCID()
-	go func() {
+	c.routines.Go(func() {
 		c.Lock()
 		rtt := c.socket.GetRTT()
 		c.Unlock()
@@ -201,7 +201,7 @@ func (c *Conn) gotoCLOSING() {
 			c.inject(c.generateClose())
 			c.Unlock()
 		}
-	}()
+	})
 }
 
 // gotoCLOSED MUST be idempotent

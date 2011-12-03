@@ -25,8 +25,8 @@ func NewLine(run *dccp.Runtime, logger *dccp.Logger,
 	ba := make(chan *dccp.Header, LineBufferLen)
 	line = &Line{}
 	line.logger = logger
-	line.ha.Init(aName, run, line.logger, ba, ab, gap, packetsPerGap)
-	line.hb.Init(bName, run, line.logger, ab, ba, gap, packetsPerGap)
+	line.ha.Init(aName, run, line.logger, ba, ab, gap, packetsPerGap, 1e9)
+	line.hb.Init(bName, run, line.logger, ab, ba, gap, packetsPerGap, 1e9)
 	return &line.ha, &line.hb, line
 }
 
@@ -45,10 +45,12 @@ type headerHalfLine struct {
 	packetsPerGap uint32
 	gapCounter    int64  // UTC time in gap units
 	gapFill       uint32 // Number of segments transmitted during the gap in gapCounter
+	timeout       int64  // Read timeout in nanoseconds
 }
 
 func (hhl *headerHalfLine) Init(name string, run *dccp.Runtime, logger *dccp.Logger,
-	r <-chan *dccp.Header, w chan<- *dccp.Header, gap int64, packetsPerGap uint32) {
+	r <-chan *dccp.Header, w chan<- *dccp.Header, gap int64, packetsPerGap uint32,
+	tmo int64) {
 
 	hhl.name = name
 	hhl.run = run
@@ -56,6 +58,7 @@ func (hhl *headerHalfLine) Init(name string, run *dccp.Runtime, logger *dccp.Log
 	hhl.read = r
 	hhl.write = w
 	hhl.SetRate(gap, packetsPerGap)
+	hhl.timeout = tmo
 }
 
 func (hhl *headerHalfLine) GetMTU() int {
@@ -63,13 +66,27 @@ func (hhl *headerHalfLine) GetMTU() int {
 }
 
 func (hhl *headerHalfLine) ReadHeader() (h *dccp.Header, err error) {
-	h, ok := <-hhl.read
-	if !ok {
-		hhl.logger.Emit(hhl.name, "Warn", h, "Read EOF")
-		return nil, io.EOF
+	hhl.glock.Lock()
+	tmo := hhl.timeout
+	hhl.glock.Unlock()
+	var tmoch <-chan int64
+	if tmo > 0 {
+		tmoch = hhl.run.After(tmo)
+	} else {
+		tmoch = make(chan int64)
 	}
-	hhl.logger.Emit(hhl.name, "Read", h, "SeqNo=%d", h.SeqNo)
-	return h, nil
+	select {
+	case h, ok := <-hhl.read:
+		if !ok {
+			hhl.logger.Emit(hhl.name, "Warn", h, "Read EOF")
+			return nil, io.EOF
+		}
+		hhl.logger.Emit(hhl.name, "Read", h, "SeqNo=%d", h.SeqNo)
+		return h, nil
+	case <-tmoch:
+		return nil, os.EAGAIN
+	}
+	panic("un")
 }
 
 func (hhl *headerHalfLine) SetRate(gap int64, packetsPerGap uint32) {
@@ -144,5 +161,11 @@ func (hhl *headerHalfLine) RemoteLabel() dccp.Bytes {
 }
 
 func (hhl *headerHalfLine) SetReadTimeout(nsec int64) error {
+	hhl.glock.Lock()
+	defer hhl.glock.Unlock()
+	if nsec < 0 {
+		panic("invalid timeout")
+	}
+	hhl.timeout = nsec
 	return nil
 }

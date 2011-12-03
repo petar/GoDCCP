@@ -59,6 +59,10 @@ func (t *Runtime) Sleep(ns int64) {
 	t.time.Sleep(ns)
 }
 
+func (t *Runtime) After(ns int64) <-chan int64 {
+	return After(t.time, ns)
+}
+
 func (t *Runtime) Snap() (sinceZero int64, sinceLast int64) {
 	t.Lock()
 	defer t.Unlock()
@@ -76,6 +80,18 @@ type Time interface {
 
 	// Sleep blocks for ns nanoseconds 
 	Sleep(ns int64)
+
+}
+
+// After waits for the duration to elapse and then sends the current time on the returned channel.
+func After(t Time, d int64) <-chan int64 {
+	ch := make(chan int64)
+	go func() {
+		t.Sleep(d)
+		ch <- t.Nanoseconds()
+		close(ch)
+	}()
+	return ch
 }
 
 // RealTime is an implementation of Time that represents real time

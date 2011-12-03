@@ -14,7 +14,7 @@ import (
 func makeEnds(logname string) (clientConn, serverConn *dccp.Conn, run *dccp.Runtime) {
 	logwriter := dccp.NewFileLogWriter(os.Getenv("DCCPLOG")+"-"+logname)
 	run = dccp.NewRuntime(dccp.RealTime, logwriter)
-	run.Filter().Select("client", "server", "line", "conn", "s", "s-x", "s-strober", "s-tracker", "r")
+	run.Filter().Select("client", "server", "end", "line", "conn", "s", "s-x", "s-strober", "s-tracker", "r")
 
 	llog := dccp.NewLogger("line", run)
 	hca, hcb, _ := NewLine(run, llog, "client", "server", 1e9, 100)  // 100 packets per second
@@ -61,6 +61,8 @@ func TestOpenClose(t *testing.T) {
 	<-schan
 	clientConn.Abort()
 	serverConn.Abort()
+	dccp.MakeConjWaiter(clientConn.Waiter(), serverConn.Waiter()).Wait()
+	dccp.NewLogger("line", run).Emit("end", "end", nil, "Server and client done.")
 	if err := run.Close(); err != nil {
 		t.Errorf("Error closing runtime (%s)", err)
 	}
@@ -89,6 +91,8 @@ func TestIdle(t *testing.T) {
 	<-schan
 	clientConn.Abort()
 	serverConn.Abort()
+	dccp.MakeConjWaiter(clientConn.Waiter(), serverConn.Waiter()).Wait()
+	dccp.NewLogger("line", run).Emit("end", "end", nil, "Server and client done.")
 	if err := run.Close(); err != nil {
 		t.Errorf("Error closing runtime (%s)", err)
 	}
