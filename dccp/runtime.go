@@ -17,6 +17,7 @@ type Runtime struct {
 	time   Time
 	writer LogWriter
 	filter *filter.Filter
+	waiter *ConjWaiter
 
 	sync.Mutex
 	timeZero int64 // Time when execution started
@@ -25,13 +26,24 @@ type Runtime struct {
 
 func NewRuntime(time Time, writer LogWriter) *Runtime {
 	now := time.Nanoseconds()
-	return &Runtime{
+	r := &Runtime{
 		time:     time,
 		writer:   writer,
 		filter:   filter.NewFilter(),
+		waiter:   MakeConjWaiter(),
 		timeZero: now,
 		timeLast: now,
 	}
+	return r
+}
+
+// Go forks f in a new goroutine
+func (t *Runtime) Go(f func()) {
+	t.waiter.Go(f)
+}
+
+func (t *Runtime) Waiter() Waiter {
+	return t.waiter
 }
 
 func (t *Runtime) Writer() LogWriter {
@@ -47,7 +59,6 @@ func (t *Runtime) Sync() error {
 }
 
 func (t *Runtime) Close() error {
-	// ? XXX
 	return t.writer.Close()
 }
 

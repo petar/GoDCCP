@@ -78,6 +78,12 @@ func (t *ConjWaiter) Go(f func()) {
 // Wait can be called concurrently. If called post-completion of the
 // goroutine group, Wait returns immediately.
 func (t *ConjWaiter) Wait() {
+	t.lk.Lock()
+	n := t.n
+	t.lk.Unlock()
+	if n == 0 {
+		panic("waiting on 0 goroutines")
+	}
 	for t.stillRemain() {
 		_, ok := <-t.onEnd
 		if !ok {

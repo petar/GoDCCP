@@ -31,7 +31,6 @@ func makeEnds(logname string) (clientConn, serverConn *dccp.Conn, run *dccp.Runt
 	return clientConn, serverConn, run
 }
 
-/*
 func TestOpenClose(t *testing.T) {
 
 	dccp.InstallCtrlCPanic()
@@ -68,7 +67,7 @@ func TestOpenClose(t *testing.T) {
 		t.Errorf("Error closing runtime (%s)", err)
 	}
 }
-
+/*
 func TestIdle(t *testing.T) {
 
 	clientConn, serverConn, run := makeEnds("idle")

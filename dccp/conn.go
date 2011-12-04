@@ -8,7 +8,6 @@ package dccp
 type Conn struct {
 	run      *Runtime
 	logger   *Logger
-	routines *ConjWaiter
 
 	hc    HeaderConn
 	scc   SenderCongestionControl
@@ -29,14 +28,13 @@ type Conn struct {
 // Waiter returns a Waiter instance that can wait until all goroutines
 // associated with the connection have completed.
 func (c *Conn) Waiter() Waiter {
-	return c.routines
+	return c.run.Waiter()
 }
 
 func newConn(run *Runtime, logger *Logger, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
 	c := &Conn{
 		run:          run,
 		logger:       logger,
-		routines:     MakeConjWaiter(),
 		hc:           hc,
 		scc:          scc,
 		rcc:          rcc,
@@ -72,9 +70,9 @@ func NewConnServer(run *Runtime, logger *Logger, hc HeaderConn,
 	c.gotoLISTEN()
 	c.Unlock()
 
-	c.routines.Go(func() { c.writeLoop(c.writeNonData, c.writeData) })
-	c.routines.Go(func() { c.readLoop() })
-	c.routines.Go(func() { c.idleLoop() })
+	c.run.Go(func() { c.writeLoop(c.writeNonData, c.writeData) })
+	c.run.Go(func() { c.readLoop() })
+	c.run.Go(func() { c.idleLoop() })
 	return c
 }
 
@@ -87,8 +85,8 @@ func NewConnClient(run *Runtime, logger *Logger, hc HeaderConn,
 	c.gotoREQUEST(serviceCode)
 	c.Unlock()
 
-	c.routines.Go(func() { c.writeLoop(c.writeNonData, c.writeData) })
-	c.routines.Go(func() { c.readLoop() })
-	c.routines.Go(func() { c.idleLoop() })
+	c.run.Go(func() { c.writeLoop(c.writeNonData, c.writeData) })
+	c.run.Go(func() { c.readLoop() })
+	c.run.Go(func() { c.idleLoop() })
 	return c
 }

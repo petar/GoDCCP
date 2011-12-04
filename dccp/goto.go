@@ -9,7 +9,7 @@ func (c *Conn) gotoLISTEN() {
 	c.socket.SetServer(true)
 	c.socket.SetState(LISTEN)
 	c.emitSetState()
-	c.routines.Go(func() {
+	c.run.Go(func() {
 		c.run.Sleep(REQUEST_BACKOFF_MAX)
 		c.Lock()
 		state := c.socket.GetState()
@@ -35,7 +35,7 @@ func (c *Conn) gotoRESPOND(hServiceCode uint32, hSeqNo int64) {
 	// otherwise check that h.ServiceCode matches socket service code
 	c.socket.SetServiceCode(hServiceCode)
 
-	c.routines.Go(func() {
+	c.run.Go(func() {
 		c.run.Sleep(RESPOND_TIMEOUT)
 		c.Lock()
 		state := c.socket.GetState()
@@ -63,7 +63,7 @@ func (c *Conn) gotoREQUEST(serviceCode uint32) {
 	c.inject(c.generateRequest(serviceCode))
 
 	// Resend Request using exponential backoff, if no response
-	c.routines.Go(func() {
+	c.run.Go(func() {
 		b := newBackOff(c.run, REQUEST_BACKOFF_FIRST, REQUEST_BACKOFF_MAX, REQUEST_BACKOFF_FREQ)
 		for {
 			err, _ := b.Sleep()
@@ -121,7 +121,7 @@ func (c *Conn) gotoPARTOPEN() {
 	c.inject(nil) // Unblocks the writeLoop select, so it can see the state change
 
 	// Start PARTOPEN timer, according to Section 8.1.5
-	c.routines.Go(func() {
+	c.run.Go(func() {
 		b := newBackOff(c.run, PARTOPEN_BACKOFF_FIRST, PARTOPEN_BACKOFF_MAX, PARTOPEN_BACKOFF_FIRST)
 		c.logger.Emit("conn", "Event", nil, "PARTOPEN backoff start")
 		for {
@@ -165,7 +165,7 @@ func (c *Conn) gotoTIMEWAIT() {
 	c.socket.SetState(TIMEWAIT)
 	c.emitSetState()
 	c.closeCCID()
-	c.routines.Go(func() {
+	c.run.Go(func() {
 		c.run.Sleep(2 * MSL)
 		c.abortQuietly()
 	})
@@ -177,7 +177,7 @@ func (c *Conn) gotoCLOSING() {
 	c.socket.SetState(CLOSING)
 	c.emitSetState()
 	c.closeCCID()
-	c.routines.Go(func() {
+	c.run.Go(func() {
 		c.Lock()
 		rtt := c.socket.GetRTT()
 		c.Unlock()
