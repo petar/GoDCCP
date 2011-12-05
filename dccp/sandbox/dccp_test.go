@@ -6,15 +6,18 @@ package sandbox
 
 import (
 	"os"
+	"path"
 	"testing"
 	"github.com/petar/GoDCCP/dccp"
 	"github.com/petar/GoDCCP/dccp/ccid3"
 )
 
 func makeEnds(logname string) (clientConn, serverConn *dccp.Conn, run *dccp.Runtime) {
-	logwriter := dccp.NewFileLogWriter(os.Getenv("DCCPLOG")+"-"+logname)
+
+	logwriter := dccp.NewFileLogWriter(path.Join(os.Getenv("DCCPLOG"), logname+"_test.emit"))
 	run = dccp.NewRuntime(dccp.RealTime, logwriter)
-	run.Filter().Select("client", "server", "end", "line", "conn", "s", "s-x", "s-strober", "s-tracker", "r")
+	run.Filter().Select("client", "server", "end", "line", "conn", "s", "s-x", "s-strober",
+	"s-tracker", "r", "r-evolveInterval")
 
 	llog := dccp.NewLogger("line", run)
 	hca, hcb, _ := NewLine(run, llog, "client", "server", 1e9, 100)  // 100 packets per second
@@ -30,7 +33,8 @@ func makeEnds(logname string) (clientConn, serverConn *dccp.Conn, run *dccp.Runt
 
 	return clientConn, serverConn, run
 }
-
+func TestNop(*testing.T) {}
+/*
 func TestOpenClose(t *testing.T) {
 
 	dccp.InstallCtrlCPanic()
@@ -67,6 +71,7 @@ func TestOpenClose(t *testing.T) {
 		t.Errorf("Error closing runtime (%s)", err)
 	}
 }
+*/
 /*
 func TestIdle(t *testing.T) {
 

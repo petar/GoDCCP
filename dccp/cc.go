@@ -74,6 +74,10 @@ type SenderCongestionControl interface {
 	// NOTE: If the CC is not active, OnIdle MUST to return nil.
 	OnIdle(now int64) error
 
+	// SetHeartbeat advices the CCID of the desired frequency of heartbeat packets.
+	// A heartbeat interval value of zero indicates that no heartbeat is needed.
+	SetHeartbeat(interval int64)
+
 	// Close terminates the half-connection congestion control when it is not needed any longer
 	Close()
 }

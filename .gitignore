@@ -6,6 +6,7 @@ syntax:glob
 *.swp
 *.swo
 *.swn
+*.emit
 ._*
 .nfs.*
 [568a].out

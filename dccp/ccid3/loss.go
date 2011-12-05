@@ -5,8 +5,6 @@
 package ccid3
 
 import (
-	//"log"
-
 	"math"
 	"github.com/petar/GoDCCP/dccp"
 )
@@ -15,6 +13,8 @@ import (
 // lossReceiver is the algorithm that keeps track of loss events and constructs the
 // loss intervals option at the receiver.
 type lossReceiver struct {
+
+	logger *dccp.Logger
 
 	// pastHeaders keeps track of the last NDUPACK headers to overcome network re-ordering
 	pastHeaders [NDUPACK]*dccp.FeedforwardHeader
@@ -30,8 +30,9 @@ type lossReceiver struct {
 }
 
 // Init initializes/resets the lossReceiver instance
-func (t *lossReceiver) Init() {
-	t.evolveInterval.Init(func(lid *LossIntervalDetail) { t.lossHistory.Push(lid) })
+func (t *lossReceiver) Init(logger *dccp.Logger) {
+	t.logger = logger
+	t.evolveInterval.Init(logger, func(lid *LossIntervalDetail) { t.lossHistory.Push(lid) })
 	t.lossHistory.Init(NINTERVAL)
 	t.lossRateCalculator.Init(NINTERVAL)
 }
@@ -47,7 +48,7 @@ func (t *lossReceiver) pushPopHeader(ff *dccp.FeedforwardHeader) *dccp.Feedforwa
 			t.pastHeaders[i] = ff
 			return nil
 		}
-		// TODO: This must employ circular comparison
+		// XXX: This must employ circular comparison
 		if ge.SeqNo < popSeqNo {
 			pop = i
 			popSeqNo = ge.SeqNo

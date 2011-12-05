@@ -133,7 +133,14 @@ func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) error {
 	defer c.syncWithCongestionControl()
 	now := c.run.Nanoseconds()
 	rsopts := filterCCIDReceiverToSenderOptions(h.Options)
-	if err := c.scc.OnRead(&FeedbackHeader{h.Type, h.X, h.SeqNo, rsopts, h.AckNo, now}); err != nil {
+	if err := c.scc.OnRead(&FeedbackHeader{
+		Type:    h.Type, 
+		X:       h.X, 
+		SeqNo:   h.SeqNo, 
+		Options: rsopts, 
+		AckNo:   h.AckNo, 
+		Time:    now,
+	}); err != nil {
 		if re, ok := err.(CongestionReset); ok {
 			c.abortWithUnderLock(re.ResetCode())
 			return ErrDrop
@@ -147,7 +154,15 @@ func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) error {
 		c.logger.Emit("conn", "Error", h, "Sender CC unknown read error")
 	}
 	sropts := filterCCIDSenderToReceiverOptions(h.Options)
-	if err := c.rcc.OnRead(&FeedforwardHeader{h.Type, h.X, h.SeqNo, h.CCVal, sropts, now, len(h.Data)}); err != nil {
+	if err := c.rcc.OnRead(&FeedforwardHeader{
+		Type:    h.Type, 
+		X:       h.X, 
+		SeqNo:   h.SeqNo, 
+		CCVal:   h.CCVal, 
+		Options: sropts, 
+		Time:    now, 
+		DataLen: len(h.Data),
+	}); err != nil {
 		if re, ok := err.(CongestionReset); ok {
 			c.abortWithUnderLock(re.ResetCode())
 			return ErrDrop

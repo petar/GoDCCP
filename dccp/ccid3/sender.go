@@ -184,6 +184,12 @@ func (s *sender) OnIdle(now int64) error {
 	return nil
 }
 
+// SetHeartbeat advices the CCID of the desired frequency of heartbeat packets.  A heartbeat
+// interval value of zero indicates that no heartbeat is needed.
+func (s *sender) SetHeartbeat(interval int64) {
+	panic("un")
+}
+
 // Close terminates the half-connection congestion control when it is not needed any longer
 func (s *sender) Close() {
 	s.Lock()

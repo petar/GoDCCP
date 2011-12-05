@@ -53,7 +53,7 @@ func (r *receiver) Open() {
 
 	r.rttReceiver.Init()
 	r.receiveRate.Init()
-	r.lossReceiver.Init()
+	r.lossReceiver.Init(r.logger)
 	r.open = true
 	r.lastWrite = 0
 	r.lastAck = 0

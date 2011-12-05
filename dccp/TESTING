@@ -1,6 +1,7 @@
 
-* method for immediate termination of DCCP (loop, TIMEWAIT and all)
-* why does idleness for 1 minute produce no heartbeats?
+* how come the sandbox line allows a packet with higher seq no arrive before one with lower?
+
+* heartbeat in CCID3
 
 * implement SetReadTimeout
 

@@ -5,12 +5,15 @@
 package ccid3
 
 import (
+	"fmt"
 	"github.com/petar/GoDCCP/dccp"
 )
 
 // —————
 // evolveInterval manages the incremental construction of a loss interval
 type evolveInterval struct {
+	
+	logger *dccp.Logger
 
 	// push is called whenever an interval is finished
 	push        pushIntervalFunc
@@ -64,7 +67,8 @@ type LossIntervalDetail struct {
 
 type pushIntervalFunc func(*LossIntervalDetail)
 
-func (t *evolveInterval) Init(push pushIntervalFunc) {
+func (t *evolveInterval) Init(logger *dccp.Logger, push pushIntervalFunc) {
+	t.logger = logger
 	t.push = push
 	t.lastSeqNo = 0
 	t.lastTime = 0
@@ -87,9 +91,16 @@ func (t *evolveInterval) clearInterval() {
 // TODO: Account for non-data packets
 func (t *evolveInterval) OnRead(ff *dccp.FeedforwardHeader, rtt int64) {
 
-	// If re-ordering present, packet is not considered here, because it was already counted as
-	// a lost packet when t.lastSeqNo was considered
+	// If sequence number re-ordering present, packet is not considered here, because it was
+	// already counted as a lost packet when t.lastSeqNo was considered
 	if ff.SeqNo <= t.lastSeqNo {
+		return
+	}
+	// Packet re-ordering may also occur if a packet is received with a timestamp smaller than
+	// that of the previously received one
+	// XXX: How can this condition occur?
+	if ff.Time < t.lastTime {
+		t.logger.Emit("r-evolveInterval", "Event", nil, "Time re-order; SeqNo %06x,%06x", t.lastSeqNo, ff.SeqNo)
 		return
 	}
 
@@ -239,7 +250,7 @@ type eventTail struct {
 // Init initializes the event tail.
 func (t *eventTail) Init(prevTime, recvTime int64, nlost int, prevSeqNo int64) {
 	if recvTime < prevTime {
-		panic("second receive happens before first")
+		panic(fmt.Sprintf("second receive happens before first: %d, %d", prevTime, recvTime))
 	}
 	t.prevSeqNo = prevSeqNo
 	t.prevTime = prevTime

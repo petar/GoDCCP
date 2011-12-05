@@ -3,11 +3,9 @@ TODO PRE-RELEASE
 
 * address Ack-Sync pair in client connection establishement, marked XXX in code
 
-* dynamically changing SWAF/SWBF
-
-* implement Conn.SetReadTimeout
-
 TODO LONG-TERM
+
+* dynamically changing SWAF/SWBF
 
 * abridged header read/write (no ports, no checksums)
 

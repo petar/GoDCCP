@@ -66,6 +66,9 @@ func (scc *fixedRateSenderControl) Strobe() {
 	<-scc.strobeRead
 }
 
+func (scc *fixedRateSenderControl) SetHeartbeat(interval int64) {
+}
+
 func (scc *fixedRateSenderControl) Close() {
 	scc.Lock()
 	defer scc.Unlock()

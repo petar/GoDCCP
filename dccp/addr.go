@@ -52,7 +52,7 @@ func ParseAddr(s string) (addr *Addr, n int, err error) {
 	} else {
 		n += len(s)
 	}
-	p, err := strconv.Atoui(s)
+	p, err := strconv.ParseUint(s, 10, 0)
 	if err != nil {
 		return nil, 0, err
 	}
