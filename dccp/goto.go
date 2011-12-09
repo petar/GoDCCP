@@ -4,6 +4,8 @@
 
 package dccp
 
+import "fmt"
+
 func (c *Conn) gotoLISTEN() {
 	c.AssertLocked()
 	c.socket.SetServer(true)
@@ -84,6 +86,7 @@ func (c *Conn) gotoREQUEST(serviceCode uint32) {
 			c.Unlock()
 		}
 	})
+	fmt.Printf("postGO\n")
 }
 
 const (
@@ -161,6 +164,7 @@ func (c *Conn) gotoOPEN(hSeqNo int64) {
 
 func (c *Conn) gotoTIMEWAIT() {
 	c.AssertLocked()
+	c.setError(ErrEOF)
 	c.teardownUser()
 	c.socket.SetState(TIMEWAIT)
 	c.emitSetState()
@@ -173,6 +177,7 @@ func (c *Conn) gotoTIMEWAIT() {
 
 func (c *Conn) gotoCLOSING() {
 	c.AssertLocked()
+	c.setError(ErrEOF)
 	c.teardownUser()
 	c.socket.SetState(CLOSING)
 	c.emitSetState()
@@ -209,6 +214,7 @@ func (c *Conn) gotoCLOSED() {
 	c.AssertLocked()
 	c.socket.SetState(CLOSED)
 	c.emitSetState()
+	c.setError(ErrAbort)
 	c.teardownUser()
 	c.teardownWriteLoop()
 	c.closeCCID()

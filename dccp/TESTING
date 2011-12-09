@@ -1,5 +1,11 @@
 
+* mem & cpu maxout bug in tests
+
 * how come the sandbox line allows a packet with higher seq no arrive before one with lower?
+* investigate BadHeader logs (and explain in NOTES if not a bug)
+* ensure convergence test converges to rate limit of sandbox line
+
+* add side-by-side test
 
 * heartbeat in CCID3
 

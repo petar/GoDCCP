@@ -1,6 +1,11 @@
+IMPLEMENTATION and PROTOCOL NOTES
+=================================
 
 * We don't start CCID in PARTOPEN (rather wait until OPEN), because
 in PARTOPEN the client still needs to send (Ack,Sync) packet pairs,
 but the initial CCID rate is 1 packet per second, which slows down
 the handshake to OPEN, since the second packet of the (Ack,Sync)
 sequence has to wait for a whole second.
+
+* Upon entrance to CLOSING state the CCID is closed. However, the CLOSING logic
+in DCCP ensures that Close packets are sent at a conservative rate.

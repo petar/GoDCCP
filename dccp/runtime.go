@@ -30,7 +30,7 @@ func NewRuntime(time Time, writer LogWriter) *Runtime {
 		time:     time,
 		writer:   writer,
 		filter:   filter.NewFilter(),
-		waiter:   MakeConjWaiter(),
+		waiter:   WaitOnAll(),
 		timeZero: now,
 		timeLast: now,
 	}

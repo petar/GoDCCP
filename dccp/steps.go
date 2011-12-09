@@ -142,7 +142,7 @@ func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) error {
 		Time:    now,
 	}); err != nil {
 		if re, ok := err.(CongestionReset); ok {
-			c.abortWithUnderLock(re.ResetCode())
+			c.reset(re.ResetCode(), ErrAbort)
 			return ErrDrop
 		}
 		if err == CongestionAck {
@@ -164,7 +164,7 @@ func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) error {
 		DataLen: len(h.Data),
 	}); err != nil {
 		if re, ok := err.(CongestionReset); ok {
-			c.abortWithUnderLock(re.ResetCode())
+			c.reset(re.ResetCode(), ErrAbort)
 			return ErrDrop
 		}
 		if err == CongestionAck {
@@ -183,6 +183,7 @@ func (c *Conn) step9_ProcessReset(h *Header) error {
 	if h.Type != Reset {
 		return nil
 	}
+	c.setError(ErrAbort) 
 	c.teardownUser()
 	c.gotoTIMEWAIT()
 	return ErrDrop
@@ -258,6 +259,7 @@ func (c *Conn) step14_ProcessClose(h *Header) error {
 	if h.Type != Close {
 		return nil
 	}
+	c.setError(ErrEOF) 
 	c.teardownUser()
 	c.gotoCLOSED()
 	c.inject(c.generateReset(ResetClosed))

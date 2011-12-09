@@ -4,6 +4,11 @@
 
 package dccp
 
+import (
+	"io"
+	"os"
+)
+
 // Conn 
 type Conn struct {
 	run      *Runtime
@@ -13,9 +18,10 @@ type Conn struct {
 	scc   SenderCongestionControl
 	rcc   ReceiverCongestionControl
 
-	Mutex // Protects access to socket
+	Mutex                       // Protects access to socket, ccidOpen and err
 	socket
 	ccidOpen       bool         // True if the sender and receiver CCID's have been opened
+	err            error        // Reason for connection tear down
 
 	readAppLk      Mutex
 	readApp        chan []byte  // readLoop() sends application data to Read()
@@ -24,6 +30,11 @@ type Conn struct {
 	writeNonDataLk Mutex
 	writeNonData   chan *Header // inject() sends wire-format non-Data packets (higher priority) to writeLoop()
 }
+
+var (
+	ErrEOF   = io.EOF
+	ErrAbort = os.EIO
+)
 
 // Waiter returns a Waiter instance that can wait until all goroutines
 // associated with the connection have completed.

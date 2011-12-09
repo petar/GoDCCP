@@ -5,6 +5,7 @@
 package sandbox
 
 import (
+	//"fmt"
 	"os"
 	"path"
 	"testing"
@@ -16,8 +17,11 @@ func makeEnds(logname string) (clientConn, serverConn *dccp.Conn, run *dccp.Runt
 
 	logwriter := dccp.NewFileLogWriter(path.Join(os.Getenv("DCCPLOG"), logname+"_test.emit"))
 	run = dccp.NewRuntime(dccp.RealTime, logwriter)
-	run.Filter().Select("client", "server", "end", "line", "conn", "s", "s-x", "s-strober",
-	"s-tracker", "r", "r-evolveInterval")
+	run.Filter().Select(
+		"client", "server", "end", "line", "conn", "s", 
+		"s-x", "s-strober", "s-tracker", 
+		"r", "r-evolver",
+	)
 
 	llog := dccp.NewLogger("line", run)
 	hca, hcb, _ := NewLine(run, llog, "client", "server", 1e9, 100)  // 100 packets per second
@@ -33,8 +37,7 @@ func makeEnds(logname string) (clientConn, serverConn *dccp.Conn, run *dccp.Runt
 
 	return clientConn, serverConn, run
 }
-func TestNop(*testing.T) {}
-/*
+
 func TestOpenClose(t *testing.T) {
 
 	dccp.InstallCtrlCPanic()
@@ -44,7 +47,7 @@ func TestOpenClose(t *testing.T) {
 	go func() {
 		run.Sleep(2e9)
 		_, err := clientConn.ReadSegment()
-		if err != os.EBADF {
+		if err != dccp.ErrEOF {
 			t.Errorf("client read error (%s), expected EBADF", err)
 		}
 		cchan <- 1
@@ -65,14 +68,13 @@ func TestOpenClose(t *testing.T) {
 	<-schan
 	clientConn.Abort()
 	serverConn.Abort()
-	dccp.MakeConjWaiter(clientConn.Waiter(), serverConn.Waiter()).Wait()
+	dccp.WaitOnAll(clientConn.Waiter(), serverConn.Waiter()).Wait()
 	dccp.NewLogger("line", run).Emit("end", "end", nil, "Server and client done.")
 	if err := run.Close(); err != nil {
 		t.Errorf("Error closing runtime (%s)", err)
 	}
 }
-*/
-/*
+
 func TestIdle(t *testing.T) {
 
 	clientConn, serverConn, run := makeEnds("idle")
@@ -80,13 +82,19 @@ func TestIdle(t *testing.T) {
 	cchan := make(chan int, 1)
 	go func() {
 		run.Sleep(5e9) // Stay idle for 5sec
+		if err := clientConn.Close(); err != nil {
+			t.Errorf("client close error (%s)", err)
+		}
 		cchan <- 1
 		close(cchan)
 	}()
 
 	schan := make(chan int, 1)
 	go func() {
-		run.Sleep(5e9) // Stay idle for 5sec
+		run.Sleep(7e9) // Stay idle for 5sec
+		if err := serverConn.Close(); err != nil {
+			t.Errorf("server close error (%s)", err)
+		}
 		schan <- 1
 		close(schan)
 	}()
@@ -95,10 +103,9 @@ func TestIdle(t *testing.T) {
 	<-schan
 	clientConn.Abort()
 	serverConn.Abort()
-	dccp.MakeConjWaiter(clientConn.Waiter(), serverConn.Waiter()).Wait()
+	dccp.WaitOnAll(clientConn.Waiter(), serverConn.Waiter()).Wait()
 	dccp.NewLogger("line", run).Emit("end", "end", nil, "Server and client done.")
 	if err := run.Close(); err != nil {
 		t.Errorf("Error closing runtime (%s)", err)
 	}
 }
-*/

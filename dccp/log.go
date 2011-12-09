@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"encoding/json"
 	"os"
-	"path"
 	goruntime "runtime"
 	"github.com/petar/GoGauge/filter"
 )
@@ -111,12 +110,15 @@ func (t *Logger) EmitCaller(level int, submodule string, event string, h interfa
 		}
 	}
 
+	sfile, sline := FetchCaller(2+level)
+	/*
 	_, sfile, sline, _ := goruntime.Caller(1+level)
 	sdir, sfile := path.Split(sfile)
 	if len(sdir) > 0 {
 		_, sdir = path.Split(sdir[:len(sdir)-1])
 	}
 	sfile = path.Join(sdir, sfile)
+	*/
 
 	if len(v) > 0 {
 		comment = fmt.Sprintf(comment, v...)
@@ -204,7 +206,7 @@ func NewFileLogWriter(name string) *FileLogWriter {
 	os.Remove(name)
 	f, err := os.Create(name)
 	if err != nil {
-		panic("cannot create log file")
+		panic(fmt.Sprintf("cannot create log file '%s'", name))
 	}
 	w := &FileLogWriter{f, json.NewEncoder(f)}
 	goruntime.SetFinalizer(w, func(w *FileLogWriter) { 

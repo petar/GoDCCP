@@ -5,7 +5,8 @@
 package sandbox
 
 import (
-	"io"
+	"fmt"
+	//"os"
 	"testing"
 	"github.com/petar/GoDCCP/dccp"
 )
@@ -24,6 +25,7 @@ func TestRateConvergence(t *testing.T) {
 			err := clientConn.WriteSegment(buf)
 			if err != nil {
 				t.Errorf("error writing (%s)", err)
+				break
 			}
 		}
 		clientConn.Close()
@@ -33,11 +35,14 @@ func TestRateConvergence(t *testing.T) {
 	schan := make(chan int, 1)
 	go func() {
 		for {
+			fmt.Printf("pre-read\n")
 			_, err := serverConn.ReadSegment()
-			if err == io.EOF {
+			fmt.Printf("post-read\n")
+			if err == dccp.ErrEOF {
 				break 
 			} else if err != nil {
 				t.Errorf("error reading (%s)", err)
+				break
 			}
 		}
 		close(schan)
@@ -45,7 +50,7 @@ func TestRateConvergence(t *testing.T) {
 
 	_, _ = <-cchan
 	_, _ = <-schan
-	dccp.MakeConjWaiter(clientConn.Waiter(), serverConn.Waiter()).Wait()
+	dccp.WaitOnAll(clientConn.Waiter(), serverConn.Waiter()).Wait()
 	dccp.NewLogger("line", run).Emit("end", "end", nil, "Server and client done.")
 	if err := run.Close(); err != nil {
 		t.Errorf("error closing runtime (%s)", err)

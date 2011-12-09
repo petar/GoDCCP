@@ -1,0 +1,16 @@
+#!/bin/sh
+
+export DCCPLOG=.
+
+# Are we doing build-only?
+if [ "$2" = "-c" ]; then
+	export GOTEST_CFLAG='-c'
+fi
+
+# Run gotest
+if !(${DCCP}/util/3m && gotest ${GOTEST_CFLAG} -test.run=$1) then 
+	echo 'Urgh! Killing with KILL ...r'
+	kill -KILL `ps | grep 6\.out | grep -v grep | awk '{ print $1 }'`
+else
+	echo 'Exit OK!'
+fi

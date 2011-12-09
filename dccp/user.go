@@ -33,36 +33,51 @@ func (c *Conn) WriteSegment(b []byte) error {
 	return nil
 }
 
-// ReadSegment blocks until the next packet of application data is received.
-// It returns a non-nil error only if the connection has been closed.
+// Read blocks until the next packet of application data is received. Successfuly read data
+// is returned in a slice. The error returned by Read behaves according to io.Reader. If the
+// connection was never established or was aborted, Read returns ErrIO. If the connection
+// was closed normally, Read returns io.EOF. In the event of a non-nil error, successive
+// calls to Read return the same error.
 func (c *Conn) ReadSegment() (b []byte, err error) {
 	c.readAppLk.Lock()
 	readApp := c.readApp
 	c.readAppLk.Unlock()
 	if readApp == nil {
-		return nil, os.EBADF
+		if c.Error() == nil {
+			panic("torn connection missing error")
+		}
+		return nil, c.Error()
 	}
 	b, ok := <-readApp
 	if !ok {
+		if c.Error() == nil {
+			panic("torn connection missing error")
+		}
 		// The connection has been closed
-		return nil, os.EBADF
+		return nil, c.Error()
 	}
 	return b, nil
 }
 
-// Close closes the connection, Section 8.3
+func (c *Conn) Error() error {
+	c.Lock()
+	defer c.Unlock()
+	return c.err
+}
+
+// Close closes the connection, Section 8.3.
 func (c *Conn) Close() error {
 	c.Lock()
 	defer c.Unlock()
 	switch c.socket.GetState() {
 	case LISTEN:
-		c.abortWithUnderLock(ResetClosed)
+		c.reset(ResetClosed, ErrEOF)
 		return nil
 	case REQUEST:
-		c.abortWithUnderLock(ResetClosed)
+		c.reset(ResetClosed, ErrEOF)
 		return nil
 	case RESPOND:
-		c.abortWithUnderLock(ResetClosed)
+		c.reset(ResetClosed, ErrEOF)
 	case PARTOPEN, OPEN:
 		c.inject(c.generateClose())
 		c.gotoCLOSING()

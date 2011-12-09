@@ -1,0 +1,5 @@
+#!/bin/sh
+if !(cd ${DCCP} && make clean && make install) then 
+	echo Build urgh ...
+	exit 1
+fi
