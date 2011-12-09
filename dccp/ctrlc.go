@@ -10,7 +10,16 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
+
+// InstallTimeout panics the current process in ns time
+func InstallTimeout(ns int64) {
+	go func() {
+		time.Sleep(time.Duration(ns))
+		panic("timeout")
+	}()
+}
 
 // InstallCtrlCPanic installs a Ctrl-C signal handler that panics
 func InstallCtrlCPanic() {

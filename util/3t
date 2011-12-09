@@ -8,7 +8,7 @@ if [ "$2" = "-c" ]; then
 fi
 
 # Run gotest
-if !(${DCCP}/util/3m && gotest ${GOTEST_CFLAG} -test.run=$1) then 
+if !(${DCCP}/util/3m && gotest -test.run=$1 $2 $3 $4 $5 $6 $7 $8 $9) then 
 	echo 'Urgh! Killing with KILL ...r'
 	kill -KILL `ps | grep 6\.out | grep -v grep | awk '{ print $1 }'`
 else

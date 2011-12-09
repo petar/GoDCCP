@@ -41,6 +41,7 @@ func makeEnds(logname string) (clientConn, serverConn *dccp.Conn, run *dccp.Runt
 func TestOpenClose(t *testing.T) {
 
 	dccp.InstallCtrlCPanic()
+	dccp.InstallTimeout(5e9)
 	clientConn, serverConn, run := makeEnds("openclose")
 
 	cchan := make(chan int, 1)

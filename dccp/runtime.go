@@ -6,7 +6,7 @@ package dccp
 
 import (
 	"sync"
-	"time"
+	gotime "time"
 	"github.com/petar/GoGauge/filter"
 )
 
@@ -71,7 +71,7 @@ func (t *Runtime) Sleep(ns int64) {
 }
 
 func (t *Runtime) After(ns int64) <-chan int64 {
-	return After(t.time, ns)
+	return t.time.After(ns)
 }
 
 func (t *Runtime) Snap() (sinceZero int64, sinceLast int64) {
@@ -92,17 +92,17 @@ type Time interface {
 	// Sleep blocks for ns nanoseconds 
 	Sleep(ns int64)
 
+	// After returns a channel which sends the current time once, exactly ns later
+	After(ns int64) <-chan int64
+
+	// NewTicker creates a new time ticker that attemps to beat each ns
+	NewTicker(ns int64) Ticker
 }
 
-// After waits for the duration to elapse and then sends the current time on the returned channel.
-func After(t Time, d int64) <-chan int64 {
-	ch := make(chan int64)
-	go func() {
-		t.Sleep(d)
-		ch <- t.Nanoseconds()
-		close(ch)
-	}()
-	return ch
+// Ticker is an interface for representing a uniform time ticker
+type Ticker interface {
+	Chan() <-chan int64
+	Stop()
 }
 
 // RealTime is an implementation of Time that represents real time
@@ -112,9 +112,61 @@ type realTime struct {}
 
 
 func (realTime) Nanoseconds() int64 {
-	return time.Now().UnixNano()
+	return gotime.Now().UnixNano()
 }
 
 func (realTime) Sleep(ns int64) {
-	<-time.NewTimer(time.Duration(ns)).C
+	gotime.Sleep(gotime.Duration(ns))
+}
+
+func (realTime) After(ns int64) <-chan int64 {
+	d := make(chan int64)
+	go func(){
+		gotime.Sleep(gotime.Duration(ns))
+		d <- gotime.Now().UnixNano()
+		close(d)
+	}()
+	return d
+}
+
+func (realTime) NewTicker(ns int64) Ticker {
+	return newTicker(gotime.NewTicker(gotime.Duration(ns)))
+}
+
+// realTicker proxies time.Ticker to the local interface Ticker
+type realTicker struct {
+	sync.Mutex
+	tkr *gotime.Ticker
+	c   chan int64
+}
+
+func newTicker(tkr *gotime.Ticker) *realTicker {
+	t := &realTicker{ tkr: tkr, c : make(chan int64) }
+	go func(){
+		for {
+			t.Lock()
+			tkr := t.tkr
+			t.Unlock()
+			if tkr == nil {
+				break
+			}
+			tm, ok := <-t.tkr.C
+			if !ok {
+				break
+			}
+			t.c <- tm.UnixNano()
+		}
+	}()
+	return t
+}
+
+func (t *realTicker) Chan() <-chan int64 {
+	return t.c
+}
+
+func (t *realTicker) Stop() {
+	t.Lock()
+	defer t.Unlock()
+	t.tkr.Stop()
+	t.tkr = nil
 }

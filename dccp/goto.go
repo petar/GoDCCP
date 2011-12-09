@@ -4,7 +4,22 @@
 
 package dccp
 
-import "fmt"
+const (
+	REQUEST_BACKOFF_FIRST                       = 1e9      // Initial re-send period for client Request resends is 1 sec, in ns
+	REQUEST_BACKOFF_FREQ                        = 10e9     // Back-off Request resend every 10 secs, in ns
+	REQUEST_BACKOFF_TIMEOUT                     = 30e9     // Request re-sends quit after 30 sec, in ns (shorter than RFC recommendation)
+
+	RESPOND_TIMEOUT                             = 30e9     // Timeout in RESPOND state, 30 sec in ns
+
+	LISTEN_TIMEOUT                              = REQUEST_BACKOFF_TIMEOUT    // Timeout in LISTEN state
+
+	CLOSING_BACKOFF_FREQ                        = 64e9     // Backoff frequency of CLOSING timer, 64 seconds, Section 8.3
+	CLOSING_BACKOFF_TIMEOUT                     = MSL/4    // Maximum time in CLOSING (RFC recommends MSL, but seems too long)
+
+	PARTOPEN_BACKOFF_FIRST                      = 200e6    // 200 miliseconds in ns, Section 8.1.5
+	PARTOPEN_BACKOFF_FREQ                       = 200e6    // 200 miliseconds in ns
+	PARTOPEN_BACKOFF_TIMEOUT                    = 30e9     // 30 sec (Section 8.1.5 recommends 8 min)
+)
 
 func (c *Conn) gotoLISTEN() {
 	c.AssertLocked()
@@ -12,7 +27,7 @@ func (c *Conn) gotoLISTEN() {
 	c.socket.SetState(LISTEN)
 	c.emitSetState()
 	c.run.Go(func() {
-		c.run.Sleep(REQUEST_BACKOFF_MAX)
+		c.run.Sleep(LISTEN_TIMEOUT)
 		c.Lock()
 		state := c.socket.GetState()
 		c.Unlock()
@@ -22,8 +37,6 @@ func (c *Conn) gotoLISTEN() {
 		c.abortQuietly()
 	})
 }
-
-const RESPOND_TIMEOUT = 30e9 // Timeout in RESPOND state, 30 sec in nanoseconds
 
 func (c *Conn) gotoRESPOND(hServiceCode uint32, hSeqNo int64) {
 	c.AssertLocked()
@@ -48,12 +61,6 @@ func (c *Conn) gotoRESPOND(hServiceCode uint32, hSeqNo int64) {
 	})
 }
 
-const (
-	REQUEST_BACKOFF_FIRST = 1e9  // Initial re-send period for client Request resends is 1 sec, in nanoseconds
-	REQUEST_BACKOFF_MAX   = 60e9 // Request re-sends quit after 1 mins, in nanoseconds
-	REQUEST_BACKOFF_FREQ  = 10e9 // Back-off Request resend every 10 secs, in nanoseconds
-)
-
 func (c *Conn) gotoREQUEST(serviceCode uint32) {
 	c.AssertLocked()
 	c.socket.SetServer(false)
@@ -66,7 +73,7 @@ func (c *Conn) gotoREQUEST(serviceCode uint32) {
 
 	// Resend Request using exponential backoff, if no response
 	c.run.Go(func() {
-		b := newBackOff(c.run, REQUEST_BACKOFF_FIRST, REQUEST_BACKOFF_MAX, REQUEST_BACKOFF_FREQ)
+		b := newBackOff(c.run, REQUEST_BACKOFF_FIRST, REQUEST_BACKOFF_TIMEOUT, REQUEST_BACKOFF_FREQ)
 		for {
 			err, _ := b.Sleep()
 			c.Lock()
@@ -86,13 +93,7 @@ func (c *Conn) gotoREQUEST(serviceCode uint32) {
 			c.Unlock()
 		}
 	})
-	fmt.Printf("postGO\n")
 }
-
-const (
-	PARTOPEN_BACKOFF_FIRST = 200e6    // 200 miliseconds in nanoseconds, Section 8.1.5
-	PARTOPEN_BACKOFF_MAX   = 4 * MSL  // 8 mins in nanoseconds, Section 8.1.5
-)
 
 func (c *Conn) openCCID() {
 	c.AssertLocked()
@@ -125,7 +126,7 @@ func (c *Conn) gotoPARTOPEN() {
 
 	// Start PARTOPEN timer, according to Section 8.1.5
 	c.run.Go(func() {
-		b := newBackOff(c.run, PARTOPEN_BACKOFF_FIRST, PARTOPEN_BACKOFF_MAX, PARTOPEN_BACKOFF_FIRST)
+		b := newBackOff(c.run, PARTOPEN_BACKOFF_FIRST, PARTOPEN_BACKOFF_TIMEOUT, PARTOPEN_BACKOFF_FREQ)
 		c.logger.Emit("conn", "Event", nil, "PARTOPEN backoff start")
 		for {
 			err, btm := b.Sleep()
@@ -187,7 +188,7 @@ func (c *Conn) gotoCLOSING() {
 		rtt := c.socket.GetRTT()
 		c.Unlock()
 		c.logger.Emit("conn", "Event", nil, "CLOSING RTT=%dns", rtt)
-		b := newBackOff(c.run, 2*rtt, CLOSING_BACKOFF_MAX, CLOSING_BACKOFF_FREQ)
+		b := newBackOff(c.run, 2*rtt, CLOSING_BACKOFF_TIMEOUT, CLOSING_BACKOFF_FREQ)
 		for {
 			err, _ := b.Sleep()
 			c.Lock()
