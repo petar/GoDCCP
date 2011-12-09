@@ -212,8 +212,8 @@ func (c *Conn) gotoCLOSING() {
 // gotoCLOSED MUST be idempotent
 func (c *Conn) gotoCLOSED() {
 	c.AssertLocked()
-	c.socket.SetState(CLOSED)
 	c.emitSetState()
+	c.socket.SetState(CLOSED)
 	c.setError(ErrAbort)
 	c.teardownUser()
 	c.teardownWriteLoop()

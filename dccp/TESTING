@@ -1,4 +1,5 @@
 
+* "3t Idle" bug
 * mem & cpu maxout bug in tests
 
 * how come the sandbox line allows a packet with higher seq no arrive before one with lower?

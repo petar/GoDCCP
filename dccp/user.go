@@ -5,6 +5,7 @@
 package dccp
 
 import (
+	"fmt"
 	"os"
 )
 
@@ -69,7 +70,8 @@ func (c *Conn) Error() error {
 func (c *Conn) Close() error {
 	c.Lock()
 	defer c.Unlock()
-	switch c.socket.GetState() {
+	state := c.socket.GetState()
+	switch state {
 	case LISTEN:
 		c.reset(ResetClosed, ErrEOF)
 		return nil
@@ -83,6 +85,10 @@ func (c *Conn) Close() error {
 		c.gotoCLOSING()
 		return nil
 	case CLOSEREQ, CLOSING, TIMEWAIT, CLOSED:
+		if c.err == nil {
+			panic(fmt.Sprintf("%s without error", StateString(state)))
+		}
+		return c.err
 	}
 	panic("unknown state")
 }
