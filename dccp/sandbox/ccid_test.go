@@ -11,7 +11,7 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-func TestRateConvergence(t *testing.T) {
+func TestConverge(t *testing.T) {
 
 	dccp.InstallCtrlCPanic()
 	clientConn, serverConn, run := makeEnds("converge")

@@ -100,6 +100,7 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) error {
 	// Update the round-trip estimate
 	s.rttSender.OnRead(fb)
 	rtt, rttEstimated := s.rttSender.RTT()
+	s.logger.Emit("s", "Info", fb, "eRTT=%s, est=%v", dccp.Nstoa(rtt), rttEstimated)
 
 	// Update the nofeedback timeout interval and reset the timer
 	s.nofeedbackTimer.OnRead(rtt, rttEstimated, fb)

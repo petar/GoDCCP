@@ -1,9 +1,7 @@
 
-* add round-trip measurements
+* some emits show up as coming from routine.go
+* add round-trip measurements and tests
 * add SyncAll.Start() to prevent completion before call to Wait()
-
-* add low limit mark on backoff intervals
-* mem & cpu maxout bug in tests
 
 * how come the sandbox line allows a packet with higher seq no arrive before one with lower?
 * investigate BadHeader logs (and explain in NOTES if not a bug)
@@ -18,3 +16,7 @@
 * ensure behavior stabilizes if both sides remain silent after connect and connection does not close
 perpetually
 	* write test for this
+
+====================================================================================================
+
+* mem & cpu maxout bug in tests (disappeared by itself)

@@ -143,6 +143,7 @@ func (r *receiver) OnRead(ff *dccp.FeedforwardHeader) error {
 		r.latestCCVal = ff.CCVal
 	}
 	r.rttReceiver.OnRead(ff.CCVal, ff.Time)
+	r.logger.Emit("r", "Info", ff, "eRTT=%s", dccp.Nstoa(r.rttReceiver.RTT(ff.Time)))
 	r.receiveRate.OnRead(ff)
 	r.lossReceiver.OnRead(ff, r.rttReceiver.RTT(ff.Time))
 

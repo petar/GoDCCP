@@ -44,9 +44,9 @@ func Go(f func()) *GoRoutine {
 // Wait can be called concurrently.
 func (g *GoRoutine) Wait() {
 	u := g.String()
-	fmt.Printf(" go: + %s\n", u)
+	fmt.Printf(" + go %s\n", u)
 	_, _ = <-g.onEnd
-	fmt.Printf(" go: - %s\n", u)
+	fmt.Printf(" - go %s\n", u)
 }
 
 // Source returns the file and line where the goroutine was forked.
@@ -151,17 +151,15 @@ func (t *GoGroup) Wait() {
 	}
 
 	for t.stillRemain() {
-		u, ok := <-t.onEnd
+		_, ok := <-t.onEnd
 		if !ok {
 			return
 		}
 		t.lk.Lock()
 		t.k++
-		fmt.Printf("woa: - %s \t%d remain\n", u.String(), len(t.group)-t.k)
 		if t.k == len(t.group) {
 			t.k = -1
 			close(t.onEnd)
-			fmt.Printf("woa: wait done\n")
 		}
 		t.lk.Unlock()
 	}
