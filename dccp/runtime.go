@@ -17,7 +17,7 @@ type Runtime struct {
 	time   Time
 	writer LogWriter
 	filter *filter.Filter
-	waiter *ConjWaiter
+	waiter *GoGroup
 
 	sync.Mutex
 	timeZero int64 // Time when execution started
@@ -30,7 +30,7 @@ func NewRuntime(time Time, writer LogWriter) *Runtime {
 		time:     time,
 		writer:   writer,
 		filter:   filter.NewFilter(),
-		waiter:   WaitOnAll(),
+		waiter:   NewGoGroup(),
 		timeZero: now,
 		timeLast: now,
 	}

@@ -5,7 +5,6 @@
 package sandbox
 
 import (
-	//"fmt"
 	"os"
 	"path"
 	"testing"
@@ -38,10 +37,17 @@ func makeEnds(logname string) (clientConn, serverConn *dccp.Conn, run *dccp.Runt
 	return clientConn, serverConn, run
 }
 
+func TestNop(t *testing.T) {
+	dccp.InstallCtrlCPanic()
+	dccp.InstallTimeout(10e9)
+	_, _, run := makeEnds("openclose")
+	run.Sleep(5e9)
+}
+
 func TestOpenClose(t *testing.T) {
 
 	dccp.InstallCtrlCPanic()
-	dccp.InstallTimeout(5e9)
+	dccp.InstallTimeout(20e9)
 	clientConn, serverConn, run := makeEnds("openclose")
 
 	cchan := make(chan int, 1)
@@ -69,11 +75,12 @@ func TestOpenClose(t *testing.T) {
 	<-schan
 	clientConn.Abort()
 	serverConn.Abort()
-	dccp.WaitOnAll(clientConn.Waiter(), serverConn.Waiter()).Wait()
+	dccp.NewGoGroup(clientConn.Waiter(), serverConn.Waiter()).Wait() // XXX causes hang
 	dccp.NewLogger("line", run).Emit("end", "end", nil, "Server and client done.")
 	if err := run.Close(); err != nil {
 		t.Errorf("Error closing runtime (%s)", err)
 	}
+	t.Logf("normal exit\n")
 }
 
 func TestIdle(t *testing.T) {
@@ -104,7 +111,7 @@ func TestIdle(t *testing.T) {
 	<-schan
 	clientConn.Abort()
 	serverConn.Abort()
-	dccp.WaitOnAll(clientConn.Waiter(), serverConn.Waiter()).Wait()
+	dccp.NewGoGroup(clientConn.Waiter(), serverConn.Waiter()).Wait()
 	dccp.NewLogger("line", run).Emit("end", "end", nil, "Server and client done.")
 	if err := run.Close(); err != nil {
 		t.Errorf("Error closing runtime (%s)", err)

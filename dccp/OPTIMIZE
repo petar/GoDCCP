@@ -1,0 +1,2 @@
+
+* idle ticker should use Go's ticker

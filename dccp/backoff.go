@@ -11,7 +11,7 @@ type backOff struct {
 	run         *Runtime
 	sleep       int64 // Duration of next sleep interval
 	lifetime    int64 // Total lifetime so far
-	maxLifetime int64 // Maximum time the backoff mechanism stays alive
+	timeout     int64 // Maximum time the backoff mechanism stays alive
 	backoffFreq int64 // Backoff period. The sleep duration backs off approximately every backoffFreq nanoseconds
 	lastBackoff int64 // Last time the sleep interval was backed off, relative to the starting time
 }
@@ -19,13 +19,13 @@ type backOff struct {
 // newBackOff() creates a new back-off timer whose first wait period is firstSleep
 // nanoseconds. Approximately every backoffFreq nanoseconds, the sleep timers backs off
 // (increases by a factor of 4/3).  The lifetime of the backoff sleep intervals does not
-// exceed maxLifetime.
-func newBackOff(run *Runtime, firstSleep, maxLifetime, backoffFreq int64) *backOff {
+// exceed timeout.
+func newBackOff(run *Runtime, firstSleep, timeout, backoffFreq int64) *backOff {
 	return &backOff{
 		run:         run,
 		sleep:       firstSleep,
 		lifetime:    0,
-		maxLifetime: maxLifetime,
+		timeout: timeout,
 		backoffFreq: backoffFreq,
 		lastBackoff: 0,
 	}
@@ -35,8 +35,11 @@ func newBackOff(run *Runtime, firstSleep, maxLifetime, backoffFreq int64) *backO
 // sequence and return nil. If the maximum total sleep time has been reached,
 // Sleep() returns os.EOF without sleeping.
 func (b *backOff) Sleep() (error, int64) {
-	if b.lifetime >= b.maxLifetime {
+	if b.lifetime >= b.timeout {
 		return io.EOF, 0
+	}
+	if b.Sleep < 100e6 {
+		panic("backoff less than 200 milisec")
 	}
 	b.run.Sleep(b.sleep)
 	b.lifetime += b.sleep

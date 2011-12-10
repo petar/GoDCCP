@@ -50,7 +50,7 @@ func TestRateConvergence(t *testing.T) {
 
 	_, _ = <-cchan
 	_, _ = <-schan
-	dccp.WaitOnAll(clientConn.Waiter(), serverConn.Waiter()).Wait()
+	dccp.NewGoGroup(clientConn.Waiter(), serverConn.Waiter()).Wait()
 	dccp.NewLogger("line", run).Emit("end", "end", nil, "Server and client done.")
 	if err := run.Close(); err != nil {
 		t.Errorf("error closing runtime (%s)", err)

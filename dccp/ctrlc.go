@@ -17,7 +17,7 @@ import (
 func InstallTimeout(ns int64) {
 	go func() {
 		time.Sleep(time.Duration(ns))
-		panic("timeout")
+		panic("process timeout")
 	}()
 }
 

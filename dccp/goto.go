@@ -16,6 +16,8 @@ const (
 	CLOSING_BACKOFF_FREQ                        = 64e9     // Backoff frequency of CLOSING timer, 64 seconds, Section 8.3
 	CLOSING_BACKOFF_TIMEOUT                     = MSL/4    // Maximum time in CLOSING (RFC recommends MSL, but seems too long)
 
+	TIMEWAIT_TIMEOUT                            = 2*MSL    // Time to stay in TIMEWAIT, Section 8.3
+
 	PARTOPEN_BACKOFF_FIRST                      = 200e6    // 200 miliseconds in ns, Section 8.1.5
 	PARTOPEN_BACKOFF_FREQ                       = 200e6    // 200 miliseconds in ns
 	PARTOPEN_BACKOFF_TIMEOUT                    = 30e9     // 30 sec (Section 8.1.5 recommends 8 min)
@@ -31,9 +33,12 @@ func (c *Conn) gotoLISTEN() {
 		c.Lock()
 		state := c.socket.GetState()
 		c.Unlock()
+		// If we've transitioned away from LISTEN,
 		if state != LISTEN {
+			// Then do nothing
 			return
 		}
+		// Otherwise abort the connection
 		c.abortQuietly()
 	})
 }
@@ -171,7 +176,7 @@ func (c *Conn) gotoTIMEWAIT() {
 	c.emitSetState()
 	c.closeCCID()
 	c.run.Go(func() {
-		c.run.Sleep(2 * MSL)
+		c.run.Sleep(TIMEWAIT_TIMEOUT)
 		c.abortQuietly()
 	})
 }
@@ -203,6 +208,7 @@ func (c *Conn) gotoCLOSING() {
 				c.Unlock()
 				break
 			}
+			c.logger.Emit("conn", "Event", nil, "Resend Close")
 			c.Lock()
 			c.inject(c.generateClose())
 			c.Unlock()

@@ -44,9 +44,9 @@ func Go(f func()) *GoRoutine {
 // Wait can be called concurrently.
 func (g *GoRoutine) Wait() {
 	u := g.String()
-	fmt.Printf("ooo { wait-on %s\n", u)
+	fmt.Printf(" go: + %s\n", u)
 	_, _ = <-g.onEnd
-	fmt.Printf("ooo } wait-on %s\n", u)
+	fmt.Printf(" go: - %s\n", u)
 }
 
 // Source returns the file and line where the goroutine was forked.
@@ -79,22 +79,24 @@ type Waiter interface {
 	String() string
 }
 
-// ConjWaiter waits until a set of GoRoutines all complete.
-type ConjWaiter struct {
+// GoGroup waits until a set of GoRoutines all complete. It also allows
+// new routines to be added dynamically before the completion event.
+type GoGroup struct {
 	srcFile string
 	srcLine int
 	lk      sync.Mutex
-	n       int
+	group   []Waiter
+	ndone   int
 	onEnd   chan Waiter
 }
 
-// WaitOnAllCaller creates an object capable of waiting until all supplied GoRoutines complete.
-func WaitOnAllCaller(level int, group ...Waiter) *ConjWaiter {
+// NewGoGroupCaller creates an object capable of waiting until all supplied GoRoutines complete.
+func NewGoGroupCaller(level int, group ...Waiter) *GoGroup {
 	sfile, sline := FetchCaller(1 + level)
-	var w *ConjWaiter = &ConjWaiter{ 
+	var w *GoGroup = &GoGroup{ 
 		srcFile: sfile,
 		srcLine: sline,
-		n: 0, 
+		ndone: 0, 
 		onEnd: make(chan Waiter),
 	}
 	for _, u := range group {
@@ -103,12 +105,12 @@ func WaitOnAllCaller(level int, group ...Waiter) *ConjWaiter {
 	return w
 }
 
-func WaitOnAll(group ...Waiter) *ConjWaiter {
-	return WaitOnAllCaller(1, group...)
+func NewGoGroup(group ...Waiter) *GoGroup {
+	return NewGoGroupCaller(1, group...)
 }
 
 // String returns a unique, readable string representation of this instance.
-func (t *ConjWaiter) String() string {
+func (t *GoGroup) String() string {
 	return fmt.Sprintf("%s:%d (%x)", t.srcFile, t.srcLine, t)
 }
 
@@ -116,32 +118,36 @@ func (t *ConjWaiter) String() string {
 // as long as the current set of goroutines hasn't completed.
 // For instance, as long as you call Add from a GoRoutine which
 // is waited on by this object, the condtion will be met.
-func (t *ConjWaiter) Add(u Waiter) {
+func (t *GoGroup) Add(u Waiter) {
 	t.lk.Lock()
 	defer t.lk.Unlock()
-	if t.n < 0 {
-		panic("adding goroutine after completion")
-	}
-	t.n++
-	fmt.Printf("ooo wait+ %s (%d)\n", u.String(), t.n)
-	go func() {
-		u.Wait()
-		t.onEnd <- u
-	}()
+	fmt.Printf("woa: + %s (%d)\n", u.String(), t.n)
+	t.group = append(t.group, u)
 }
 
 // Go is a convenience method which forks f into a new GoRoutine and
 // adds the latter to the waiting queue.
-func (t *ConjWaiter) Go(f func()) {
+func (t *GoGroup) Go(f func()) {
 	t.Add(GoCaller(f, 1))
 }
 
 // Wait blocks until all goroutines in the group have completed.
 // Wait can be called concurrently. If called post-completion of the
 // goroutine group, Wait returns immediately.
-func (t *ConjWaiter) Wait() {
+func (t *GoGroup) Wait() {
+
+	// XXX ensure re-entrant
+
+	// Start waiting
 	t.lk.Lock()
-	n := t.n
+	for _, u := range t.group {
+		go func(){
+			u.Wait()
+			t.onEnd <- u
+		}()
+	}
+	?
+	n := len(t.group)
 	t.lk.Unlock()
 	if n == 0 {
 		panic("waiting on 0 goroutines")
@@ -153,18 +159,18 @@ func (t *ConjWaiter) Wait() {
 		}
 		t.lk.Lock()
 		t.n--
-		fmt.Printf("ooo wait- %s (%d)\n", u.String(), t.n)
+		fmt.Printf("woa: - %s (%d)\n", u.String(), t.n)
 		if t.n == 0 {
 			t.n = -1
 			close(t.onEnd)
-			fmt.Printf("ooo WAIT-DONE\n")
+			fmt.Printf("woa: wait done\n")
 		}
 		t.lk.Unlock()
 	}
 }
 
-func (t* ConjWaiter) stillRemain() bool {
+func (t* GoGroup) stillRemain() bool {
 	t.lk.Lock()
 	defer t.lk.Unlock()
-	return t.n > 0
+	return t.ndone < len(t.group)
 }
