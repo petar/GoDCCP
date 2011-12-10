@@ -11,6 +11,9 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
+func TestRTT(t *testing.T) {
+}
+
 func TestConverge(t *testing.T) {
 
 	dccp.InstallCtrlCPanic()

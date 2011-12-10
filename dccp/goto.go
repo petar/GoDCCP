@@ -16,7 +16,7 @@ const (
 	CLOSING_BACKOFF_FREQ                        = 64e9     // Backoff frequency of CLOSING timer, 64 seconds, Section 8.3
 	CLOSING_BACKOFF_TIMEOUT                     = MSL/4    // Maximum time in CLOSING (RFC recommends MSL, but seems too long)
 
-	TIMEWAIT_TIMEOUT                            = 2*MSL    // Time to stay in TIMEWAIT, Section 8.3
+	TIMEWAIT_TIMEOUT                            = MSL/2    // Time to stay in TIMEWAIT, Section 8.3 recommends MSL*2
 
 	PARTOPEN_BACKOFF_FIRST                      = 200e6    // 200 miliseconds in ns, Section 8.1.5
 	PARTOPEN_BACKOFF_FREQ                       = 200e6    // 200 miliseconds in ns
