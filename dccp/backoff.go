@@ -38,7 +38,7 @@ func (b *backOff) Sleep() (error, int64) {
 	if b.lifetime >= b.timeout {
 		return io.EOF, 0
 	}
-	if b.Sleep < 100e6 {
+	if b.sleep < 100e6 {
 		panic("backoff less than 200 milisec")
 	}
 	b.run.Sleep(b.sleep)

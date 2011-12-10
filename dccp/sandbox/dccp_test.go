@@ -47,7 +47,7 @@ func TestNop(t *testing.T) {
 func TestOpenClose(t *testing.T) {
 
 	dccp.InstallCtrlCPanic()
-	dccp.InstallTimeout(20e9)
+	dccp.InstallTimeout(40e9)
 	clientConn, serverConn, run := makeEnds("openclose")
 
 	cchan := make(chan int, 1)

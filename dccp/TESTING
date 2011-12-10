@@ -1,4 +1,5 @@
 
+* add round-trip measurements
 * add SyncAll.Start() to prevent completion before call to Wait()
 
 * add low limit mark on backoff intervals

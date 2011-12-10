@@ -73,8 +73,10 @@ func FetchCaller(level int) (sfile string, sline int) {
 }
 
 // Waiter is an interface to objects that can wait for some event.
-// Wait should be re-entrant and return immediately if called post-event.
 type Waiter interface {
+	// Wait blocks until an underlying event occurs.
+	// It returns immediately if called post-event.
+	// It is re-entrant.
 	Wait()
 	String() string
 }
@@ -86,7 +88,7 @@ type GoGroup struct {
 	srcLine int
 	lk      sync.Mutex
 	group   []Waiter
-	ndone   int
+	k       int
 	onEnd   chan Waiter
 }
 
@@ -96,8 +98,8 @@ func NewGoGroupCaller(level int, group ...Waiter) *GoGroup {
 	var w *GoGroup = &GoGroup{ 
 		srcFile: sfile,
 		srcLine: sline,
-		ndone: 0, 
-		onEnd: make(chan Waiter),
+		k:       0, 
+		onEnd:   make(chan Waiter),
 	}
 	for _, u := range group {
 		w.Add(u)
@@ -121,8 +123,12 @@ func (t *GoGroup) String() string {
 func (t *GoGroup) Add(u Waiter) {
 	t.lk.Lock()
 	defer t.lk.Unlock()
-	fmt.Printf("woa: + %s (%d)\n", u.String(), t.n)
 	t.group = append(t.group, u)
+	onEnd := t.onEnd
+	go func(){
+		u.Wait()
+		onEnd <- u
+	}()
 }
 
 // Go is a convenience method which forks f into a new GoRoutine and
@@ -136,32 +142,24 @@ func (t *GoGroup) Go(f func()) {
 // goroutine group, Wait returns immediately.
 func (t *GoGroup) Wait() {
 
-	// XXX ensure re-entrant
-
-	// Start waiting
+	// Prevent calling Wait before any waitees have been added
 	t.lk.Lock()
-	for _, u := range t.group {
-		go func(){
-			u.Wait()
-			t.onEnd <- u
-		}()
-	}
-	?
 	n := len(t.group)
 	t.lk.Unlock()
 	if n == 0 {
 		panic("waiting on 0 goroutines")
 	}
+
 	for t.stillRemain() {
 		u, ok := <-t.onEnd
 		if !ok {
 			return
 		}
 		t.lk.Lock()
-		t.n--
-		fmt.Printf("woa: - %s (%d)\n", u.String(), t.n)
-		if t.n == 0 {
-			t.n = -1
+		t.k++
+		fmt.Printf("woa: - %s \t%d remain\n", u.String(), len(t.group)-t.k)
+		if t.k == len(t.group) {
+			t.k = -1
 			close(t.onEnd)
 			fmt.Printf("woa: wait done\n")
 		}
@@ -172,5 +170,5 @@ func (t *GoGroup) Wait() {
 func (t* GoGroup) stillRemain() bool {
 	t.lk.Lock()
 	defer t.lk.Unlock()
-	return t.ndone < len(t.group)
+	return t.k < len(t.group)
 }
