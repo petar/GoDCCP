@@ -5,7 +5,6 @@
 package ccid3
 
 import (
-	"fmt"
 	"math"
 	"github.com/petar/GoDCCP/dccp"
 )
@@ -26,7 +25,6 @@ type UnencodedOption interface {
 }
 
 func encodeOption(u UnencodedOption) *dccp.Option {
-	fmt.Printf("u== %#v\n", u)
 	if u == nil {
 		return nil
 	}

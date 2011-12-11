@@ -93,7 +93,7 @@ func (r *receiver) OnWrite(ph *dccp.PreHeader) (options []*dccp.Option) {
 	}
 
 	switch ph.Type {
-	case dccp.Ack:
+	case dccp.Ack, dccp.DataAck:
 		// Record last Ack write separately from last writes (in general)
 		r.lastAck = ph.Time
 		r.dataSinceAck = false
@@ -115,12 +115,13 @@ func (r *receiver) OnWrite(ph *dccp.PreHeader) (options []*dccp.Option) {
 			if opts[2] == nil {
 				r.logger.Emit("r", "Warn", ph, "LossIntervals option encoding == nil")
 			}
+			r.logger.Emit("r", "Info", ph, "Placed %d receiver opts", len(opts))
 			return opts
 		}
-		r.logger.Emit("r", "Info", ph, "OnWrite SeqNo=%d, Not seen packs before", ph.SeqNo)
+		r.logger.Emit("r", "Info", ph, "OnWrite, not seen packs before")
 		return nil
 
-	case dccp.Data, dccp.DataAck:
+	case dccp.Data /*, dccp.DataAck */:
 		return nil
 	default:
 		return nil
@@ -138,12 +139,18 @@ func (r *receiver) OnRead(ff *dccp.FeedforwardHeader) error {
 		return nil
 	}
 
+	// XXX: Must use circular arithmrtic here
+	if ff.SeqNo > r.gsr {
+		r.gsr = ff.SeqNo
+		r.gsrTimestamp = ff.Time
+	}
+
 	if ff.Type == dccp.Data || ff.Type == dccp.DataAck {
 		r.dataSinceAck = true
 		r.latestCCVal = ff.CCVal
 	}
 	r.rttReceiver.OnRead(ff.CCVal, ff.Time)
-	r.logger.Emit("r", "Info", ff, "eRTT=%s", dccp.Nstoa(r.rttReceiver.RTT(ff.Time)))
+	r.logger.Emit("r", "Info", ff, "R-RTT=%s", dccp.Nstoa(r.rttReceiver.RTT(ff.Time)))
 	r.receiveRate.OnRead(ff)
 	r.lossReceiver.OnRead(ff, r.rttReceiver.RTT(ff.Time))
 

@@ -1,4 +1,7 @@
 
+* sandbox/TestRTT ends up wtih 100s goroutines from calls to "runtime.After"
+* since data can be sent in PARTOPEN, the CCID must be open by then
+
 * some emits show up as coming from routine.go
 * add round-trip measurements and tests
 * add SyncAll.Start() to prevent completion before call to Wait()
@@ -19,4 +22,5 @@ perpetually
 
 ====================================================================================================
 
-* mem & cpu maxout bug in tests (disappeared by itself)
+* 0 rate calculated in server in TestRTT (disappeared)
+* mem & cpu maxout bug in tests (disappeared)

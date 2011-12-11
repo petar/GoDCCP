@@ -43,10 +43,7 @@ func Go(f func()) *GoRoutine {
 // if the goroutine has completed, it returns immediately.
 // Wait can be called concurrently.
 func (g *GoRoutine) Wait() {
-	u := g.String()
-	fmt.Printf(" + go %s\n", u)
 	_, _ = <-g.onEnd
-	fmt.Printf(" - go %s\n", u)
 }
 
 // Source returns the file and line where the goroutine was forked.

@@ -5,6 +5,7 @@
 package ccid3
 
 import (
+	"fmt"
 	"github.com/petar/GoDCCP/dccp"
 )
 
@@ -166,6 +167,7 @@ func (t *rttSender) OnRead(fb *dccp.FeedbackHeader) bool {
 		}
 	}
 	if elapsed == nil {
+		fmt.Printf("Elapsed missing!!!!\n")
 		return false
 	}
 

@@ -5,6 +5,7 @@
 package ccid3
 
 import (
+	//"fmt"
 	//"os"
 	"math"
 	"github.com/petar/GoDCCP/dccp"
@@ -67,7 +68,7 @@ func (t *rateCalculator) onFirstRead(now int64) uint32 {
 	t.tld = now
 	t.x = initRate(t.ss, t.rtt)
 	t.logger.Emit("s-x", "Event", nil, "Init rate = %d bps", t.x)
-	panic("a")
+	// XXX panic("a")
 	return t.x
 }
 
@@ -140,6 +141,7 @@ func (t *rateCalculator) recalculate(now int64) uint32 {
 // OnNoFeedback returns the new allowed sending rate.
 // See RFC 5348, Section 4.4
 func (t *rateCalculator) OnNoFeedback(now int64, hasRTT bool, idleSince int64, nofeedbackSet int64) uint32 {
+	t.logger.Emit("s-x", "Event", nil, "OnNoFbk hrtt=%v idl=% nofbks=%d", hasRTT, idleSince, nofeedbackSet)
 	xRecv := t.xRecvSet.Max()
 	if !hasRTT && !t.hasFeedback && idleSince > nofeedbackSet {
 		// We do not have X_Bps or recover_rate yet.
@@ -177,8 +179,9 @@ func (t *rateCalculator) updateLimits(now int64, timerLimit uint32) uint32 {
 	return t.recalculate(now)
 }
 
-// minRate returns the unconditionally minimum sending rate in bytes per second
+// minRate returns the unconditionally minimal sending rate in bytes per second
 func minRate(ss uint32) uint32 {
+	//fmt.Printf("minRate, ss=%d\n", ss)
 	return uint32((1e9 * int64(ss)) / X_MAX_BACKOFF_INTERVAL)
 }
 

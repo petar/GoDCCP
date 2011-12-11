@@ -46,12 +46,13 @@ func (t *lossTracker) OnRead(fb *dccp.FeedbackHeader) (LossFeedback, error) {
 	var lossIntervals *LossIntervalsOption
 	t.logger.Emit("s-tracker", "Event", fb, "Encoded option count = %d", len(fb.Options))
 	for i, opt := range fb.Options {
-		t.logger.Emit("s-tracker", "Event", fb, "Decoding option %d", i)
 		if lossIntervals = DecodeLossIntervalsOption(opt); lossIntervals != nil {
 			break
 		}
+		t.logger.Emit("s-tracker", "Event", fb, "Decodingd option %d", i)
 	}
 	if lossIntervals == nil {
+		t.logger.Emit("s-tracker", "Event", fb, "Missing lossIntervals")
 		return LossFeedback{}, ErrMissingOption
 	}
 
@@ -79,6 +80,7 @@ func recoverIntervalDetails(ackno int64, skip byte, lis []*LossInterval) []*Loss
 	r := make([]*LossIntervalDetail, len(lis))
 	var head int64 = ackno + 1 - int64(skip)
 	for i, li := range lis {
+		r[i] = &LossIntervalDetail{}
 		r[i].LossInterval = *li
 		head -= int64(li.SeqLen())
 		r[i].StartSeqNo = head

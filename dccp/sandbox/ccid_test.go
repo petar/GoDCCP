@@ -12,6 +12,43 @@ import (
 )
 
 func TestRTT(t *testing.T) {
+	clientConn, serverConn, run := makeEnds("converge")
+
+	cchan := make(chan int, 1)
+	mtu := clientConn.GetMTU()
+	buf := make([]byte, mtu)
+	go func() {
+		t0 := run.Nanoseconds()
+		for run.Nanoseconds() - t0 < 10e9 {
+			err := clientConn.WriteSegment(buf)
+			if err != nil {
+				break
+			}
+		}
+		clientConn.Close()
+		close(cchan)
+	}()
+
+	schan := make(chan int, 1)
+	go func() {
+		for {
+			_, err := serverConn.ReadSegment()
+			if err == dccp.ErrEOF {
+				break 
+			} else if err != nil {
+				break
+			}
+		}
+		close(schan)
+	}()
+
+	_, _ = <-cchan
+	_, _ = <-schan
+	//dccp.NewGoGroup(clientConn.Waiter(), serverConn.Waiter()).Wait()
+	//dccp.NewLogger("line", run).Emit("end", "end", nil, "Server and client done.")
+	if err := run.Close(); err != nil {
+		t.Errorf("error closing runtime (%s)", err)
+	}
 }
 
 func TestConverge(t *testing.T) {
