@@ -96,7 +96,7 @@ func NewGoGroupCaller(level int, group ...Waiter) *GoGroup {
 		srcFile: sfile,
 		srcLine: sline,
 		k:       0, 
-		onEnd:   make(chan Waiter),
+		onEnd:   make(chan Waiter, 10),
 	}
 	for _, u := range group {
 		w.Add(u)
@@ -165,5 +165,5 @@ func (t *GoGroup) Wait() {
 func (t* GoGroup) stillRemain() bool {
 	t.lk.Lock()
 	defer t.lk.Unlock()
-	return t.k < len(t.group)
+	return t.k > 0 && t.k < len(t.group)
 }

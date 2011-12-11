@@ -126,7 +126,7 @@ func (c *Conn) gotoPARTOPEN() {
 	c.AssertLocked()
 	c.socket.SetState(PARTOPEN)
 	c.emitSetState()
-	// c.openCCID()
+	c.openCCID()
 	c.inject(nil) // Unblocks the writeLoop select, so it can see the state change
 
 	// Start PARTOPEN timer, according to Section 8.1.5
