@@ -100,7 +100,9 @@ func (t *evolveInterval) OnRead(ff *dccp.FeedforwardHeader, rtt int64) {
 	// that of the previously received one
 	// XXX: How can this condition occur?
 	if ff.Time < t.lastTime {
-		t.logger.Emit("r-evolver", "Event", nil, "Time re-order; SeqNo %06x,%06x", t.lastSeqNo, ff.SeqNo)
+		t.logger.E("r-evolver", "Event", 
+			fmt.Sprintf("Time re-order; SeqNo %06x,%06x", t.lastSeqNo, ff.SeqNo),
+			ff)
 		return
 	}
 

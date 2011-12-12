@@ -39,14 +39,14 @@ func (c *Conn) inject(h *Header) {
 	// c.emitCatchSeqNo(h, 161019, 161020, 161021)
 
 	// Dropping a nil is OK, since it happens only if there are other packets in the queue
-	c.logger.Emit("conn", "Write", h, "Non-data to injection queue")
+	c.logger.E("conn", "Write", "Non-data to injection queue", h)
 	if len(c.writeNonData) < cap(c.writeNonData) {
 		if h != nil {
 			h = c.writeCCID(h)
 		}
 		c.writeNonData <- h
 	} else {
-		c.logger.Emit("conn", "Drop", h, "Slow strobe")
+		c.logger.E("conn", "Drop", "Slow strobe", h)
 	}
 }
 
@@ -65,7 +65,7 @@ func (c *Conn) writeLoop(writeNonData chan *Header, writeData chan []byte) {
 
 	// This loop is active until state OPEN or PARTOPEN is observed, when a
 	// transition to _Loop II_is made
-	c.logger.Emit("conn", "Event", nil, "Write Loop I")
+	c.logger.E("conn", "Event", "Write Loop I", nil)
 _Loop_I:
 
 	for {
@@ -96,7 +96,7 @@ _Loop_I:
 	}
 
 	// This loop is active until writeData is not closed
-	c.logger.Emit("conn", "Event", nil, "Write Loop II")
+	c.logger.E("conn", "Event", "Write Loop II")
 _Loop_II:
 
 	for {
@@ -129,7 +129,7 @@ _Loop_II:
 			h = c.generateDataAck(appData)
 			h = c.writeCCID(h)
 			c.Unlock()
-			c.logger.Emit("conn", "Write", h, "Data")
+			c.logger.E("conn", "Write", "Data", h)
 		}
 		if h != nil {
 			err := c.write(h)
@@ -141,7 +141,7 @@ _Loop_II:
 	}
 
 	// This loop is active until writeNonData is not closed
-	c.logger.Emit("conn", "Event", nil, "Write Loop III")
+	c.logger.E("conn", "Event", "Write Loop III")
 _Loop_III:
 
 	for {
@@ -163,5 +163,5 @@ _Loop_III:
 	}
 
 _Exit:
-	c.logger.Emit("conn", "Event", nil, "Write loop EXIT")
+	c.logger.E("conn", "Event", "Write loop EXIT")
 }

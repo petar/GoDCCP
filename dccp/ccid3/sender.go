@@ -4,7 +4,10 @@
 
 package ccid3
 
-import "github.com/petar/GoDCCP/dccp"
+import (
+	"fmt"
+	"github.com/petar/GoDCCP/dccp"
+)
 
 func newSender(run *dccp.Runtime, logger *dccp.Logger) *sender {
 	return &sender{ run: run, logger: logger }
@@ -101,7 +104,7 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) error {
 	s.rttSender.OnRead(fb)
 	rtt, rttEstimated := s.rttSender.RTT()
 	if rttEstimated {
-		s.logger.Emit("s", "Info", fb, "S-RTT=%s", dccp.Nstoa(rtt))
+		s.logger.E("s", "Info", fmt.Sprintf("S-RTT=%s", dccp.Nstoa(rtt)), fb)
 	}
 
 	// Update the nofeedback timeout interval and reset the timer
@@ -113,14 +116,14 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) error {
 	// Update loss estimates
 	lossFeedback, err := s.lossTracker.OnRead(fb)
 	if err != nil {
-		s.logger.Emit("s", "Warn", fb, "lossTracker.OnRead err (%s)", err)
+		s.logger.E("s", "Warn", fmt.Sprintf("lossTracker.OnRead err (%s)", err), fb)
 		return nil
 	}
 
 	// Update allowed sending rate
 	xrecv, err := readReceiveRate(fb)
 	if err != nil {
-		s.logger.Emit("s", "Warn", fb, "Feedback packet with corrupt receive rate option")
+		s.logger.E("s", "Warn", "Feedback packet with corrupt receive rate option", fb)
 		return nil
 	}
 	xf := &XFeedback{
@@ -160,7 +163,7 @@ func (s *sender) Strobe() {
 	s.Unlock()
 
 	if !open {
-		s.logger.Emit("s", "Event", nil, "Strobe immediate")
+		s.logger.E("s", "Event", "Strobe immediate")
 		return
 	}
 

@@ -5,6 +5,7 @@
 package sandbox
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"sync"
@@ -78,10 +79,10 @@ func (hhl *headerHalfLine) ReadHeader() (h *dccp.Header, err error) {
 	select {
 	case h, ok := <-hhl.read:
 		if !ok {
-			hhl.logger.Emit(hhl.name, "Warn", h, "Read EOF")
+			hhl.logger.E(hhl.name, "Warn", "Read EOF", h)
 			return nil, io.EOF
 		}
-		hhl.logger.Emit(hhl.name, "Read", h, "SeqNo=%d", h.SeqNo)
+		hhl.logger.E(hhl.name, "Read", fmt.Sprintf("SeqNo=%d", h.SeqNo), h)
 		return h, nil
 	case <-tmoch:
 		return nil, os.EAGAIN
@@ -103,19 +104,19 @@ func (hhl *headerHalfLine) WriteHeader(h *dccp.Header) (err error) {
 	defer hhl.wlock.Unlock()
 
 	if hhl.write == nil {
-		hhl.logger.Emit(hhl.name, "Drop", h, "SeqNo=%d EBADF", h.SeqNo)
+		hhl.logger.E(hhl.name, "Drop", fmt.Sprintf("SeqNo=%d EBADF", h.SeqNo), h)
 		return os.EBADF
 	}
 
 	if hhl.rateFilter() {
 		if len(hhl.write) >= cap(hhl.write) {
-			hhl.logger.Emit(hhl.name, "Drop", h, "Slow reader")
+			hhl.logger.E(hhl.name, "Drop", "Slow reader", h)
 		} else {
-			hhl.logger.Emit(hhl.name, "Write", h, "SeqNo=%d", h.SeqNo)
+			hhl.logger.E(hhl.name, "Write", fmt.Sprintf("SeqNo=%d", h.SeqNo), h)
 			hhl.write <- h
 		}
 	} else {
-		hhl.logger.Emit(hhl.name, "Drop", h, "Fast writer")
+		hhl.logger.E(hhl.name, "Drop", "Fast writer", h)
 	}
 	return nil
 }
@@ -142,13 +143,13 @@ func (hhl *headerHalfLine) Close() error {
 	defer hhl.wlock.Unlock()
 
 	if hhl.write == nil {
-		hhl.logger.Emit(hhl.name, "Warn", nil, "Close EBADF")
+		hhl.logger.E(hhl.name, "Warn", "Close EBADF")
 		return os.EBADF
 	}
 	close(hhl.write)
 	hhl.write = nil
 
-	hhl.logger.Emit(hhl.name, "Event", nil, "Close")
+	hhl.logger.E(hhl.name, "Event", "Close")
 	return nil
 }
 

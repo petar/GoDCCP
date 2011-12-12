@@ -5,6 +5,7 @@
 package dccp
 
 import (
+	"fmt"
 	"runtime/debug"
 )
 
@@ -14,8 +15,9 @@ func (c *Conn) emitCatchSeqNo(h *Header, seqNos ...int64) {
 	}
 	for _, seqNo := range seqNos {
 		if h.SeqNo == seqNo {
-			c.logger.EmitCaller(1, "conn", "Catch", h, "Caught SeqNo=%d: %s\n%s", 
-				seqNo, h.String(), string(debug.Stack()))
+			c.logger.EC(1, "conn", "Catch", 
+				fmt.Sprintf("Caught SeqNo=%d: %s\n%s", seqNo, h.String(), string(debug.Stack())), 
+				h)
 			break
 		}
 	}

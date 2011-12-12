@@ -4,7 +4,10 @@
 
 package ccid3
 
-import "github.com/petar/GoDCCP/dccp"
+import (
+	"fmt"
+	"github.com/petar/GoDCCP/dccp"
+)
 
 // —————
 // lossTracker processes loss intervals options received at the sender and maintains relevant loss
@@ -44,15 +47,15 @@ func (t *lossTracker) OnRead(fb *dccp.FeedbackHeader) (LossFeedback, error) {
 		return LossFeedback{}, ErrNoAck
 	}
 	var lossIntervals *LossIntervalsOption
-	t.logger.Emit("s-tracker", "Event", fb, "Encoded option count = %d", len(fb.Options))
+	t.logger.E("s-tracker", "Event", fmt.Sprintf("Encoded option count = %d", len(fb.Options)), fb)
 	for i, opt := range fb.Options {
 		if lossIntervals = DecodeLossIntervalsOption(opt); lossIntervals != nil {
 			break
 		}
-		t.logger.Emit("s-tracker", "Event", fb, "Decodingd option %d", i)
+		t.logger.E("s-tracker", "Event", fmt.Sprintf("Decodingd option %d", i), fb)
 	}
 	if lossIntervals == nil {
-		t.logger.Emit("s-tracker", "Event", fb, "Missing lossIntervals")
+		t.logger.E("s-tracker", "Event", "Missing lossIntervals", fb)
 		return LossFeedback{}, ErrMissingOption
 	}
 

@@ -18,7 +18,7 @@ import (
 // sending times are significantly greater than the RTT, resulting in packet pairs whose
 // CCVals differ by 5.  Explicit RTT measurement techniques, such as Timestamp and Timestamp
 // Echo, should be used in that case.
-// 
+//
 type rttReceiver struct {
 
 	// rtt equals the latest RTT estimate, or 0 otherwise

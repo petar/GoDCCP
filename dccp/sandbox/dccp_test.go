@@ -76,7 +76,7 @@ func TestOpenClose(t *testing.T) {
 	clientConn.Abort()
 	serverConn.Abort()
 	dccp.NewGoGroup(clientConn.Waiter(), serverConn.Waiter()).Wait() // XXX causes hang
-	dccp.NewLogger("line", run).Emit("end", "end", nil, "Server and client done.")
+	dccp.NewLogger("line", run).E("end", "end", "Server and client done.")
 	if err := run.Close(); err != nil {
 		t.Errorf("Error closing runtime (%s)", err)
 	}
@@ -113,7 +113,7 @@ func TestIdle(t *testing.T) {
 	clientConn.Abort()
 	serverConn.Abort()
 	dccp.NewGoGroup(clientConn.Waiter(), serverConn.Waiter()).Wait()
-	dccp.NewLogger("line", run).Emit("end", "end", nil, "Server and client done.")
+	dccp.NewLogger("line", run).E("end", "end", "Server and client done.")
 	if err := run.Close(); err != nil {
 		t.Errorf("Error closing runtime (%s)", err)
 	}

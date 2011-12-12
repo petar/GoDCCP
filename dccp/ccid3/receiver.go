@@ -4,7 +4,10 @@
 
 package ccid3
 
-import "github.com/petar/GoDCCP/dccp"
+import (
+	"fmt"
+	"github.com/petar/GoDCCP/dccp"
+)
 
 func newReceiver(run *dccp.Runtime, logger *dccp.Logger) *receiver {
 	return &receiver{ run: run, logger: logger }
@@ -105,20 +108,20 @@ func (r *receiver) OnWrite(ph *dccp.PreHeader) (options []*dccp.Option) {
 			opts := make([]*dccp.Option, 3)
 			opts[0] = encodeOption(r.makeElapsedTimeOption(ph.AckNo, ph.Time))
 			if opts[0] == nil {
-				r.logger.Emit("r", "Warn", ph, "ElapsedTime option encoding == nil")
+				r.logger.E("r", "Warn", "ElapsedTime option encoding == nil", ph)
 			}
 			opts[1] = encodeOption(r.receiveRate.Flush(rtt, ph.Time))
 			if opts[1] == nil {
-				r.logger.Emit("r", "Warn", ph, "ReceiveRate option encoding == nil")
+				r.logger.E("r", "Warn", "ReceiveRate option encoding == nil", ph)
 			}
 			opts[2] = encodeOption(r.lossReceiver.LossIntervalsOption(ph.AckNo))
 			if opts[2] == nil {
-				r.logger.Emit("r", "Warn", ph, "LossIntervals option encoding == nil")
+				r.logger.E("r", "Warn", "LossIntervals option encoding == nil", ph)
 			}
-			r.logger.Emit("r", "Info", ph, "Placed %d receiver opts", len(opts))
+			r.logger.E("r", "Info", fmt.Sprintf("Placed %d receiver opts", len(opts)), ph)
 			return opts
 		}
-		r.logger.Emit("r", "Info", ph, "OnWrite, not seen packs before")
+		r.logger.E("r", "Info", "OnWrite, not seen packs before", ph)
 		return nil
 
 	case dccp.Data /*, dccp.DataAck */:
@@ -150,7 +153,7 @@ func (r *receiver) OnRead(ff *dccp.FeedforwardHeader) error {
 		r.latestCCVal = ff.CCVal
 	}
 	r.rttReceiver.OnRead(ff.CCVal, ff.Time)
-	r.logger.Emit("r", "Info", ff, "R-RTT=%s", dccp.Nstoa(r.rttReceiver.RTT(ff.Time)))
+	r.logger.E("r", "Info", fmt.Sprintf("R-RTT=%s", dccp.Nstoa(r.rttReceiver.RTT(ff.Time))), ff)
 	r.receiveRate.OnRead(ff)
 	r.lossReceiver.OnRead(ff, r.rttReceiver.RTT(ff.Time))
 

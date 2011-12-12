@@ -12,7 +12,7 @@ import (
 )
 
 func TestRTT(t *testing.T) {
-	clientConn, serverConn, run := makeEnds("converge")
+	clientConn, serverConn, run := makeEnds("rtt")
 
 	cchan := make(chan int, 1)
 	mtu := clientConn.GetMTU()
@@ -45,7 +45,7 @@ func TestRTT(t *testing.T) {
 	_, _ = <-cchan
 	_, _ = <-schan
 	//dccp.NewGoGroup(clientConn.Waiter(), serverConn.Waiter()).Wait()
-	//dccp.NewLogger("line", run).Emit("end", "end", nil, "Server and client done.")
+	//dccp.NewLogger("line", run).E("end", "end", "Server and client done.")
 	if err := run.Close(); err != nil {
 		t.Errorf("error closing runtime (%s)", err)
 	}
@@ -91,7 +91,7 @@ func TestConverge(t *testing.T) {
 	_, _ = <-cchan
 	_, _ = <-schan
 	dccp.NewGoGroup(clientConn.Waiter(), serverConn.Waiter()).Wait()
-	dccp.NewLogger("line", run).Emit("end", "end", nil, "Server and client done.")
+	dccp.NewLogger("line", run).E("end", "end", "Server and client done.")
 	if err := run.Close(); err != nil {
 		t.Errorf("error closing runtime (%s)", err)
 	}
