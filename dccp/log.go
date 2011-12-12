@@ -104,6 +104,7 @@ func (t *Logger) SetState(s int) {
 	t.run.Filter().SetAttr([]string{t.Name()}, "state", StateString(s))
 }
 
+// E emits a new log record.
 // The arguments args are scanned in turn. The first argument of type
 // *Header, *PreHeader, *FeedbackHeader or *FeedforwardHeader is treated
 // as the DCCP header involved in this log. The first argument of type
@@ -165,7 +166,7 @@ __FindArgs:
 		}
 	}
 
-	sfile, sline := FetchCaller(2+level)
+	sfile, sline := FetchCaller(1+level)
 
 	if t.run.Writer() != nil {
 		r := &LogRecord{

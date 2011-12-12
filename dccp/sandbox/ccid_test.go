@@ -18,10 +18,14 @@ type rttReducer struct {
 }
 
 func (t *rttReducer) Write(r *dccp.LogRecord) {
-	if r.Module == "s" && r.Event == "srtt" {
+	switch r.Event {
+	case "rrtt": 
+		rtt, _ := r.Args.Int64("rtt")
+		fmt.Printf("%s rRTT: %d\n", r.Module, rtt)
+	case "srtt":
 		rtt, _ := r.Args.Int64("rtt")
 		est, _ := r.Args.Bool("est")
-		fmt.Printf("Server sRTT: %d %v\n", rtt, est)
+		fmt.Printf("%s sRTT: %d %v\n", r.Module, rtt, est)
 	}
 }
 
