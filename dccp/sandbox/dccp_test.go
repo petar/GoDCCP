@@ -13,8 +13,12 @@ import (
 )
 
 func makeEnds(logname string) (clientConn, serverConn *dccp.Conn, run *dccp.Runtime) {
+	return makeEndsDup(logname, nil)
+}
 
-	logwriter := dccp.NewFileLogWriter(path.Join(os.Getenv("DCCPLOG"), logname+"_test.emit"))
+func makeEndsDup(logname string, dup dccp.LogWriter) (clientConn, serverConn *dccp.Conn, run *dccp.Runtime) {
+
+	logwriter := dccp.NewFileLogWriterDup(path.Join(os.Getenv("DCCPLOG"), logname+"_test.emit"), dup)
 	run = dccp.NewRuntime(dccp.RealTime, logwriter)
 	run.Filter().Select(
 		"client", "server", "end", "line", "conn", "s", 

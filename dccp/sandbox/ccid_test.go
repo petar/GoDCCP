@@ -11,8 +11,32 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
+// rttReducer is a dccp.LogWriter which listens to the logs
+// emitted from the RTT test and performs various checks.
+type rttReducer struct {
+	t *testing.T
+}
+
+func (t *rttReducer) Write(r *dccp.LogRecord) {
+	if r.Module == "s" && r.Event == "srtt" {
+		rtt, _ := r.Args.Int64("rtt")
+		est, _ := r.Args.Bool("est")
+		fmt.Printf("Server sRTT: %d %v\n", rtt, est)
+	}
+}
+
+func (t *rttReducer) Sync() error { 
+	return nil 
+}
+
+func (t *rttReducer) Close() error { 
+	return nil 
+}
+
+// TestRTT checks that round-trip times are estimated accurately.
 func TestRTT(t *testing.T) {
-	clientConn, serverConn, run := makeEnds("rtt")
+	reducer := &rttReducer{t}
+	clientConn, serverConn, run := makeEndsDup("rtt", reducer)
 
 	cchan := make(chan int, 1)
 	mtu := clientConn.GetMTU()
@@ -44,8 +68,8 @@ func TestRTT(t *testing.T) {
 
 	_, _ = <-cchan
 	_, _ = <-schan
-	//dccp.NewGoGroup(clientConn.Waiter(), serverConn.Waiter()).Wait()
-	//dccp.NewLogger("line", run).E("end", "end", "Server and client done.")
+	dccp.NewGoGroup(clientConn.Waiter(), serverConn.Waiter()).Wait()
+	dccp.NewLogger("line", run).E("end", "end", "Server and client done.")
 	if err := run.Close(); err != nil {
 		t.Errorf("error closing runtime (%s)", err)
 	}

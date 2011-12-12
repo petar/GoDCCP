@@ -21,7 +21,7 @@ type LogRecord struct {
 	Event     string  //`json:"e"`   // Type of event
 	State     string  //`json:"s"`   // State of module
 	Comment   string  //`json:"c"`   // Textual comment describing the event
-	Args      []interface{}          // Any additional arguments that need to be attached to the log
+	Args      LogArgs                // Any additional arguments that need to be attached to the log
 
 	Type      string  //`json:"t"`   // Type of header, if applicable
 	SeqNo     int64   //`json:"sn"`  // Sequence number, if applicable
@@ -29,6 +29,38 @@ type LogRecord struct {
 
 	SourceFile string //`json:"sf"`
 	SourceLine int    //`json:"sl"`
+}
+
+type LogArgs map[string]interface{}
+
+func (t LogArgs) Int64(k string) (value int64, success bool) {
+	if t == nil {
+		return 0, false
+	}
+	v, ok := t[k]
+	if !ok {
+		return 0, false
+	}
+	u, ok := v.(int64)
+	if !ok {
+		return 0, false
+	}
+	return u, true
+}
+
+func (t LogArgs) Bool(k string) (value bool, success bool) {
+	if t == nil {
+		return false, false
+	}
+	v, ok := t[k]
+	if !ok {
+		return false, false
+	}
+	u, ok := v.(bool)
+	if !ok {
+		return false, false
+	}
+	return u, true
 }
 
 // Logger is capable of emitting structured logs, which are consequently used for debuging
@@ -72,20 +104,23 @@ func (t *Logger) SetState(s int) {
 	t.run.Filter().SetAttr([]string{t.Name()}, "state", StateString(s))
 }
 
-// **
+// The arguments args are scanned in turn. The first argument of type
+// *Header, *PreHeader, *FeedbackHeader or *FeedforwardHeader is treated
+// as the DCCP header involved in this log. The first argument of type
+// Args is saved in the log record.
 func (t *Logger) E(submodule, event, comment string, args ...interface{}) {
 	t.EC(1, submodule, event, comment, args...)
 }
 
-// If there is a header involved in this emit, it should be given as the first
-// entry of args.
 func (t *Logger) EC(level int, submodule, event, comment string, args ...interface{}) {
 	if t.run == nil {
 		return
 	}
+	/*
 	if !t.run.Filter().Selected(t.Name(), submodule) {
 		return
 	}
+	*/
 	sinceZero, sinceLast := t.run.Snap()
 
 	// Extract header information
@@ -120,6 +155,15 @@ __FindHeader:
 			break __FindHeader
 		}
 	}
+	var largs LogArgs
+__FindArgs:
+	for _, a := range args {
+		m, ok := a.(LogArgs)
+		if ok {
+			largs = m
+			break __FindArgs
+		}
+	}
 
 	sfile, sline := FetchCaller(2+level)
 
@@ -131,7 +175,7 @@ __FindHeader:
 			Event:      event,
 			State:      t.GetState(),
 			Comment:    comment,
-			Args:       args,
+			Args:       largs,
 			Type:       hType,
 			SeqNo:      hSeqNo,
 			AckNo:      hAckNo,
@@ -232,9 +276,15 @@ func (t *FileLogWriter) Write(r *LogRecord) {
 }
 
 func (t *FileLogWriter) Sync() error {
+	if t.dup != nil {
+		t.dup.Sync()
+	}
 	return t.f.Sync()
 }
 
 func (t *FileLogWriter) Close() error {
+	if t.dup != nil {
+		t.dup.Close()
+	}
 	return t.f.Close()
 }

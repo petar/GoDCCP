@@ -104,7 +104,8 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) error {
 	s.rttSender.OnRead(fb)
 	rtt, rttEstimated := s.rttSender.RTT()
 	if rttEstimated {
-		s.logger.E("s", "Info", fmt.Sprintf("S-RTT=%s", dccp.Nstoa(rtt)), fb)
+		s.logger.E("s", "srtt", fmt.Sprintf("sRTT=%s", dccp.Nstoa(rtt)), fb,
+			dccp.LogArgs{"rtt": rtt, "est": rttEstimated})
 	}
 
 	// Update the nofeedback timeout interval and reset the timer
