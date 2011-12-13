@@ -186,7 +186,7 @@ __FindArgs:
 		t.run.Writer().Write(r)
 	}
 	if os.Getenv("DCCPRAW") != "" {
-		fmt.Printf("%15s %15s %18s:%-3d %-8s %6s:%-11s %-7s %8s %6x|%-6x * %s\n", 
+		fmt.Printf("%15s %15s %18s:%-3d %-8s %6s:%-9s %-9s %8s %6x|%-6x * %s\n", 
 			Nstoa(sinceZero), Nstoa(sinceLast), 
 			sfile, sline,
 			t.GetState(), t.Name(), 

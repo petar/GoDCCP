@@ -41,6 +41,7 @@ func (wc *windowCounter) OnWrite(rtt int64, seqNo int64, now int64) byte {
 	// After receiving an acknowledgement for a packet sent with window counter ccvalAck, the
 	// sender SHOULD increase its window counter, if necessary, so that subsequent packets have
 	// window counter value at least (ccvalAck + 4) mod WindowCounterMod.  
+	??
 	// XXX: What if local window counter has gone around the circle before the ack was received?
 	ccvalAck, ok := wc.windowHistory.Lookup(wc.lastAckNo)
 	if ok {
@@ -64,6 +65,8 @@ func (wc *windowCounter) OnWrite(rtt int64, seqNo int64, now int64) byte {
 func (wc *windowCounter) peek(rtt int64, now int64) (ccval byte, update bool) {
 	quarterRTTs := (now - wc.lastTime) / (rtt / 4)
 	if quarterRTTs > 0 {
+		// The counter progresses up by the number of multiples of RTT/4, however
+		// the progress never exceeds 5 counts.
 		ccval = (wc.lastCounter + byte(min64(quarterRTTs, 5))) % WindowCounterMod
 		update = true
 	} else {
@@ -82,7 +85,7 @@ func (wc *windowCounter) OnRead(ackNo int64) {
 // windowHistory remembers the CCVal window counter values of packets sent in the recent
 // past, so that it can answer queries that map the sequence number of a past outgoing
 // packet to its window counter value.
-// TODO: Use circular arithmetic on sequence numbers
+// XXX: Use circular arithmetic on sequence numbers
 type windowHistory struct {
 	j         int
 	history   [WindowHistoryLen]windowStart
@@ -122,8 +125,10 @@ func (t *windowHistory) Lookup(seqNo int64) (ccval byte, ok bool) {
 	// The seqNo argument comes from an AckNo in a feedback packet. DCCP checks ensure that this
 	// number is bigger than the initial sequence number. Therefore Lookup can only be called
 	// after at least one call to Add. Consequently, the only case in which the history does not
-	// have the ccval of the seqNo is if the history has moved past it. This corresponds to the
-	// least recent entry in the history having a StartSeqNo greater than seqNo.
+	// have the ccval of the seqNo is if the tail end of the history has moved past it. This
+	// corresponds to the least recent entry in the history having a StartSeqNo greater than
+	// seqNo.
+
 	if t.history[t.j % WindowHistoryLen].StartSeqNo > seqNo {
 		return 0, false
 	}

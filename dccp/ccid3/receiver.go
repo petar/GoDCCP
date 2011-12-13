@@ -54,7 +54,7 @@ func (r *receiver) Open() {
 		panic("opening an open ccid3 receiver")
 	}
 
-	r.rttReceiver.Init()
+	r.rttReceiver.Init(r.logger)
 	r.receiveRate.Init()
 	r.lossReceiver.Init(r.logger)
 	r.open = true
@@ -152,11 +152,17 @@ func (r *receiver) OnRead(ff *dccp.FeedforwardHeader) error {
 		r.dataSinceAck = true
 		r.latestCCVal = ff.CCVal
 	}
+
+	// Update RTT estimate
 	r.rttReceiver.OnRead(ff.CCVal, ff.Time)
-	rrtt := r.rttReceiver.RTT(ff.Time)
-	r.logger.E("r", "rrtt", fmt.Sprintf("rRTT=%s", dccp.Nstoa(rrtt)), ff, 
-		dccp.LogArgs{"rtt": rrtt})
+	rrtt, est := r.rttReceiver.RTT(ff.Time)
+	r.logger.E("r", "rrtt", fmt.Sprintf("rRTT=%s est=%v", dccp.Nstoa(rrtt), est), ff, 
+		dccp.LogArgs{"rtt": rrtt, "est": est})
+
+	// Update receive rate
 	r.receiveRate.OnRead(ff)
+
+	// Update loss rate
 	r.lossReceiver.OnRead(ff, r.rttReceiver.RTT(ff.Time))
 
 	// Determine if feedback should be sent:

@@ -1,5 +1,9 @@
 
 * add round-trip measurements and tests
+	* rrtt: ccval's written don't seem very sequential
+
+* why are there random binary symbols in the log output?
+* benchmark: packet-type distribution wheighted by packet sizes
 
 * how come the sandbox line allows a packet with higher seq no to arrive before one with lower?
 * investigate BadHeader logs (and explain in NOTES if not a bug)

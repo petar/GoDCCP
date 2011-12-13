@@ -20,6 +20,7 @@ import (
 // Echo, should be used in that case.
 //
 type rttReceiver struct {
+	logger *dccp.Logger
 
 	// rtt equals the latest RTT estimate, or 0 otherwise
 	rtt int64
@@ -38,7 +39,8 @@ type rttReceiver struct {
 const CCValNil = 0xff
 
 // Init initializes the RTT estimator algorithm
-func (t *rttReceiver) Init() {
+func (t *rttReceiver) Init(logger *dccp.Logger) {
+	t.logger = logger
 	t.rtt = 0
 	t.rttTime = 0
 	t.ccvalNow = CCValNil
@@ -51,8 +53,9 @@ func (t *rttReceiver) Init() {
 func (t *rttReceiver) OnRead(ccval byte, now int64) {
 	ccval = ccval % WindowCounterMod // Safety
 
+	// If this is the first received packet, or the ccval has wrapped around,
 	if t.ccvalNow == CCValNil || lessWindowCounterMod(ccval, t.ccvalNow) {
-		t.Init()
+		t.Init(t.logger)
 		t.ccvalNow = ccval
 		t.ccvalTime[ccval] = now
 	} else {
@@ -70,6 +73,7 @@ func (t *rttReceiver) OnRead(ccval byte, now int64) {
 // tries to approximate the sender's opinion of the RTT.
 func (t *rttReceiver) calcCCValRTT() {
 	if t.ccvalNow == CCValNil || t.ccvalTime[t.ccvalNow] == 0 {
+		t.logger.E("r", "rrtt-now", "rRTT no current ccval")
 		return
 	}
 	t0 := t.ccvalTime[t.ccvalNow]
@@ -88,6 +92,7 @@ func (t *rttReceiver) calcCCValRTT() {
 		q = 2
 	}
 	if t1 == 0 {
+		t.logger.E("r", "rrtt-hist", "rRTT deficient history")
 		return
 	}
 
@@ -96,11 +101,11 @@ func (t *rttReceiver) calcCCValRTT() {
 }
 
 // RTT returns the best available estimate of the round-trip time
-func (t *rttReceiver) RTT(now int64) int64 {
+func (t *rttReceiver) RTT(now int64) (rtt int64, estimated bool) {
 	if t.rtt != 0 &&  now - t.rttTime < 1e9 {
-		return t.rtt
+		return t.rtt, true
 	}
-	return 1e9
+	return 1e9, false
 }
 
 

@@ -81,7 +81,10 @@ func (s *sender) OnWrite(ph *dccp.PreHeader) (ccval byte, options []*dccp.Option
 
 	rtt, _ := s.rttSender.RTT()
 
-	return s.windowCounter.OnWrite(rtt, ph.SeqNo, ph.Time), nil
+	ccval = s.windowCounter.OnWrite(rtt, ph.SeqNo, ph.Time)
+	s.logger.E("s", "wccval", fmt.Sprintf("Write CCVal=%d, RTT=%d", ccval, rtt))
+
+	return ccval, nil
 }
 
 // Conn calls OnRead after a packet has been accepted and validated
