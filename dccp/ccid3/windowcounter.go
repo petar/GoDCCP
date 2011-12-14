@@ -17,11 +17,16 @@ type windowCounter struct {
 const (
 	// Maximum value of window counter, RFC 4342 Section 10.2 and RFC 3448
 	WindowCounterMod  = 16
-	// Add doc here
+
+	// For a number, x, modulo WindowCounterMod the range (x,x+WindowCounterHalf) 
+	// is considered 'greater than' x; the range (x-WindowCounterHalf,x) is 
+	// considered 'less than x'
 	WindowCounterHalf = (WindowCounterMod / 2) + (WindowCounterMod & 0x1)
 )
 
+XXX
 func lessWindowCounterMod(x, y byte) bool {
+	x, y = x % WindowCounterMod, y % WindowCounter // Safety
 	return (y-x) % WindowCounterMod < WindowCounterHalf
 }
 
@@ -36,7 +41,9 @@ func (wc *windowCounter) Init() {
 // The sender calls OnWrite in order to obtain the WC value to be included in the next
 // outgoing packet
 func (wc *windowCounter) OnWrite(rtt int64, seqNo int64, now int64) byte {
-	ccval, update := wc.peek(rtt, now)
+	// First compute the ccval, based solely on how much time has passed since the
+	// previous ccval number was issued.
+	ccval, update := wc.ccvalTime(rtt, now)
 
 	// After receiving an acknowledgement for a packet sent with window counter ccvalAck, the
 	// sender SHOULD increase its window counter, if necessary, so that subsequent packets have
@@ -60,9 +67,10 @@ func (wc *windowCounter) OnWrite(rtt int64, seqNo int64, now int64) byte {
 	return ccval
 }
 
-// peek returns the counter value for the next outgoing packet.
-// update is set if the counter value represents a new window
-func (wc *windowCounter) peek(rtt int64, now int64) (ccval byte, update bool) {
+// ccvalTime returns the counter value for the next outgoing packet, based solely 
+// on the time difference with the previous one.
+// update is set if the counter value represents a new window.
+func (wc *windowCounter) ccvalTime(rtt int64, now int64) (ccval byte, update bool) {
 	quarterRTTs := (now - wc.lastTime) / (rtt / 4)
 	if quarterRTTs > 0 {
 		// The counter progresses up by the number of multiples of RTT/4, however

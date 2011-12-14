@@ -5,6 +5,7 @@
 package ccid3
 
 import (
+	"byte"
 	"fmt"
 	"github.com/petar/GoDCCP/dccp"
 )
@@ -28,7 +29,7 @@ type rttReceiver struct {
 	// rttTime is the time when rtt was estimated
 	rttTime int64
 
-	// ccvalNow is what we believe is the value of the current window is.
+	// ccvalNow is what we believe is the value of the current window.
 	// A value of CCValNil means no value.
 	ccvalNow byte
 
@@ -49,28 +50,61 @@ func (t *rttReceiver) Init(logger *dccp.Logger) {
 	}
 }
 
+// String returns the contents of the received ccvals history
+func (t *rttReceiver) String() string {
+	var w byte.Buffer
+	if t.ccvalNow == CCValNil {
+		return "[]"
+	}
+	w.WriteString("[")
+	for i := byte(0); i < WindowCounterMod; i++ {
+		fmt.Fprintf(&w, "%d:%d,", 
+			(t.ccvalNow+i+1) % WindowCounterMod, 
+			t.ccvalTime[(t.ccvalNow+i+1) % WindowCounterMod])
+	}
+	w.WriteString("]")
+	return string(w.Bytes())
+}
+
 // receiver calls OnRead every time a packet is received
 func (t *rttReceiver) OnRead(ccval byte, now int64) {
 	ccval = ccval % WindowCounterMod // Safety
 
-	// If this is the first received packet, or the ccval has wrapped around,
+	// Update the received ccval history
+	//
+	// XXX: The following algorithm will produce undesired results, if
+	// packet reordering switch the order of two consequtive packets with
+	// different ccvals. Ensure that re-ordering is not seen at this level.
+
+	// If this is the first received packet, or the ccval has wrapped around, ...
+	//
+	// The test for wrap around, lessWindowCounterMod(ccval, t.ccvalNow), may
+	// produce both false positves and false negatives in some circumstances.
+	// TODO(petar): Describe how both cases occur and what are the consequences.
 	if t.ccvalNow == CCValNil || lessWindowCounterMod(ccval, t.ccvalNow) {
 		t.Init(t.logger)
-		t.ccvalNow = ccval
-		t.ccvalTime[ccval] = now
 	} else {
-		t.ccvalNow = ccval
-		for i := byte(0); lessWindowCounterMod(ccval, (ccval+i) % WindowCounterMod); i++ {
-			t.ccvalTime[(ccval+i) % WindowCounterMod] = 0
+		c := (t.ccvalNow+1) % WindowCounterMod
+		for lessWindowCounterMod(c, ccval); i++ {
+			t.ccvalTime[c % WindowCounterMod] = 0
+			c = (c+1) % WindowCounterMod
 		}
 	}
+	t.ccvalNow = ccval
+	t.ccvalTime[ccval] = now
 
 	t.calcCCValRTT()
 }
 
 // calcCCValRTT calculates RTT based on CCVal timing.
-// This approximation is nicer than direct measurement, since it essentially 
-// tries to approximate the sender's opinion of the RTT.
+// This receiver-side approximation avoids direct measurement, while essentially trying to
+// approximate the sender's opinion of the RTT.
+//
+// XXX: Because of the necessary constraint that measurements only come from packet pairs
+// whose CCVals differ by at most 4, this procedure does not work when the inter-packet
+// sending times are significantly greater than the RTT, resulting in packet pairs whose
+// CCVals differ by 5.  Explicit RTT measurement techniques, such as Timestamp and Timestamp
+// Echo, should be used in that case. (End of Section 8.1, RFC 4243)
 func (t *rttReceiver) calcCCValRTT() {
 	if t.ccvalNow == CCValNil || t.ccvalTime[t.ccvalNow] == 0 {
 		t.logger.E("r", "rrtt-now", "rRTT no current ccval")
