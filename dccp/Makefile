@@ -45,5 +45,6 @@ GOFILES=\
 	log.go\
 	util.go\
 	routine.go\
+	reorder.go\
 
 include $(GOROOT)/src/Make.pkg

@@ -155,16 +155,16 @@ func (r *receiver) OnRead(ff *dccp.FeedforwardHeader) error {
 
 	// Update RTT estimate
 	r.rttReceiver.OnRead(ff.CCVal, ff.Time)
-	rrtt, est := r.rttReceiver.RTT(ff.Time)
+	rtt, est := r.rttReceiver.RTT(ff.Time)
 	r.logger.E("r", "rrtt-h", r.rttReceiver.String())
-	r.logger.E("r", "rrtt", fmt.Sprintf("rRTT=%s est=%v", dccp.Nstoa(rrtt), est), ff, 
-		dccp.LogArgs{"rtt": rrtt, "est": est})
+	r.logger.E("r", "rrtt", fmt.Sprintf("rRTT=%s est=%v", dccp.Nstoa(rtt), est), ff, 
+		dccp.LogArgs{"rtt": rtt, "est": est})
 
 	// Update receive rate
 	r.receiveRate.OnRead(ff)
 
 	// Update loss rate
-	r.lossReceiver.OnRead(ff, rrtt)
+	r.lossReceiver.OnRead(ff, rtt)
 
 	// Determine if feedback should be sent:
 

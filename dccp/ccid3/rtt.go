@@ -75,6 +75,8 @@ func (t *rttReceiver) OnRead(ccval byte, now int64) {
 	// XXX: The following algorithm will produce undesired results, if
 	// packet reordering switch the order of two consequtive packets with
 	// different ccvals. Ensure that re-ordering is not seen at this level.
+	// Implement re-ordering buffer at higher level that drops packets coming
+	// too late out of order.
 
 	// If this is the first received packet, or the ccval has wrapped around, ...
 	//

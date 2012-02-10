@@ -2,6 +2,8 @@
 * add round-trip measurements and tests
 	* rrtt: ccval's written don't seem very sequential
 
+* should loss.go's reorder buffer enforce ascending seq no output?
+
 * why are there random binary symbols in the log output?
 * benchmark: packet-type distribution wheighted by packet sizes
 
