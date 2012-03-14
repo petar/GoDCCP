@@ -9,7 +9,7 @@ import (
 	"syscall"
 )
 
-// ChanLink{} treats one side of a channel as an incoming packet link
+// ChanLink treats one side of a channel as an incoming packet link
 type ChanLink struct {
 	Mutex
 	in, out chan []byte

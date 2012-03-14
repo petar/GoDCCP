@@ -21,8 +21,8 @@ func BindUDPLink(netw string, laddr *net.UDPAddr) (link *UDPLink, err error) {
 
 func (u *UDPLink) GetMTU() int { return 1500 }
 
-func (u *UDPLink) SetReadTimeout(nsec int64) error {
-	return u.c.SetReadTimeout(nsec)
+func (u *UDPLink) SetReadDeadline(t time.Time) error {
+	return u.c.SetReadDeadline(t)
 }
 
 func (u *UDPLink) ReadFrom(buf []byte) (n int, addr net.Addr, err error) {

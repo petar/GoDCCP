@@ -28,7 +28,7 @@ type SegmentConn interface {
 
 	RemoteLabel() Bytes
 
-	SetReadTimeout(nsec int64) error
+	SetReadDeadline(t time.Time) error
 
 	Close() error
 }
