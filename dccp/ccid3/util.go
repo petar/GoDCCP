@@ -28,6 +28,13 @@ func min64(x, y int64) int64 {
 	return y
 }
 
+func max8(x, y int8) int8 {
+	if x > y {
+		return x
+	}
+	return y
+}
+
 func max(x, y int) int {
 	if x > y {
 		return x
