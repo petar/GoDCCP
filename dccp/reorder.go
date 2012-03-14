@@ -23,7 +23,7 @@ func (t *reorderBuffer) Init(size int) {
 
 func (t *reorderBuffer) PushPop(h *Header) *Header {
 	// XXX: Must guarantee strictly ascending order
-	var popSeqNo int64 = dccp.SEQNOMAX + 1
+	var popSeqNo int64 = SEQNOMAX + 1
 	var popIndex int
 	for i, g := range t.headers {
 		if g == nil {

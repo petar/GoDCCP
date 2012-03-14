@@ -6,7 +6,7 @@ package dccp
 
 import "net"
 
-// UDPLink{} binds to a UDP port and acts as a Link{} type.
+// UDPLink binds to a UDP port and acts as a Link type.
 type UDPLink struct {
 	c *net.UDPConn
 }

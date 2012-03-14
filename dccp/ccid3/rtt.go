@@ -5,7 +5,7 @@
 package ccid3
 
 import (
-	"byte"
+	"bytes"
 	"fmt"
 	"github.com/petar/GoDCCP/dccp"
 )
@@ -52,7 +52,7 @@ func (t *rttReceiver) Init(logger *dccp.Logger) {
 
 // String returns the contents of the received ccvals history
 func (t *rttReceiver) String() string {
-	var w byte.Buffer
+	var w bytes.Buffer
 	if t.ccvalNow == CCValNil {
 		return "[]"
 	}

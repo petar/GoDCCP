@@ -6,7 +6,7 @@ package dccp
 
 import (
 	"net"
-	"os"
+	"syscall"
 	"time"
 )
 
@@ -52,7 +52,7 @@ func (f *flow) GetMTU() int { return f.mtu }
 // SetReadTimeout implements net.Conn.SetReadTimeout
 func (f *flow) SetReadTimeout(nsec int64) error {
 	if nsec < 0 {
-		return os.EINVAL
+		return syscall.EINVAL
 	}
 	f.Lock()
 	defer f.Unlock()
@@ -106,7 +106,7 @@ func (f *flow) WriteSegment(block []byte) error {
 	m := f.m
 	f.Unlock()
 	if m == nil {
-		return os.EBADF
+		return syscall.EBADF
 	}
 	err := m.write(&muxMsg{f.getLocal(), f.getRemote()}, block, f.addr)
 	if err != nil {
@@ -126,7 +126,7 @@ func (f *flow) ReadSegment() (block []byte, err error) {
 	readTimeout := f.readTimeout
 	f.Unlock()
 	if ch == nil {
-		return nil, os.EIO
+		return nil, syscall.EIO
 	}
 
 	var timer *time.Timer
@@ -142,10 +142,10 @@ func (f *flow) ReadSegment() (block []byte, err error) {
 	select {
 	case header, ok = <-ch:
 		if !ok {
-			return nil, os.EIO
+			return nil, syscall.EIO
 		}
 	case <-tmoch:
-		return nil, os.EAGAIN
+		return nil, syscall.EAGAIN
 	}
 
 	f.Lock()
@@ -175,7 +175,7 @@ func (f *flow) Close() error {
 	f.m = nil
 	f.Unlock()
 	if m == nil {
-		return os.EBADF
+		return syscall.EBADF
 	}
 	m.del(f.getLocal(), f.getRemote())
 	return nil

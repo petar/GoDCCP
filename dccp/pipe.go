@@ -4,7 +4,7 @@
 
 package dccp
 
-import "os"
+import "syscall"
 
 func (c *Conn) readHeader() (h *Header, err error) {
 	h, err = c.hc.ReadHeader()
@@ -66,7 +66,7 @@ func (c *Conn) readLoop() {
 			if ok {
 				// Drop packets that are unsupported. Intended for forward compatibility.
 				continue
-			} else if err == os.EAGAIN {
+			} else if err == syscall.EAGAIN {
 				// In the even of timeout, poll the congestion controls
 				c.pollCongestionControl()
 				continue

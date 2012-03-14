@@ -6,7 +6,7 @@ package dccp
 
 import (
 	"net"
-	"os"
+	"syscall"
 )
 
 // ChanLink{} treats one side of a channel as an incoming packet link
@@ -34,12 +34,12 @@ func (l *ChanLink) ReadFrom(buf []byte) (n int, addr net.Addr, err error) {
 	in := l.in
 	l.Unlock()
 	if in == nil {
-		return 0, nil, os.EBADF
+		return 0, nil, syscall.EBADF
 	}
 
 	p, ok := <-in
 	if !ok {
-		return 0, nil, os.EIO
+		return 0, nil, syscall.EIO
 	}
 	n = copy(buf, p)
 	if n != len(p) {
@@ -53,7 +53,7 @@ func (l *ChanLink) WriteTo(buf []byte, addr net.Addr) (n int, err error) {
 	out := l.out
 	l.Unlock()
 	if out == nil {
-		return 0, os.EBADF
+		return 0, syscall.EBADF
 	}
 
 	p := make([]byte, len(buf))

@@ -8,6 +8,8 @@ TODO PRE-RELEASE —————————————————————
 	versions of things like maxu64() should be used.  This is unlikely to happen however if we are using
 	48-bit numbers exclusively
 
+* update the DCCP Mutex implementation
+
 TODO LONG-TERM ——————————————————————————————————————————————————————————————————————————————————
 
 * dynamically changing SWAF/SWBF

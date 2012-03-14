@@ -25,11 +25,11 @@ func InstallTimeout(ns int64) {
 func InstallCtrlCPanic() {
 	go func() {
 		defer SavePanicTrace()
-		for s := range signal.Incoming {
-			//if s == os.Signal(syscall.SIGINT) {
-				log.Printf("ctrl-c interruption: %s\n", s)
-				panic("ctrl-c")
-			//}
+		ch := make(chan os.Signal)
+		signal.Notify(ch, os.Interrupt)
+		for s := range ch {
+			log.Printf("ctrl-c interruption: %s\n", s)
+			panic("ctrl-c")
 		}
 	}()
 }
@@ -44,7 +44,7 @@ func SavePanicTrace() {
 	if err != nil {
 		panic("dumper (no file) " + r.(fmt.Stringer).String())
 	}
-	syscall.Dup2(file.Fd(), os.Stderr.Fd())
+	syscall.Dup2(int(file.Fd()), int(os.Stderr.Fd()))
 	// TRY: defer func() { file.Close() }()
 	panic("dumper " + r.(string))
 }

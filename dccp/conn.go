@@ -6,7 +6,7 @@ package dccp
 
 import (
 	"io"
-	"os"
+	"syscall"
 )
 
 // Conn 
@@ -33,7 +33,7 @@ type Conn struct {
 
 var (
 	ErrEOF   = io.EOF
-	ErrAbort = os.EIO
+	ErrAbort = syscall.EIO
 )
 
 // Waiter returns a Waiter instance that can wait until all goroutines

@@ -6,7 +6,7 @@ package dccp
 
 import (
 	"fmt"
-	"os"
+	"syscall"
 )
 
 // This is an approximate upper bound on the size of options that are
@@ -28,7 +28,7 @@ func (c *Conn) WriteSegment(b []byte) error {
 	c.writeDataLk.Lock()
 	defer c.writeDataLk.Unlock()
 	if c.writeData == nil {
-		return os.EBADF
+		return syscall.EBADF
 	}
 	c.writeData <- b
 	return nil
