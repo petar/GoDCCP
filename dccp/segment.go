@@ -18,6 +18,7 @@ type SegmentConn interface {
 	// GetMTU returns th he largest allowable block size (for read and write). The MTU may vary.
 	GetMTU() int
 
+	// ReadSegment returns an ErrTimeout in the event of a timeout. See SetReadExpire.
 	ReadSegment() (block []byte, err error)
 
 	// If the user attempts to write a block that is too big, an ErrTooBig is returned
@@ -28,7 +29,12 @@ type SegmentConn interface {
 
 	RemoteLabel() Bytes
 
-	SetReadDeadline(t time.Time) error
+	// SetReadExpire sets the expiration time for any blocked calls to ReadSegment
+	// as a time represented in nanoseconds from now. It's semantics are similar to that
+	// of net.Conn.SetReadDeadline except that the deadline is specified in time from now,
+	// rather than absolute time. Also note that ReadSegment is expected to return 
+	// an ErrTimeout in the event of timeouts.
+	SetReadExpire(nsec int64) error
 
 	Close() error
 }
@@ -45,7 +51,7 @@ type HeaderConn interface {
 	// byte size of the header and app data wire-format footprint.
 	GetMTU() int
 
-	// os.EAGAIN is returned in the event of timeout.
+	// ReadHeader returns ErrTimeout in the event of timeout. See SetReadExpire.
 	ReadHeader() (h *Header, err error)
 
 	// WriteHeader can return ErrTooBig, if the wire-format of h exceeds the MTU
@@ -55,7 +61,8 @@ type HeaderConn interface {
 
 	RemoteLabel() Bytes
 
-	SetReadTimeout(nsec int64) error
+	// SetReadExpire behaves similarly to SegmentConn.SetReadExpire
+	SetReadExpire(nsec int64) error
 
 	Close() error
 }
@@ -102,8 +109,8 @@ func (hc *headerConn) RemoteLabel() Bytes {
 	return hc.bc.RemoteLabel()
 }
 
-func (hc *headerConn) SetReadTimeout(nsec int64) error {
-	return hc.bc.SetReadTimeout(nsec)
+func (hc *headerConn) SetReadExpire(nsec int64) error {
+	return hc.bc.SetReadExpire(nsec)
 }
 
 func (hc *headerConn) Close() error {

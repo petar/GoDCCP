@@ -101,6 +101,6 @@ func (c *Conn) LocalLabel() Bytes { return c.hc.LocalLabel() }
 
 func (c *Conn) RemoteLabel() Bytes { return c.hc.RemoteLabel() }
 
-func (c *Conn) SetReadTimeout(nsec int64) error {
+func (c *Conn) SetReadExpire(nsec int64) error {
 	panic("un")
 }

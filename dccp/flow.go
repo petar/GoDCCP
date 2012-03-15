@@ -49,13 +49,14 @@ func newFlow(addr net.Addr, m *Mux, ch chan muxHeader, mtu int, local, remote *L
 // GetMTU returns the largest size of read/write block
 func (f *flow) GetMTU() int { return f.mtu }
 
-// SetReadTimeout implements net.Conn.SetReadTimeout
-func (f *flow) SetReadTimeout(nsec int64) error {
+// SetReadTimeout implements SegmentConn.SetReadExpire
+func (f *flow) SetReadExpire(nsec int64) error {
 	if nsec < 0 {
 		return syscall.EINVAL
 	}
 	f.Lock()
 	defer f.Unlock()
+	??
 	f.readTimeout = time.Duration(nsec)
 	return nil
 }

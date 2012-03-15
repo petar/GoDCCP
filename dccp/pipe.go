@@ -53,8 +53,8 @@ func (c *Conn) readLoop() {
 		}
 
 		// Adjust read timeout
-		if err := c.hc.SetReadTimeout(5 * rtt); err != nil {
-			c.logger.E("conn", "Error", "SetReadTimeout")
+		if err := c.hc.SetReadExpire(5 * rtt); err != nil {
+			c.logger.E("conn", "Error", "SetReadExpire")
 			c.abortQuietly()
 			return
 		}

@@ -7,6 +7,7 @@ package dccp
 import (
 	"net"
 	"syscall"
+	"time"
 )
 
 // ChanLink treats one side of a channel as an incoming packet link
@@ -25,7 +26,10 @@ func (l *ChanLink) GetMTU() int {
 	return 1500
 }
 
-func (l *ChanLink) SetReadTimeout(nsec int64) error {
+func (l *ChanLink) SetReadDeadline(t time.Time) error {
+	// SetReadDeadline does not apply because ChanLink returns
+	// an EIO error if no input is available
+	panic("SetReadDeadline does not apply")
 	return nil
 }
 

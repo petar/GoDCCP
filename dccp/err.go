@@ -31,8 +31,14 @@ var (
 	ErrDrop          = NewError("dropped")
 	ErrReset         = NewError("reset")
 	ErrTooBig        = NewError("too big")
-	ErrTimeout       = NewError("timeout")
 	ErrOverflow      = NewError("overflow")
+)
+
+// Connection errors
+const (
+	ErrTimeout = NewError("timeout")
+	ErrNoData  = NewError("no data")
+	ErrBad     = NewError("closed or invalid connection object")
 )
 
 // Congestion Control errors/events
