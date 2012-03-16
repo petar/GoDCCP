@@ -4,7 +4,6 @@
 
 package ccid3
 
-// —————
 // Some basic utility functions below
 
 func min(x, y int) int {
