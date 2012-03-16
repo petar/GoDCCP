@@ -8,27 +8,27 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-// receiveRate keeps track of the data receive rate at the CCID3 receiver,
+// receiverRateCalculator keeps track of the data receive rate at the CCID3 receiver,
 // and produces Receive Rate options for outgoing feedback packets.
 // It's function is specified in RFC 4342, Section 8.3.
 //
 // XXX: Section 8.1, on the other hand, seems to suggest an alternative
 // mechanism for computing receive rate, based on the window counter values
 // in CCVal.
-type receiveRate struct {
+type receiverRateCalculator struct {
 	data0, data1 int
 	time0, time1 int64
 }
 
-func (r *receiveRate) Init() {
+func (r *receiverRateCalculator) Init() {
 	r.time0, r.time1 = 0, 0
 	r.data0, r.data1 = 0, 0
 }
 
-// OnRead is called to let the receiveRate know that data has been received.
+// OnRead is called to let the receiverRateCalculator know that data has been received.
 // The ccval window counter value is not used in the current rate receiver algorithm
 // explicitly. It is used implicitly in that the RTT estimate is based on these values.
-func (r *receiveRate) OnRead(ff *dccp.FeedforwardHeader) {
+func (r *receiverRateCalculator) OnRead(ff *dccp.FeedforwardHeader) {
 	if ff.Type != dccp.Data && ff.Type != dccp.DataAck {
 		return
 	}
@@ -40,9 +40,9 @@ func (r *receiveRate) OnRead(ff *dccp.FeedforwardHeader) {
 	r.data1 += ff.DataLen
 }
 
-// Flush returns a Receive Rate option and indicates to receiveRate 
+// Flush returns a Receive Rate option and indicates to receiverRateCalculator 
 // that the next Ack-to-Ack window has begun
-func (r *receiveRate) Flush(rtt int64, now int64) *ReceiveRateOption {
+func (r *receiverRateCalculator) Flush(rtt int64, now int64) *ReceiveRateOption {
 	if r.time0 > now || r.time1 > now {
 		panic("receive rate time")
 	}

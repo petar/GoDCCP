@@ -12,7 +12,7 @@ import (
 
 func TestStrober(t *testing.T) {
 	var logger dccp.Logger = dccp.NewDetailLogger(?, ?)
-	var s strober
+	var s senderStrober
 	s.Init(logger, 1024, 1024)
 	for {
 		s.Strobe()

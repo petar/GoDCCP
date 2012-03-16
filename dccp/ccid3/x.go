@@ -11,7 +11,7 @@ import (
 )
 
 // rateCaclulator computers the allowed sending rate of the sender
-type rateCalculator struct {
+type senderRateCalculator struct {
 	logger      *dccp.Logger
 	x           uint32 // Current allowed sending rate, in bytes per second
 	tld         int64  // Time Last Doubled (during slow start) or zero if unset; in ns since UTC zero
@@ -38,7 +38,7 @@ const (
 // allowed sending rate (in bytes per second). The latter is the rate
 // to be used before the first feedback packet is received and hence before
 // an RTT estimate is available.
-func (t *rateCalculator) Init(logger *dccp.Logger, ss uint32, rtt int64) {
+func (t *senderRateCalculator) Init(logger *dccp.Logger, ss uint32, rtt int64) {
 	t.logger = logger
 	// The allowed sending rate before the first feedback packet is received
 	// is one packet per second.
@@ -60,10 +60,10 @@ func (t *rateCalculator) Init(logger *dccp.Logger, ss uint32, rtt int64) {
 }
 
 // X returns the allowed sending rate in bytes per second
-func (t *rateCalculator) X() uint32 { return t.x }
+func (t *senderRateCalculator) X() uint32 { return t.x }
 
 // onFirstRead is called internally to handle the very first feedback packet received.
-func (t *rateCalculator) onFirstRead(now int64) uint32 {
+func (t *senderRateCalculator) onFirstRead(now int64) uint32 {
 	t.tld = now
 	t.x = initRate(t.ss, t.rtt)
 	t.logger.E("s-x", "Event", fmt.Sprintf("Init rate = %d bps", t.x))
@@ -92,7 +92,7 @@ type XFeedback struct {
 
 // Sender calls OnRead each time a new feedback packet (i.e. Ack or DataAck) arrives.
 // OnRead returns the new allowed sending in bytes per second.
-func (t *rateCalculator) OnRead(f *XFeedback) uint32 {
+func (t *senderRateCalculator) OnRead(f *XFeedback) uint32 {
 	if f.LossFeedback.RateInv < 1 {
 		panic("invalid loss rate inverse")
 	}
@@ -122,7 +122,7 @@ func (t *rateCalculator) OnRead(f *XFeedback) uint32 {
 	return t.recalculate(now)
 }
 
-func (t *rateCalculator) recalculate(now int64) uint32 {
+func (t *senderRateCalculator) recalculate(now int64) uint32 {
 	// Are we in the post-slow start phase
 	if t.lossRateInv < UnknownLossEventRateInv {
 		xEq := t.thruEq()
@@ -139,7 +139,7 @@ func (t *rateCalculator) recalculate(now int64) uint32 {
 // Sender calls OnNoFeedback when the no feedback timer expires.
 // OnNoFeedback returns the new allowed sending rate.
 // See RFC 5348, Section 4.4
-func (t *rateCalculator) OnNoFeedback(now int64, hasRTT bool, idleSince int64, nofeedbackSet int64) uint32 {
+func (t *senderRateCalculator) OnNoFeedback(now int64, hasRTT bool, idleSince int64, nofeedbackSet int64) uint32 {
 	t.logger.E("s-x", "Event", fmt.Sprintf("OnNoFbk hrtt=%v idl=% nofbks=%d", hasRTT, idleSince, nofeedbackSet))
 	xRecv := t.xRecvSet.Max()
 	if !hasRTT && !t.hasFeedback && idleSince > nofeedbackSet {
@@ -168,7 +168,7 @@ func (t *rateCalculator) OnNoFeedback(now int64, hasRTT bool, idleSince int64, n
 }
 
 // See RFC 5348, Section 4.4
-func (t *rateCalculator) updateLimits(now int64, timerLimit uint32) uint32 {
+func (t *senderRateCalculator) updateLimits(now int64, timerLimit uint32) uint32 {
 	xMin := minRate(t.ss)
 	if timerLimit < xMin {
 		timerLimit = xMin
@@ -186,7 +186,7 @@ func minRate(ss uint32) uint32 {
 
 // thruEq returns the allowed sending rate, in bytes per second, according to the TCP
 // throughput equation, for the regime b=1 and t_RTO=4*RTT (See RFC 5348, Section 3.1).
-func (t *rateCalculator) thruEq() uint32 {
+func (t *senderRateCalculator) thruEq() uint32 {
 	bps := (1e3*1e9*int64(t.ss)) / (t.rtt * thruEqQ(t.lossRateInv))
 	return uint32(bps)
 }

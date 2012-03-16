@@ -9,10 +9,9 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-// —————
-// lossReceiver is the algorithm that keeps track of loss events and constructs the
+// receiverLossTracker implements the algorithm that keeps track of loss events and constructs the
 // loss intervals option at the receiver.
-type lossReceiver struct {
+type receiverLossTracker struct {
 
 	logger *dccp.Logger
 
@@ -29,8 +28,8 @@ type lossReceiver struct {
 	lossRateCalculator
 }
 
-// Init initializes/resets the lossReceiver instance
-func (t *lossReceiver) Init(logger *dccp.Logger) {
+// Init initializes/resets the receiverLossTracker instance
+func (t *receiverLossTracker) Init(logger *dccp.Logger) {
 	t.logger = logger
 	t.evolveInterval.Init(logger, func(lid *LossIntervalDetail) { t.lossHistory.Push(lid) })
 	t.lossHistory.Init(NINTERVAL)
@@ -40,7 +39,7 @@ func (t *lossReceiver) Init(logger *dccp.Logger) {
 // pushPopHeader places the newly arrived header ff into pastHeaders and 
 // returns potentially another header (if available) whose SeqNo is no later.
 // Every header is returned exactly once.
-func (t *lossReceiver) pushPopHeader(ff *dccp.FeedforwardHeader) *dccp.FeedforwardHeader {
+func (t *receiverLossTracker) pushPopHeader(ff *dccp.FeedforwardHeader) *dccp.FeedforwardHeader {
 	var popSeqNo int64 = dccp.SEQNOMAX + 1
 	var pop int
 	for i, ge := range t.pastHeaders {
@@ -62,7 +61,7 @@ func (t *lossReceiver) pushPopHeader(ff *dccp.FeedforwardHeader) *dccp.Feedforwa
 // skipLength returns the number of packets, before and including the one being
 // acknowledged, that are in the re-ordering queue pastHeaders and have not yet been
 // considered by the loss intervals logic.
-func (t *lossReceiver) skipLength(ackno int64) byte {
+func (t *receiverLossTracker) skipLength(ackno int64) byte {
 	var skip byte
 	var dbgGSR int64 = 0
 	for _, ge := range t.pastHeaders {
@@ -72,13 +71,13 @@ func (t *lossReceiver) skipLength(ackno int64) byte {
 		}
 	}
 	if dbgGSR != ackno {
-		panic("lossReceiver GSR != AckNo")
+		panic("receiverLossTracker GSR != AckNo")
 	}
 	return byte(skip)
 }
 
 // receiver calls OnRead every time a new packet arrives
-func (t *lossReceiver) OnRead(ff *dccp.FeedforwardHeader, rtt int64) error {
+func (t *receiverLossTracker) OnRead(ff *dccp.FeedforwardHeader, rtt int64) error {
 	ff = t.pushPopHeader(ff)
 	if ff != nil {
 		t.evolveInterval.OnRead(ff, rtt)
@@ -88,7 +87,7 @@ func (t *lossReceiver) OnRead(ff *dccp.FeedforwardHeader, rtt int64) error {
 
 // listIntervals lists the finished loss intervals from most recent to least, including
 // the current (unfinished) interval as long as it is sufficiently long
-func (t *lossReceiver) listIntervals() []*LossIntervalDetail {
+func (t *receiverLossTracker) listIntervals() []*LossIntervalDetail {
 	current := t.evolveInterval.Unfinished()
 	cInd := 0
 	if current != nil {
@@ -116,7 +115,7 @@ func (t *lossReceiver) listIntervals() []*LossIntervalDetail {
 // NOTE: In a deviation from the RFC, we don't send any loss intervals
 // before the first loss event has occured. The sender is supposed to handle
 // this adequately.
-func (t *lossReceiver) LossIntervalsOption(ackno int64) *LossIntervalsOption {
+func (t *receiverLossTracker) LossIntervalsOption(ackno int64) *LossIntervalsOption {
 	return &LossIntervalsOption{
 		SkipLength:    t.skipLength(ackno),
 		LossIntervals: stripLossIntervalDetail(t.listIntervals()),
@@ -131,7 +130,7 @@ func stripLossIntervalDetail(s []*LossIntervalDetail) []*LossInterval {
 	return r
 }
 
-func (t *lossReceiver) LossDigestOption() *LossDigestOption {
+func (t *receiverLossTracker) LossDigestOption() *LossDigestOption {
 	panic("new loss count calculation not implemented")
 	return &LossDigestOption{
 		// RateInv is the inverse of the loss event rate, rounded UP, as calculated by the receiver.
@@ -145,7 +144,7 @@ func (t *lossReceiver) LossDigestOption() *LossDigestOption {
 // LossEventRateInv returns the inverse of the loss event rate, calculated using the recent
 // history of loss intervals as well as the current (unfinished) interval, if sufficiently long.
 // A return value of UknownLossEventRateInv indicates that no lost packets have been encountered yet.
-func (t *lossReceiver) LossEventRateInv() uint32 {
+func (t *receiverLossTracker) LossEventRateInv() uint32 {
 	return t.lossRateCalculator.CalcLossEventRateInv(t.listIntervals())
 }
 

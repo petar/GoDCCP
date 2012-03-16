@@ -8,9 +8,9 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-// nofeedbackTimer keeps track of the CCID3 nofeedback timeout at the
+// senderNoFeedbackTimer keeps track of the CCID3 nofeedback timeout at the
 // sender. The timeout may change in response to various events.
-type nofeedbackTimer struct {
+type senderNoFeedbackTimer struct {
 	resetTime    int64 // Last time we got feedback; ns since UTC
 	idleSince    int64 // Time last packet of any type was sent
 	lastDataSent int64 // Time last data packet was sent, or zero otherwise; ns since UTC
@@ -25,7 +25,7 @@ const (
 )
 
 // Init resets the nofeedback timer for new use
-func (t *nofeedbackTimer) Init() {
+func (t *senderNoFeedbackTimer) Init() {
 	t.resetTime = 0
 	t.idleSince = 0
 	t.lastDataSent = 0
@@ -33,13 +33,13 @@ func (t *nofeedbackTimer) Init() {
 	t.rtt = 0
 }
 
-func (t *nofeedbackTimer) GetIdleSinceAndReset() (idleSince int64, nofeedbackSet int64) {
+func (t *senderNoFeedbackTimer) GetIdleSinceAndReset() (idleSince int64, nofeedbackSet int64) {
 	return t.idleSince, t.resetTime
 }
 
 // Sender calls OnRead each time a feedback packet is received.
 // OnRead restarts the nofeedback timer each time a feedback packet is received.
-func (t *nofeedbackTimer) OnRead(rtt int64, rttEstimated bool, fb *dccp.FeedbackHeader) { 
+func (t *senderNoFeedbackTimer) OnRead(rtt int64, rttEstimated bool, fb *dccp.FeedbackHeader) { 
 	if fb.Type != dccp.Ack && fb.Type != dccp.DataAck {
 		return
 	}
@@ -53,7 +53,7 @@ func (t *nofeedbackTimer) OnRead(rtt int64, rttEstimated bool, fb *dccp.Feedback
 
 // Sender calls OnWrite each time a packet is sent out to the receiver.
 // OnWrite is used to calculate timing between data packet sends.
-func (t *nofeedbackTimer) OnWrite(ph *dccp.PreHeader) {
+func (t *senderNoFeedbackTimer) OnWrite(ph *dccp.PreHeader) {
 	// The very first time resetTime is set to equal the time when the first packet goes out,
 	// since we are waiting for a feedback since that starting time. Afterwards, resetTime
 	// can only assume times of incoming feedback packets.
@@ -84,19 +84,19 @@ func (t *nofeedbackTimer) OnWrite(ph *dccp.PreHeader) {
 
 // Sender calls OnIdle every time the idle clock ticks. OnIdle returns true if the
 // nofeedback timer has expired.
-func (t *nofeedbackTimer) IsExpired(now int64) bool {
+func (t *senderNoFeedbackTimer) IsExpired(now int64) bool {
 	if t.resetTime <= 0 {
 		return false
 	}
 	return now - t.resetTime >= t.timeout()
 }
 
-func (t *nofeedbackTimer) Reset(now int64) {
+func (t *senderNoFeedbackTimer) Reset(now int64) {
 	t.resetTime = now
 }
 
 // timeout returns the current duration of the nofeedback timer in ns
-func (t *nofeedbackTimer) timeout() int64 {
+func (t *senderNoFeedbackTimer) timeout() int64 {
 	if t.rtt <= 0 {
 		return NOFEEDBACK_TMO_WITHOUT_RTT
 	}

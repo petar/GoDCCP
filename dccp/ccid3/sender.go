@@ -13,19 +13,19 @@ func newSender(run *dccp.Runtime, logger *dccp.Logger) *sender {
 	return &sender{ run: run, logger: logger }
 }
 
-// —————
-// sender is a CCID3 congestion control sender
+// sender implements a CCID3 congestion control sender.
+// It conforms to dccp.SenderCongestionControl.
 type sender struct {
 	run    *dccp.Runtime
 	logger *dccp.Logger
-	strober
+	senderStrober
 	dccp.Mutex // Locks all fields below
-	rttSender
-	windowCounter
-	nofeedbackTimer
-	segmentSize
-	lossTracker
-	rateCalculator
+	senderRoundtripEstimator
+	senderWindowCounter
+	senderNoFeedbackTimer
+	senderSegmentSize
+	senderLossTracker
+	senderRateCalculator
 	open bool // Whether the CC is active
 }
 
@@ -40,7 +40,7 @@ func (s *sender) GetCCMPS() int32 { return FixedSegmentSize }
 func (s *sender) GetRTT() int64 {
 	s.Lock()
 	defer s.Unlock()
-	rtt, _ := s.rttSender.RTT()
+	rtt, _ := s.senderRoundtripEstimator.RTT()
 	return rtt
 }
 
@@ -54,15 +54,15 @@ func (s *sender) Open() {
 	if s.open {
 		panic("opening an open ccid3 sender")
 	}
-	s.windowCounter.Init()
-	s.rttSender.Init()
-	rtt, _ := s.rttSender.RTT()
-	s.nofeedbackTimer.Init()
-	s.segmentSize.Init()
-	s.segmentSize.SetMPS(FixedSegmentSize)
-	s.lossTracker.Init(s.logger)
-	s.rateCalculator.Init(s.logger, FixedSegmentSize, rtt)
-	s.strober.Init(s.run, s.logger, s.rateCalculator.X(), FixedSegmentSize)
+	s.senderWindowCounter.Init()
+	s.senderRoundtripEstimator.Init()
+	rtt, _ := s.senderRoundtripEstimator.RTT()
+	s.senderNoFeedbackTimer.Init()
+	s.senderSegmentSize.Init()
+	s.senderSegmentSize.SetMPS(FixedSegmentSize)
+	s.senderLossTracker.Init(s.logger)
+	s.senderRateCalculator.Init(s.logger, FixedSegmentSize, rtt)
+	s.senderStrober.Init(s.run, s.logger, s.senderRateCalculator.X(), FixedSegmentSize)
 	s.open = true
 }
 
@@ -77,11 +77,11 @@ func (s *sender) OnWrite(ph *dccp.PreHeader) (ccval byte, options []*dccp.Option
 		return 0, nil
 	}
 
-	s.nofeedbackTimer.OnWrite(ph)
+	s.senderNoFeedbackTimer.OnWrite(ph)
 
-	rtt, _ := s.rttSender.RTT()
+	rtt, _ := s.senderRoundtripEstimator.RTT()
 
-	ccval = s.windowCounter.OnWrite(rtt, ph.SeqNo, ph.Time)
+	ccval = s.senderWindowCounter.OnWrite(rtt, ph.SeqNo, ph.Time)
 	s.logger.E("s", "wccval", fmt.Sprintf("Write CCVal=%d, RTT=%d", ccval, rtt))
 
 	return ccval, nil
@@ -104,23 +104,23 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) error {
 	}
 
 	// Update the round-trip estimate
-	s.rttSender.OnRead(fb)
-	rtt, rttEstimated := s.rttSender.RTT()
+	s.senderRoundtripEstimator.OnRead(fb)
+	rtt, rttEstimated := s.senderRoundtripEstimator.RTT()
 	if rttEstimated {
 		s.logger.E("s", "srtt", fmt.Sprintf("sRTT=%s", dccp.Nstoa(rtt)), fb,
 			dccp.LogArgs{"rtt": rtt, "est": rttEstimated})
 	}
 
 	// Update the nofeedback timeout interval and reset the timer
-	s.nofeedbackTimer.OnRead(rtt, rttEstimated, fb)
+	s.senderNoFeedbackTimer.OnRead(rtt, rttEstimated, fb)
 
 	// Window counter update
-	s.windowCounter.OnRead(fb.AckNo)
+	s.senderWindowCounter.OnRead(fb.AckNo)
 
 	// Update loss estimates
-	lossFeedback, err := s.lossTracker.OnRead(fb)
+	lossFeedback, err := s.senderLossTracker.OnRead(fb)
 	if err != nil {
-		s.logger.E("s", "Warn", fmt.Sprintf("lossTracker.OnRead err (%s)", err), fb)
+		s.logger.E("s", "Warn", fmt.Sprintf("senderLossTracker.OnRead err (%s)", err), fb)
 		return nil
 	}
 
@@ -137,8 +137,8 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) error {
 		RTT:          rtt,
 		LossFeedback: lossFeedback,
 	}
-	x := s.rateCalculator.OnRead(xf)
-	s.strober.SetRate(x, FixedSegmentSize)
+	x := s.senderRateCalculator.OnRead(xf)
+	s.senderStrober.SetRate(x, FixedSegmentSize)
 
 	return nil
 }
@@ -147,16 +147,16 @@ func readReceiveRate(fb *dccp.FeedbackHeader) (xrecv uint32, err error) {
 	if fb.Type != dccp.Ack && fb.Type != dccp.DataAck {
 		return 0, ErrNoAck
 	}
-	var receiveRate *ReceiveRateOption
+	var receiverRateCalculator *ReceiveRateOption
 	for _, opt := range fb.Options {
-		if receiveRate = DecodeReceiveRateOption(opt); receiveRate != nil {
+		if receiverRateCalculator = DecodeReceiveRateOption(opt); receiverRateCalculator != nil {
 			break
 		}
 	}
-	if receiveRate == nil {
+	if receiverRateCalculator == nil {
 		return 0, ErrMissingOption
 	}
-	return receiveRate.Rate, nil
+	return receiverRateCalculator.Rate, nil
 }
 
 // Strobe blocks until a new packet can be sent without violating the congestion control
@@ -171,7 +171,7 @@ func (s *sender) Strobe() {
 		return
 	}
 
-	s.strober.Strobe()
+	s.senderStrober.Strobe()
 }
 
 // OnIdle is called periodically. If the CC is not active, OnIdle MUST to return nil.
@@ -183,12 +183,12 @@ func (s *sender) OnIdle(now int64) error {
 		return nil
 	}
 
-	if s.nofeedbackTimer.IsExpired(now) {
-		idleSince, nofeedbackSet := s.nofeedbackTimer.GetIdleSinceAndReset()
-		_, hasRTT := s.rttSender.RTT()
-		x := s.rateCalculator.OnNoFeedback(now, hasRTT, idleSince, nofeedbackSet)
-		s.strober.SetRate(x, FixedSegmentSize)
-		s.nofeedbackTimer.Reset(now)
+	if s.senderNoFeedbackTimer.IsExpired(now) {
+		idleSince, nofeedbackSet := s.senderNoFeedbackTimer.GetIdleSinceAndReset()
+		_, hasRTT := s.senderRoundtripEstimator.RTT()
+		x := s.senderRateCalculator.OnNoFeedback(now, hasRTT, idleSince, nofeedbackSet)
+		s.senderStrober.SetRate(x, FixedSegmentSize)
+		s.senderNoFeedbackTimer.Reset(now)
 	}
 
 	return nil

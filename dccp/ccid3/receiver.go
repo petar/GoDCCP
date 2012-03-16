@@ -13,15 +13,14 @@ func newReceiver(run *dccp.Runtime, logger *dccp.Logger) *receiver {
 	return &receiver{ run: run, logger: logger }
 }
 
-// —————
-// receiver is a CCID3 congestion control receiver
+// receiver implements CCID3 congestion control and it conforms to dccp.ReceiverCongestionControl
 type receiver struct {
 	run    *dccp.Runtime
 	logger *dccp.Logger
 	dccp.Mutex
-	rttReceiver
-	receiveRate
-	lossReceiver
+	receiverRoundtripEstimator
+	receiverRateCalculator
+	receiverLossTracker
 
 	open bool // Whether the CC is active
 
@@ -54,9 +53,9 @@ func (r *receiver) Open() {
 		panic("opening an open ccid3 receiver")
 	}
 
-	r.rttReceiver.Init(r.logger)
-	r.receiveRate.Init()
-	r.lossReceiver.Init(r.logger)
+	r.receiverRoundtripEstimator.Init(r.logger)
+	r.receiverRateCalculator.Init()
+	r.receiverLossTracker.Init(r.logger)
 	r.open = true
 	r.lastWrite = 0
 	r.lastAck = 0
@@ -88,7 +87,7 @@ func (r *receiver) makeElapsedTimeOption(ackNo int64, now int64) *dccp.ElapsedTi
 func (r *receiver) OnWrite(ph *dccp.PreHeader) (options []*dccp.Option) {
 	r.Lock()
 	defer r.Unlock()
-	rtt := r.rttReceiver.RTT(ph.Time)
+	rtt := r.receiverRoundtripEstimator.RTT(ph.Time)
 
 	r.lastWrite = ph.Time
 	if !r.open {
@@ -100,7 +99,7 @@ func (r *receiver) OnWrite(ph *dccp.PreHeader) (options []*dccp.Option) {
 		// Record last Ack write separately from last writes (in general)
 		r.lastAck = ph.Time
 		r.dataSinceAck = false
-		r.lastLossEventRateInv = r.lossReceiver.LossEventRateInv()
+		r.lastLossEventRateInv = r.receiverLossTracker.LossEventRateInv()
 		r.lastCCVal = r.latestCCVal
 
 		// Prepare feedback options, if we've seen packets before
@@ -110,11 +109,11 @@ func (r *receiver) OnWrite(ph *dccp.PreHeader) (options []*dccp.Option) {
 			if opts[0] == nil {
 				r.logger.E("r", "Warn", "ElapsedTime option encoding == nil", ph)
 			}
-			opts[1] = encodeOption(r.receiveRate.Flush(rtt, ph.Time))
+			opts[1] = encodeOption(r.receiverRateCalculator.Flush(rtt, ph.Time))
 			if opts[1] == nil {
 				r.logger.E("r", "Warn", "ReceiveRate option encoding == nil", ph)
 			}
-			opts[2] = encodeOption(r.lossReceiver.LossIntervalsOption(ph.AckNo))
+			opts[2] = encodeOption(r.receiverLossTracker.LossIntervalsOption(ph.AckNo))
 			if opts[2] == nil {
 				r.logger.E("r", "Warn", "LossIntervals option encoding == nil", ph)
 			}
@@ -154,23 +153,23 @@ func (r *receiver) OnRead(ff *dccp.FeedforwardHeader) error {
 	}
 
 	// Update RTT estimate
-	r.rttReceiver.OnRead(ff.CCVal, ff.Time)
-	rtt, est := r.rttReceiver.RTT(ff.Time)
-	r.logger.E("r", "rrtt-h", r.rttReceiver.String())
+	r.receiverRoundtripEstimator.OnRead(ff.CCVal, ff.Time)
+	rtt, est := r.receiverRoundtripEstimator.RTT(ff.Time)
+	r.logger.E("r", "rrtt-h", r.receiverRoundtripEstimator.String())
 	r.logger.E("r", "rrtt", fmt.Sprintf("rRTT=%s est=%v", dccp.Nstoa(rtt), est), ff, 
 		dccp.LogArgs{"rtt": rtt, "est": est})
 
 	// Update receive rate
-	r.receiveRate.OnRead(ff)
+	r.receiverRateCalculator.OnRead(ff)
 
 	// Update loss rate
-	r.lossReceiver.OnRead(ff, rtt)
+	r.receiverLossTracker.OnRead(ff, rtt)
 
 	// Determine if feedback should be sent:
 
 	// (Feedback-Condition-II) If the current calculated loss event rate is greater than its
 	// previous value
-	if r.lossReceiver.LossEventRateInv() < r.lastLossEventRateInv {
+	if r.receiverLossTracker.LossEventRateInv() < r.lastLossEventRateInv {
 		return dccp.CongestionAck
 	}
 
@@ -197,7 +196,7 @@ func (r *receiver) OnIdle(now int64) error {
 
 	// (Feedback-Condition-I) If one (estimated) round-trip time time has expired since last Ack
 	// AND data packets have been received in the meantime
-	if r.dataSinceAck && now-r.lastWrite > r.rttReceiver.RTT(now) {
+	if r.dataSinceAck && now-r.lastWrite > r.receiverRoundtripEstimator.RTT(now) {
 		return dccp.CongestionAck
 	}
 

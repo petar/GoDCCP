@@ -9,9 +9,9 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-// strober is an object that produces regular strobe intervals at a specified rate.
-// A strober cannot be used before an initial call to SetInterval or SetRate.
-type strober struct {
+// senderStrober is an object that produces regular strobe intervals at a specified rate.
+// A senderStrober cannot be used before an initial call to SetInterval or SetRate.
+type senderStrober struct {
 	run    *dccp.Runtime
 	logger *dccp.Logger
 	dccp.Mutex
@@ -25,15 +25,15 @@ func Per64FromBPS(bps uint32, ss uint32) int64 {
 	return (64 * int64(bps)) / int64(ss)
 }
 
-// Init resets the strober instance for new use
-func (s *strober) Init(run *dccp.Runtime, logger *dccp.Logger, bps uint32, ss uint32) {
+// Init resets the senderStrober instance for new use
+func (s *senderStrober) Init(run *dccp.Runtime, logger *dccp.Logger, bps uint32, ss uint32) {
 	s.run = run
 	s.logger = logger
 	s.SetRate(bps, ss)
 }
 
 // SetWait sets the strobing rate by setting the time interval between two strobes in nanoseconds
-func (s *strober) SetInterval(interval int64) {
+func (s *senderStrober) SetInterval(interval int64) {
 	s.Lock()
 	defer s.Unlock()
 	s.interval = interval
@@ -42,7 +42,7 @@ func (s *strober) SetInterval(interval int64) {
 
 // SetRate sets the strobing rate in strobes per 64 seconds
 // Rates below 1 strobe per 64 sec are not allowed by RFC 4342
-func (s *strober) SetRate(bps uint32, ss uint32) {
+func (s *senderStrober) SetRate(bps uint32, ss uint32) {
 	s.Lock()
 	defer s.Unlock()
 	s.interval = 64e9 / Per64FromBPS(bps, ss)
@@ -52,20 +52,20 @@ func (s *strober) SetRate(bps uint32, ss uint32) {
 }
 
 // Strobe ensures that the frequency with which (multiple calls) to Strobe return does not
-// exceed the allowed rate.  In particular, note that strober makes sure that after data
+// exceed the allowed rate.  In particular, note that senderStrober makes sure that after data
 // limited periods, when the application is not calling it for a while, there is no burst of
 // high frequency returns.  Strobe MUST not be called concurrently. For efficiency, it does
 // not use a lock to prevent concurrent invocation. DCCP currently calls Strobe in a loop,
 // so concurrent invocations are not a concern.
 //
 // TODO: This routine should be optimized
-func (s *strober) Strobe() {
+func (s *senderStrober) Strobe() {
 	s.Lock()
 	now := s.run.Nanoseconds()
 	delta := s.interval - (now - s.last)
 	dbgInterval := s.interval // DBG
 	s.Unlock()
-	defer s.logger.E("s-strober", "Event", fmt.Sprintf("Strobe at %d pps", 1e9 / dbgInterval))
+	defer s.logger.E("s-senderStrober", "Event", fmt.Sprintf("Strobe at %d pps", 1e9 / dbgInterval))
 	if delta > 0 {
 		s.run.Sleep(delta)
 	}

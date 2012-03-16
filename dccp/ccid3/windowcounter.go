@@ -5,9 +5,9 @@
 package ccid3
 
 // —————
-// windowCounter maintains the window counter (WC) logic of the sender.
+// senderWindowCounter maintains the window counter (WC) logic of the sender.
 // It's logic is described in RFC 4342, Section 8.1.
-type windowCounter struct {
+type senderWindowCounter struct {
 	lastAckNoPresent bool   // Whether there have been any acks
 	lastAckNo        int64  // The sequence number of the last acknowledged packet
 	lastSeqNoPresent bool   // True if at least one packet has been sent
@@ -33,8 +33,8 @@ func diffWindowCounter(x, y int8) int8 {
 	return (2*WindowCounterMod + x - y) % WindowCounterMod
 }
 
-// Init resets the windowCounter instance for new use
-func (wc *windowCounter) Init() {
+// Init resets the senderWindowCounter instance for new use
+func (wc *senderWindowCounter) Init() {
 	wc.lastAckNoPresent = false
 	wc.lastAckNo = 0
 	wc.lastSeqNoPresent = false
@@ -45,7 +45,7 @@ func (wc *windowCounter) Init() {
 // The sender calls OnWrite in order to obtain the WC value to be included in the next
 // outgoing packet
 // TODO: Use RTT estimates from the sender's better estimator?
-func (wc *windowCounter) OnWrite(rtt int64, seqNo int64, now int64) byte {
+func (wc *senderWindowCounter) OnWrite(rtt int64, seqNo int64, now int64) byte {
 	// Update sequence number fields
 	if wc.lastSeqNoPresent {
 		if seqNo <= wc.lastSeqNo {
@@ -83,7 +83,7 @@ func (wc *windowCounter) OnWrite(rtt int64, seqNo int64, now int64) byte {
 	return byte(ccval)
 }
 
-func (wc *windowCounter) getAckBound(now int64) (ccvalInc int8) {
+func (wc *senderWindowCounter) getAckBound(now int64) (ccvalInc int8) {
 	if !wc.lastAckNoPresent {
 		return 0
 	}
@@ -98,7 +98,7 @@ func (wc *windowCounter) getAckBound(now int64) (ccvalInc int8) {
 // getTimeBound returns the least increase in ccval that the next packet must have,
 // considering how much time has passed since the last window started.
 // The returned value is never bigger than WindowCounterMaxInc.
-func (wc *windowCounter) getTimeBound(rtt int64, now int64) (ccvalInc int8) {
+func (wc *senderWindowCounter) getTimeBound(rtt int64, now int64) (ccvalInc int8) {
 	latest := wc.windowHistory.Latest()
 	if latest == nil {
 		panic("no window history")
@@ -117,7 +117,7 @@ func (wc *windowCounter) getTimeBound(rtt int64, now int64) (ccvalInc int8) {
 
 // Sender calls OnRead every time it receives an Ack or DataAck packet.
 // OnRead simply keeps track of the highest acknowledged sequence number.
-func (wc *windowCounter) OnRead(ackNo int64) {
+func (wc *senderWindowCounter) OnRead(ackNo int64) {
 	// Discard acknowledgements of unsent packets
 	if !wc.lastSeqNoPresent || ackNo > wc.lastSeqNo {
 		return

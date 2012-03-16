@@ -4,25 +4,25 @@
 
 package ccid3
 
-// segmentSize keeps an up-to-date estimate of the Segment Size (SS).
+// senderSegmentSize keeps an up-to-date estimate of the Segment Size (SS).
 // The current implementation simply uses the MPS (maximum packet size) as SS.
 // TODO: Compute SS as the average SS over a few most recent loss intervals, see Section 5.3.
-type segmentSize struct {
+type senderSegmentSize struct {
 	mps int
 }
 
 const FixedSegmentSize = 2*1500
 
 // Init resets the object for new use
-func (t *segmentSize) Init() {
+func (t *senderSegmentSize) Init() {
 	t.mps = 0
 }
 
 // Sender calls SetMPS to notify this object if the maximum packet size in use
-func (t *segmentSize) SetMPS(mps int) { t.mps = mps }
+func (t *senderSegmentSize) SetMPS(mps int) { t.mps = mps }
 
 // SS returns the current estimate of the segment size
-func (t *segmentSize) SS() int { 
+func (t *senderSegmentSize) SS() int { 
 	if t.mps <= 0 {
 		panic("not ready with SS")
 	}
