@@ -7,6 +7,7 @@ package sandbox
 import (
 	"fmt"
 	"sync"
+	"time"
 	"github.com/petar/GoDCCP/dccp"
 )
 
@@ -24,8 +25,8 @@ func NewLine(run *dccp.Runtime, logger *dccp.Logger,
 	ba := make(chan *dccp.Header, LineBufferLen)
 	line = &Line{}
 	line.logger = logger
-	line.ha.Init(aName, run, line.logger, ba, ab, gap, packetsPerGap, 1e9)
-	line.hb.Init(bName, run, line.logger, ab, ba, gap, packetsPerGap, 1e9)
+	line.ha.Init(aName, run, line.logger, ba, ab, gap, packetsPerGap)
+	line.hb.Init(bName, run, line.logger, ab, ba, gap, packetsPerGap)
 	return &line.ha, &line.hb, line
 }
 
@@ -40,16 +41,15 @@ type headerHalfLine struct {
 	write chan<- *dccp.Header
 
 	glock         sync.Mutex
-	gap           int64  // Length of time interval for ...
+	gap           int64      // Length of time interval for ...
 	packetsPerGap uint32
-	gapCounter    int64  // UTC time in gap units
-	gapFill       uint32 // Number of segments transmitted during the gap in gapCounter
-	timeout       int64  // Read timeout in nanoseconds
+	gapCounter    int64      // UTC time in gap units
+	gapFill       uint32     // Number of segments transmitted during the gap in gapCounter
+	deadline      time.Time  // Read deadline
 }
 
 func (hhl *headerHalfLine) Init(name string, run *dccp.Runtime, logger *dccp.Logger,
-	r <-chan *dccp.Header, w chan<- *dccp.Header, gap int64, packetsPerGap uint32,
-	tmo int64) {
+	r <-chan *dccp.Header, w chan<- *dccp.Header, gap int64, packetsPerGap uint32) {
 
 	hhl.name = name
 	hhl.run = run
@@ -57,7 +57,7 @@ func (hhl *headerHalfLine) Init(name string, run *dccp.Runtime, logger *dccp.Log
 	hhl.read = r
 	hhl.write = w
 	hhl.SetRate(gap, packetsPerGap)
-	hhl.timeout = tmo
+	hhl.deadline = time.Now().Add(-time.Second)
 }
 
 func (hhl *headerHalfLine) GetMTU() int {
@@ -66,11 +66,12 @@ func (hhl *headerHalfLine) GetMTU() int {
 
 func (hhl *headerHalfLine) ReadHeader() (h *dccp.Header, err error) {
 	hhl.glock.Lock()
-	tmo := hhl.timeout
+	deadline := hhl.deadline
 	hhl.glock.Unlock()
+	tmo := deadline.Sub(time.Now())
 	var tmoch <-chan int64
 	if tmo > 0 {
-		tmoch = hhl.run.After(tmo)
+		tmoch = hhl.run.After(int64(tmo))
 	} else {
 		tmoch = make(chan int64)
 	}
@@ -78,12 +79,12 @@ func (hhl *headerHalfLine) ReadHeader() (h *dccp.Header, err error) {
 	case h, ok := <-hhl.read:
 		if !ok {
 			hhl.logger.E(hhl.name, "Warn", "Read EOF", h)
-			return nil, ErrEOF
+			return nil, dccp.ErrEOF
 		}
 		hhl.logger.E(hhl.name, "Read", fmt.Sprintf("SeqNo=%d", h.SeqNo), h)
 		return h, nil
 	case <-tmoch:
-		return nil, ErrTimeout
+		return nil, dccp.ErrTimeout
 	}
 	panic("un")
 }
@@ -103,7 +104,7 @@ func (hhl *headerHalfLine) WriteHeader(h *dccp.Header) (err error) {
 
 	if hhl.write == nil {
 		hhl.logger.E(hhl.name, "Drop", fmt.Sprintf("SeqNo=%d EBADF", h.SeqNo), h)
-		return ErrBad
+		return dccp.ErrBad
 	}
 
 	if hhl.rateFilter() {
@@ -142,7 +143,7 @@ func (hhl *headerHalfLine) Close() error {
 
 	if hhl.write == nil {
 		hhl.logger.E(hhl.name, "Warn", "Close EBADF")
-		return ErrBad
+		return dccp.ErrBad
 	}
 	close(hhl.write)
 	hhl.write = nil
@@ -159,12 +160,12 @@ func (hhl *headerHalfLine) RemoteLabel() dccp.Bytes {
 	return &dccp.Label{}
 }
 
-func (hhl *headerHalfLine) SetReadTimeout(nsec int64) error {
+func (hhl *headerHalfLine) SetReadExpire(nsec int64) error {
 	hhl.glock.Lock()
 	defer hhl.glock.Unlock()
 	if nsec < 0 {
 		panic("invalid timeout")
 	}
-	hhl.timeout = nsec
+	hhl.deadline = time.Now().Add(time.Duration(nsec))
 	return nil
 }

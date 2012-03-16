@@ -32,7 +32,7 @@ func (hhp *headerHalfPipe) GetMTU() int {
 func (hhp *headerHalfPipe) ReadHeader() (h *dccp.Header, err error) {
 	h, ok := <-hhp.read
 	if !ok {
-		return nil, ErrEOF
+		return nil, dccp.ErrEOF
 	}
 	return h, nil
 }
@@ -41,7 +41,7 @@ func (hhp *headerHalfPipe) WriteHeader(h *dccp.Header) (err error) {
 	hhp.Lock()
 	defer hhp.Unlock()
 	if hhp.write == nil {
-		return ErrBad
+		return dccp.ErrBad
 	}
 	hhp.write <- h
 	return nil
@@ -52,7 +52,7 @@ func (hhp *headerHalfPipe) Close() error {
 	defer hhp.Unlock()
 
 	if hhp.write == nil {
-		return ErrBad
+		return dccp.ErrBad
 	}
 	close(hhp.write)
 	hhp.write = nil
@@ -67,6 +67,6 @@ func (hhp *headerHalfPipe) RemoteLabel() dccp.Bytes {
 	return &dccp.Label{}
 }
 
-func (hhp *headerHalfPipe) SetReadTimeout(nsec int64) error {
-	return nil
+func (hhp *headerHalfPipe) SetReadExpire(nsec int64) error {
+	panic("not implemented")
 }

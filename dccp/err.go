@@ -36,7 +36,7 @@ var (
 )
 
 // Connection errors
-const (
+var (
 	ErrEOF     = NewError("i/o eof")
 	ErrAbort   = NewError("i/o aborted")
 	ErrTimeout = NewError("i/o timeout")

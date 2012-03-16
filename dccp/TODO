@@ -3,9 +3,6 @@ TODO PRE-RELEASE —————————————————————
 
 * implement Conn.SetReadExpire
 
-* ErrTimeout and EAGAIN are all mixed up. Make sure everything is in terms of ErrTimeout.
-	* fix the sandbox accordingly
-
 * address Ack-Sync pair in client connection establishement, marked XXX in code
 
 * deal with circular arithmetic of sequence numbers

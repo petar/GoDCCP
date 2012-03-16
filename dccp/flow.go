@@ -38,7 +38,7 @@ func newFlow(addr net.Addr, m *Mux, ch chan muxHeader, mtu int, local, remote *L
 		remote:       remote,
 		lastRead:     now,
 		lastWrite:    now,
-		readDeadline: time.Now().Sub(time.Second),	// time in the past
+		readDeadline: time.Now().Add(-time.Second),	// time in the past
 		m:            m,
 		ch:           ch,
 		mtu:          mtu,
