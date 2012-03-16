@@ -6,8 +6,6 @@ package sandbox
 
 import (
 	"fmt"
-	"io"
-	"os"
 	"sync"
 	"github.com/petar/GoDCCP/dccp"
 )
@@ -31,7 +29,7 @@ func NewLine(run *dccp.Runtime, logger *dccp.Logger,
 	return &line.ha, &line.hb, line
 }
 
-// headerHalfLine enforces rate-limiting on its write side
+// headerHalfLine implements HeaderConn. It enforces rate-limiting on its write side.
 type headerHalfLine struct {
 	name   string
 	run    *dccp.Runtime
@@ -80,12 +78,12 @@ func (hhl *headerHalfLine) ReadHeader() (h *dccp.Header, err error) {
 	case h, ok := <-hhl.read:
 		if !ok {
 			hhl.logger.E(hhl.name, "Warn", "Read EOF", h)
-			return nil, io.EOF
+			return nil, ErrEOF
 		}
 		hhl.logger.E(hhl.name, "Read", fmt.Sprintf("SeqNo=%d", h.SeqNo), h)
 		return h, nil
 	case <-tmoch:
-		return nil, os.EAGAIN
+		return nil, ErrTimeout
 	}
 	panic("un")
 }
@@ -105,7 +103,7 @@ func (hhl *headerHalfLine) WriteHeader(h *dccp.Header) (err error) {
 
 	if hhl.write == nil {
 		hhl.logger.E(hhl.name, "Drop", fmt.Sprintf("SeqNo=%d EBADF", h.SeqNo), h)
-		return os.EBADF
+		return ErrBad
 	}
 
 	if hhl.rateFilter() {
@@ -144,7 +142,7 @@ func (hhl *headerHalfLine) Close() error {
 
 	if hhl.write == nil {
 		hhl.logger.E(hhl.name, "Warn", "Close EBADF")
-		return os.EBADF
+		return ErrBad
 	}
 	close(hhl.write)
 	hhl.write = nil

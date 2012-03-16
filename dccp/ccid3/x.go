@@ -6,7 +6,6 @@ package ccid3
 
 import (
 	"fmt"
-	//"os"
 	"math"
 	"github.com/petar/GoDCCP/dccp"
 )

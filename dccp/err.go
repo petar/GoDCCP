@@ -14,6 +14,7 @@ func NewError(s string) error { return ProtoError(s) }
 
 // TODO: Annotate each error with the circumstances that can cause it
 var (
+	ErrInvalid       = NewError("invalid argument")	// Invalid arguments passed to a routine
 	ErrAlign         = NewError("align")
 	ErrSize          = NewError("size")
 	ErrSemantic      = NewError("semantic")
@@ -36,9 +37,11 @@ var (
 
 // Connection errors
 const (
-	ErrTimeout = NewError("timeout")
-	ErrNoData  = NewError("no data")
-	ErrBad     = NewError("closed or invalid connection object")
+	ErrEOF     = NewError("i/o eof")
+	ErrAbort   = NewError("i/o aborted")
+	ErrTimeout = NewError("i/o timeout")
+	ErrBad     = NewError("i/o bad connection")
+	ErrIO      = NewError("i/o error")
 )
 
 // Congestion Control errors/events

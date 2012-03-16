@@ -13,7 +13,8 @@ type Bytes interface {
 }
 
 // A SegmentConn is an I/O facility that explicitly reads/writes data in the form
-// of indivisible blocks of data. 
+// of indivisible blocks of data. Implementors of this interface MUST only return
+// i/o errors defined in the dccp package (ErrEOF, ErrBad, ErrTimeout, etc.)
 type SegmentConn interface {
 	// GetMTU returns th he largest allowable block size (for read and write). The MTU may vary.
 	GetMTU() int
@@ -46,6 +47,8 @@ type SegmentDialAccepter interface {
 	Close() error
 }
 
+// Implementors of this interface MUST only return i/o errors defined in the dccp package (ErrEOF,
+// ErrBad, ErrTimeout, etc.)
 type HeaderConn interface {
 	// GetMTU() returns the Maximum Transmission Unit size. This is the maximum
 	// byte size of the header and app data wire-format footprint.

@@ -22,16 +22,16 @@ type Link interface {
 	// Writes smaller than this are guaranteed to be sent whole
 	GetMTU() int
 
-	// ReadFrom receives the next packet of data. 
-	// It returns net.Error errors. So in the event of a timeout e.g.  it will return a
-	// net.Error with Timeout() true, rather than an ErrTimeout. The latter is used internally
-	// to DCCP in types that implement HeaderConn and SegmentConn.
+	// ReadFrom receives the next packet of data. It returns net.Error errors. So in the event
+	// of a timeout e.g. it will return a net.Error with Timeout() true, rather than an
+	// ErrTimeout. The latter is used internally to DCCP in types that implement HeaderConn and
+	// SegmentConn.
 	ReadFrom(buf []byte) (n int, addr net.Addr, err error)
 
 	// WriteTo sends a packet of data
 	WriteTo(buf []byte, addr net.Addr) (n int, err error)
 
-	// SetReadTimeout has the same meaning as net.Conn.SetReadTimeout
+	// SetReadDeadline has the same meaning as net.Conn.SetReadDeadline
 	SetReadDeadline(t time.Time) error
 
 	// Close terminates the link gracefully

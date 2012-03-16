@@ -5,8 +5,6 @@
 package sandbox
 
 import (
-	"io"
-	"os"
 	"sync"
 	"github.com/petar/GoDCCP/dccp"
 )
@@ -34,7 +32,7 @@ func (hhp *headerHalfPipe) GetMTU() int {
 func (hhp *headerHalfPipe) ReadHeader() (h *dccp.Header, err error) {
 	h, ok := <-hhp.read
 	if !ok {
-		return nil, io.EOF
+		return nil, ErrEOF
 	}
 	return h, nil
 }
@@ -43,7 +41,7 @@ func (hhp *headerHalfPipe) WriteHeader(h *dccp.Header) (err error) {
 	hhp.Lock()
 	defer hhp.Unlock()
 	if hhp.write == nil {
-		return os.EBADF
+		return ErrBad
 	}
 	hhp.write <- h
 	return nil
@@ -54,7 +52,7 @@ func (hhp *headerHalfPipe) Close() error {
 	defer hhp.Unlock()
 
 	if hhp.write == nil {
-		return os.EBADF
+		return ErrBad
 	}
 	close(hhp.write)
 	hhp.write = nil

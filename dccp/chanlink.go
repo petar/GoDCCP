@@ -6,7 +6,6 @@ package dccp
 
 import (
 	"net"
-	"syscall"
 	"time"
 )
 
@@ -38,12 +37,12 @@ func (l *ChanLink) ReadFrom(buf []byte) (n int, addr net.Addr, err error) {
 	in := l.in
 	l.Unlock()
 	if in == nil {
-		return 0, nil, syscall.EBADF
+		return 0, nil, ErrBad
 	}
 
 	p, ok := <-in
 	if !ok {
-		return 0, nil, syscall.EIO
+		return 0, nil, ErrIO
 	}
 	n = copy(buf, p)
 	if n != len(p) {
@@ -57,7 +56,7 @@ func (l *ChanLink) WriteTo(buf []byte, addr net.Addr) (n int, err error) {
 	out := l.out
 	l.Unlock()
 	if out == nil {
-		return 0, syscall.EBADF
+		return 0, ErrBad
 	}
 
 	p := make([]byte, len(buf))

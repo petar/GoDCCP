@@ -6,7 +6,6 @@ package dccp
 
 import (
 	"fmt"
-	"syscall"
 )
 
 // This is an approximate upper bound on the size of options that are
@@ -28,7 +27,7 @@ func (c *Conn) WriteSegment(b []byte) error {
 	c.writeDataLk.Lock()
 	defer c.writeDataLk.Unlock()
 	if c.writeData == nil {
-		return syscall.EBADF
+		return ErrBad
 	}
 	c.writeData <- b
 	return nil
@@ -66,7 +65,8 @@ func (c *Conn) Error() error {
 	return c.err
 }
 
-// Close closes the connection, Section 8.3.
+// Close implements SegmentConn.Close.
+// It closes the connection, Section 8.3.
 func (c *Conn) Close() error {
 	c.Lock()
 	defer c.Unlock()
@@ -97,10 +97,13 @@ func (c *Conn) Abort() {
 	c.abortWith(ResetAborted)
 }
 
+// LocalLabel implements SegmentConn.LocalLabel
 func (c *Conn) LocalLabel() Bytes { return c.hc.LocalLabel() }
 
+// RemoteLabel implements SegmentConn.RemoteLabel
 func (c *Conn) RemoteLabel() Bytes { return c.hc.RemoteLabel() }
 
+// SetReadExpire implements SegmentConn.SetReadExpire
 func (c *Conn) SetReadExpire(nsec int64) error {
-	panic("un")
+	panic("not implemented")
 }

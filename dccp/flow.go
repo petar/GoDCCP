@@ -6,23 +6,22 @@ package dccp
 
 import (
 	"net"
-	"syscall"
 	"time"
 )
 
-// flow{} is a SegmentConn
+// flow is an implementation of SegmentConn
 type flow struct {
 	addr net.Addr
 	m    *Mux
 	ch   chan muxHeader
 	mtu  int
 
-	Mutex       // protects the variables below
-	local       *Label
-	remote      *Label
-	lastRead    time.Time
-	lastWrite   time.Time
-	readTimeout time.Duration
+	Mutex        // protects the variables below
+	local        *Label
+	remote       *Label
+	lastRead     time.Time
+	lastWrite    time.Time
+	readDeadline time.Time
 
 	rlk Mutex // synchronizes calls to Read()
 }
@@ -34,30 +33,29 @@ type flow struct {
 func newFlow(addr net.Addr, m *Mux, ch chan muxHeader, mtu int, local, remote *Label) *flow {
 	now := time.Now()
 	return &flow{
-		addr:        addr,
-		local:       local,
-		remote:      remote,
-		lastRead:    now,
-		lastWrite:   now,
-		readTimeout: 0,
-		m:           m,
-		ch:          ch,
-		mtu:         mtu,
+		addr:         addr,
+		local:        local,
+		remote:       remote,
+		lastRead:     now,
+		lastWrite:    now,
+		readDeadline: time.Now().Sub(time.Second),	// time in the past
+		m:            m,
+		ch:           ch,
+		mtu:          mtu,
 	}
 }
 
 // GetMTU returns the largest size of read/write block
 func (f *flow) GetMTU() int { return f.mtu }
 
-// SetReadTimeout implements SegmentConn.SetReadExpire
+// SetReadExpire implements SegmentConn.SetReadExpire
 func (f *flow) SetReadExpire(nsec int64) error {
 	if nsec < 0 {
-		return syscall.EINVAL
+		return ErrInvalid
 	}
 	f.Lock()
 	defer f.Unlock()
-	??
-	f.readTimeout = time.Duration(nsec)
+	f.readDeadline = time.Now().Add(time.Duration(nsec))
 	return nil
 }
 
@@ -89,6 +87,8 @@ func (f *flow) getRemote() *Label {
 	defer f.Unlock()
 	return f.remote
 }
+
+// RemoteLabel implements SegmentConn.RemoteLabel
 func (f *flow) RemoteLabel() Bytes { return f.getRemote() }
 
 func (f *flow) getLocal() *Label {
@@ -96,18 +96,21 @@ func (f *flow) getLocal() *Label {
 	defer f.Unlock()
 	return f.local
 }
+
+// LocalLabel implements SegmentConn.LocalLabel
 func (f *flow) LocalLabel() Bytes { return f.getLocal() }
 
 func (f *flow) String() string {
 	return f.getLocal().String() + "--" + f.getRemote().String()
 }
 
+// WriteSegment implements SegmentConn.WriteSegment
 func (f *flow) WriteSegment(block []byte) error {
 	f.Lock()
 	m := f.m
 	f.Unlock()
 	if m == nil {
-		return syscall.EBADF
+		return ErrBad
 	}
 	err := m.write(&muxMsg{f.getLocal(), f.getRemote()}, block, f.addr)
 	if err != nil {
@@ -118,16 +121,18 @@ func (f *flow) WriteSegment(block []byte) error {
 	return err
 }
 
+// ReadSegment implements SegmentConn.ReadSegment
 func (f *flow) ReadSegment() (block []byte, err error) {
 	f.rlk.Lock()
 	defer f.rlk.Unlock()
 
 	f.Lock()
 	ch := f.ch
-	readTimeout := f.readTimeout
+	readDeadline := f.readDeadline
 	f.Unlock()
+	readTimeout := readDeadline.Sub(time.Now())
 	if ch == nil {
-		return nil, syscall.EIO
+		return nil, ErrBad
 	}
 
 	var timer *time.Timer
@@ -143,10 +148,10 @@ func (f *flow) ReadSegment() (block []byte, err error) {
 	select {
 	case header, ok = <-ch:
 		if !ok {
-			return nil, syscall.EIO
+			return nil, ErrIO
 		}
 	case <-tmoch:
-		return nil, syscall.EAGAIN
+		return nil, ErrTimeout
 	}
 
 	f.Lock()
@@ -166,6 +171,7 @@ func (f *flow) foreclose() {
 	}
 }
 
+// Close implements SegmentConn.Close
 func (f *flow) Close() error {
 	f.Lock()
 	if f.ch != nil {
@@ -176,7 +182,7 @@ func (f *flow) Close() error {
 	f.m = nil
 	f.Unlock()
 	if m == nil {
-		return syscall.EBADF
+		return ErrBad
 	}
 	m.del(f.getLocal(), f.getRemote())
 	return nil

@@ -6,7 +6,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path"
 	"github.com/petar/GoDCCP/dccp"
@@ -67,7 +66,7 @@ func main() {
 			fmt.Printf("pre-read\n")
 			_, err := serverConn.ReadSegment()
 			fmt.Printf("post-read\n")
-			if err == io.EOF {
+			if err == ErrEOF {
 				break 
 			} else if err != nil {
 				fmt.Printf("error reading (%s)", err)

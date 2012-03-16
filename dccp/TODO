@@ -1,9 +1,10 @@
 
 TODO PRE-RELEASE ————————————————————————————————————————————————————————————————————————————————
 
+* implement Conn.SetReadExpire
+
 * ErrTimeout and EAGAIN are all mixed up. Make sure everything is in terms of ErrTimeout.
 	* fix the sandbox accordingly
-	* in fact, remove all reliance on Go errors (EIO, EBADF, etc.)
 
 * address Ack-Sync pair in client connection establishement, marked XXX in code
 

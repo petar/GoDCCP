@@ -4,11 +4,6 @@
 
 package dccp
 
-import (
-	"io"
-	"syscall"
-)
-
 // Conn 
 type Conn struct {
 	run      *Runtime
@@ -30,11 +25,6 @@ type Conn struct {
 	writeNonDataLk Mutex
 	writeNonData   chan *Header // inject() sends wire-format non-Data packets (higher priority) to writeLoop()
 }
-
-var (
-	ErrEOF   = io.EOF
-	ErrAbort = syscall.EIO
-)
 
 // Waiter returns a Waiter instance that can wait until all goroutines
 // associated with the connection have completed.

@@ -6,7 +6,6 @@ package dccp
 
 import (
 	"net"
-	"syscall"
 	"time"
 )
 
@@ -61,7 +60,7 @@ func NewMux(link Link) *Mux {
 func (m *Mux) Accept() (c SegmentConn, err error) {
 	f, ok := <-m.acceptChan
 	if !ok {
-		return nil, syscall.EBADF
+		return nil, ErrBad
 	}
 	return f, nil
 }
@@ -93,7 +92,7 @@ func (m *Mux) Close() error {
 	}
 	m.Unlock()
 	if link == nil {
-		return syscall.EBADF
+		return ErrBad
 	}
 	return link.Close()
 }
@@ -333,7 +332,7 @@ func (m *Mux) write(msg *muxMsg, block []byte, addr net.Addr) error {
 	link := m.link
 	m.Unlock()
 	if link == nil {
-		return syscall.EBADF
+		return ErrBad
 	}
 
 	buf := make([]byte, muxMsgFootprint+len(block))
