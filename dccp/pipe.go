@@ -36,7 +36,7 @@ func (c *Conn) idleLoop() {
 			break
 		}
 		c.logger.E("conn", "Idle", "")
-		c.run.Sleep(max64(RTT_MIN, min64(rtt, RTT_DEFAULT)))
+		c.run.Sleep(max64(RTT_MIN, min64(rtt, RoundtripDefault)))
 	}
 }
 

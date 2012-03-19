@@ -24,7 +24,16 @@ const (
 
 	// Counter increase since last ack'd window
 	WindowCounterAckInc = 4
+
+	// A nil value for window counter variables
+	WindowCounterNil = WindowCounterMod
 )
+
+// isNilWindowCounter returns true if and only if -WindowCounterMod < ccval and
+// ccval < WindowCounterMod.
+func isNilWindowCounter(ccval int8) bool {
+	return ccval % WindowCounterMod != ccval
+}
 
 // diffWindowCounter returns the smallest non-negative integer than needs to be added to y
 // to result in x, in the integers modulo WindowCounterMod.

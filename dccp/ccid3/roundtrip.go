@@ -10,15 +10,14 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-// receiverRoundtripEstimator is the data structure that estimates the RTT at the receiver end.
+// receiverRoundtripEstimator is a data structure that estimates the RTT at the receiver end.
 // It's function is described in RFC 4342, towards the end of Section 8.1.
 //
 // TOOD: Because of the necessary constraint that measurements only come from packet pairs
 // whose CCVals differ by at most 4, this procedure does not work when the inter-packet
 // sending times are significantly greater than the RTT, resulting in packet pairs whose
 // CCVals differ by 5.  Explicit RTT measurement techniques, such as Timestamp and Timestamp
-// Echo, should be used in that case.
-//
+// Echo, should be used in this case.
 type receiverRoundtripEstimator struct {
 	logger *dccp.Logger
 
@@ -36,14 +35,13 @@ type receiverRoundtripEstimator struct {
 	// A value of 0 indicates that no packet with this CCVal has been received yet.
 	ccvalTime [WindowCounterMod]int64
 }
-const CCValNil = 0xff
 
 // Init initializes the RTT estimator algorithm
 func (t *receiverRoundtripEstimator) Init(logger *dccp.Logger) {
 	t.logger = logger
 	t.rtt = 0
 	t.rttTime = 0
-	t.ccvalNow = CCValNil
+	t.ccvalNow = WindowCounterNil
 	for i, _ := range t.ccvalTime {
 		t.ccvalTime[i] = 0
 	}
@@ -66,7 +64,7 @@ func (t *receiverRoundtripEstimator) String() string {
 }
 
 // receiver calls OnRead every time a packet is received
-func (t *receiverRoundtripEstimator) OnRead(ccval byte, now int64) {
+func (t *receiverRoundtripEstimator) OnRead(seqno int64, ccval byte, now int64) {
 	ccval = ccval % WindowCounterMod // Safety
 
 	// Update the received ccval history
@@ -82,7 +80,7 @@ func (t *receiverRoundtripEstimator) OnRead(ccval byte, now int64) {
 	// The test for wrap around, lessWindowCounterMod(ccval, t.ccvalNow), may
 	// produce both false positves and false negatives in some circumstances.
 	// TODO(petar): Describe how both cases occur and what are the consequences.
-	if t.ccvalNow == CCValNil || lessWindowCounterMod(ccval, t.ccvalNow) {
+	if isNilWindowCounter(t.ccvalNow) || lessWindowCounterMod(ccval, t.ccvalNow) {
 		t.Init(t.logger)
 	} else {
 		c := (t.ccvalNow+1) % WindowCounterMod
@@ -94,10 +92,10 @@ func (t *receiverRoundtripEstimator) OnRead(ccval byte, now int64) {
 	t.ccvalNow = ccval
 	t.ccvalTime[ccval] = now
 
-	t.calcCCValRTT()
+	t.calcCounterValueBasedRTT()
 }
 
-// calcCCValRTT calculates RTT based on CCVal timing.
+// calcCounterValueBasedRTT calculates RTT based on CCVal timing.
 // This receiver-side approximation avoids direct measurement, while essentially trying to
 // approximate the sender's opinion of the RTT.
 //
@@ -106,8 +104,8 @@ func (t *receiverRoundtripEstimator) OnRead(ccval byte, now int64) {
 // sending times are significantly greater than the RTT, resulting in packet pairs whose
 // CCVals differ by 5.  Explicit RTT measurement techniques, such as Timestamp and Timestamp
 // Echo, should be used in that case. (End of Section 8.1, RFC 4243)
-func (t *receiverRoundtripEstimator) calcCCValRTT() {
-	if t.ccvalNow == CCValNil || t.ccvalTime[t.ccvalNow] == 0 {
+func (t *receiverRoundtripEstimator) calcCounterValueBasedRTT() {
+	if isNilWindowCounter(t.ccvalNow) || t.ccvalTime[t.ccvalNow] == 0 {
 		t.logger.E("r", "rrtt-now", "rRTT no current ccval")
 		return
 	}
@@ -147,43 +145,44 @@ func (t *receiverRoundtripEstimator) RTT(now int64) (rtt int64, estimated bool) 
 // senderRoundtripEstimator is a data structure that estimates the RTT at the sender end.
 type senderRoundtripEstimator struct {
 	estimate int64
-	nSent    int
-	history  [SENDER_RTT_HISTORY]sendTime  // Circular array, recording departure times of last few packets
+	k        int				// The index of the next history cell to write in
+	history  [SenderRoundtripHistoryLen]sendTime	// Circular array, recording departure times of last few packets
 }
 
 type sendTime struct {
 	SeqNo int64
-	Time  int64
+	Time  int64	// Time=0 indicates that the struct is nil
 }
 
 const (
-	SENDER_RTT_HISTORY = 20 // How many timestamps of sent packets to remember
-	SENDER_RTT_WEIGHT_NEW = 1
-	SENDER_RTT_WEIGHT_OLD = 9
+	SenderRoundtripHistoryLen = 20 // How many timestamps of sent packets to remember
+	SenderRoundtripWeightNew = 1
+	SenderRoundtripWeightOld = 9
 )
 
 // Init resets the senderRoundtripEstimator object for new use
 func (t *senderRoundtripEstimator) Init() {
 	t.estimate = 0
-	t.nSent = 0
+	t.k = 0
 	for i, _ := range t.history {
-		t.history[i] = sendTime{} // Zero SeqNo indicates no data
+		t.history[i] = sendTime{} // Zero Time indicates no data
 	}
 }
 
 // Sender calls OnWrite for every packet sent.
 func (t *senderRoundtripEstimator) OnWrite(seqNo int64, now int64) {
-	t.history[t.nSent % SENDER_RTT_HISTORY] = sendTime{seqNo, now}
-	t.nSent++
-	if t.nSent > 3 * SENDER_RTT_HISTORY {
-		// Keep nSent small, yet reflecting that we've had some history already
-		t.nSent = SENDER_RTT_HISTORY + ((t.nSent+1) % SENDER_RTT_HISTORY)
+	t.history[t.k % SenderRoundtripHistoryLen] = sendTime{seqNo, now}
+	t.k++
+	// Keep k small
+	if t.k > 100 * SenderRoundtripHistoryLen {
+		t.k %= SenderRoundtripHistoryLen
 	}
 }
 
+// find returns the sendTime of the packet with the given seqNo, if still in the history slice
 func (t *senderRoundtripEstimator) find(seqNo int64) *sendTime {
-	for i := 0; i < SENDER_RTT_HISTORY && i < t.nSent; i++ {
-		r := &t.history[(t.nSent-i-1) % SENDER_RTT_HISTORY]
+	for i := 0; i < len(t.history); i++ {
+		r := &t.history[i]
 		if r.SeqNo == seqNo {
 			return r
 		}
@@ -227,23 +226,24 @@ func (t *senderRoundtripEstimator) OnRead(fb *dccp.FeedbackHeader) bool {
 	if est_old == 0 {
 		t.estimate = est
 	} else {
-		t.estimate = (est*SENDER_RTT_WEIGHT_NEW + est_old*SENDER_RTT_WEIGHT_OLD) / 
-			(SENDER_RTT_WEIGHT_NEW + SENDER_RTT_WEIGHT_OLD)
+		t.estimate = (est * SenderRoundtripWeightNew + est_old * SenderRoundtripWeightOld) / 
+			(SenderRoundtripWeightNew + SenderRoundtripWeightOld)
 	}
 
 	return true
 }
 
 // RTT returns the current round-trip time estimate in ns, or the default if no estimate is
-// available yet. estimated is set if the RTT is estimated (as opposed to default).
+// available due to shortage of samples. estimated is set if the RTT is estimated based on sample
+// data (as opposed to being equal to a default value).
 func (t *senderRoundtripEstimator) RTT() (rtt int64, estimated bool) {
 	if t.estimate <= 0 {
-		return dccp.RTT_DEFAULT, false
+		return dccp.RoundtripDefault, false
 	}
 	return t.estimate, true
 }
 
-// HasRTT returns true if senderRoundtripEstimator has an RTT sample
+// HasRTT returns true if senderRoundtripEstimator has enough sample data for an estimate
 func (t *senderRoundtripEstimator) HasRTT() bool {
 	return t.estimate > 0
 }

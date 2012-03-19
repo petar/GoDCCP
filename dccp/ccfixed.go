@@ -52,7 +52,7 @@ func (scc *fixedRateSenderControl) GetID() byte { return CCID_FIXED }
 
 func (scc *fixedRateSenderControl) GetCCMPS() int32 { return 1e9 }
 
-func (scc *fixedRateSenderControl) GetRTT() int64 { return RTT_DEFAULT }
+func (scc *fixedRateSenderControl) GetRTT() int64 { return RoundtripDefault }
 
 func (scc *fixedRateSenderControl) OnWrite(ph *PreHeader) (ccval byte, options []*Option) {
 	return 0, nil

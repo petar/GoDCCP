@@ -153,7 +153,7 @@ func (r *receiver) OnRead(ff *dccp.FeedforwardHeader) error {
 	}
 
 	// Update RTT estimate
-	r.receiverRoundtripEstimator.OnRead(ff.CCVal, ff.Time)
+	r.receiverRoundtripEstimator.OnRead(ff.SeqNo, ff.CCVal, ff.Time)
 	rtt, est := r.receiverRoundtripEstimator.RTT(ff.Time)
 	r.logger.E("r", "rrtt-h", r.receiverRoundtripEstimator.String())
 	r.logger.E("r", "rrtt", fmt.Sprintf("rRTT=%s est=%v", dccp.Nstoa(rtt), est), ff, 

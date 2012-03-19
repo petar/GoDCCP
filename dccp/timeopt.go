@@ -46,7 +46,6 @@ func decodeTimestamp(d []byte) uint32 {
 	return Decode4ByteUint(d)
 }
 
-// —————
 // ElapsedTimeOption, Section 13.2
 // This option is permitted in any DCCP packet that contains an Acknowledgement Number; such
 // options received on other packet types MUST be ignored.  It indicates how much time has
