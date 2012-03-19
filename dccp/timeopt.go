@@ -4,12 +4,6 @@
 
 package dccp
 
-const (
-	TenMicroInNano   = 1e4 // 10 microseconds in nanoseconds
-	OneSecInTenMicro = 1e5 // 1 seconds in ten microsecond units
-)
-
-// —————
 // TimestampOption, Section 13.1
 // Time values are based on a circular uint32 value at 10 microseconds granularity
 type TimestampOption struct {
@@ -55,7 +49,12 @@ type ElapsedTimeOption struct {
 	Elapsed uint32
 }
 
-const MaxElapsedTime = 4294967295 // Maximum distinguishable elapsed time in ten microsecond units
+const (
+	TenMicroInNano       = 1e4		// 10 microseconds in nanoseconds
+	OneSecInTenMicro     = 1e5		// 1 seconds in ten microsecond units
+	MaxTenMicro          = 4294967295	// Maximum allowed time in ten microsecond units
+	MaxElapsedInTenMicro = MaxTenMicro	// Maximum elapsed time in ten microsecond units
+)
 
 func (opt *ElapsedTimeOption) Encode() (*Option, error) {
 	return &Option{
@@ -67,10 +66,10 @@ func (opt *ElapsedTimeOption) Encode() (*Option, error) {
 
 // d must be a 4-byte slice
 func encodeElapsed(elapsed uint32, d []byte) []byte {
-	if elapsed >= MaxElapsedTime {
-		elapsed = MaxElapsedTime
+	if elapsed >= MaxElapsedInTenMicro {
+		elapsed = MaxElapsedInTenMicro
 	}
-	if elapsed < OneSecInTenMicro/2 {
+	if elapsed < OneSecInTenMicro / 2 {
 		assertFitsIn16Bits(uint64(elapsed))
 		EncodeUint16(uint16(elapsed), d[0:2])
 		return d[0:2]
@@ -154,21 +153,21 @@ func DecodeTimestampEchoOption(opt *Option) *TimestampEchoOption {
 	}
 }
 
-// TenMicroDiff() returns the circular difference between t0 an t1 in nanoseconds. Note
-// that t0 and t1 are themselves given in 10 microsecond circular units
+// TenMicroDiff returns the circular difference between t0 an t1.
+// The arguments and the result are in ten microsecond units.
 func TenMicroDiff(t0, t1 uint32) uint32 { return minu32(t0-t1, t1-t0) }
 
 // TenMicroFromNano converts a time length given in nanoseconds into 
-// units of 10 microseconds, capped by MaxElapsedTime
+// units of 10 microseconds, capped by MaxTenMicro.
 func TenMicroFromNano(ns int64) uint32 {
 	if ns < 0 {
 		panic("negative time")
 	}
-	return uint32(max64(ns/TenMicroInNano, MaxElapsedTime))
+	return uint32(min64(ns/TenMicroInNano, MaxTenMicro))
 }
 
 // NanoFromTenMicro converts a time length given in ten microsecond units into
-// nanoseconds, without exceeding the maximum allowed time limit
-func NanoFromTenMicro(tus uint32) int64 {
-	return min64(int64(tus)*TenMicroInNano, MaxElapsedTime*TenMicroInNano)
+// nanoseconds, without exceeding the maximum allowed time limit of MaxTenMicro.
+func NanoFromTenMicro(tenmicro uint32) int64 {
+	return min64(int64(tenmicro)*TenMicroInNano, MaxTenMicro*TenMicroInNano)
 }
