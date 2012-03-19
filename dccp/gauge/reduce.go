@@ -11,7 +11,7 @@ import (
 )
 
 // LogReducer is a dccp.LogWriter which processes the logs to a form
-// that is convenient to illustrate via tools like D3 (Data-Driven Design).
+// that is convenient as input to illustration tools
 type LogReducer struct {
 	sync.Mutex
 	checkIns []*dccp.LogRecord
