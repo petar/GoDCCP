@@ -34,7 +34,7 @@ func TestTimestampOption(t *testing.T) {
 		}
 		t0_ := opt0.Timestamp
 		t1_ := opt1.Timestamp
-		delta_ := TenMicroTimeDiff(t0_, t1_)
+		delta_ := TenMicroDiff(t0_, t1_)
 		if delta != delta_ {
 			t.Errorf("Expecting %d, got %d", delta, delta_)
 		}
@@ -83,7 +83,7 @@ func TestTimestampEchoOption(t *testing.T) {
 		t0_ := ech0.Timestamp
 		t1_ := ech1.Timestamp
 
-		delta_ := TenMicroTimeDiff(t0_, t1_)
+		delta_ := TenMicroDiff(t0_, t1_)
 		if delta != delta_ {
 			t.Errorf("delta: expecting %d, got %d", delta, delta_)
 		}

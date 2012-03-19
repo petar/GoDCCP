@@ -11,14 +11,14 @@ import (
 
 // CCID3-specific options
 const (
-	OptionLossEventRate = 192
-	OptionLossIntervals = 193
-	OptionReceiveRate   = 194
-	// OptionLossDigest IS NOT a part of CCID3. It is an experimental extension.
-	OptionLossDigest = 210
+	OptionLossEventRate   = 192
+	OptionLossIntervals   = 193
+	OptionReceiveRate     = 194
+	// OptionLossDigest and OptionRoundtripReport ARE NOT part of CCID3. They are our own extension.
+	OptionLossDigest      = 210
+	OptionRoundtripReport = 211
 )
 
-// —————
 // Unencoded option is a type that knows how to encode itself into a dccp.Option
 type UnencodedOption interface {
 	Encode() (*dccp.Option, error)
@@ -35,7 +35,6 @@ func encodeOption(u UnencodedOption) *dccp.Option {
 	return opt
 }
 
-// —————
 // RFC 4342, Section 8.5
 type LossEventRateOption struct {
 	// RateInv is the inverse of the loss event rate, rounded UP, as calculated by the receiver.
@@ -55,12 +54,12 @@ func DecodeLossEventRateOption(opt *dccp.Option) *LossEventRateOption {
 	if opt.Type != OptionLossEventRate || len(opt.Data) != 4 {
 		return nil
 	}
-	return &LossEventRateOption{RateInv: dccp.Decode4ByteUint(opt.Data[0:4])}
+	return &LossEventRateOption{RateInv: dccp.DecodeUint32(opt.Data[0:4])}
 }
 
 func (opt *LossEventRateOption) Encode() (*dccp.Option, error) {
 	d := make([]byte, 4)
-	dccp.Encode4ByteUint(opt.RateInv, d)
+	dccp.EncodeUint32(opt.RateInv, d)
 	return &dccp.Option{
 		Type:      OptionLossEventRate,
 		Data:      d,
@@ -68,8 +67,7 @@ func (opt *LossEventRateOption) Encode() (*dccp.Option, error) {
 	}, nil
 }
 
-// —————
-// RFC 4342, Section 8.6
+// LossIntervalsOption is described in RFC 4342, Section 8.6.
 // Intervals are listed in reverse chronological order.
 // Loss interval sequence numbers are delta encoded starting from the Acknowledgement
 // Number.  Therefore, Loss Intervals options MUST NOT be sent on packets without an
@@ -96,7 +94,7 @@ func DecodeLossIntervalsOption(opt *dccp.Option) *LossIntervalsOption {
 	if k > MaxLossIntervals || r != 0 {
 		return nil
 	}
-	skip := dccp.Decode1ByteUint(opt.Data[0:1])
+	skip := dccp.DecodeUint8(opt.Data[0:1])
 	intervals := make([]*LossInterval, k)
 	for i := 0; i < k; i++ {
 		start := 1 + lossIntervalFootprint*i
@@ -119,7 +117,7 @@ func (opt *LossIntervalsOption) Encode() (*dccp.Option, error) {
 		return nil, dccp.ErrOverflow
 	}
 	d := make([]byte, 1+lossIntervalFootprint*len(opt.LossIntervals))
-	dccp.Encode1ByteUint(opt.SkipLength, d[0:1])
+	dccp.EncodeUint8(opt.SkipLength, d[0:1])
 	for i, lossInterval := range opt.LossIntervals {
 		j := 1 + i*lossIntervalFootprint
 		if lossInterval.encode(d[j:j+lossIntervalFootprint]) != nil {
@@ -153,35 +151,34 @@ func (li *LossInterval) encode(p []byte) error {
 	if len(p) != 9 {
 		return dccp.ErrSize
 	}
-	if !dccp.FitsIn3Bytes(uint64(li.LosslessLength)) ||
+	if !dccp.FitsIn24Bits(uint64(li.LosslessLength)) ||
 		!dccp.FitsIn23Bits(uint64(li.LossLength)) ||
-		!dccp.FitsIn3Bytes(uint64(li.DataLength)) {
+		!dccp.FitsIn24Bits(uint64(li.DataLength)) {
 		return dccp.ErrOverflow
 	}
 
-	dccp.Encode3ByteUint(li.LosslessLength, p[0:3])
+	dccp.EncodeUint24(li.LosslessLength, p[0:3])
 	l := li.LossLength
 	if li.ECNNonceEcho {
 		l |= _24thBit
 	}
-	dccp.Encode3ByteUint(l, p[3:6])
-	dccp.Encode3ByteUint(li.DataLength, p[6:9])
+	dccp.EncodeUint24(l, p[3:6])
+	dccp.EncodeUint24(li.DataLength, p[6:9])
 
 	return nil
 }
 
 func decodeLossInterval(p []byte) *LossInterval {
 	li := &LossInterval{}
-	li.LosslessLength = dccp.Decode3ByteUint(p[0:3])
-	li.LossLength = dccp.Decode3ByteUint(p[3:6])
+	li.LosslessLength = dccp.DecodeUint24(p[0:3])
+	li.LossLength = dccp.DecodeUint24(p[3:6])
 	li.ECNNonceEcho = (li.LossLength&_24thBit != 0)
 	li.LossLength &= ^uint32(_24thBit)
-	li.DataLength = dccp.Decode3ByteUint(p[6:9])
+	li.DataLength = dccp.DecodeUint24(p[6:9])
 	return li
 }
 
-// —————
-// RFC 4342, Section 8.3
+// ReceiveRateOption is described in RFC 4342, Section 8.3.
 type ReceiveRateOption struct {
 	// The rate at which receiver has received data since it last send an Ack; in bytes per second
 	Rate uint32
@@ -191,12 +188,12 @@ func DecodeReceiveRateOption(opt *dccp.Option) *ReceiveRateOption {
 	if opt.Type != OptionReceiveRate || len(opt.Data) != 4 {
 		return nil
 	}
-	return &ReceiveRateOption{Rate: dccp.Decode4ByteUint(opt.Data[0:4])}
+	return &ReceiveRateOption{Rate: dccp.DecodeUint32(opt.Data[0:4])}
 }
 
 func (opt *ReceiveRateOption) Encode() (*dccp.Option, error) {
 	d := make([]byte, 4)
-	dccp.Encode4ByteUint(opt.Rate, d)
+	dccp.EncodeUint32(opt.Rate, d)
 	return &dccp.Option{
 		Type:      OptionReceiveRate,
 		Data:      d,
@@ -204,7 +201,6 @@ func (opt *ReceiveRateOption) Encode() (*dccp.Option, error) {
 	}, nil
 }
 
-// —————
 // The LossDigest option directly carries, from the receiver to the sender, the types of loss
 // information that a CCID3 sender would have to reconstruct from the LossIntervals option.  This is
 // an extension to the RFC specification.
@@ -222,17 +218,39 @@ func DecodeLossDigestOption(opt *dccp.Option) *LossDigestOption {
 		return nil
 	}
 	return &LossDigestOption{
-		RateInv:      dccp.Decode4ByteUint(opt.Data[0:4]),
-		NewLossCount: dccp.Decode1ByteUint(opt.Data[4:5]),
+		RateInv:      dccp.DecodeUint32(opt.Data[0:4]),
+		NewLossCount: dccp.DecodeUint8(opt.Data[4:5]),
 	}
 }
 
 func (opt *LossDigestOption) Encode() (*dccp.Option, error) {
 	d := make([]byte, 5)
-	dccp.Encode4ByteUint(opt.RateInv, d)
-	dccp.Encode1ByteUint(opt.NewLossCount, d[4:])
+	dccp.EncodeUint32(opt.RateInv, d)
+	dccp.EncodeUint8(opt.NewLossCount, d[4:])
 	return &dccp.Option{
 		Type:      OptionLossDigest,
+		Data:      d,
+		Mandatory: false,
+	}, nil
+}
+
+// RoundtripReportOption is used by the sender to communicate its RTT estimate to the receiver.
+type RoundtripReportOption struct {
+	Roundtrip uint32 ??
+}
+
+func DecodeRoundtripReportOption(opt *dccp.Option) *RoundtripReportOption {
+	if opt.Type != OptionRoundtripReport || len(opt.Data) != 4 {
+		return nil
+	}
+	return &RoundtripReportOption{Roundtrip: dccp.DecodeUint32(opt.Data[0:4])}
+}
+
+func (opt *RoundtripReportOption) Encode() (*dccp.Option, error) {
+	d := make([]byte, 4)
+	dccp.EncodeUint32(opt.Roundtrip, d)
+	return &dccp.Option{
+		Type:      OptionRoundtripReport,
 		Data:      d,
 		Mandatory: false,
 	}, nil

@@ -10,14 +10,14 @@ package dccp
 
 // Wire format to integers
 
-func Decode1ByteUint(w []byte) uint8 {
+func DecodeUint8(w []byte) uint8 {
 	if len(w) != 1 {
 		panic("size")
 	}
 	return uint8(w[0])
 }
 
-func Decode2ByteUint(w []byte) uint16 {
+func DecodeUint16(w []byte) uint16 {
 	if len(w) != 2 {
 		panic("size")
 	}
@@ -27,7 +27,7 @@ func Decode2ByteUint(w []byte) uint16 {
 	return u
 }
 
-func Decode3ByteUint(w []byte) uint32 {
+func DecodeUint24(w []byte) uint32 {
 	if len(w) != 3 {
 		panic("size")
 	}
@@ -38,7 +38,7 @@ func Decode3ByteUint(w []byte) uint32 {
 	return u
 }
 
-func Decode4ByteUint(w []byte) uint32 {
+func DecodeUint32(w []byte) uint32 {
 	if len(w) != 4 {
 		panic("size")
 	}
@@ -50,7 +50,7 @@ func Decode4ByteUint(w []byte) uint32 {
 	return u
 }
 
-func Decode6ByteUint(w []byte) uint64 {
+func DecodeUint48(w []byte) uint64 {
 	if len(w) != 6 {
 		panic("size")
 	}
@@ -66,14 +66,14 @@ func Decode6ByteUint(w []byte) uint64 {
 
 // Integers to wire format
 
-func Encode1ByteUint(u uint8, w []byte) {
+func EncodeUint8(u uint8, w []byte) {
 	if len(w) != 1 {
 		panic("size")
 	}
 	w[0] = u
 }
 
-func Encode2ByteUint(u uint16, w []byte) {
+func EncodeUint16(u uint16, w []byte) {
 	if len(w) != 2 {
 		panic("size")
 	}
@@ -81,7 +81,7 @@ func Encode2ByteUint(u uint16, w []byte) {
 	w[0] = uint8((u >> 8) & 0xff)
 }
 
-func Encode3ByteUint(u uint32, w []byte) {
+func EncodeUint24(u uint32, w []byte) {
 	if len(w) != 3 {
 		panic("size")
 	}
@@ -93,7 +93,7 @@ func Encode3ByteUint(u uint32, w []byte) {
 	}
 }
 
-func Encode4ByteUint(u uint32, w []byte) {
+func EncodeUint32(u uint32, w []byte) {
 	if len(w) != 4 {
 		panic("size")
 	}
@@ -103,7 +103,7 @@ func Encode4ByteUint(u uint32, w []byte) {
 	w[0] = uint8((u >> (8 * 3)) & 0xff)
 }
 
-func Encode6ByteUint(u uint64, w []byte) {
+func EncodeUint48(u uint64, w []byte) {
 	if len(w) != 6 {
 		panic("size")
 	}
@@ -120,22 +120,22 @@ func Encode6ByteUint(u uint64, w []byte) {
 
 // Assertions
 
-func FitsIn2Bytes(x uint64) bool { return x>>16 == 0 }
+func FitsIn16Bits(x uint64) bool { return x>>16 == 0 }
 
-func FitsIn3Bytes(x uint64) bool { return x>>24 == 0 }
+func FitsIn24Bits(x uint64) bool { return x>>24 == 0 }
 
-func FitsIn4Bytes(x uint64) bool { return x>>32 == 0 }
+func FitsIn32Bits(x uint64) bool { return x>>32 == 0 }
 
 func FitsIn23Bits(x uint64) bool { return x>>23 == 0 }
 
-func assertFitsIn2Bytes(x uint64) {
-	if !FitsIn2Bytes(x) {
+func assertFitsIn16Bits(x uint64) {
+	if !FitsIn16Bits(x) {
 		panic("width overflow, 2 bytes")
 	}
 }
 
-func assertFitsIn4Bytes(x uint64) {
-	if !FitsIn4Bytes(x) {
+func assertFitsIn32Bits(x uint64) {
+	if !FitsIn32Bits(x) {
 		panic("width overflow, 4 bytes")
 	}
 }

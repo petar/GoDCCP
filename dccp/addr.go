@@ -70,7 +70,7 @@ func ReadAddr(p []byte) (addr *Addr, n int, err error) {
 	if len(p) < 2 {
 		return nil, 0, errors.New("link addr missing port")
 	}
-	return &Addr{label, Decode2ByteUint(p[0:2])}, n + 2, nil
+	return &Addr{label, DecodeUint16(p[0:2])}, n + 2, nil
 }
 
 // Write() writes the link address to p@ in wire format
@@ -83,6 +83,6 @@ func (addr *Addr) Write(p []byte) (n int, err error) {
 	if len(p) < 2 {
 		return 0, errors.New("link addr can't fit port")
 	}
-	Encode2ByteUint(addr.Port, p[0:2])
+	EncodeUint16(addr.Port, p[0:2])
 	return n + 2, nil
 }

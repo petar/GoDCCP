@@ -82,7 +82,7 @@ func (t *senderRoundtripEstimator) OnRead(fb *dccp.FeedbackHeader) bool {
 	if s == nil {
 		return false
 	}
-	elapsedNS := dccp.NSFromTenUS(elapsed.Elapsed) // Elapsed time at receiver in nanoseconds
+	elapsedNS := dccp.NanoFromTenMicro(elapsed.Elapsed) // Elapsed time at receiver in nanoseconds
 	if elapsedNS < 0 {
 		return false
 	}

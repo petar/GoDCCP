@@ -79,7 +79,7 @@ func (r *receiver) makeElapsedTimeOption(ackNo int64, now int64) *dccp.ElapsedTi
 		panic("ccid3 receiver: GSR != AckNo")
 	}
 	elapsedNS := max64(0, now-r.gsrTimestamp)
-	return &dccp.ElapsedTimeOption{dccp.TenUSFromNS(elapsedNS)}
+	return &dccp.ElapsedTimeOption{dccp.TenMicroFromNano(elapsedNS)}
 }
 
 // Conn calls OnWrite before a packet is sent to give CongestionControl

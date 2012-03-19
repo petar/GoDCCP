@@ -35,14 +35,14 @@ func ReadHeader(buf []byte,
 
 	// Read (1a) Generic Header
 
-	gh.SourcePort = Decode2ByteUint(buf[k : k+2])
+	gh.SourcePort = DecodeUint16(buf[k : k+2])
 	k += 2
 
-	gh.DestPort = Decode2ByteUint(buf[k : k+2])
+	gh.DestPort = DecodeUint16(buf[k : k+2])
 	k += 2
 
 	// Compute the Data Offset in bytes
-	dataOffset := int(Decode1ByteUint(buf[k:k+1])) << 2
+	dataOffset := int(DecodeUint8(buf[k:k+1])) << 2
 	k += 1
 
 	// Read CCVal
@@ -93,15 +93,15 @@ func ReadHeader(buf []byte,
 	// Read SeqNo
 	switch gh.X {
 	case false:
-		gh.SeqNo = int64(Decode3ByteUint(buf[k : k+3]))
+		gh.SeqNo = int64(DecodeUint24(buf[k : k+3]))
 		k += 3
 	case true:
-		padding := Decode1ByteUint(buf[k : k+1])
+		padding := DecodeUint8(buf[k : k+1])
 		k += 1
 		if padding != 0 {
 			return nil, ErrNumeric
 		}
-		gh.SeqNo = int64(Decode6ByteUint(buf[k : k+6]))
+		gh.SeqNo = int64(DecodeUint48(buf[k : k+6]))
 		k += 6
 	}
 
@@ -110,20 +110,20 @@ func ReadHeader(buf []byte,
 	switch getAckNoSubheaderSize(gh.Type, gh.X) {
 	case 0:
 	case 4:
-		padding := Decode1ByteUint(buf[k : k+1])
+		padding := DecodeUint8(buf[k : k+1])
 		k += 1
 		if padding != 0 {
 			return nil, ErrNumeric
 		}
-		gh.AckNo = int64(Decode3ByteUint(buf[k : k+3]))
+		gh.AckNo = int64(DecodeUint24(buf[k : k+3]))
 		k += 3
 	case 8:
-		padding := Decode2ByteUint(buf[k : k+2])
+		padding := DecodeUint16(buf[k : k+2])
 		k += 2
 		if padding != 0 {
 			return nil, ErrNumeric
 		}
-		gh.AckNo = int64(Decode6ByteUint(buf[k : k+6]))
+		gh.AckNo = int64(DecodeUint48(buf[k : k+6]))
 		k += 6
 	default:
 		panic("unreach")
@@ -132,7 +132,7 @@ func ReadHeader(buf []byte,
 	// Read (1c) Code Subheader: Service Code, or Reset Code and Reset Data fields
 	switch gh.Type {
 	case Request, Response:
-		gh.ServiceCode = Decode4ByteUint(buf[k : k+4])
+		gh.ServiceCode = DecodeUint32(buf[k : k+4])
 		k += 4
 	case Reset:
 		gh.ResetCode = buf[k]

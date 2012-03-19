@@ -106,12 +106,12 @@ func readUint32(t *testing.T, c SegmentConn) uint32 {
 		t.Fatalf("read size: %d != 4", len(p))
 	}
 	// fmt.Printf("  %s ···> %v\n", c.(*flow).String(), p[:4])
-	return Decode4ByteUint(p[:4])
+	return DecodeUint32(p[:4])
 }
 
 func writeUint32(t *testing.T, c SegmentConn, u uint32) {
 	p := make([]byte, 4)
-	Encode4ByteUint(u, p)
+	EncodeUint32(u, p)
 	err := c.WriteSegment(p)
 	if err != nil {
 		t.Fatalf("write: %s", err)
