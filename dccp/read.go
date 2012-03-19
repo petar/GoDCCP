@@ -46,7 +46,7 @@ func ReadHeader(buf []byte,
 	k += 1
 
 	// Read CCVal
-	gh.CCVal = buf[k] >> 4
+	gh.CCVal = int8(buf[k] >> 4)
 
 	// Read CsCov
 	gh.CsCov = buf[k] & 0x0f

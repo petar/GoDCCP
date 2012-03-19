@@ -54,7 +54,7 @@ func (scc *fixedRateSenderControl) GetCCMPS() int32 { return 1e9 }
 
 func (scc *fixedRateSenderControl) GetRTT() int64 { return RoundtripDefault }
 
-func (scc *fixedRateSenderControl) OnWrite(ph *PreHeader) (ccval byte, options []*Option) {
+func (scc *fixedRateSenderControl) OnWrite(ph *PreHeader) (ccval int8, options []*Option) {
 	return 0, nil
 }
 

@@ -21,6 +21,7 @@ type sender struct {
 	senderStrober
 	dccp.Mutex // Locks all fields below
 	senderRoundtripEstimator
+	senderRoundtripReporter
 	senderWindowCounter
 	senderNoFeedbackTimer
 	senderSegmentSize
@@ -57,6 +58,7 @@ func (s *sender) Open() {
 	s.senderWindowCounter.Init()
 	s.senderRoundtripEstimator.Init()
 	rtt, _ := s.senderRoundtripEstimator.RTT()
+	s.senderRoundtripReporter.Init()
 	s.senderNoFeedbackTimer.Init()
 	s.senderSegmentSize.Init()
 	s.senderSegmentSize.SetMPS(FixedSegmentSize)
@@ -69,7 +71,7 @@ func (s *sender) Open() {
 // Conn calls OnWrite before a packet is sent to give CongestionControl
 // an opportunity to add CCVal and options to an outgoing packet
 // If the CC is not active, OnWrite should return 0, nil.
-func (s *sender) OnWrite(ph *dccp.PreHeader) (ccval byte, options []*dccp.Option) {
+func (s *sender) OnWrite(ph *dccp.PreHeader) (ccval int8, options []*dccp.Option) {
 	s.Lock()
 	defer s.Unlock()
 
@@ -84,7 +86,12 @@ func (s *sender) OnWrite(ph *dccp.PreHeader) (ccval byte, options []*dccp.Option
 	ccval = s.senderWindowCounter.OnWrite(rtt, ph.SeqNo, ph.Time)
 	s.logger.E("s", "wccval", fmt.Sprintf("Write CCVal=%d, RTT=%d", ccval, rtt))
 
-	return ccval, nil
+	reportOpt := s.senderRoundtripReporter.OnWrite(rtt, ph.Time)
+	if reportOpt != nil {
+		options = []*dccp.Option{ reportOpt }
+	}
+
+	return ccval, options
 }
 
 // Conn calls OnRead after a packet has been accepted and validated

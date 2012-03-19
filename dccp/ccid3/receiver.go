@@ -34,9 +34,9 @@ type receiver struct {
 	gsrTimestamp int64 // Timestamp of packet with greatest sequence number received via OnRead
 
 	// The greatest received value of the window counter since the last feedback message was sent
-	lastCCVal byte
+	lastCCVal   int8
 	// The window counter of the latest received packet. Used internally to update lastCCVal.
-	latestCCVal byte
+	latestCCVal int8
 }
 
 // GetID() returns the CCID of this congestion control algorithm
@@ -87,7 +87,7 @@ func (r *receiver) makeElapsedTimeOption(ackNo int64, now int64) *dccp.ElapsedTi
 func (r *receiver) OnWrite(ph *dccp.PreHeader) (options []*dccp.Option) {
 	r.Lock()
 	defer r.Unlock()
-	rtt := r.receiverRoundtripEstimator.RTT(ph.Time)
+	rtt, _ := r.receiverRoundtripEstimator.RTT(ph.Time)
 
 	r.lastWrite = ph.Time
 	if !r.open {
@@ -153,7 +153,7 @@ func (r *receiver) OnRead(ff *dccp.FeedforwardHeader) error {
 	}
 
 	// Update RTT estimate
-	r.receiverRoundtripEstimator.OnRead(ff.SeqNo, ff.CCVal, ff.Time)
+	r.receiverRoundtripEstimator.OnRead(ff)
 	rtt, est := r.receiverRoundtripEstimator.RTT(ff.Time)
 	r.logger.E("r", "rrtt-h", r.receiverRoundtripEstimator.String())
 	r.logger.E("r", "rrtt", fmt.Sprintf("rRTT=%s est=%v", dccp.Nstoa(rtt), est), ff, 
@@ -176,7 +176,7 @@ func (r *receiver) OnRead(ff *dccp.FeedforwardHeader) error {
 	// (Feedback-Condition-III) If receive window counter increases by 4 or more on a data
 	// packet, since last time feedback was sent
 	if ff.Type == dccp.Data || ff.Type == dccp.DataAck {
-		if !lessWindowCounterMod(ff.CCVal, (r.lastCCVal+4)%WindowCounterMod) {
+		if diffWindowCounter(ff.CCVal, r.lastCCVal) >= 4 {
 			return dccp.CongestionAck
 		}
 	}
@@ -196,7 +196,8 @@ func (r *receiver) OnIdle(now int64) error {
 
 	// (Feedback-Condition-I) If one (estimated) round-trip time time has expired since last Ack
 	// AND data packets have been received in the meantime
-	if r.dataSinceAck && now-r.lastWrite > r.receiverRoundtripEstimator.RTT(now) {
+	rtt, _ := r.receiverRoundtripEstimator.RTT(now)
+	if r.dataSinceAck && now-r.lastWrite > rtt {
 		return dccp.CongestionAck
 	}
 

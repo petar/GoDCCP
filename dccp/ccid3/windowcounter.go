@@ -54,7 +54,7 @@ func (wc *senderWindowCounter) Init() {
 // The sender calls OnWrite in order to obtain the WC value to be included in the next
 // outgoing packet
 // TODO: Use RTT estimates from the sender's better estimator?
-func (wc *senderWindowCounter) OnWrite(rtt int64, seqNo int64, now int64) byte {
+func (wc *senderWindowCounter) OnWrite(rtt int64, seqNo int64, now int64) int8 {
 	// Update sequence number fields
 	if wc.lastSeqNoPresent {
 		if seqNo <= wc.lastSeqNo {
@@ -70,7 +70,7 @@ func (wc *senderWindowCounter) OnWrite(rtt int64, seqNo int64, now int64) byte {
 	if latest == nil {
 		ccval = 0  // Initial ccval
 		wc.windowHistory.Add(seqNo, now, ccval)
-		return byte(ccval)
+		return ccval
 	}
 	ccval = latest.CCVal
 
@@ -89,7 +89,7 @@ func (wc *senderWindowCounter) OnWrite(rtt int64, seqNo int64, now int64) byte {
 		ccval = (ccval + ccvalInc) % WindowCounterMod
 		wc.windowHistory.Add(seqNo, now, ccval)
 	}
-	return byte(ccval)
+	return ccval
 }
 
 func (wc *senderWindowCounter) getAckBound(now int64) (ccvalInc int8) {

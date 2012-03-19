@@ -55,7 +55,7 @@ type SenderCongestionControl interface {
 	// Conn calls OnWrite before a packet is sent to give CongestionControl
 	// an opportunity to add CCVal and options to an outgoing packet
 	// NOTE: If the CC is not active, OnWrite should return 0, nil.
-	OnWrite(ph *PreHeader) (ccval byte, options []*Option)
+	OnWrite(ph *PreHeader) (ccval int8, options []*Option)
 
 	// Conn calls OnRead after a packet has been accepted and validated
 	// If OnRead returns ErrDrop, the packet will be dropped and no further processing
@@ -143,7 +143,7 @@ type FeedforwardHeader struct {
 	Type    byte
 	X       bool
 	SeqNo   int64
-	CCVal   byte
+	CCVal   int8
 	Options []*Option
 
 	// Time when header received

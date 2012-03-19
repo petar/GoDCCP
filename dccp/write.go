@@ -118,7 +118,7 @@ func (gh *Header) Write(sourceIP, destIP []byte,
 	k += 1
 
 	// Write CCVal
-	buf[k] = gh.CCVal << 4
+	buf[k] = byte(gh.CCVal) << 4
 
 	// Write CsCov
 	buf[k] |= gh.CsCov & 0x0f

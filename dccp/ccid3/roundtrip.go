@@ -10,6 +10,23 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
+// senderRoundtripReporter ensures that the sender's RTT estimate is regularly sent to the receiver
+type senderRoundtripReporter struct {
+	lastReportTime int64
+}
+
+func (t *senderRoundtripReporter) Init() {
+	t.lastReportTime = 0
+}
+
+func (t *senderRoundtripReporter) OnWrite(rtt int64, now int64) *dccp.Option {
+	if rtt <= 0 || now - t.lastReportTime < rtt {
+		return nil
+	}
+	t.lastReportTime = now
+	return encodeOption(&RoundtripReportOption{ Roundtrip: dccp.TenMicroFromNano(rtt) })
+}
+
 // senderRoundtripEstimator is a data structure that estimates the RTT at the sender end.
 type senderRoundtripEstimator struct {
 	estimate int64
@@ -148,13 +165,10 @@ func (t *receiverRoundtripEstimator) String() string {
 func (t *receiverRoundtripEstimator) OnRead(ff *dccp.FeedforwardHeader) bool {
 
 	// Read RoundtripReportOption
-	// Allow RoundtripReportOption only in some packets to save on processing time
-	if ff.Type != dccp.?? && ff.Type != dccp.?? {
-		return false
-	}
-	var report *dccp.RoundtripReportOption
+	// Currently RoundtripReportOption is allowed on any packet type
+	var report *RoundtripReportOption
 	for _, opt := range ff.Options {
-		if report = dccp.DecodeRoundtripReportOption(opt); report != nil {
+		if report = DecodeRoundtripReportOption(opt); report != nil {
 			break
 		}
 	}
