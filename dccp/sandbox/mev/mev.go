@@ -66,7 +66,7 @@ func main() {
 			fmt.Printf("pre-read\n")
 			_, err := serverConn.ReadSegment()
 			fmt.Printf("post-read\n")
-			if err == ErrEOF {
+			if err == dccp.ErrEOF {
 				break 
 			} else if err != nil {
 				fmt.Printf("error reading (%s)", err)
@@ -78,7 +78,7 @@ func main() {
 	_, _ = <-cchan
 	_, _ = <-schan
 	dccp.WaitOnAll(clientConn.Waiter(), serverConn.Waiter()).Wait()
-	dccp.NewLogger("line", run).Emit("end", "end", nil, "Server and client done.")
+	dccp.NewLogger("line", run).E("end", "end", "Server and client done.")
 	if err := run.Close(); err != nil {
 		fmt.Printf("error closing runtime (%s)", err)
 	}
