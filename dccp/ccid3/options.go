@@ -236,7 +236,9 @@ func (opt *LossDigestOption) Encode() (*dccp.Option, error) {
 
 // RoundtripReportOption is used by the sender to communicate its RTT estimate to the receiver.
 type RoundtripReportOption struct {
-	Roundtrip uint32 ??
+	// The Roundtrip estimate is given in ten microsecond units, similarly to the
+	// ElapsedTimeOption
+	Roundtrip uint32
 }
 
 func DecodeRoundtripReportOption(opt *dccp.Option) *RoundtripReportOption {

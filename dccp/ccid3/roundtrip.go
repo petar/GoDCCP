@@ -144,8 +144,35 @@ func (t *receiverRoundtripEstimator) String() string {
 }
 
 // receiver calls OnRead every time a packet is received
-func (t *receiverRoundtripEstimator) OnRead(seqno int64, ccval byte, now int64) {
-	??
+// OnRead returns true, if the roundtrip estimate has changed
+func (t *receiverRoundtripEstimator) OnRead(ff *dccp.FeedforwardHeader) bool {
+
+	// Read RoundtripReportOption
+	// Allow RoundtripReportOption only in some packets to save on processing time
+	if ff.Type != dccp.?? && ff.Type != dccp.?? {
+		return false
+	}
+	var report *dccp.RoundtripReportOption
+	for _, opt := range ff.Options {
+		if report = dccp.DecodeRoundtripReportOption(opt); report != nil {
+			break
+		}
+	}
+	if report == nil {
+		fmt.Printf("Roundtrip report missing!\n")
+		return false
+	}
+
+	// Sanity checks
+	rtt := dccp.NanoFromTenMicro(report.Roundtrip)
+	if rtt <= 0 || rtt > 30e9 {
+		return false
+	}
+
+	// Update RTT estimate
+	t.rtt, t.rttTime = rtt, ff.Time
+
+	return true
 }
 
 // RTT returns the best available estimate of the round-trip time
