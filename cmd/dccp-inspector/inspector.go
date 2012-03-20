@@ -21,15 +21,21 @@ var (
 	flagFmt *string = flag.String("fmt", "basic", "Format: basic, trip")
 )
 
+func usage() {
+	fmt.Printf("%s [optional_flags] log_file\n", os.Args[0])
+	flag.PrintDefaults()
+	os.Exit(1)
+}
+
 func main() {
 	flag.Parse()
 
 	// First non-flag argument is log file name
 	nonflags := flag.Args()
 	if len(nonflags) == 0 {
-		flag.Usage()
-		os.Exit(1)
+		usage()
 	}
+	// Open and decode log file
 	logFile, err := os.Open(nonflags[0])
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error opening log (%s)\n", err)
@@ -37,27 +43,29 @@ func main() {
 	}
 	defer logFile.Close()
 	logDec := json.NewDecoder(logFile)
-	var log []*dccp.LogRecord = make([]*dccp.LogRecord, 0)
+	// Raw log entries will go into log
+	var emits []*dccp.LogRecord = make([]*dccp.LogRecord, 0)
 	for {
 		rec := &dccp.LogRecord{}
 		if err = logDec.Decode(rec); err != nil {
 			break
 		}
-		log = append(log, rec)
+		emits = append(emits, rec)
 	}
-	fmt.Fprintf(os.Stderr, "Read %d records.\n", len(log))
+	fmt.Fprintf(os.Stderr, "Read %d records.\n", len(emits))
 	if err != io.EOF {
 		fmt.Fprintf(os.Stderr, "Terminated unexpectedly (%s).\n", err)
 	}
 
+	// Fork to desired reducer
 	switch *flagFmt {
 	case "basic":
-		printBasic(log)
+		printBasic(emits)
 	case "trip":
-		printTrip(log)
+		printTrip(emits)
 	}
 
-	printStats(log)
+	printStats(emits)
 }
 
 var (
@@ -73,9 +81,9 @@ var (
 	printNop = &PrintRecord{}
 )
 
-func printTrip(log []*dccp.LogRecord) {
+func printTrip(emits []*dccp.LogRecord) {
 	reducer := dccp_gauge.NewLogReducer()
-	for _, rec := range log {
+	for _, rec := range emits {
 		reducer.Write(rec)
 	}
 	trips := dccp_gauge.TripMapToSlice(reducer.Trips())
@@ -103,9 +111,9 @@ func printTrip(log []*dccp.LogRecord) {
 	Print(prints, false)
 }
 
-func printStats(log []*dccp.LogRecord) {
+func printStats(emits []*dccp.LogRecord) {
 	reducer := dccp_gauge.NewLogReducer()
-	for _, rec := range log {
+	for _, rec := range emits {
 		reducer.Write(rec)
 	}
 	trips := dccp_gauge.TripMapToSlice(reducer.Trips())
@@ -114,9 +122,9 @@ func printStats(log []*dccp.LogRecord) {
 	fmt.Printf("Send rate: %g pkt/sec, Receive rate: %g pkt/sec\n", sr, rr)
 }
 
-func printBasic(log []*dccp.LogRecord) {
+func printBasic(emits []*dccp.LogRecord) {
 	prints := make([]*PrintRecord, 0)
-	for _, t := range log {
+	for _, t := range emits {
 		var p *PrintRecord = printRecord(t)
 		if p != nil {
 			prints = append(prints, p)
