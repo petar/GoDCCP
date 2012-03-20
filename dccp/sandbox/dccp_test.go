@@ -44,6 +44,7 @@ func newClientServerPipeDup(logname string, dup dccp.LogWriter) (clientConn, ser
 	return clientConn, serverConn, run
 }
 
+// TestNop checks that no panics occur in the first 5 seconds of connection establishment
 func TestNop(t *testing.T) {
 	dccp.InstallCtrlCPanic()
 	dccp.InstallTimeout(10e9)
@@ -52,7 +53,6 @@ func TestNop(t *testing.T) {
 }
 
 func TestOpenClose(t *testing.T) {
-
 	dccp.InstallCtrlCPanic()
 	dccp.InstallTimeout(40e9)
 	clientConn, serverConn, run := newClientServerPipe("openclose")
@@ -80,14 +80,18 @@ func TestOpenClose(t *testing.T) {
 
 	<-cchan
 	<-schan
+
+	// Abort casuses both connection to wrap up the connection quickly
 	clientConn.Abort()
 	serverConn.Abort()
+	// However, even aborting leaves various connection go-routines lingering for a short while.
+	// The next line ensures that we wait until all go routines are done.
 	dccp.NewGoGroup(clientConn.Waiter(), serverConn.Waiter()).Wait() // XXX causes hang
+
 	dccp.NewLogger("line", run).E("end", "end", "Server and client done.")
 	if err := run.Close(); err != nil {
 		t.Errorf("Error closing runtime (%s)", err)
 	}
-	t.Logf("normal exit\n")
 }
 
 func TestIdle(t *testing.T) {

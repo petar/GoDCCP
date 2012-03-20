@@ -5,7 +5,6 @@
 package ccid3
 
 import (
-	"fmt"
 	"github.com/petar/GoDCCP/dccp"
 )
 
@@ -65,7 +64,7 @@ func (s *senderStrober) Strobe() {
 	delta := s.interval - (now - s.last)
 	dbgInterval := s.interval // DBG
 	s.Unlock()
-	defer s.logger.E("s-senderStrober", "Event", fmt.Sprintf("Strobe at %d pps", 1e9 / dbgInterval))
+	defer s.logger.E("s-senderStrober", "Event", "Strobe at %d pps", 1e9 / dbgInterval)
 	if delta > 0 {
 		s.run.Sleep(delta)
 	}
