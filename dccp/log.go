@@ -247,7 +247,7 @@ type FileLogWriter struct {
 	dup LogWriter
 }
 
-// NewFileLogWriter creates a new log writer. It panics if the file cannot be created.
+// NewFileLogWriterDup creates a LogWriter that saves logs in a file and also passes them to dup.
 func NewFileLogWriterDup(name string, dup LogWriter) *FileLogWriter {
 	os.Remove(name)
 	f, err := os.Create(name)
@@ -256,7 +256,6 @@ func NewFileLogWriterDup(name string, dup LogWriter) *FileLogWriter {
 	}
 	w := &FileLogWriter{ f, json.NewEncoder(f), dup }
 	goruntime.SetFinalizer(w, func(w *FileLogWriter) { 
-		fmt.Printf("Flushing log\n")
 		w.f.Close() 
 	})
 	return w

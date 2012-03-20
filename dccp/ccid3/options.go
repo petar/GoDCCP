@@ -16,7 +16,7 @@ const (
 	OptionReceiveRate     = 194
 	// OptionLossDigest and OptionRoundtripReport ARE NOT part of CCID3. They are our own extension.
 	OptionLossDigest      = 210
-	OptionRoundtripReport = 211
+	OptionRoundtripReport = 150
 )
 
 // Unencoded option is a type that knows how to encode itself into a dccp.Option

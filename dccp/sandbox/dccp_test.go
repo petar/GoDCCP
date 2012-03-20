@@ -12,13 +12,16 @@ import (
 	"github.com/petar/GoDCCP/dccp/ccid3"
 )
 
-func makeEnds(logname string) (clientConn, serverConn *dccp.Conn, run *dccp.Runtime) {
-	return makeEndsDup(logname, nil)
+func newClientServerPipe(logname string) (clientConn, serverConn *dccp.Conn, run *dccp.Runtime) {
+	return newClientServerPipeDup(logname, nil)
 }
 
-func makeEndsDup(logname string, dup dccp.LogWriter) (clientConn, serverConn *dccp.Conn, run *dccp.Runtime) {
+// newClientServerPipeDup creates a sandbox communication pipe and attaches a DCCP client and a DCCP
+// server to its endpoints. In addition to sending all emits to a standard DCCP log file, it sends a
+// copy of all emits to the dup LogWriter.
+func newClientServerPipeDup(logname string, dup dccp.LogWriter) (clientConn, serverConn *dccp.Conn, run *dccp.Runtime) {
 
-	logwriter := dccp.NewFileLogWriterDup(path.Join(os.Getenv("DCCPLOG"), logname+"_test.emit"), dup)
+	logwriter := dccp.NewFileLogWriterDup(path.Join(os.Getenv("DCCPLOG"), "_"+logname+"_.emit"), dup)
 	run = dccp.NewRuntime(dccp.RealTime, logwriter)
 	run.Filter().Select(
 		"client", "server", "end", "line", "conn", "s", 
@@ -27,7 +30,7 @@ func makeEndsDup(logname string, dup dccp.LogWriter) (clientConn, serverConn *dc
 	)
 
 	llog := dccp.NewLogger("line", run)
-	hca, hcb, _ := NewLine(run, llog, "client", "server", 1e9, 100)  // 100 packets per second
+	hca, hcb, _ := NewPipe(run, llog, "client", "server", 1e9, 100)  // 100 packets per second
 	ccid := ccid3.CCID3{}
 
 	clog := dccp.NewLogger("client", run)
@@ -44,7 +47,7 @@ func makeEndsDup(logname string, dup dccp.LogWriter) (clientConn, serverConn *dc
 func TestNop(t *testing.T) {
 	dccp.InstallCtrlCPanic()
 	dccp.InstallTimeout(10e9)
-	_, _, run := makeEnds("openclose")
+	_, _, run := newClientServerPipe("nop")
 	run.Sleep(5e9)
 }
 
@@ -52,7 +55,7 @@ func TestOpenClose(t *testing.T) {
 
 	dccp.InstallCtrlCPanic()
 	dccp.InstallTimeout(40e9)
-	clientConn, serverConn, run := makeEnds("openclose")
+	clientConn, serverConn, run := newClientServerPipe("openclose")
 
 	cchan := make(chan int, 1)
 	go func() {
@@ -89,7 +92,7 @@ func TestOpenClose(t *testing.T) {
 
 func TestIdle(t *testing.T) {
 
-	clientConn, serverConn, run := makeEnds("idle")
+	clientConn, serverConn, run := newClientServerPipe("idle")
 
 	cchan := make(chan int, 1)
 	go func() {

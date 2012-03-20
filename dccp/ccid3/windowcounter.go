@@ -167,7 +167,7 @@ func (t *windowHistory) Init() {
 // Add adds a new window to the history with a given starting sequence number and a counter value.
 func (t *windowHistory) Add(startSeqNo int64, startTime int64, ccval int8) {
 	lastRec := t.fetch(0)
-	if lastRec.StartTime != 0 {
+	if lastRec != nil {
 		// ccvals cannot decrease
 		if startSeqNo <= lastRec.StartSeqNo {
 			panic("non-increasing sequence number")
@@ -193,7 +193,7 @@ func (t *windowHistory) Lookup(seqNo int64, ccvalDepth int) (ccvalDiff int8, ok 
 	prev := t.fetch(0)
 	for i := 0; i < WindowHistoryLen && i < ccvalDepth; i++ {
 		w := t.fetch(i)
-		if w.StartTime == 0 {
+		if w == nil {
 			return 0, false
 		}
 		if prev != nil {

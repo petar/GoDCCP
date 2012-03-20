@@ -11,27 +11,27 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-type Line struct {
+type Pipe struct {
 	logger *dccp.Logger
-	ha, hb headerHalfLine
+	ha, hb headerHalfPipe
 }
 
-const LineBufferLen = 2
+const PipeBufferLen = 2
 
-func NewLine(run *dccp.Runtime, logger *dccp.Logger, 
-	aName, bName string, gap int64, packetsPerGap uint32) (a, b dccp.HeaderConn, line *Line) {
+func NewPipe(run *dccp.Runtime, logger *dccp.Logger, 
+	aName, bName string, gap int64, packetsPerGap uint32) (a, b dccp.HeaderConn, line *Pipe) {
 
-	ab := make(chan *dccp.Header, LineBufferLen)
-	ba := make(chan *dccp.Header, LineBufferLen)
-	line = &Line{}
+	ab := make(chan *dccp.Header, PipeBufferLen)
+	ba := make(chan *dccp.Header, PipeBufferLen)
+	line = &Pipe{}
 	line.logger = logger
 	line.ha.Init(aName, run, line.logger, ba, ab, gap, packetsPerGap)
 	line.hb.Init(bName, run, line.logger, ab, ba, gap, packetsPerGap)
 	return &line.ha, &line.hb, line
 }
 
-// headerHalfLine implements HeaderConn. It enforces rate-limiting on its write side.
-type headerHalfLine struct {
+// headerHalfPipe implements HeaderConn. It enforces rate-limiting on its write side.
+type headerHalfPipe struct {
 	name   string
 	run    *dccp.Runtime
 	logger *dccp.Logger
@@ -48,7 +48,7 @@ type headerHalfLine struct {
 	deadline      time.Time  // Read deadline
 }
 
-func (hhl *headerHalfLine) Init(name string, run *dccp.Runtime, logger *dccp.Logger,
+func (hhl *headerHalfPipe) Init(name string, run *dccp.Runtime, logger *dccp.Logger,
 	r <-chan *dccp.Header, w chan<- *dccp.Header, gap int64, packetsPerGap uint32) {
 
 	hhl.name = name
@@ -60,11 +60,11 @@ func (hhl *headerHalfLine) Init(name string, run *dccp.Runtime, logger *dccp.Log
 	hhl.deadline = time.Now().Add(-time.Second)
 }
 
-func (hhl *headerHalfLine) GetMTU() int {
+func (hhl *headerHalfPipe) GetMTU() int {
 	return 1500
 }
 
-func (hhl *headerHalfLine) ReadHeader() (h *dccp.Header, err error) {
+func (hhl *headerHalfPipe) ReadHeader() (h *dccp.Header, err error) {
 	hhl.glock.Lock()
 	deadline := hhl.deadline
 	hhl.glock.Unlock()
@@ -89,7 +89,7 @@ func (hhl *headerHalfLine) ReadHeader() (h *dccp.Header, err error) {
 	panic("un")
 }
 
-func (hhl *headerHalfLine) SetRate(gap int64, packetsPerGap uint32) {
+func (hhl *headerHalfPipe) SetRate(gap int64, packetsPerGap uint32) {
 	hhl.glock.Lock()
 	defer hhl.glock.Unlock()
 	hhl.gap = gap
@@ -98,7 +98,7 @@ func (hhl *headerHalfLine) SetRate(gap int64, packetsPerGap uint32) {
 	hhl.gapFill = 0
 }
 
-func (hhl *headerHalfLine) WriteHeader(h *dccp.Header) (err error) {
+func (hhl *headerHalfPipe) WriteHeader(h *dccp.Header) (err error) {
 	hhl.wlock.Lock()
 	defer hhl.wlock.Unlock()
 
@@ -120,7 +120,7 @@ func (hhl *headerHalfLine) WriteHeader(h *dccp.Header) (err error) {
 	return nil
 }
 
-func (hhl *headerHalfLine) rateFilter() bool {
+func (hhl *headerHalfPipe) rateFilter() bool {
 	hhl.glock.Lock()
 	defer hhl.glock.Unlock()
 
@@ -137,7 +137,7 @@ func (hhl *headerHalfLine) rateFilter() bool {
 	return false
 }
 
-func (hhl *headerHalfLine) Close() error {
+func (hhl *headerHalfPipe) Close() error {
 	hhl.wlock.Lock()
 	defer hhl.wlock.Unlock()
 
@@ -152,15 +152,15 @@ func (hhl *headerHalfLine) Close() error {
 	return nil
 }
 
-func (hhl *headerHalfLine) LocalLabel() dccp.Bytes {
+func (hhl *headerHalfPipe) LocalLabel() dccp.Bytes {
 	return &dccp.Label{}
 }
 
-func (hhl *headerHalfLine) RemoteLabel() dccp.Bytes {
+func (hhl *headerHalfPipe) RemoteLabel() dccp.Bytes {
 	return &dccp.Label{}
 }
 
-func (hhl *headerHalfLine) SetReadExpire(nsec int64) error {
+func (hhl *headerHalfPipe) SetReadExpire(nsec int64) error {
 	hhl.glock.Lock()
 	defer hhl.glock.Unlock()
 	if nsec < 0 {
