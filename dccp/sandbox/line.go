@@ -61,7 +61,7 @@ func (hhl *headerHalfLine) Init(name string, run *dccp.Runtime, logger *dccp.Log
 }
 
 func (hhl *headerHalfLine) GetMTU() int {
-	return SegmentSize
+	return 1500
 }
 
 func (hhl *headerHalfLine) ReadHeader() (h *dccp.Header, err error) {
