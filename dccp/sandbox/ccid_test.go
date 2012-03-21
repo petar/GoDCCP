@@ -74,7 +74,7 @@ func TestRTT(t *testing.T) {
 
 	_, _ = <-cchan
 	_, _ = <-schan
-	dccp.NewGoGroup(clientConn.Waiter(), serverConn.Waiter()).Wait()
+	dccp.NewGoConjunction("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
 	dccp.NewLogger("line", run).E("end", "end", "Server and client done.")
 	if err := run.Close(); err != nil {
 		t.Errorf("error closing runtime (%s)", err)
@@ -120,7 +120,7 @@ func TestConverge(t *testing.T) {
 
 	_, _ = <-cchan
 	_, _ = <-schan
-	dccp.NewGoGroup(clientConn.Waiter(), serverConn.Waiter()).Wait()
+	dccp.NewGoConjunction("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
 	dccp.NewLogger("line", run).E("end", "end", "Server and client done.")
 	if err := run.Close(); err != nil {
 		t.Errorf("error closing runtime (%s)", err)

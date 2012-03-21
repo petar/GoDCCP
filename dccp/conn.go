@@ -71,9 +71,9 @@ func NewConnServer(run *Runtime, logger *Logger, hc HeaderConn,
 	c.gotoLISTEN()
 	c.Unlock()
 
-	c.run.Go(func() { c.writeLoop(c.writeNonData, c.writeData) })
-	c.run.Go(func() { c.readLoop() })
-	c.run.Go(func() { c.idleLoop() })
+	c.run.Go(func() { c.writeLoop(c.writeNonData, c.writeData) }, "ConnServer·writLoop")
+	c.run.Go(func() { c.readLoop() }, "ConnServer·readLoop")
+	c.run.Go(func() { c.idleLoop() }, "ConnServer·idleLoop")
 	return c
 }
 
@@ -86,8 +86,8 @@ func NewConnClient(run *Runtime, logger *Logger, hc HeaderConn,
 	c.gotoREQUEST(serviceCode)
 	c.Unlock()
 
-	c.run.Go(func() { c.writeLoop(c.writeNonData, c.writeData) })
-	c.run.Go(func() { c.readLoop() })
-	c.run.Go(func() { c.idleLoop() })
+	c.run.Go(func() { c.writeLoop(c.writeNonData, c.writeData) }, "ConnClient·writeLoop")
+	c.run.Go(func() { c.readLoop() }, "ConnClient·readLoop")
+	c.run.Go(func() { c.idleLoop() }, "ConnClient·idleLoop")
 	return c
 }

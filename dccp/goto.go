@@ -42,7 +42,7 @@ func (c *Conn) gotoLISTEN() {
 		}
 		// Otherwise abort the connection
 		c.abortQuietly()
-	})
+	}, "gotoLISTEN")
 }
 
 func (c *Conn) gotoRESPOND(hServiceCode uint32, hSeqNo int64) {
@@ -65,7 +65,7 @@ func (c *Conn) gotoRESPOND(hServiceCode uint32, hSeqNo int64) {
 		if state == RESPOND {
 			c.abortQuietly()
 		}
-	})
+	}, "gotoRESPOND")
 }
 
 func (c *Conn) gotoREQUEST(serviceCode uint32) {
@@ -99,7 +99,7 @@ func (c *Conn) gotoREQUEST(serviceCode uint32) {
 			c.inject(c.generateRequest(serviceCode))
 			c.Unlock()
 		}
-	})
+	}, "gotoREQUEST")
 }
 
 func (c *Conn) openCCID() {
@@ -158,7 +158,7 @@ func (c *Conn) gotoPARTOPEN() {
 			c.inject(c.generateSync())
 			c.Unlock()
 		}
-	})
+	}, "gotoPARTOPEN")
 }
 
 func (c *Conn) gotoOPEN(hSeqNo int64) {
@@ -180,7 +180,7 @@ func (c *Conn) gotoTIMEWAIT() {
 	c.run.Go(func() {
 		c.run.Sleep(TIMEWAIT_TIMEOUT)
 		c.abortQuietly()
-	})
+	}, "gotoTIMEWAIT")
 }
 
 func (c *Conn) gotoCLOSING() {
@@ -215,7 +215,7 @@ func (c *Conn) gotoCLOSING() {
 			c.inject(c.generateClose())
 			c.Unlock()
 		}
-	})
+	}, "gotoCLOSING")
 }
 
 // gotoCLOSED MUST be idempotent

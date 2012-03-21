@@ -17,7 +17,7 @@ type Runtime struct {
 	time   Time
 	writer LogWriter
 	filter *filter.Filter
-	waiter *GoGroup
+	goconj *GoConjunction
 
 	sync.Mutex
 	timeZero int64 // Time when execution started
@@ -30,7 +30,7 @@ func NewRuntime(time Time, writer LogWriter) *Runtime {
 		time:     time,
 		writer:   writer,
 		filter:   filter.NewFilter(),
-		waiter:   NewGoGroup(),
+		goconj:   NewGoConjunction("Runtime"),
 		timeZero: now,
 		timeLast: now,
 	}
@@ -38,12 +38,12 @@ func NewRuntime(time Time, writer LogWriter) *Runtime {
 }
 
 // Go forks f in a new goroutine
-func (t *Runtime) Go(f func()) {
-	t.waiter.Go(f)
+func (t *Runtime) Go(f func(), afmt string, aargs ...interface{}) {
+	t.goconj.Go(f, afmt, aargs...)
 }
 
 func (t *Runtime) Waiter() Waiter {
-	return t.waiter
+	return t.goconj
 }
 
 func (t *Runtime) Writer() LogWriter {
