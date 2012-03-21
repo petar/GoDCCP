@@ -42,7 +42,7 @@ func (t *rttReducer) Close() error {
 // TestRTT checks that round-trip times are estimated accurately.
 func TestRTT(t *testing.T) {
 	reducer := &rttReducer{t}
-	clientConn, serverConn, run := newClientServerPipeDup("rtt", reducer)
+	clientConn, serverConn, run := NewClientServerPipeDup("rtt", reducer)
 
 	cchan := make(chan int, 1)
 	mtu := clientConn.GetMTU()
@@ -84,7 +84,7 @@ func TestRTT(t *testing.T) {
 func TestConverge(t *testing.T) {
 
 	dccp.InstallCtrlCPanic()
-	clientConn, serverConn, run := newClientServerPipe("converge")
+	clientConn, serverConn, run := NewClientServerPipe("converge")
 
 	cchan := make(chan int, 1)
 	mtu := clientConn.GetMTU()

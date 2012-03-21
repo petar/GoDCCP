@@ -16,7 +16,12 @@ import (
 // InstallTimeout panics the current process in ns time
 func InstallTimeout(ns int64) {
 	go func() {
-		time.Sleep(time.Duration(ns))
+		k := int(ns / 1e9)
+		for i := 0; i < k; i++ {
+			time.Sleep(time.Second)
+			fmt.Printf("•%d/%d•\n", i, k)
+		}
+		//time.Sleep(time.Duration(ns))
 		panic("process timeout")
 	}()
 }
@@ -24,12 +29,12 @@ func InstallTimeout(ns int64) {
 // InstallCtrlCPanic installs a Ctrl-C signal handler that panics
 func InstallCtrlCPanic() {
 	go func() {
-		defer SavePanicTrace()
+		//defer SavePanicTrace()
 		ch := make(chan os.Signal)
-		signal.Notify(ch, os.Interrupt)
+		signal.Notify(ch, os.Interrupt, os.Kill)
 		for s := range ch {
-			log.Printf("ctrl-c interruption: %s\n", s)
-			panic("ctrl-c")
+			log.Printf("ctrl-c/kill interruption: %s\n", s)
+			panic("ctrl-c/kill")
 		}
 	}()
 }

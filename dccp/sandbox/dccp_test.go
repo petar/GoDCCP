@@ -12,50 +12,19 @@ import (
 	"github.com/petar/GoDCCP/dccp/ccid3"
 )
 
-func newClientServerPipe(logname string) (clientConn, serverConn *dccp.Conn, run *dccp.Runtime) {
-	return newClientServerPipeDup(logname, nil)
-}
-
-// newClientServerPipeDup creates a sandbox communication pipe and attaches a DCCP client and a DCCP
-// server to its endpoints. In addition to sending all emits to a standard DCCP log file, it sends a
-// copy of all emits to the dup LogWriter.
-func newClientServerPipeDup(logname string, dup dccp.LogWriter) (clientConn, serverConn *dccp.Conn, run *dccp.Runtime) {
-
-	logwriter := dccp.NewFileLogWriterDup(path.Join(os.Getenv("DCCPLOG"), "_"+logname+"_.emit"), dup)
-	run = dccp.NewRuntime(dccp.RealTime, logwriter)
-	run.Filter().Select(
-		"client", "server", "end", "line", "conn", "s", 
-		"s-x", "s-strober", "s-tracker", 
-		"r", "r-evolver",
-	)
-
-	llog := dccp.NewLogger("line", run)
-	hca, hcb, _ := NewPipe(run, llog, "client", "server", 1e9, 100)  // 100 packets per second
-	ccid := ccid3.CCID3{}
-
-	clog := dccp.NewLogger("client", run)
-	clientConn = dccp.NewConnClient(run, clog, hca, 
-		ccid.NewSender(run, clog), ccid.NewReceiver(run, clog), 0)
-
-	slog := dccp.NewLogger("server", run)
-	serverConn = dccp.NewConnServer(run, slog, hcb, 
-		ccid.NewSender(run, slog), ccid.NewReceiver(run, slog))
-
-	return clientConn, serverConn, run
-}
-
 // TestNop checks that no panics occur in the first 5 seconds of connection establishment
 func TestNop(t *testing.T) {
 	dccp.InstallCtrlCPanic()
 	dccp.InstallTimeout(10e9)
-	_, _, run := newClientServerPipe("nop")
+	_, _, run := NewClientServerPipe("nop")
 	run.Sleep(5e9)
 }
 
+// TestOpenClose verifies that connect and close handshakes function correctly
 func TestOpenClose(t *testing.T) {
 	dccp.InstallCtrlCPanic()
 	dccp.InstallTimeout(40e9)
-	clientConn, serverConn, run := newClientServerPipe("openclose")
+	clientConn, serverConn, run := NewClientServerPipe("openclose")
 
 	cchan := make(chan int, 1)
 	go func() {
@@ -96,7 +65,7 @@ func TestOpenClose(t *testing.T) {
 
 func TestIdle(t *testing.T) {
 
-	clientConn, serverConn, run := newClientServerPipe("idle")
+	clientConn, serverConn, run := NewClientServerPipe("idle")
 
 	cchan := make(chan int, 1)
 	go func() {

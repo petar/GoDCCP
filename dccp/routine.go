@@ -30,6 +30,7 @@ func GoCaller(f func(), level int, afmt string, aargs ...interface{}) *GoRoutine
 		anno: fmt.Sprintf(afmt, aargs...),
 	}
 	go func() {
+		fmt.Printf("GoRoutine %s: start\n", g.String())
 		f()
 		close(g.ch)
 	}()
