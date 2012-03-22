@@ -30,24 +30,24 @@ type GoRoutine struct {
 
 // Go runs f in a new goroutine and returns a handle object, which can
 // then be used for various synchronization mechanisms.
-func GoCaller(f func(), level int, afmt string, aargs ...interface{}) *GoRoutine {
-	sfile, sline := FetchCaller(2 + level)
+func GoCaller(f func(), level int, fmt_ string, args_ ...interface{}) *GoRoutine {
+	sfile, sline := FetchCaller(1 + level)
+	ch := make(chan int)
 	g := &GoRoutine{ 
-		ch:   make(chan int, 0),
+		ch:   ch,
 		file: sfile,
 		line: sline,
-		anno: fmt.Sprintf(afmt, aargs...),
+		anno: fmt.Sprintf(fmt_, args_...),
 	}
 	go func() {
-		fmt.Printf("GoRoutine %s: start\n", g.String())
 		f()
-		close(g.ch)
+		close(ch)
 	}()
 	return g
 }
 
-func Go(f func(), afmt string, aargs ...interface{}) *GoRoutine {
-	return GoCaller(f, 1, afmt, aargs...)
+func Go(f func(), fmt_ string, args_ ...interface{}) *GoRoutine {
+	return GoCaller(f, 1, fmt_, args_...)
 }
 
 // Wait blocks until the goroutine completes; otherwise,
@@ -55,7 +55,6 @@ func Go(f func(), afmt string, aargs ...interface{}) *GoRoutine {
 // Wait can be called concurrently.
 func (g *GoRoutine) Wait() {
 	_, _ = <-g.ch
-	fmt.Printf("GoRoutine %s: done\n", g.String())
 }
 
 // Source returns the file and line where the goroutine was forked.
@@ -164,7 +163,6 @@ func (t *GoConjunction) Wait() {
 	for t.stillRemain() {
 		_, ok := <-ch
 		if !ok {
-			fmt.Printf("Wait (%s) returns on closed chan\n", t.String())
 			return
 		}
 		t.lk.Lock()
@@ -172,15 +170,13 @@ func (t *GoConjunction) Wait() {
 			panic("no waiters should complete past junction event")
 		}
 		t.kdone++
-		fmt.Printf("GoConj %s: %d/%d done\n", t.String(), t.kdone, len(t.group))
 		if t.kdone == len(t.group) {
 			// Ensure future calls to Wait return immediately
 			t.kdone = -1
-			close(t.ch)
+			close(ch)
 		}
 		t.lk.Unlock()
 	}
-	fmt.Printf("Wait (%s) returns on no more remain\n", t.String())
 }
 
 func (t* GoConjunction) stillRemain() bool {

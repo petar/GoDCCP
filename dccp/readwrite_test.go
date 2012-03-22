@@ -24,8 +24,8 @@ var testHeaders = []*Header{
 		ServiceCode: 0,
 		ResetCode:   0,
 		ResetData:   nil,
-		Options: []Option{
-			Option{OptionSlowReceiver, nil, true},
+		Options: []*Option{
+			&Option{OptionSlowReceiver, nil, true},
 		},
 		Data: []byte{1, 2, 3, 0, 4, 5, 6, 7, 8, 9},
 	},

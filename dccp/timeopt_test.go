@@ -5,7 +5,7 @@
 package dccp
 
 import (
-	"rand"
+	"math/rand"
 	"testing"
 )
 
