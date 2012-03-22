@@ -7,22 +7,24 @@ package dccp
 import "fmt"
 
 const (
-	REQUEST_BACKOFF_FIRST                       = 1e9      // Initial re-send period for client Request resends is 1 sec, in ns
-	REQUEST_BACKOFF_FREQ                        = 10e9     // Back-off Request resend every 10 secs, in ns
-	REQUEST_BACKOFF_TIMEOUT                     = 30e9     // Request re-sends quit after 30 sec, in ns (shorter than RFC recommendation)
+	REQUEST_BACKOFF_FIRST      = 1e9      // Initial re-send period for client Request resends is 1 sec, in ns
+	REQUEST_BACKOFF_FREQ       = 10e9     // Back-off Request resend every 10 secs, in ns
+	REQUEST_BACKOFF_TIMEOUT    = 30e9     // Request re-sends quit after 30 sec, in ns (shorter than RFC recommendation)
 
-	RESPOND_TIMEOUT                             = 30e9     // Timeout in RESPOND state, 30 sec in ns
+	RESPOND_TIMEOUT            = 30e9     // Timeout in RESPOND state, 30 sec in ns
 
-	LISTEN_TIMEOUT                              = REQUEST_BACKOFF_TIMEOUT    // Timeout in LISTEN state
+	LISTEN_TIMEOUT             = REQUEST_BACKOFF_TIMEOUT    // Timeout in LISTEN state
 
-	CLOSING_BACKOFF_FREQ                        = 64e9     // Backoff frequency of CLOSING timer, 64 seconds, Section 8.3
-	CLOSING_BACKOFF_TIMEOUT                     = MSL/4    // Maximum time in CLOSING (RFC recommends MSL, but seems too long)
+	CLOSING_BACKOFF_FREQ       = 64e9     // Backoff frequency of CLOSING timer, 64 seconds, Section 8.3
+	CLOSING_BACKOFF_TIMEOUT    = MSL/4    // Maximum time in CLOSING (RFC recommends MSL, but seems too long)
 
-	TIMEWAIT_TIMEOUT                            = MSL/2    // Time to stay in TIMEWAIT, Section 8.3 recommends MSL*2
+	TIMEWAIT_TIMEOUT           = MSL/2    // Time to stay in TIMEWAIT, Section 8.3 recommends MSL*2
 
-	PARTOPEN_BACKOFF_FIRST                      = 200e6    // 200 miliseconds in ns, Section 8.1.5
-	PARTOPEN_BACKOFF_FREQ                       = 200e6    // 200 miliseconds in ns
-	PARTOPEN_BACKOFF_TIMEOUT                    = 30e9     // 30 sec (Section 8.1.5 recommends 8 min)
+	PARTOPEN_BACKOFF_FIRST     = 200e6    // 200 miliseconds in ns, Section 8.1.5
+	PARTOPEN_BACKOFF_FREQ      = 200e6    // 200 miliseconds in ns
+	PARTOPEN_BACKOFF_TIMEOUT   = 30e9     // 30 sec (Section 8.1.5 recommends 8 min)
+
+	EXPIRE_INTERVAL	           = 1e9      // Interval for checking expiration conditions
 )
 
 func (c *Conn) gotoLISTEN() {
@@ -30,19 +32,19 @@ func (c *Conn) gotoLISTEN() {
 	c.socket.SetServer(true)
 	c.socket.SetState(LISTEN)
 	c.emitSetState()
-	c.run.Go(func() {
-		c.run.Sleep(LISTEN_TIMEOUT)
-		c.Lock()
-		state := c.socket.GetState()
-		c.Unlock()
-		// If we've transitioned away from LISTEN,
-		if state != LISTEN {
-			// Then do nothing
-			return
-		}
-		// Otherwise abort the connection
-		c.abortQuietly()
-	}, "gotoLISTEN")
+	c.run.Expire(
+		func()bool {
+			c.Lock()
+			state := c.socket.GetState()
+			c.Unlock()
+			// If we've transitioned away from LISTEN, we are in good shape
+			return state != LISTEN
+		}, 
+		func() {
+			// Otherwise abort the connection
+			c.abortQuietly()
+		}, 
+		LISTEN_TIMEOUT, EXPIRE_INTERVAL, "gotoLISTEN")
 }
 
 func (c *Conn) gotoRESPOND(hServiceCode uint32, hSeqNo int64) {
@@ -57,15 +59,17 @@ func (c *Conn) gotoRESPOND(hServiceCode uint32, hSeqNo int64) {
 	// otherwise check that h.ServiceCode matches socket service code
 	c.socket.SetServiceCode(hServiceCode)
 
-	c.run.Go(func() {
-		c.run.Sleep(RESPOND_TIMEOUT)
-		c.Lock()
-		state := c.socket.GetState()
-		c.Unlock()
-		if state == RESPOND {
+	c.run.Expire(
+		func()bool {
+			c.Lock()
+			state := c.socket.GetState()
+			c.Unlock()
+			return state != RESPOND
+		}, 
+		func() {
 			c.abortQuietly()
-		}
-	}, "gotoRESPOND")
+		}, 
+		RESPOND_TIMEOUT, EXPIRE_INTERVAL, "gotoRESPOND")
 }
 
 func (c *Conn) gotoREQUEST(serviceCode uint32) {
@@ -177,6 +181,7 @@ func (c *Conn) gotoTIMEWAIT() {
 	c.socket.SetState(TIMEWAIT)
 	c.emitSetState()
 	c.closeCCID()
+
 	c.run.Go(func() {
 		c.run.Sleep(TIMEWAIT_TIMEOUT)
 		c.abortQuietly()

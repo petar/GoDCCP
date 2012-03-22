@@ -1,6 +1,8 @@
 
 TODO PRE-RELEASE ————————————————————————————————————————————————————————————————————————————————
 
+* convert backoff mechanism to work in the Expire (time polling) model
+
 * implement Conn.SetReadExpire
 
 * address Ack-Sync pair in client connection establishement, marked XXX in code

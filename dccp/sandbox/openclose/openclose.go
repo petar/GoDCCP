@@ -8,12 +8,12 @@ import (
 	t "log"
 	"github.com/petar/GoDCCP/dccp"
 	"github.com/petar/GoDCCP/dccp/sandbox"
-	"time"
+	//"time"
 )
 
 func main() {
 	dccp.InstallCtrlCPanic()
-	dccp.InstallTimeout(10e9)
+	//dccp.InstallTimeout(10e9)
 	clientConn, serverConn, run := sandbox.NewClientServerPipe("openclose")
 
 	cchan := make(chan int, 1)
@@ -45,8 +45,8 @@ func main() {
 	serverConn.Abort()
 	// However, even aborting leaves various connection go-routines lingering for a short while.
 	// The next line ensures that we wait until all go routines are done.
-	// dccp.NewGoConjunction("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait() // XXX causes hang
-	time.Sleep(time.Second*10)
+	clientConn.Waiter().Wait()
+	//dccp.NewGoConjunction("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait() // XXX causes hang
 
 	dccp.NewLogger("line", run).E("end", "end", "Server and client done.")
 	if err := run.Close(); err != nil {

@@ -37,7 +37,7 @@ func NewRuntime(time Time, writer LogWriter) *Runtime {
 	return r
 }
 
-// Go forks f in a new goroutine
+// Go runs f in a new GoRoutine, which is also added to the GoConj of the Runtime
 func (t *Runtime) Go(f func(), afmt string, aargs ...interface{}) {
 	t.goconj.Go(f, afmt, aargs...)
 }
@@ -84,6 +84,25 @@ func (t *Runtime) Snap() (sinceZero int64, sinceLast int64) {
 	return logTime - t.timeZero, logTime - timeLast
 }
 
+// Expire periodically, on every interval duration, checks if the test condition has been met. If
+// the condition is met within the timeout period, no further action is taken. Otherwise, the
+// onexpire function is invoked.
+func (t *Runtime) Expire(test func()bool, onexpire func(), timeout, interval int64, fmt_ string, args_ ...interface{}) {
+	t.Go(func() {
+		k := timeout / interval
+		if k <= 0 {
+			panic("frequency too small")
+		}
+		for i := int64(0); i < k; i++ {
+			t.Sleep(interval)
+			if test() {
+				return
+			}
+		}
+		onexpire()
+	}, fmt_, args_...)
+}
+
 // Time is an interface for interacting time
 type Time interface {
 	// Nanoseconds returns the current time in nanoseconds since UTC zero
@@ -120,7 +139,7 @@ func (realTime) Sleep(ns int64) {
 }
 
 func (realTime) After(ns int64) <-chan int64 {
-	d := make(chan int64)
+	d := make(chan int64, 1)
 	go func(){
 		gotime.Sleep(gotime.Duration(ns))
 		d <- gotime.Now().UnixNano()

@@ -11,6 +11,15 @@ import (
 	"sync"
 )
 
+// Waiter is an interface to objects that can wait for some event.
+type Waiter interface {
+	// Wait blocks until an underlying event occurs.
+	// It returns immediately if called post-event.
+	// It is re-entrant.
+	Wait()
+	String() string
+}
+
 // GoRoutine represents a running goroutine.
 type GoRoutine struct {
 	ch   chan int
@@ -70,15 +79,6 @@ func FetchCaller(level int) (sfile string, sline int) {
 	}
 	sfile = path.Join(sdir, sfile)
 	return sfile, sline
-}
-
-// Waiter is an interface to objects that can wait for some event.
-type Waiter interface {
-	// Wait blocks until an underlying event occurs.
-	// It returns immediately if called post-event.
-	// It is re-entrant.
-	Wait()
-	String() string
 }
 
 // GoConjunction waits until a set of GoRoutines all complete. It also allows
@@ -155,13 +155,14 @@ func (t *GoConjunction) Wait() {
 	// Prevent calling Wait before any waitees have been added
 	t.lk.Lock()
 	n := len(t.group)
+	ch := t.ch
 	t.lk.Unlock()
 	if n == 0 {
 		panic("waiting on 0 goroutines")
 	}
 
 	for t.stillRemain() {
-		_, ok := <-t.ch
+		_, ok := <-ch
 		if !ok {
 			fmt.Printf("Wait (%s) returns on closed chan\n", t.String())
 			return
