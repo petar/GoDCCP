@@ -182,5 +182,5 @@ func (t *GoConjunction) Wait() {
 func (t* GoConjunction) stillRemain() bool {
 	t.lk.Lock()
 	defer t.lk.Unlock()
-	return t.kdone > 0 && t.kdone < len(t.group)
+	return t.kdone >= 0 && t.kdone < len(t.group)
 }

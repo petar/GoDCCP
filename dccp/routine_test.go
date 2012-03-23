@@ -5,14 +5,23 @@
 package dccp
 
 import (
-	"fmt"
 	"testing"
+	"time"
 )
 
 func TestGoConjunction(t *testing.T) {
+	var hello, world bool
 	NewGoConjunction("hello+world", 
 		Go(func() { 
-			fmt.Printf("Hello\n") 
+			hello = true
+			time.Sleep(time.Second)
 		}, "hello"), 
+		Go(func() { 
+			world = true
+			time.Sleep(time.Second/2)
+		}, "world"), 
 	).Wait()
+	if !hello || !world {
+		t.Errorf("go routines did not complete")
+	}
 }

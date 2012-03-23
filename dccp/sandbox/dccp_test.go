@@ -5,25 +5,22 @@
 package sandbox
 
 import (
-	"os"
-	"path"
 	"testing"
 	"github.com/petar/GoDCCP/dccp"
-	"github.com/petar/GoDCCP/dccp/ccid3"
 )
 
 // TestNop checks that no panics occur in the first 5 seconds of connection establishment
 func TestNop(t *testing.T) {
-	dccp.InstallCtrlCPanic()
-	dccp.InstallTimeout(10e9)
+	// dccp.InstallCtrlCPanic()
+	// dccp.InstallTimeout(10e9)
 	_, _, run := NewClientServerPipe("nop")
 	run.Sleep(5e9)
 }
 
 // TestOpenClose verifies that connect and close handshakes function correctly
 func TestOpenClose(t *testing.T) {
-	dccp.InstallCtrlCPanic()
-	dccp.InstallTimeout(40e9)
+	// dccp.InstallCtrlCPanic()
+	// dccp.InstallTimeout(40e9)
 	clientConn, serverConn, run := NewClientServerPipe("openclose")
 
 	cchan := make(chan int, 1)
