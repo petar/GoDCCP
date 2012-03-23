@@ -8,7 +8,19 @@ import (
 	"fmt"
 	"github.com/petar/GoDCCP/dccp"
 )
+/*
+type Waiter interface {
+	Wait()
+	String() string
+}
 
+type GoRoutine struct {
+	ch   chan int
+	file string
+	line int
+	anno string
+}
+*/
 func main() {
 	dccp.NewGoConjunction("hello+world", 
 		dccp.Go(func() { 
