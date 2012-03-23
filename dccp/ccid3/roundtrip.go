@@ -29,6 +29,7 @@ func (t *senderRoundtripReporter) OnWrite(rtt int64, now int64) *dccp.Option {
 
 // senderRoundtripEstimator is a data structure that estimates the RTT at the sender end.
 type senderRoundtripEstimator struct {
+	logger   *dccp.Logger
 	estimate int64
 	k        int					// The index of the next history cell to write in
 	history  [SenderRoundtripHistoryLen]sendTime	// Circular array, recording departure times of last few packets
@@ -46,7 +47,8 @@ const (
 )
 
 // Init resets the senderRoundtripEstimator object for new use
-func (t *senderRoundtripEstimator) Init() {
+func (t *senderRoundtripEstimator) Init(logger *dccp.Logger) {
+	t.logger = logger
 	t.estimate = 0
 	t.k = 0
 	for i, _ := range t.history {
@@ -90,7 +92,7 @@ func (t *senderRoundtripEstimator) OnRead(fb *dccp.FeedbackHeader) bool {
 		}
 	}
 	if elapsed == nil {
-		fmt.Printf("Elapsed missing!!!!\n")
+		t.logger.E("s-rtt", "Warn", "Elapsed missing", fb)
 		return false
 	}
 
@@ -173,7 +175,7 @@ func (t *receiverRoundtripEstimator) OnRead(ff *dccp.FeedforwardHeader) bool {
 		}
 	}
 	if report == nil {
-		fmt.Printf("Roundtrip report missing!\n")
+		t.logger.E("r-rtt", "Warn", "Roundtrip report missing", ff)
 		return false
 	}
 

@@ -15,20 +15,51 @@ import (
 // LogRecord stores a log event. It can be used to marshal to JSON and pass to external
 // visualisation tools.
 type LogRecord struct {
-	Time      int64   //`json:"t"`   // Time of event
-	Module    string  //`json:"m"`   // Module where event occurred, e.g. "server", "client", "line"
-	Submodule string  //`json:"sm"`  // Submodule
-	Event     string  //`json:"e"`   // Type of event
-	State     string  //`json:"s"`   // State of module
-	Comment   string  //`json:"c"`   // Textual comment describing the event
-	Args      LogArgs                // Any additional arguments that need to be attached to the log
+	Time      int64   `json:"t"`   // Time of event
 
-	Type      string  //`json:"t"`   // Type of header, if applicable
-	SeqNo     int64   //`json:"sn"`  // Sequence number, if applicable
-	AckNo     int64   //`json:"an"`  // Acknowledgement Number, if applicable
+	// System is a runtime identifier for a dynamic instance of some DCCP type.  For example, if
+	// two instances of Conn are available at runtime (as in the case of tests in the sandbox),
+	// one can be named "client" and the other "server". The System string is also kept as a
+	// field inside the Logger object, so that it can be filled in automatically upon calls to
+	// the Logger's E method.
+	System    string  `json:"y"`
 
-	SourceFile string //`json:"sf"`
-	SourceLine int    //`json:"sl"`
+	// Module is a compile-time identifier of some logical subset of a DCCP system. For
+	// instance, 's' can identify the sender congestion control logic, whereas 's-rtt' can
+	// identify spcifically the roundtrip time estimation logic inside the sender congestion
+	// control. Module is passed as a parameter to the Logger's E method, and is, ideally, a
+	// string constant.
+	Module    string  `json:"m"`
+
+	// Event is an identifier representing the type of event that this log record represents. It
+	// can be something like "Warn", "Info", etc.
+	Event     string  `json:"e"`
+
+	// If applicable, State is the DCCP state of the runtime instance (or system) that this log
+	// record pertains to. This is typically used only if the system is a dccp.Conn.
+	State     string  `json:"s"`
+
+	// Comment is a free-form textual comment
+	Comment   string  `json:"c"`
+
+	// Args are any additional arguments in the form of string keys mapped to open-ended values
+	Args      LogArgs `json:"a"`
+
+	// If this log record pertains to a DCCP header, Type is the DCCP type of this header.
+	Type      string  `json:"ht"`
+
+	// If this log record pertains to a DCCP header, SeqNo is the DCCP sequence number of this header.
+	SeqNo     int64   `json:"hs"`
+
+	// If this log record pertains to a DCCP header, AckNo is the DCCP acknowledgement number of
+	// this header.
+	AckNo     int64   `json:"ha"`
+
+	// SourceFile is the name of the source file where this log record was emitted.
+	SourceFile string `json:"sf"`
+
+	// SourceLine is the line number in the source file where this log record was emitted.
+	SourceLine int    `json:"sl"`
 }
 
 type LogArgs map[string]interface{}
@@ -68,18 +99,18 @@ func (t LogArgs) Bool(k string) (value bool, success bool) {
 // filter framework, which may filter some logs out
 type Logger struct {
 	run  *Runtime
-	name string
+	system string
 }
 
 // A zero-value Logger ignores all emits
 var NoLogging *Logger = &Logger{}
 
-func NewLogger(name string, run *Runtime) *Logger {
-	return &Logger{ run: run, name: name }
+func NewLogger(system string, run *Runtime) *Logger {
+	return &Logger{ run: run, system: system }
 }
 
-func (t *Logger) Name() string {
-	return t.name
+func (t *Logger) System() string {
+	return t.system
 }
 
 func (t *Logger) Filter() *filter.Filter {
@@ -90,7 +121,7 @@ func (t *Logger) GetState() string {
 	if t.run == nil {
 		return ""
 	}
-	g := t.run.Filter().GetAttr([]string{t.Name()}, "state")
+	g := t.run.Filter().GetAttr([]string{t.System()}, "state")
 	if g == nil {
 		return ""
 	}
@@ -101,24 +132,23 @@ func (t *Logger) SetState(s int) {
 	if t.run == nil {
 		return
 	}
-	t.run.Filter().SetAttr([]string{t.Name()}, "state", StateString(s))
+	t.run.Filter().SetAttr([]string{t.System()}, "state", StateString(s))
 }
 
-// E emits a new log record.
-// The arguments args are scanned in turn. The first argument of type
-// *Header, *PreHeader, *FeedbackHeader or *FeedforwardHeader is treated
-// as the DCCP header involved in this log. The first argument of type
-// Args is saved in the log record.
-func (t *Logger) E(submodule, event, comment string, args ...interface{}) {
-	t.EC(1, submodule, event, comment, args...)
+// E emits a new log record. The arguments args are scanned in turn. The first argument of
+// type *Header, *PreHeader, *FeedbackHeader or *FeedforwardHeader is considered the DCCP
+// header that this log pertains to. The first argument of type Args is saved in the log
+// record.
+func (t *Logger) E(module, event, comment string, args ...interface{}) {
+	t.EC(1, module, event, comment, args...)
 }
 
-func (t *Logger) EC(level int, submodule, event, comment string, args ...interface{}) {
+func (t *Logger) EC(level int, module, event, comment string, args ...interface{}) {
 	if t.run == nil {
 		return
 	}
 	/*
-	if !t.run.Filter().Selected(t.Name(), submodule) {
+	if !t.run.Filter().Selected(t.System(), module) {
 		return
 	}
 	*/
@@ -171,8 +201,8 @@ __FindArgs:
 	if t.run.Writer() != nil {
 		r := &LogRecord{
 			Time:       sinceZero,
-			Module:     t.Name(),
-			Submodule:  submodule,
+			System:     t.System(),
+			Module:     module,
 			Event:      event,
 			State:      t.GetState(),
 			Comment:    comment,
@@ -185,12 +215,13 @@ __FindArgs:
 		}
 		t.run.Writer().Write(r)
 	}
+	// Print log messages to os.Stdout if environment variable DCCPRAW set
 	if os.Getenv("DCCPRAW") != "" {
 		fmt.Printf("%15s %15s %18s:%-3d %-8s %6s:%-9s %-9s %8s %6x|%-6x * %s\n", 
 			Nstoa(sinceZero), Nstoa(sinceLast), 
 			sfile, sline,
-			t.GetState(), t.Name(), 
-			submodule, event, 
+			t.GetState(), t.System(), 
+			module, event, 
 			hType, hSeqNo, hAckNo,
 			comment,
 		)
@@ -248,11 +279,11 @@ type FileLogWriter struct {
 }
 
 // NewFileLogWriterDup creates a LogWriter that saves logs in a file and also passes them to dup.
-func NewFileLogWriterDup(name string, dup LogWriter) *FileLogWriter {
-	os.Remove(name)
-	f, err := os.Create(name)
+func NewFileLogWriterDup(filename string, dup LogWriter) *FileLogWriter {
+	os.Remove(filename)
+	f, err := os.Create(filename)
 	if err != nil {
-		panic(fmt.Sprintf("cannot create log file '%s'", name))
+		panic(fmt.Sprintf("cannot create log file '%s'", filename))
 	}
 	w := &FileLogWriter{ f, json.NewEncoder(f), dup }
 	goruntime.SetFinalizer(w, func(w *FileLogWriter) { 
@@ -261,8 +292,8 @@ func NewFileLogWriterDup(name string, dup LogWriter) *FileLogWriter {
 	return w
 }
 
-func NewFileLogWriter(name string) *FileLogWriter {
-	return NewFileLogWriterDup(name, nil)
+func NewFileLogWriter(filename string) *FileLogWriter {
+	return NewFileLogWriterDup(filename, nil)
 }
 
 func (t *FileLogWriter) Write(r *LogRecord) {

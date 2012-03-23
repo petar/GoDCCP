@@ -56,7 +56,7 @@ func (s *sender) Open() {
 		panic("opening an open ccid3 sender")
 	}
 	s.senderWindowCounter.Init()
-	s.senderRoundtripEstimator.Init()
+	s.senderRoundtripEstimator.Init(s.logger)
 	rtt, _ := s.senderRoundtripEstimator.RTT()
 	s.senderRoundtripReporter.Init()
 	s.senderNoFeedbackTimer.Init()

@@ -1,7 +1,8 @@
 
 TODO PRE-RELEASE ————————————————————————————————————————————————————————————————————————————————
 
-* convert backoff mechanism to work in the Expire (time polling) model
+* convert backoff/expire mechanisms to work in a polling model, so that all concurrent 
+backoffs/expires can be handled by a single thread
 
 * implement Conn.SetReadExpire
 

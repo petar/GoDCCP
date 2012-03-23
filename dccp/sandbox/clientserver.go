@@ -20,7 +20,7 @@ func NewClientServerPipe(logname string) (clientConn, serverConn *dccp.Conn, run
 // copy of all emits to the dup LogWriter.
 func NewClientServerPipeDup(logname string, dup dccp.LogWriter) (clientConn, serverConn *dccp.Conn, run *dccp.Runtime) {
 
-	logwriter := dccp.NewFileLogWriterDup(path.Join(os.Getenv("DCCPLOG"), "_"+logname+"_.emit"), dup)
+	logwriter := dccp.NewFileLogWriterDup(path.Join(os.Getenv("DCCPLOG"), logname+".emit"), dup)
 	run = dccp.NewRuntime(dccp.RealTime, logwriter)
 	run.Filter().Select(
 		"client", "server", "end", "line", "conn", "s", 

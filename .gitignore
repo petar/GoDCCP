@@ -26,3 +26,4 @@ syntax:regexp
 ^src/cmd/(.*)/6?\1$
 ^.*/core.[0-9]*$
 SCRIBBLE
+xxx
