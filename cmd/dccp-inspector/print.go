@@ -39,7 +39,7 @@ const (
 )
 
 func printWrite(r *dccp.LogRecord) *PrintRecord {
-	switch r.Module {
+	switch r.System {
 	case "server":
 		return &PrintRecord{
 			Log:  r,
@@ -57,7 +57,7 @@ func printWrite(r *dccp.LogRecord) *PrintRecord {
 }
 
 func printRead(r *dccp.LogRecord) *PrintRecord {
-	switch r.Module {
+	switch r.System {
 	case "client":
 		return &PrintRecord{
 			Log:  r,
@@ -76,8 +76,10 @@ func printRead(r *dccp.LogRecord) *PrintRecord {
 
 func printDrop(r *dccp.LogRecord) *PrintRecord {
 	var text string
-	switch r.Module {
+	switch r.System {
+	// XXX: Seems there is a bug in the print out formats below (the server case format feels like it should be the line case)
 	case "line":
+		// XXX: this if makes no sense
 		if r.Module == "server" {
 			text = fmt.Sprintf("%s|%s| D<——%s     |%s|%s",
 				skipState, skip, sprintPacket(r), skip, skipState)
@@ -134,7 +136,7 @@ func printIdle(r *dccp.LogRecord) *PrintRecord {
 
 func printGeneric(r *dccp.LogRecord) *PrintRecord {
 	var text string
-	switch r.Module {
+	switch r.System {
 	case "client":
 		text = fmt.Sprintf("%8s | %s |%s|%s|%s",
 			r.State, sprintPacketEventComment(r), skip, skip, skipState)
