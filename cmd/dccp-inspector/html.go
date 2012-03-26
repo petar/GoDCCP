@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"os"
 	"sort"
 	"strconv"
+	"strings"
 	"github.com/petar/GoDCCP/dccp"
 )
 
@@ -54,10 +56,12 @@ func pipeEmit(t *dccp.LogRecord) *logPipe {
 		pipe = pipeGeneric(t)
 	}
 	if pipe == nil {
+		fmt.Fprintf(os.Stderr, "Dropping: %v\n", t)
 		return nil
 	}
 	pipe.SourceFile = t.SourceFile
 	pipe.SourceLine = strconv.Itoa(t.SourceLine)
+	pipe.Event = strings.ToLower(t.Event)
 	return &logPipe{ Log: t, Pipe: pipe }
 }
 
@@ -65,6 +69,7 @@ type emitPipe struct {
 	Time       string
 	SourceFile string
 	SourceLine string
+	Event      string
 	Client     emitSubPipe
 	Pipe       emitSubPipe
 	Server     emitSubPipe
@@ -87,18 +92,23 @@ var (
 			`<meta charset="utf-8">` +
 			`<title>DCCP Inspector</title>` +
 			`<style>` +
-			`table, tr, td { font-family: monospace }` +
+			`table, tr, td { font-family: monospace; }` +
+			`td { background: #fcfcfc; }` +
 			`td { margin: 0; padding:0px; }` +
 			`td.time { width: 100px; text-align: right }` +
 			`td.state.client { text-align: right }` +
 			`td.state.server { text-align: left }` +
 			`td.detail { width: 200px }` +
-			`td.left { text-align: right }` +
-			`td.right { text-align: left }` +
+			`td.left { text-align: right; width: 60px !important; }` +
+			`td.right { text-align: left; width: 60px !important; }` +
 			`td.file { width: 250px; text-align: right }` +
 			`td.sep { width: 10px; text-align: center }` +
 			`td.line { width: 30px; text-align: left }` +
+			`td.nonempty { background: #f0f0f0 }` +
 			`pre { padding: 0; margin: 0 }` +
+			// Event coloring
+			`.ev_warn { color: #c00 }` + 
+			`.ev_idle.nonempty { background: #cec }` + 
 			`</style>` +
 			`<!-- script src="js/libs/modernizr-2.5.3.min.js"></script-->` +
 		`</head>` +
@@ -108,27 +118,34 @@ var (
 	emitTmpl = template.Must(template.New("emit").Parse(
 		`{{ define "emit" }}` +
 			`<tr class="emit">` + 
-				`<td class="time"><pre>{{ .Time }}</pre></td>` +
+				`{{ $ev := .Event }}` +
+				`<td class="time ev_{{ $ev }} "><pre>{{ .Time }}</pre></td>` +
 				`{{ with .Client }}` +
-					`<td class="client state"><pre>{{ .State }}</pre></td>` + 
-					`<td class="client left"><pre>{{ .Left  }}</pre></td>` +
-					`<td class="client detail"><pre>{{ .Detail }}</pre></td>` +
-					`<td class="client right"><pre>{{ .Right }}</pre></td>` +
+					`{{ $n0 := or .State .Left .Right .Detail }}` +
+					`{{ $ne := and $n0 "nonempty" }}` +
+					`<td class="client state ev_{{ $ev }} {{ $ne }}"><pre>{{ .State }}</pre></td>` + 
+					`<td class="client left ev_{{ $ev }} {{ $ne }}"><pre>{{ .Left  }}</pre></td>` +
+					`<td class="client detail ev_{{ $ev }} {{ $ne }}"><pre>{{ .Detail }}</pre></td>` +
+					`<td class="client right ev_{{ $ev }} {{ $ne }}"><pre>{{ .Right }}</pre></td>` +
 				`{{ end }}` +
 				`{{ with .Pipe }}` +
-					`<td class="pipe left"><pre>{{ .Left }}</pre></td>` +
-					`<td class="pipe detail"><pre>{{ .Detail }}</pre></td>` + 
-					`<td class="pipe right"><pre>{{ .Right }}</pre></td>` +
+					`{{ $n0 := or .State .Left .Right .Detail }}` +
+					`{{ $ne := and $n0 "nonempty" }}` +
+					`<td class="pipe left ev_{{ $ev }} {{ $ne }}"><pre>{{ .Left }}</pre></td>` +
+					`<td class="pipe detail ev_{{ $ev }} {{ $ne }}"><pre>{{ .Detail }}</pre></td>` + 
+					`<td class="pipe right ev_{{ $ev }} {{ $ne }}"><pre>{{ .Right }}</pre></td>` +
 				`{{ end }}` +
 				`{{ with .Server }}` +
-					`<td class="server left"><pre>{{ .Left }}</pre></td>` +
-					`<td class="server detail"><pre>{{ .Detail }}</pre></td>` +
-					`<td class="server right"><pre>{{ .Right }}</pre></td>` +
-					`<td class="server state"><pre>{{ .State }}</pre></td>` + 
+					`{{ $n0 := or .State .Left .Right .Detail }}` +
+					`{{ $ne := and $n0 "nonempty" }}` +
+					`<td class="server left ev_{{ $ev }} {{ $ne }}"><pre>{{ .Left }}</pre></td>` +
+					`<td class="server detail ev_{{ $ev }} {{ $ne }}"><pre>{{ .Detail }}</pre></td>` +
+					`<td class="server right ev_{{ $ev }} {{ $ne }}"><pre>{{ .Right }}</pre></td>` +
+					`<td class="server state ev_{{ $ev }} {{ $ne }}"><pre>{{ .State }}</pre></td>` + 
 				`{{ end }}` +
-					`<td class="file"><pre>{{ .SourceFile }}</pre></td>` +
-					`<td class="sep"><pre>:</pre></td>` +
-					`<td class="line"><pre>{{ .SourceLine }}</pre></td>` +
+				`<td class="file ev_{{ $ev }} "><pre>{{ .SourceFile }}</pre></td>` +
+				`<td class="sep ev_{{ $ev }} "><pre>:</pre></td>` +
+				`<td class="line ev_{{ $ev }} "><pre>{{ .SourceLine }}</pre></td>` +
 			`</tr>` +
 		`{{ end }}`,
 	))
@@ -136,7 +153,8 @@ var (
 
 func htmlizePipe(e *emitPipe) string {
 	var w bytes.Buffer
-	if emitTmpl.Execute(&w, e) != nil {
+	if err := emitTmpl.Execute(&w, e); err != nil {
+		fmt.Fprintf(os.Stderr, "template error (%s)\n", err)
 		panic("error htmlizing emit")
 	}
 	return string(w.Bytes())
@@ -192,18 +210,18 @@ func pipeIdle(r *dccp.LogRecord) *emitPipe {
 		return &emitPipe{
 			Client: emitSubPipe {
 				State:  r.State,
-				Detail: "—————————————————",
+				Detail: "",
 			},
 		}
 	case "server":
 		return &emitPipe{
 			Server: emitSubPipe{
 				State:  r.State,
-				Detail: "—————————————————",
+				Detail: "",
 			},
 		}
 	}
-	panic("unreach")
+	return nil
 }
 
 func pipeDrop(r *dccp.LogRecord) *emitPipe {
@@ -260,7 +278,7 @@ func pipeDrop(r *dccp.LogRecord) *emitPipe {
 			}
 		}
 	}
-	panic("unreach")
+	return nil
 }
 
 func pipeGeneric(r *dccp.LogRecord) *emitPipe {
@@ -286,7 +304,7 @@ func pipeGeneric(r *dccp.LogRecord) *emitPipe {
 			},
 		}
 	}
-	panic("unreach")
+	return nil
 }
 
 // logPipeTimeSort sorts logPipe records by timestamp
