@@ -86,46 +86,50 @@ var (
 		`<head>` +
 			`<meta charset="utf-8">` +
 			`<title>DCCP Inspector</title>` +
+			`<style>` +
+			`table, tr, td { font-family: monospace }` +
+			`td { margin: 0; padding:0px; }` +
+			`td.time { width: 100px; text-align: right }` +
+			`td.state.client { text-align: right }` +
+			`td.state.server { text-align: left }` +
+			`td.detail { width: 200px }` +
+			`td.left { text-align: right }` +
+			`td.right { text-align: left }` +
+			`td.file { width: 250px; text-align: right }` +
+			`td.sep { width: 10px; text-align: center }` +
+			`td.line { width: 30px; text-align: left }` +
+			`pre { padding: 0; margin: 0 }` +
+			`</style>` +
 			`<!-- script src="js/libs/modernizr-2.5.3.min.js"></script-->` +
 		`</head>` +
-		`<body>`
+		`<body><table cell-spacing="2px">`
 	htmlFooter = 
-		`</body>` +
-		`</html>`
+		`</table></body></html>`
 	emitTmpl = template.Must(template.New("emit").Parse(
 		`{{ define "emit" }}` +
-			`<div class="emit">` + 
-				`<div class="time"><pre>{{ .Time }}</pre></div>` +
+			`<tr class="emit">` + 
+				`<td class="time"><pre>{{ .Time }}</pre></td>` +
 				`{{ with .Client }}` +
-				`<div class="client">` + 
-					`<div class="state"><pre>{{ .State }}</pre></div>` + 
-					`<div class="detail">` +
-						`<pre class="left">{{ .Left }}</pre>` +
-						`<pre>{{ .Detail }}</pre>` +
-						`<pre class="left">{{ .Right }}</pre>` +
-					`</div>` + 
-				`</div>` +
+					`<td class="client state"><pre>{{ .State }}</pre></td>` + 
+					`<td class="client left"><pre>{{ .Left  }}</pre></td>` +
+					`<td class="client detail"><pre>{{ .Detail }}</pre></td>` +
+					`<td class="client right"><pre>{{ .Right }}</pre></td>` +
 				`{{ end }}` +
 				`{{ with .Pipe }}` +
-				`<div class="pipe">` +
-					`<div class="detail"><pre>{{ .Detail }}</pre></div>` + 
-				`</div>` +
+					`<td class="pipe left"><pre>{{ .Left }}</pre></td>` +
+					`<td class="pipe detail"><pre>{{ .Detail }}</pre></td>` + 
+					`<td class="pipe right"><pre>{{ .Right }}</pre></td>` +
 				`{{ end }}` +
 				`{{ with .Server }}` +
-				`<div class="server">` +
-					`<div class="detail">` +
-						`<pre class="left">{{ .Left }}</pre>` +
-						`<pre>{{ .Detail }}</pre>` +
-						`<pre class="left">{{ .Right }}</pre>` +
-					`</div>` + 
-					`<div class="state"><pre>{{ .State }}</pre></div>` + 
-				`</div>` +
+					`<td class="server left"><pre>{{ .Left }}</pre></td>` +
+					`<td class="server detail"><pre>{{ .Detail }}</pre></td>` +
+					`<td class="server right"><pre>{{ .Right }}</pre></td>` +
+					`<td class="server state"><pre>{{ .State }}</pre></td>` + 
 				`{{ end }}` +
-				`<div class="source">` +
-					`<pre class="file">{{ .SourceFile }}</pre>` +
-					`<pre class="line">{{ .SourceLine }}</pre>` +
-				`</div>` +
-			`</div>` +
+					`<td class="file"><pre>{{ .SourceFile }}</pre></td>` +
+					`<td class="sep"><pre>:</pre></td>` +
+					`<td class="line"><pre>{{ .SourceLine }}</pre></td>` +
+			`</tr>` +
 		`{{ end }}`,
 	))
 )
