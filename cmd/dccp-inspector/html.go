@@ -118,7 +118,7 @@ var (
 			`<meta charset="utf-8">` +
 			`<title>DCCP Inspector</title>` +
 			`<style>` +
-			`table, tr, td { font-family: monospace; }` +
+			`table, tr, td { font-family: 'Droid Sans Mono'; font-size: 12px; }` +
 			`td { background: #fdfdfd; }` +
 			`td { margin: 0; padding:0px; }` +
 			`td.time { width: 100px; text-align: right }` +
