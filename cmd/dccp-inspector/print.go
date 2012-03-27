@@ -161,12 +161,16 @@ func sprintIdle(r *dccp.LogRecord) string {
 }
 
 func sprintPacket(r *dccp.LogRecord) string {
+	return sprintPacketWidth(r, 9)
+}
+
+func sprintPacketWidth(r *dccp.LogRecord, width int) string {
 	var w bytes.Buffer
 	w.WriteString(r.Type)
-	for i := 0; i < 9-len(r.Type); i++ {
+	for i := 0; i < width-len(r.Type); i++ {
 		w.WriteRune('·')
 	}
-	return fmt.Sprintf(" %9s%06x/%06x ", string(w.Bytes()), r.SeqNo, r.AckNo)
+	return fmt.Sprintf(" %s%06x/%06x ", string(w.Bytes()), r.SeqNo, r.AckNo)
 }
 
 func sprintPacketEventComment(r *dccp.LogRecord) string {

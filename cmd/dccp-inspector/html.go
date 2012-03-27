@@ -46,6 +46,7 @@ func htmlize(records []*logPipe, srt bool) {
 		Client: subSpacer,
 		Pipe:   subSpacer,
 		Server: subSpacer,
+		Event:  "spacer",
 	}
 	fmt.Println(htmlizePipe(spacer))
 	fmt.Println(htmlFooter)
@@ -73,8 +74,21 @@ func pipeEmit(t *dccp.LogRecord) *logPipe {
 	}
 	pipe.SourceFile = t.SourceFile
 	pipe.SourceLine = strconv.Itoa(t.SourceLine)
-	pipe.Event = strings.ToLower(t.Event)
+	pipe.Event = classify(t.Event)
 	return &logPipe{ Log: t, Pipe: pipe }
+}
+
+func classify(ev string) string {
+	var w bytes.Buffer
+	for _, b := range ev {
+		switch b {
+		case '-':
+			w.WriteByte('_')
+		default:
+			w.WriteByte(byte(b))
+		}
+	}
+	return strings.ToLower(string(w.Bytes()))
 }
 
 type emitPipe struct {
@@ -124,6 +138,10 @@ var (
 			`.ev_warn { color: #c00 }` + 
 			`.client.ev_idle.nonempty { background: #f8e0e0 }` + 
 			`.server.ev_idle.nonempty { background: #e0e0f8 }` + 
+			`.ev_event, .ev_idle, .ev_rrtt_h, .ev_rrtt, .ev_wccval, .ev_info { color: #aaa }` + 
+			`.ev_write, .ev_read, .ev_drop { color: #000 }` + 
+			`.ev_end { background: #0c0 !important; color: #fff !important }` + 
+			`.ev_spacer { background: white !important; color: white !important }` + 
 			`</style>` +
 			`<!-- script src="js/libs/modernizr-2.5.3.min.js"></script-->` +
 		`</head>` +
@@ -175,13 +193,15 @@ func htmlizePipe(e *emitPipe) string {
 	return string(w.Bytes())
 }
 
+const htmlPacketWidth = 17
+
 func pipeWrite(r *dccp.LogRecord) *emitPipe {
 	switch r.System {
 	case "server":
 		return &emitPipe{
 			Server: emitSubPipe{ 
 				State:  r.State,
-				Detail: sprintPacket(r),
+				Detail: sprintPacketWidth(r, htmlPacketWidth),
 				Right:  "<——W",
 			},
 		}
@@ -189,7 +209,7 @@ func pipeWrite(r *dccp.LogRecord) *emitPipe {
 		return &emitPipe{
 			Client: emitSubPipe{
 				State : r.State,
-				Detail: sprintPacket(r),
+				Detail: sprintPacketWidth(r, htmlPacketWidth),
 				Left:   "W——>",
 			},
 		}
@@ -203,7 +223,7 @@ func pipeRead(r *dccp.LogRecord) *emitPipe {
 		return &emitPipe{
 			Client: emitSubPipe {
 				State:  r.State,
-				Detail: sprintPacket(r),
+				Detail: sprintPacketWidth(r, htmlPacketWidth),
 				Left:   "R<——",
 			},
 		}
@@ -211,7 +231,7 @@ func pipeRead(r *dccp.LogRecord) *emitPipe {
 		return &emitPipe{
 			Server: emitSubPipe{
 				State:  r.State,
-				Detail: sprintPacket(r),
+				Detail: sprintPacketWidth(r, htmlPacketWidth),
 				Right:  "——>R",
 			},
 		}
@@ -246,14 +266,14 @@ func pipeDrop(r *dccp.LogRecord) *emitPipe {
 		case "server":
 			return &emitPipe{
 				Pipe: emitSubPipe{
-					Detail: sprintPacket(r),
+					Detail: sprintPacketWidth(r, htmlPacketWidth),
 					Left:   "D<——",
 				},
 			}
 		case "client":
 			return &emitPipe{
 				Pipe: emitSubPipe{
-					Detail: sprintPacket(r),
+					Detail: sprintPacketWidth(r, htmlPacketWidth),
 					Right:  "——>D",
 				},
 			}
@@ -263,14 +283,14 @@ func pipeDrop(r *dccp.LogRecord) *emitPipe {
 		case "Slow app":
 			return &emitPipe{
 				Client: emitSubPipe{
-					Detail: sprintPacket(r),
+					Detail: sprintPacketWidth(r, htmlPacketWidth),
 					Right:  "D<——",
 				},
 			}
 		case "Slow strobe":
 			return &emitPipe{
 				Client: emitSubPipe{
-					Detail: sprintPacket(r),
+					Detail: sprintPacketWidth(r, htmlPacketWidth),
 					Right:  "——>D",
 				},
 			}
@@ -280,14 +300,14 @@ func pipeDrop(r *dccp.LogRecord) *emitPipe {
 		case "Slow app":
 			return &emitPipe{
 				Server: emitSubPipe{
-					Detail: sprintPacket(r),
+					Detail: sprintPacketWidth(r, htmlPacketWidth),
 					Left:  "——>D",
 				},
 			}
 		case "Slow strobe":
 			return &emitPipe{
 				Server: emitSubPipe{
-					Detail: sprintPacket(r),
+					Detail: sprintPacketWidth(r, htmlPacketWidth),
 					Left:  "D<——",
 				},
 			}
@@ -296,26 +316,35 @@ func pipeDrop(r *dccp.LogRecord) *emitPipe {
 	return nil
 }
 
+const htmlEventWidth = 30 
+
+func sprintPacketEventCommentHTML(r *dccp.LogRecord) string {
+	if r.SeqNo == 0 {
+		return fmt.Sprintf(" %s ", cut(r.Comment, htmlEventWidth-2))
+	}
+	return fmt.Sprintf(" %s %06x/%06x ", cut(r.Comment, htmlEventWidth-14-2), r.SeqNo, r.AckNo)
+}
+
 func pipeGeneric(r *dccp.LogRecord) *emitPipe {
 	switch r.System {
 	case "line":
 		return &emitPipe{
 			Pipe: emitSubPipe {
-				Detail: sprintPacketEventComment(r),
+				Detail: sprintPacketEventCommentHTML(r),
 			},
 		}
 	case "client":
 		return &emitPipe{
 			Client: emitSubPipe {
 				State:  r.State,
-				Detail: sprintPacketEventComment(r),
+				Detail: sprintPacketEventCommentHTML(r),
 			},
 		}
 	case "server":
 		return &emitPipe{
 			Server: emitSubPipe{
 				State:  r.State,
-				Detail: sprintPacketEventComment(r),
+				Detail: sprintPacketEventCommentHTML(r),
 			},
 		}
 	}
