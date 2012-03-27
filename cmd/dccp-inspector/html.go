@@ -36,6 +36,18 @@ func htmlize(records []*logPipe, srt bool) {
 		}
 		fmt.Println(htmlizePipe(r.Pipe))
 	}
+	subSpacer := emitSubPipe{
+		State:  "",
+		Detail: "",
+		Left:   "    ",
+		Right:  "    ",
+	}
+	spacer := &emitPipe{
+		Client: subSpacer,
+		Pipe:   subSpacer,
+		Server: subSpacer,
+	}
+	fmt.Println(htmlizePipe(spacer))
 	fmt.Println(htmlFooter)
 }
 
@@ -93,22 +105,25 @@ var (
 			`<title>DCCP Inspector</title>` +
 			`<style>` +
 			`table, tr, td { font-family: monospace; }` +
-			`td { background: #fcfcfc; }` +
+			`td { background: #fdfdfd; }` +
 			`td { margin: 0; padding:0px; }` +
 			`td.time { width: 100px; text-align: right }` +
 			`td.state.client { text-align: right }` +
 			`td.state.server { text-align: left }` +
 			`td.detail { width: 200px }` +
-			`td.left { text-align: right; width: 60px !important; }` +
-			`td.right { text-align: left; width: 60px !important; }` +
+			`td.left { text-align: right; padding-left: 3px; padding-right: 3px }` +
+			`td.right { text-align: left; padding-left: 3px; padding-right: 3px }` +
 			`td.file { width: 250px; text-align: right }` +
 			`td.sep { width: 10px; text-align: center }` +
 			`td.line { width: 30px; text-align: left }` +
-			`td.nonempty { background: #f0f0f0 }` +
+			`td.client.nonempty { background: #fff0f0 }` +
+			`td.server.nonempty { background: #f0f0ff }` +
+			`td.pipe.nonempty { background: #f8e0f8 }` +
 			`pre { padding: 0; margin: 0 }` +
 			// Event coloring
 			`.ev_warn { color: #c00 }` + 
-			`.ev_idle.nonempty { background: #cec }` + 
+			`.client.ev_idle.nonempty { background: #f8e0e0 }` + 
+			`.server.ev_idle.nonempty { background: #e0e0f8 }` + 
 			`</style>` +
 			`<!-- script src="js/libs/modernizr-2.5.3.min.js"></script-->` +
 		`</head>` +
