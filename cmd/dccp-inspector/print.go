@@ -170,14 +170,14 @@ func sprintPacketWidth(r *dccp.LogRecord, width int) string {
 	for i := 0; i < width-len(r.Type); i++ {
 		w.WriteRune('·')
 	}
-	return fmt.Sprintf(" %s%06x/%06x ", string(w.Bytes()), r.SeqNo, r.AckNo)
+	return fmt.Sprintf(" %s%06x·%06x ", string(w.Bytes()), r.SeqNo, r.AckNo)
 }
 
 func sprintPacketEventComment(r *dccp.LogRecord) string {
 	if r.SeqNo == 0 {
 		return fmt.Sprintf("     %-22s     ", cut(r.Comment, 22))
 	}
-	return fmt.Sprintf("     %-14s %06x/     ", cut(r.Comment, 14), r.SeqNo)
+	return fmt.Sprintf("     %-14s %06x·     ", cut(r.Comment, 14), r.SeqNo)
 }
 
 func cut(s string, n int) string {

@@ -155,7 +155,7 @@ func (t *Logger) EC(level int, module, event, comment string, args ...interface{
 	sinceZero, sinceLast := t.run.Snap()
 
 	// Extract header information
-	var hType string = "nil"
+	var hType string = ""
 	var hSeqNo, hAckNo int64
 __FindHeader:
 	for _, a := range args {

@@ -5,6 +5,8 @@
 package gauge
 
 import (
+	"fmt"
+	"os"
 	"sort"
 	"sync"
 	"github.com/petar/GoDCCP/dccp"
@@ -20,7 +22,7 @@ type LogReducer struct {
 }
 
 type Place struct {
-	latest   int64
+	latest   *dccp.LogRecord
 	CheckIns []*dccp.LogRecord
 }
 
@@ -60,16 +62,18 @@ func (t *LogReducer) Write(r *dccp.LogRecord) {
 	p, ok := t.places[r.Module]
 	if !ok {
 		p = &Place{ 
-			latest:   0,
+			latest:   nil,
 			CheckIns: make([]*dccp.LogRecord, 0),
 		}
 		t.places[r.Module] = p
 	}
 
-	if r.Time <= p.latest {
+	if p.latest != nil && r.Time <= p.latest.Time {
+		fmt.Fprintf(os.Stderr, "lastTime=%d, thisTime=%d\n", p.latest.Time, r.Time)
+		fmt.Fprintf(os.Stderr, "last=%v\nthis=%v\n", p.latest, r)
 		panic("backward time in reducer")
 	}
-	p.latest = r.Time
+	p.latest = r
 	p.CheckIns = append(p.CheckIns, r)
 
 	// Trips update

@@ -75,7 +75,16 @@ func pipeEmit(t *dccp.LogRecord) *logPipe {
 	pipe.SourceFile = t.SourceFile
 	pipe.SourceLine = strconv.Itoa(t.SourceLine)
 	pipe.Event = classify(t.Event)
+	pipe.SeqNo = htmlizeAckSeqNo(t.Type, t.SeqNo)
+	pipe.AckNo = htmlizeAckSeqNo(t.Type, t.AckNo)
 	return &logPipe{ Log: t, Pipe: pipe }
+}
+
+func htmlizeAckSeqNo(t string, no int64) string {
+	if t == "" {
+		return ""
+	}
+	return fmt.Sprintf("%06x", no)
 }
 
 func classify(ev string) string {
@@ -96,6 +105,8 @@ type emitPipe struct {
 	SourceFile string
 	SourceLine string
 	Event      string
+	SeqNo      string
+	AckNo      string
 	Client     emitSubPipe
 	Pipe       emitSubPipe
 	Server     emitSubPipe
@@ -143,42 +154,72 @@ var (
 			`.ev_end { background: #0c0 !important; color: #fff !important }` + 
 			`.ev_spacer { background: white !important; color: white !important }` + 
 			`</style>` +
-			`<!-- script src="js/libs/modernizr-2.5.3.min.js"></script-->` +
+			`<script type="text/javascript">` + underscore_js_1_3_1 + `</script>` +
+			`<script type="text/javascript">` + jQuery_1_7_2 + `</script>` +
+			`<script type="text/javascript">` + uiJavaScript + `</script>` +
 		`</head>` +
 		`<body><table cell-spacing="2px">`
+	uiJavaScript =
+	`
+	jQuery(document).ready(function(){
+		$('td.nonempty').click(onClick); 
+	})
+	function onClick(e) {
+		var seqno = $(this).attr("seqno");
+		var ackno = $(this).attr("ackno");
+		if (_.isUndefined(seqno) || seqno == "") {
+			return;
+		}
+		$('[seqno='+seqno+'].nonempty').css("background", "").attr("emph", "1");
+		$('[ackno='+seqno+'].nonempty').css("background", "").attr("emph", "1");
+	}
+	function clearEmphasis() {
+	}
+	`
 	htmlFooter = 
 		`</table></body></html>`
 	emitTmpl = template.Must(template.New("emit").Parse(
 		`{{ define "emit" }}` +
 			`<tr class="emit">` + 
-				`{{ $ev := .Event }}` +
-				`<td class="time ev_{{ $ev }} "><pre>{{ .Time }}</pre></td>` +
+			`{{ $ev := .Event }}{{ $seqno := .SeqNo }}{{ $ackno := .AckNo }}` +
+				`<td class="time ev_{{ $ev }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}"><pre>{{ .Time }}</pre></td>` +
 				`{{ with .Client }}` +
 					`{{ $n0 := or .State .Left .Right .Detail }}` +
 					`{{ $ne := and $n0 "nonempty" }}` +
-					`<td class="client state ev_{{ $ev }} {{ $ne }}"><pre>{{ .State }}</pre></td>` + 
-					`<td class="client left ev_{{ $ev }} {{ $ne }}"><pre>{{ .Left  }}</pre></td>` +
-					`<td class="client detail ev_{{ $ev }} {{ $ne }}"><pre>{{ .Detail }}</pre></td>` +
-					`<td class="client right ev_{{ $ev }} {{ $ne }}"><pre>{{ .Right }}</pre></td>` +
+					`<td class="client state ev_{{ $ev }} {{ $ne }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}">` + 
+						`<pre>{{ .State }}</pre></td>` + 
+					`<td class="client left ev_{{ $ev }} {{ $ne }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}">` +
+						`<pre>{{ .Left  }}</pre></td>` +
+					`<td class="client detail ev_{{ $ev }} {{ $ne }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}">` +
+						`<pre>{{ .Detail }}</pre></td>` +
+					`<td class="client right ev_{{ $ev }} {{ $ne }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}">` +
+						`<pre>{{ .Right }}</pre></td>` +
 				`{{ end }}` +
 				`{{ with .Pipe }}` +
 					`{{ $n0 := or .State .Left .Right .Detail }}` +
 					`{{ $ne := and $n0 "nonempty" }}` +
-					`<td class="pipe left ev_{{ $ev }} {{ $ne }}"><pre>{{ .Left }}</pre></td>` +
-					`<td class="pipe detail ev_{{ $ev }} {{ $ne }}"><pre>{{ .Detail }}</pre></td>` + 
-					`<td class="pipe right ev_{{ $ev }} {{ $ne }}"><pre>{{ .Right }}</pre></td>` +
+					`<td class="pipe left ev_{{ $ev }} {{ $ne }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}">` +
+						`<pre>{{ .Left }}</pre></td>` +
+					`<td class="pipe detail ev_{{ $ev }} {{ $ne }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}">` +
+						`<pre>{{ .Detail }}</pre></td>` + 
+					`<td class="pipe right ev_{{ $ev }} {{ $ne }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}">` +
+						`<pre>{{ .Right }}</pre></td>` +
 				`{{ end }}` +
 				`{{ with .Server }}` +
 					`{{ $n0 := or .State .Left .Right .Detail }}` +
 					`{{ $ne := and $n0 "nonempty" }}` +
-					`<td class="server left ev_{{ $ev }} {{ $ne }}"><pre>{{ .Left }}</pre></td>` +
-					`<td class="server detail ev_{{ $ev }} {{ $ne }}"><pre>{{ .Detail }}</pre></td>` +
-					`<td class="server right ev_{{ $ev }} {{ $ne }}"><pre>{{ .Right }}</pre></td>` +
-					`<td class="server state ev_{{ $ev }} {{ $ne }}"><pre>{{ .State }}</pre></td>` + 
+					`<td class="server left ev_{{ $ev }} {{ $ne }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}">` +
+						`<pre>{{ .Left }}</pre></td>` +
+					`<td class="server detail ev_{{ $ev }} {{ $ne }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}">` +
+						`<pre>{{ .Detail }}</pre></td>` +
+					`<td class="server right ev_{{ $ev }} {{ $ne }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}">` +
+						`<pre>{{ .Right }}</pre></td>` +
+					`<td class="server state ev_{{ $ev }} {{ $ne }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}">` +
+						`<pre>{{ .State }}</pre></td>` + 
 				`{{ end }}` +
-				`<td class="file ev_{{ $ev }} "><pre>{{ .SourceFile }}</pre></td>` +
-				`<td class="sep ev_{{ $ev }} "><pre>:</pre></td>` +
-				`<td class="line ev_{{ $ev }} "><pre>{{ .SourceLine }}</pre></td>` +
+				`<td class="file ev_{{ $ev }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}"><pre>{{ .SourceFile }}</pre></td>` +
+				`<td class="sep ev_{{ $ev }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}"><pre>:</pre></td>` +
+				`<td class="line ev_{{ $ev }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}"><pre>{{ .SourceLine }}</pre></td>` +
 			`</tr>` +
 		`{{ end }}`,
 	))
@@ -322,7 +363,7 @@ func sprintPacketEventCommentHTML(r *dccp.LogRecord) string {
 	if r.SeqNo == 0 {
 		return fmt.Sprintf(" %s ", cut(r.Comment, htmlEventWidth-2))
 	}
-	return fmt.Sprintf(" %s %06x/%06x ", cut(r.Comment, htmlEventWidth-14-2), r.SeqNo, r.AckNo)
+	return fmt.Sprintf(" %s %06x·%06x ", cut(r.Comment, htmlEventWidth-14-2), r.SeqNo, r.AckNo)
 }
 
 func pipeGeneric(r *dccp.LogRecord) *emitPipe {
