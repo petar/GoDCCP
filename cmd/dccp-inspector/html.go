@@ -129,6 +129,7 @@ var (
 			`<meta charset="utf-8">` +
 			`<title>DCCP Inspector</title>` +
 			`<style>` +
+			`*, body, table, tr, td, p, div, pre { cursor: default }` +
 			`table, tr, td { font-family: 'Droid Sans Mono'; font-size: 12px; }` +
 			`td { background: #fdfdfd; }` +
 			`td { margin: 0; padding:0px; }` +
@@ -162,18 +163,58 @@ var (
 	uiJavaScript =
 	`
 	jQuery(document).ready(function(){
-		$('td.nonempty').click(onClick); 
+		$('td[seqno]').click(onLeftClick);
+		//$('td[ackno]').bind("contextmenu", onRightClick);
 	})
-	function onClick(e) {
+	function onLeftClick(e) {
 		var seqno = $(this).attr("seqno");
-		var ackno = $(this).attr("ackno");
 		if (_.isUndefined(seqno) || seqno == "") {
 			return;
 		}
-		$('[seqno='+seqno+'].nonempty').css("background", "").attr("emph", "1");
-		$('[ackno='+seqno+'].nonempty').css("background", "").attr("emph", "1");
+		clearEmphasis();
+		_.each($('[seqno='+seqno+'].nonempty'), function(t) {
+			t = $(t);
+			var savedbg = t.css("background");
+			t.css("background", "yellow");
+			t.attr("emph", savedbg);
+		});
+		
+		_.each($('[ackno='+seqno+'].nonempty'), function(t) {
+			t = $(t);
+			var savedbg = t.css("background");
+			t.css("background", "orange");
+			t.attr("emph", savedbg);
+		});
+		$(this).css("background", "red");
+	}
+	function onRightClick(e) {
+		var ackno = $(this).attr("ackno");
+		if (_.isUndefined(ackno) || ackno == "") {
+			return;
+		}
+		clearEmphasis();
+		_.each($('[seqno='+ackno+'].nonempty'), function(t) {
+			t = $(t);
+			var savedbg = t.css("background");
+			t.css("background", "yellow");
+			t.attr("emph", savedbg);
+		});
+		
+		_.each($('[ackno='+ackno+'].nonempty'), function(t) {
+			t = $(t);
+			var savedbg = t.css("background");
+			t.css("background", "orange");
+			t.attr("emph", savedbg);
+		});
+		$(this).css("background", "pink");
 	}
 	function clearEmphasis() {
+		_.each($('[emph]'), function(t) {
+			t = $(t);
+			var savedbg = t.attr("emph");
+			t.removeAttr("emph");
+			t.css("background", savedbg);
+		});
 	}
 	`
 	htmlFooter = 
