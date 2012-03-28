@@ -163,8 +163,8 @@ var (
 	uiJavaScript =
 	`
 	jQuery(document).ready(function(){
-		$('td[seqno]').click(onLeftClick);
-		//$('td[ackno]').bind("contextmenu", onRightClick);
+		$('td[seqno].nonempty').click(onLeftClick);
+		//$('td[ackno].nonempty').bind("contextmenu", onRightClick);
 	})
 	function onLeftClick(e) {
 		var seqno = $(this).attr("seqno");
@@ -172,41 +172,18 @@ var (
 			return;
 		}
 		clearEmphasis();
-		_.each($('[seqno='+seqno+'].nonempty'), function(t) {
-			t = $(t);
-			var savedbg = t.css("background");
-			t.css("background", "yellow");
-			t.attr("emph", savedbg);
-		});
-		
-		_.each($('[ackno='+seqno+'].nonempty'), function(t) {
-			t = $(t);
-			var savedbg = t.css("background");
-			t.css("background", "orange");
-			t.attr("emph", savedbg);
-		});
-		$(this).css("background", "red");
+		_.each($('[seqno='+seqno+'].nonempty'), function(t) { emphasize(t, "yellow") });
+		_.each($('[ackno='+seqno+'].nonempty'), function(t) { emphasize(t, "orange") });
+		emphasize($(this), "red");
 	}
-	function onRightClick(e) {
-		var ackno = $(this).attr("ackno");
-		if (_.isUndefined(ackno) || ackno == "") {
-			return;
+	function emphasize(t, bkg) {
+		t = $(t);
+		var savedbg = t.css("background");
+		var presavedbg = t.attr("emph");
+		t.css("background", bkg);
+		if (_.isUndefined(presavedbg)) {
+			t.attr("emph", savedbg);
 		}
-		clearEmphasis();
-		_.each($('[seqno='+ackno+'].nonempty'), function(t) {
-			t = $(t);
-			var savedbg = t.css("background");
-			t.css("background", "yellow");
-			t.attr("emph", savedbg);
-		});
-		
-		_.each($('[ackno='+ackno+'].nonempty'), function(t) {
-			t = $(t);
-			var savedbg = t.css("background");
-			t.css("background", "orange");
-			t.attr("emph", savedbg);
-		});
-		$(this).css("background", "pink");
 	}
 	function clearEmphasis() {
 		_.each($('[emph]'), function(t) {
