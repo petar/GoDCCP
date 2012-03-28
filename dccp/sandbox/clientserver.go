@@ -29,7 +29,7 @@ func NewClientServerPipeDup(logname string, dup dccp.LogWriter) (clientConn, ser
 	)
 
 	llog := dccp.NewLogger("line", run)
-	hca, hcb, _ := NewPipe(run, llog, "client", "server", 1e9, 100)  // 100 packets per second
+	hca, hcb, _ := NewPipe(run, llog, "client", "server")
 	ccid := ccid3.CCID3{}
 
 	clog := dccp.NewLogger("client", run)
