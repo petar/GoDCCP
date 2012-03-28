@@ -12,7 +12,8 @@ import (
 )
 
 // Pipe is an in-process commincation channel, whose two ends implement dccp.HeaderConn.
-// It supports rate limiting and latency emulation.
+// It supports rate limiting, latency emulation and receive buffer emulation (in order to
+// capture slow readers).
 type Pipe struct {
 	logger *dccp.Logger
 	ha, hb headerHalfPipe
@@ -119,7 +120,7 @@ func (hhl *headerHalfPipe) GetMTU() int {
 	return 1500
 }
 
-// GetMTU implements dccp.HeaderConn.ReadHeader
+// ReadHeader implements dccp.HeaderConn.ReadHeader
 func (hhl *headerHalfPipe) ReadHeader() (h *dccp.Header, err error) {
 	hhl.readDeadlineLk.Lock()
 	readDeadline := hhl.readDeadline
@@ -145,6 +146,7 @@ func (hhl *headerHalfPipe) ReadHeader() (h *dccp.Header, err error) {
 	panic("un")
 }
 
+// WriteHeader implements dccp.HeaderConn.WriteHeader
 func (hhl *headerHalfPipe) WriteHeader(h *dccp.Header) (err error) {
 	hhl.writeLk.Lock()
 	defer hhl.writeLk.Unlock()
@@ -167,6 +169,8 @@ func (hhl *headerHalfPipe) WriteHeader(h *dccp.Header) (err error) {
 	return nil
 }
 
+// rateFilter returns true if another packet can be sent now without violating the rate
+// limit set by SetWriteRate
 func (hhl *headerHalfPipe) rateFilter() bool {
 	hhl.rateLk.Lock()
 	defer hhl.rateLk.Unlock()
@@ -184,6 +188,7 @@ func (hhl *headerHalfPipe) rateFilter() bool {
 	return false
 }
 
+// Close implements dccp.HeaderConn.Close
 func (hhl *headerHalfPipe) Close() error {
 	hhl.writeLk.Lock()
 	defer hhl.writeLk.Unlock()
@@ -199,10 +204,12 @@ func (hhl *headerHalfPipe) Close() error {
 	return nil
 }
 
+// LocalLabel implements dccp.HeaderConn.LocalLabel
 func (hhl *headerHalfPipe) LocalLabel() dccp.Bytes {
 	return &dccp.Label{}
 }
 
+// RemoteLabel implements dccp.HeaderConn.RemoteLabel
 func (hhl *headerHalfPipe) RemoteLabel() dccp.Bytes {
 	return &dccp.Label{}
 }
