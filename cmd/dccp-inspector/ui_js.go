@@ -1,14 +1,25 @@
 package main
 
+/*
+  UI behavior:
+	o Clicking on a row whose log entry pertains to a packet:
+		(i)   Highlights in red the cell that was originally clicked
+		(ii)  Highlights in yellow all other rows pertaining to the same packet (same SeqNo)
+		(iii) Highlights in orange all other rows pertaining to packets acknowledging this
+		packet (AckNo is same as SeqNo of original packet)
+		(iv)  Removes highlighting on rows that were previously highlighted using this
+		procedure
+	o Clicking the (left-most) time cell of a row toggles a dark frame around it
+	o Hovering over any row zooms on the row
+ */
+
 const (
 	headJavaScript =
 	`
 	jQuery(document).ready(function(){
 		$('td[seqno].nonempty').click(onLeftClick);
 		$('tr').mouseenter(hilightRow);
-		$('tr .time').click(markRow);
-		//$('tr').mouseleave(deHilightRow);
-		//$('td[ackno].nonempty').bind("contextmenu", onRightClick);
+		$('td.time').click(toggleMarkRow);
 	})
 	function onLeftClick(e) {
 		var seqno = $(this).attr("seqno");
@@ -47,9 +58,16 @@ const (
 		$('td', t).removeClass("hi-bkg");
 		t.removeAttr("hi");
 	}
-	function markRow() {
-		// XXX: td is selected,
-		$('td', this).addClass("mark-bkg");
+	function toggleMarkRow() {
+		var trow = $(this).parents()[0];
+		_.each($('td', trow), function(t) {
+			t = $(t);
+			if (t.hasClass("mark-bkg")) {
+				t.removeClass("mark-bkg");
+			} else {
+				t.addClass("mark-bkg");
+			}
+		});
 	}
 	`
 )

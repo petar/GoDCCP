@@ -134,7 +134,8 @@ var (
 			`td { background: #fdfdfd; }` +
 			`td { margin: 0; padding:1px; }` +
 			`td { border-top: 1px dotted #ccc; }` +
-			`td.time { width: 100px; text-align: right }` +
+			`td.time { background: #fafafa; width: 100px; text-align: right }` +
+			`td.file, td.sep, td.line { background: #fafafa; }` +
 			`td.state.client { text-align: right }` +
 			`td.state.server { text-align: left }` +
 			`td.detail { width: 200px }` +
@@ -156,12 +157,12 @@ var (
 			`.ev_end { background: #0c0 !important; color: #fff !important }` + 
 			`.ev_spacer { background: white !important; color: white !important }` + 
 			// Highlight coloring
-			`.hi-bkg { font-size: 12px; padding-top: 5px; padding-bottom: 5px; background: #f8f8f8 !important }` +
+			`.hi-bkg { font-size: 12px; padding-top: 9px; padding-bottom: 9px; }` +
 			`.orange-bkg { background: orange !important }` +
 			`.yellow-bkg { background: yellow !important }` +
 			`.red-bkg { background: red !important }` +
-			`td.mark-bkg { border-top: 3px solid black }` +
-			`td.mark-bkg.time { background: red }` +
+			`td.mark-bkg { border-top: 3px solid #666 }` +
+			`td.mark-bkg.time { background: #666; color: white; }` +
 			`</style>` +
 			`<script type="text/javascript">` + underscore_js_1_3_1 + `</script>` +
 			`<script type="text/javascript">` + jQuery_1_7_2 + `</script>` +
