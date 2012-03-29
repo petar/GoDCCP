@@ -20,14 +20,14 @@ type Pipe struct {
 }
 
 func NewPipe(run *dccp.Runtime, logger *dccp.Logger, 
-	aName, bName string, rateInterval int64, ratePacketsPerInterval uint32) (a, b dccp.HeaderConn, line *Pipe) {
+	aName, bName string) (a, b dccp.HeaderConn, line *Pipe) {
 
 	ab := make(chan *pipeHeader, pipeBufferLen)
 	ba := make(chan *pipeHeader, pipeBufferLen)
 	line = &Pipe{}
 	line.logger = logger
-	line.ha.Init(aName, run, line.logger, ba, ab, rateInterval, ratePacketsPerInterval)
-	line.hb.Init(bName, run, line.logger, ab, ba, rateInterval, ratePacketsPerInterval)
+	line.ha.Init(aName, run, line.logger, ba, ab)
+	line.hb.Init(bName, run, line.logger, ab, ba)
 	return &line.ha, &line.hb, line
 }
 
@@ -84,7 +84,7 @@ type pipeHeader struct {
 }
 
 func (hhl *headerHalfPipe) Init(name string, run *dccp.Runtime, logger *dccp.Logger,
-	r <-chan *dccp.Header, w chan<- *dccp.Header) {
+	r <-chan *pipeHeader, w chan<- *pipeHeader) {
 
 	hhl.name = name
 	hhl.run = run

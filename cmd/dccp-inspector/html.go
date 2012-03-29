@@ -132,7 +132,8 @@ var (
 			`*, body, table, tr, td, p, div, pre { cursor: default }` +
 			`table, tr, td { font-family: 'Droid Sans Mono'; font-size: 12px; }` +
 			`td { background: #fdfdfd; }` +
-			`td { margin: 0; padding:0px; }` +
+			`td { margin: 0; padding:1px; }` +
+			`td { border-top: 1px dotted #ccc; }` +
 			`td.time { width: 100px; text-align: right }` +
 			`td.state.client { text-align: right }` +
 			`td.state.server { text-align: left }` +
@@ -154,46 +155,17 @@ var (
 			`.ev_write, .ev_read, .ev_drop { color: #000 }` + 
 			`.ev_end { background: #0c0 !important; color: #fff !important }` + 
 			`.ev_spacer { background: white !important; color: white !important }` + 
+			// Highlight coloring
+			`.hi-bkg { font-size: 12px; padding-top: 5px; padding-bottom: 5px; background: #f8f8f8 !important }` +
+			`.orange-bkg { background: orange !important }` +
+			`.yellow-bkg { background: yellow !important }` +
+			`.red-bkg { background: red !important }` +
 			`</style>` +
 			`<script type="text/javascript">` + underscore_js_1_3_1 + `</script>` +
 			`<script type="text/javascript">` + jQuery_1_7_2 + `</script>` +
-			`<script type="text/javascript">` + uiJavaScript + `</script>` +
+			`<script type="text/javascript">` + headJavaScript + `</script>` +
 		`</head>` +
-		`<body><table cell-spacing="2px">`
-	uiJavaScript =
-	`
-	jQuery(document).ready(function(){
-		$('td[seqno].nonempty').click(onLeftClick);
-		//$('td[ackno].nonempty').bind("contextmenu", onRightClick);
-	})
-	function onLeftClick(e) {
-		var seqno = $(this).attr("seqno");
-		if (_.isUndefined(seqno) || seqno == "") {
-			return;
-		}
-		clearEmphasis();
-		_.each($('[seqno='+seqno+'].nonempty'), function(t) { emphasize(t, "yellow") });
-		_.each($('[ackno='+seqno+'].nonempty'), function(t) { emphasize(t, "orange") });
-		emphasize($(this), "red");
-	}
-	function emphasize(t, bkg) {
-		t = $(t);
-		var savedbg = t.css("background");
-		var presavedbg = t.attr("emph");
-		t.css("background", bkg);
-		if (_.isUndefined(presavedbg)) {
-			t.attr("emph", savedbg);
-		}
-	}
-	function clearEmphasis() {
-		_.each($('[emph]'), function(t) {
-			t = $(t);
-			var savedbg = t.attr("emph");
-			t.removeAttr("emph");
-			t.css("background", savedbg);
-		});
-	}
-	`
+		`<body><table cellspacing="0">`
 	htmlFooter = 
 		`</table></body></html>`
 	emitTmpl = template.Must(template.New("emit").Parse(

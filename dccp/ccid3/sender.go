@@ -84,7 +84,7 @@ func (s *sender) OnWrite(ph *dccp.PreHeader) (ccval int8, options []*dccp.Option
 	rtt, _ := s.senderRoundtripEstimator.RTT()
 
 	ccval = s.senderWindowCounter.OnWrite(rtt, ph.SeqNo, ph.Time)
-	s.logger.E("s", "wccval", fmt.Sprintf("Write CCVal=%d, RTT=%d", ccval, rtt))
+	s.logger.E("s", "wccval", fmt.Sprintf("S·OnW CCVal=%d, RTT=%d", ccval, rtt))
 
 	reportOpt := s.senderRoundtripReporter.OnWrite(rtt, ph.Time)
 	if reportOpt != nil {

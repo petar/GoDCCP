@@ -1,7 +1,0 @@
-#!/bin/sh
-
-if !(kill -KILL `ps | grep 6\.out | grep -v grep | awk '{ print $1 }'`) then
-	echo 'KILL urgh ...'
-else
-	echo 'KILL OK!'
-fi
