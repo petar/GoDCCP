@@ -6,6 +6,7 @@ const (
 	jQuery(document).ready(function(){
 		$('td[seqno].nonempty').click(onLeftClick);
 		$('tr').mouseenter(hilightRow);
+		$('tr .time').click(markRow);
 		//$('tr').mouseleave(deHilightRow);
 		//$('td[ackno].nonempty').bind("contextmenu", onRightClick);
 	})
@@ -45,6 +46,10 @@ const (
 		t = $(t);
 		$('td', t).removeClass("hi-bkg");
 		t.removeAttr("hi");
+	}
+	function markRow() {
+		// XXX: td is selected,
+		$('td', this).addClass("mark-bkg");
 	}
 	`
 )

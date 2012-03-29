@@ -138,7 +138,7 @@ func (hhl *headerHalfPipe) ReadHeader() (h *dccp.Header, err error) {
 			hhl.logger.E(hhl.name, "Warn", "Read EOF", ph.Header)
 			return nil, dccp.ErrEOF
 		}
-		hhl.logger.E(hhl.name, "Read", fmt.Sprintf("SeqNo=%d", h.SeqNo), ph.Header)
+		hhl.logger.E(hhl.name, "Read", fmt.Sprintf("SeqNo=%d", ph.Header.SeqNo), ph.Header)
 		return ph.Header, nil
 	case <-tmoch:
 		return nil, dccp.ErrTimeout

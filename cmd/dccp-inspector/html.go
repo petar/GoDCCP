@@ -160,6 +160,8 @@ var (
 			`.orange-bkg { background: orange !important }` +
 			`.yellow-bkg { background: yellow !important }` +
 			`.red-bkg { background: red !important }` +
+			`td.mark-bkg { border-top: 3px solid black }` +
+			`td.mark-bkg.time { background: red }` +
 			`</style>` +
 			`<script type="text/javascript">` + underscore_js_1_3_1 + `</script>` +
 			`<script type="text/javascript">` + jQuery_1_7_2 + `</script>` +

@@ -81,6 +81,7 @@ func (s *sender) OnWrite(ph *dccp.PreHeader) (ccval int8, options []*dccp.Option
 
 	s.senderNoFeedbackTimer.OnWrite(ph)
 
+	s.senderRoundtripEstimator.OnWrite(ph.SeqNo, ph.Time)
 	rtt, _ := s.senderRoundtripEstimator.RTT()
 
 	ccval = s.senderWindowCounter.OnWrite(rtt, ph.SeqNo, ph.Time)
