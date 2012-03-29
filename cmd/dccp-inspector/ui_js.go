@@ -9,7 +9,10 @@ package main
 		packet (AckNo is same as SeqNo of original packet)
 		(iv)  Removes highlighting on rows that were previously highlighted using this
 		procedure
-	o Clicking the (left-most) time cell of a row toggles a dark frame around it
+	o Clicking the (left-most) time cell of a row toggles a dark frame around the client-half of
+	the row
+	o Clicking the (right-most) source file cell of a row toggles a dark frame around the
+	server-half of the row
 	o Hovering over any row zooms on the row
  */
 
@@ -19,7 +22,8 @@ const (
 	jQuery(document).ready(function(){
 		$('td[seqno].nonempty').click(onLeftClick);
 		$('tr').mouseenter(hilightRow);
-		$('td.time').click(toggleMarkRow);
+		$('td.time').click(toggleMarkClientRow);
+		$('td.file, td.sep, td.line').click(toggleMarkServerRow);
 	})
 	function onLeftClick(e) {
 		var seqno = $(this).attr("seqno");
@@ -58,9 +62,20 @@ const (
 		$('td', t).removeClass("hi-bkg");
 		t.removeAttr("hi");
 	}
-	function toggleMarkRow() {
+	function toggleMarkClientRow() {
 		var trow = $(this).parents()[0];
-		_.each($('td', trow), function(t) {
+		_.each($('td.client, td.time', trow), function(t) {
+			t = $(t);
+			if (t.hasClass("mark-bkg")) {
+				t.removeClass("mark-bkg");
+			} else {
+				t.addClass("mark-bkg");
+			}
+		});
+	}
+	function toggleMarkServerRow() {
+		var trow = $(this).parents()[0];
+		_.each($('td.server, td.file, td.sep, td.line', trow), function(t) {
 			t = $(t);
 			if (t.hasClass("mark-bkg")) {
 				t.removeClass("mark-bkg");

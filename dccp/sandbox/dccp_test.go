@@ -68,7 +68,7 @@ func TestIdle(t *testing.T) {
 
 	cchan := make(chan int, 1)
 	go func() {
-		run.Sleep(5e9) // Stay idle for 5sec
+		run.Sleep(10e9) // Stay idle for 10 sec
 		if err := clientConn.Close(); err != nil {
 			t.Errorf("client close error (%s)", err)
 		}
@@ -78,7 +78,7 @@ func TestIdle(t *testing.T) {
 
 	schan := make(chan int, 1)
 	go func() {
-		run.Sleep(7e9) // Stay idle for 7sec
+		run.Sleep(10e9) // Stay idle for 10 sec
 		if err := serverConn.Close(); err != nil {
 			// XXX why not EOF
 			t.Logf("server close error (%s)", err)

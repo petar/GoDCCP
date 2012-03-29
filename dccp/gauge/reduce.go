@@ -59,13 +59,13 @@ func (t *LogReducer) Write(r *dccp.LogRecord) {
 	t.checkIns = append(t.checkIns, r)
 
 	// Places update
-	p, ok := t.places[r.Module]
+	p, ok := t.places[r.System]
 	if !ok {
 		p = &Place{ 
 			latest:   nil,
 			CheckIns: make([]*dccp.LogRecord, 0),
 		}
-		t.places[r.Module] = p
+		t.places[r.System] = p
 	}
 
 	if p.latest != nil && r.Time <= p.latest.Time {

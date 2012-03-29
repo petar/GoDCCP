@@ -162,7 +162,7 @@ var (
 			`.yellow-bkg { background: yellow !important }` +
 			`.red-bkg { background: red !important }` +
 			`td.mark-bkg { border-top: 3px solid #666 }` +
-			`td.mark-bkg.time { background: #666; color: white; }` +
+			`td.mark-bkg.time, td.mark-bkg.file, td.mark-bkg.line, td.mark-bkg.sep { background: #666; color: white; }` +
 			`</style>` +
 			`<script type="text/javascript">` + underscore_js_1_3_1 + `</script>` +
 			`<script type="text/javascript">` + jQuery_1_7_2 + `</script>` +
