@@ -1,0 +1,13 @@
+
+1.	Can endpoints estimate RTT?
+
+	1.1.	Client never gets an Ack or DataAck,
+			which carries Elapsed option,
+			which is needed for RTT estimate
+
+		1.1.1.	Should Elapsed options be limited to Ack and DataAck?
+
+		1.1.2.	Need mechanism to ensure Ack sent to client in presence of Idle
+
+	1.2.	Client sends 10 packets in the first second, only 3 of which are received?
+		No drops are reported, hence there are programmatic delays?
