@@ -22,6 +22,7 @@ const (
 	jQuery(document).ready(function(){
 		$('td[seqno].nonempty').click(onLeftClick);
 		$('tr').mouseenter(hilightRow);
+		$('tr').dblclick(toggleFoldRow);
 		$('td.time').click(toggleMarkClientRow);
 		$('td.file, td.sep, td.line').click(toggleMarkServerRow);
 	})
@@ -56,6 +57,9 @@ const (
 		_.each($('[hi]'), deHilightRow);
 		$(this).attr("hi", 1);
 		$('td', this).addClass("hi-bkg");
+	}
+	function toggleFoldRow() {
+		$(this).addClass("folded");
 	}
 	function deHilightRow(t) {
 		t = $(t);

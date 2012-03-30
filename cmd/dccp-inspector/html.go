@@ -163,6 +163,8 @@ var (
 			`.red-bkg { background: red !important }` +
 			`td.mark-bkg { border-top: 3px solid #666 }` +
 			`td.mark-bkg.time, td.mark-bkg.file, td.mark-bkg.line, td.mark-bkg.sep { background: #666; color: white; }` +
+			// Folding
+			`tr.folded { height: 5px !important }` +
 			`</style>` +
 			`<script type="text/javascript">` + underscore_js_1_3_1 + `</script>` +
 			`<script type="text/javascript">` + jQuery_1_7_2 + `</script>` +
@@ -239,6 +241,19 @@ func pipeWrite(r *dccp.LogRecord) *emitPipe {
 				Right:  "<——W",
 			},
 		}
+	case "line":
+		e := &emitPipe{
+			Pipe: emitSubPipe{
+				Detail: sprintPacketWidth(r, htmlPacketWidth),
+			},
+		}
+		switch r.Module {
+		case "client":
+			e.Pipe.Left = "W——>"
+		case "server":
+			e.Pipe.Right = "<——W"
+		}
+		return e
 	case "client":
 		return &emitPipe{
 			Client: emitSubPipe{
@@ -261,6 +276,19 @@ func pipeRead(r *dccp.LogRecord) *emitPipe {
 				Left:   "R<——",
 			},
 		}
+	case "line":
+		e := &emitPipe{
+			Pipe: emitSubPipe{
+				Detail: sprintPacketWidth(r, htmlPacketWidth),
+			},
+		}
+		switch r.Module {
+		case "client":
+			e.Pipe.Left = "R<——"
+		case "server":
+			e.Pipe.Right = "——>R"
+		}
+		return e
 	case "server":
 		return &emitPipe{
 			Server: emitSubPipe{
