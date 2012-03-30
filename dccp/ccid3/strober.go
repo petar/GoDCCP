@@ -15,13 +15,13 @@ type senderStrober struct {
 	run    *dccp.Runtime
 	logger *dccp.Logger
 	dccp.Mutex
-	interval int64
+	interval int64		// Maximum average time interval between packets, in nanoseconds
 	last     int64
 }
 
-// Per64FromBPS converts a rate in byter per second to
+// BytesPerSecondToPacketsPer64Sec converts a rate in byter per second to
 // packets of size ss per 64 seconds
-func Per64FromBPS(bps uint32, ss uint32) int64 {
+func BytesPerSecondToPacketsPer64Sec(bps uint32, ss uint32) int64 {
 	return (64 * int64(bps)) / int64(ss)
 }
 
@@ -45,10 +45,11 @@ func (s *senderStrober) SetInterval(interval int64) {
 func (s *senderStrober) SetRate(bps uint32, ss uint32) {
 	s.Lock()
 	defer s.Unlock()
-	s.interval = 64e9 / Per64FromBPS(bps, ss)
+	s.interval = 64e9 / BytesPerSecondToPacketsPer64Sec(bps, ss)
 	if s.interval == 0 {
 		panic("zero strobe rate")
 	}
+	defer s.logger.E("s-senderStrober", "Event", fmt.Sprintf("Set strobe rate %d pps", 1e9 / s.interval), nil)
 }
 
 // Strobe ensures that the frequency with which (multiple calls) to Strobe return does not

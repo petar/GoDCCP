@@ -23,8 +23,8 @@ const (
 		$('td[seqno].nonempty').click(onLeftClick);
 		$('tr').mouseenter(hilightRow);
 		$('tr').dblclick(toggleFoldRow);
-		$('td.time').click(toggleMarkClientRow);
-		$('td.file, td.sep, td.line').click(toggleMarkServerRow);
+		$('td.time').click(rotateMarkClientRow);
+		$('td.file, td.sep, td.line').click(rotateMarkServerRow);
 	})
 	function onLeftClick(e) {
 		var seqno = $(this).attr("seqno");
@@ -66,27 +66,27 @@ const (
 		$('td', t).removeClass("hi-bkg");
 		t.removeAttr("hi");
 	}
-	function toggleMarkClientRow() {
+	function rotateMarkClientRow() {
 		var trow = $(this).parents()[0];
-		_.each($('td.client, td.time', trow), function(t) {
-			t = $(t);
-			if (t.hasClass("mark-bkg")) {
-				t.removeClass("mark-bkg");
-			} else {
-				t.addClass("mark-bkg");
-			}
-		});
+		_.each($('td.client, td.time', trow), _rotateMark);
 	}
-	function toggleMarkServerRow() {
+	function _rotateMark(t) {
+		t = $(t);
+		if (t.hasClass("mark-0")) {
+			t.removeClass("mark-0");
+			t.addClass("mark-1");
+		} else if (t.hasClass("mark-1")) {
+			t.removeClass("mark-1");
+			t.addClass("mark-2");
+		} else if (t.hasClass("mark-2")) {
+			t.removeClass("mark-2");
+		} else {
+			t.addClass("mark-0");
+		}
+	}
+	function rotateMarkServerRow() {
 		var trow = $(this).parents()[0];
-		_.each($('td.server, td.file, td.sep, td.line', trow), function(t) {
-			t = $(t);
-			if (t.hasClass("mark-bkg")) {
-				t.removeClass("mark-bkg");
-			} else {
-				t.addClass("mark-bkg");
-			}
-		});
+		_.each($('td.server, td.file, td.sep, td.line', trow), _rotateMark);
 	}
 	`
 )

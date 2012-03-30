@@ -53,8 +53,8 @@ func (t *LogReducer) Write(r *dccp.LogRecord) {
 	defer t.Unlock()
 
 	// Check-ins update
-	if r.Module == "" {
-		panic("empty string module")
+	if r.System == "" {
+		panic("empty System string in log")
 	}
 	t.checkIns = append(t.checkIns, r)
 
@@ -98,7 +98,7 @@ func (t *LogReducer) tripForward(r *dccp.LogRecord) {
 
 	x.Forward = append(x.Forward, r)
 	sort.Sort(LogRecordChrono(x.Forward))
-	x.Source = x.Forward[0].Module
+	x.Source = x.Forward[0].System
 	
 	updateTrip(x)
 }
@@ -116,7 +116,7 @@ func (t *LogReducer) tripBackward(r *dccp.LogRecord) {
 
 	y.Backward = append(y.Backward, r)
 	sort.Sort(LogRecordChrono(y.Backward))
-	y.Sink = y.Backward[len(y.Backward)-1].Module
+	y.Sink = y.Backward[len(y.Backward)-1].System
 
 	updateTrip(y)
 }
