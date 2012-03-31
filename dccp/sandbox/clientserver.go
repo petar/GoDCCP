@@ -22,23 +22,16 @@ func NewClientServerPipeDup(logname string, dup dccp.LogWriter) (clientConn, ser
 
 	logwriter := dccp.NewFileLogWriterDup(path.Join(os.Getenv("DCCPLOG"), logname+".emit"), dup)
 	run = dccp.NewRuntime(dccp.RealTime, logwriter)
-	run.Filter().Select(
-		"client", "server", "end", "line", "conn", "s", 
-		"s-x", "s-strober", "s-tracker", 
-		"r", "r-evolver",
-	)
 
 	llog := dccp.NewLogger("line", run)
 	hca, hcb, _ := NewPipe(run, llog, "client", "server")
 	ccid := ccid3.CCID3{}
 
 	clog := dccp.NewLogger("client", run)
-	clientConn = dccp.NewConnClient(run, clog, hca, 
-		ccid.NewSender(run, clog), ccid.NewReceiver(run, clog), 0)
+	clientConn = dccp.NewConnClient(run, clog, hca, ccid.NewSender(run, clog), ccid.NewReceiver(run, clog), 0)
 
 	slog := dccp.NewLogger("server", run)
-	serverConn = dccp.NewConnServer(run, slog, hcb, 
-		ccid.NewSender(run, slog), ccid.NewReceiver(run, slog))
+	serverConn = dccp.NewConnServer(run, slog, hcb, ccid.NewSender(run, slog), ccid.NewReceiver(run, slog))
 
 	return clientConn, serverConn, run
 }

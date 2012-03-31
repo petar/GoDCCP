@@ -19,18 +19,16 @@ type PrintRecord struct {
 // printRecord converts a log record into a PrintRecord
 func printRecord(t *dccp.LogRecord) *PrintRecord {
 	switch t.Event {
-	case "Write":
+	case dccp.EventWrite:
 		return printWrite(t)
-	case "Read":
+	case dccp.EventRead:
 		return printRead(t)
-	case "Drop":
+	case dccp.EventDrop:
 		return printDrop(t)
-	case "Idle":
+	case dccp.EventIdle:
 		return printIdle(t)
-	default:
-		return printGeneric(t)
 	}
-	panic("unreach")
+	return printGeneric(t)
 }
 
 const (
@@ -39,7 +37,7 @@ const (
 )
 
 func printWrite(r *dccp.LogRecord) *PrintRecord {
-	switch r.System {
+	switch r.Labels[0] {
 	case "server":
 		return &PrintRecord{
 			Log:  r,
@@ -57,7 +55,7 @@ func printWrite(r *dccp.LogRecord) *PrintRecord {
 }
 
 func printRead(r *dccp.LogRecord) *PrintRecord {
-	switch r.System {
+	switch r.Labels[0] {
 	case "client":
 		return &PrintRecord{
 			Log:  r,
@@ -76,11 +74,11 @@ func printRead(r *dccp.LogRecord) *PrintRecord {
 
 func printDrop(r *dccp.LogRecord) *PrintRecord {
 	var text string
-	switch r.System {
+	switch r.Labels[0] {
 	// XXX: Seems there is a bug in the print out formats below (the server case format feels like it should be the line case)
 	case "line":
 		// XXX: this if makes no sense
-		if r.Module == "server" {
+		if r.Labels[1] == "server" {
 			text = fmt.Sprintf("%s|%s| D<——%s     |%s|%s",
 				skipState, skip, sprintPacket(r), skip, skipState)
 		} else {
@@ -117,7 +115,7 @@ func printDrop(r *dccp.LogRecord) *PrintRecord {
 
 func printIdle(r *dccp.LogRecord) *PrintRecord {
 	var text string
-	switch r.Module {
+	switch r.Labels[0] {
 	case "client":
 		text = fmt.Sprintf("%8s |—%s—|%s|%s|%s",
 			r.State, sprintIdle(r), skip, skip, skipState)
@@ -136,7 +134,7 @@ func printIdle(r *dccp.LogRecord) *PrintRecord {
 
 func printGeneric(r *dccp.LogRecord) *PrintRecord {
 	var text string
-	switch r.System {
+	switch r.Labels[0] {
 	case "client":
 		text = fmt.Sprintf("%8s | %s |%s|%s|%s",
 			r.State, sprintPacketEventComment(r), skip, skip, skipState)

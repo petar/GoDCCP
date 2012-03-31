@@ -75,13 +75,13 @@ func htmlize(records []*logPipe, srt bool) {
 func pipeEmit(t *dccp.LogRecord) *logPipe {
 	var pipe *emitPipe
 	switch t.Event {
-	case "Write":
+	case dccp.EventWrite:
 		pipe = pipeWrite(t)
-	case "Read":
+	case dccp.EventRead:
 		pipe = pipeRead(t)
-	case "Drop":
+	case dccp.EventDrop:
 		pipe = pipeDrop(t)
-	case "Idle":
+	case dccp.EventIdle:
 		pipe = pipeIdle(t)
 	default:
 		pipe = pipeGeneric(t)
@@ -106,9 +106,9 @@ func htmlizeAckSeqNo(t string, no int64) string {
 	return fmt.Sprintf("%06x", no)
 }
 
-func classify(ev string) string {
+func classify(ev dccp.Event) string {
 	var w bytes.Buffer
-	for _, b := range ev {
+	for _, b := range ev.String() {
 		switch b {
 		case '-':
 			w.WriteByte('_')
@@ -131,7 +131,7 @@ func htmlizePipe(e *emitPipe) string {
 const htmlPacketWidth = 17
 
 func pipeWrite(r *dccp.LogRecord) *emitPipe {
-	switch r.System {
+	switch r.Labels[0] {
 	case "server":
 		return &emitPipe{
 			Server: emitSubPipe{ 
@@ -146,7 +146,7 @@ func pipeWrite(r *dccp.LogRecord) *emitPipe {
 				Detail: sprintPacketWidth(r, htmlPacketWidth),
 			},
 		}
-		switch r.Module {
+		switch r.Labels[1] {
 		case "client":
 			e.Pipe.Left = "W——>"
 		case "server":
@@ -166,7 +166,7 @@ func pipeWrite(r *dccp.LogRecord) *emitPipe {
 }
 
 func pipeRead(r *dccp.LogRecord) *emitPipe {
-	switch r.System {
+	switch r.Labels[0] {
 	case "client":
 		return &emitPipe{
 			Client: emitSubPipe {
@@ -181,7 +181,7 @@ func pipeRead(r *dccp.LogRecord) *emitPipe {
 				Detail: sprintPacketWidth(r, htmlPacketWidth),
 			},
 		}
-		switch r.Module {
+		switch r.Labels[1] {
 		case "client":
 			e.Pipe.Left = "R<——"
 		case "server":
@@ -201,7 +201,7 @@ func pipeRead(r *dccp.LogRecord) *emitPipe {
 }
 
 func pipeIdle(r *dccp.LogRecord) *emitPipe {
-	switch r.System {
+	switch r.Labels[0] {
 	case "client":
 		return &emitPipe{
 			Client: emitSubPipe {
@@ -221,9 +221,9 @@ func pipeIdle(r *dccp.LogRecord) *emitPipe {
 }
 
 func pipeDrop(r *dccp.LogRecord) *emitPipe {
-	switch r.System {
+	switch r.Labels[0] {
 	case "line":
-		switch r.Module {
+		switch r.Labels[1] {
 		case "server":
 			return &emitPipe{
 				Pipe: emitSubPipe{
@@ -287,7 +287,7 @@ func sprintPacketEventCommentHTML(r *dccp.LogRecord) string {
 }
 
 func pipeGeneric(r *dccp.LogRecord) *emitPipe {
-	switch r.System {
+	switch r.Labels[0] {
 	case "line":
 		return &emitPipe{
 			Pipe: emitSubPipe {

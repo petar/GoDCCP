@@ -53,19 +53,19 @@ func (t *LogReducer) Write(r *dccp.LogRecord) {
 	defer t.Unlock()
 
 	// Check-ins update
-	if r.System == "" {
-		panic("empty System string in log")
+	if r.Labels[0] == "" {
+		panic("empty root label string in log")
 	}
 	t.checkIns = append(t.checkIns, r)
 
 	// Places update
-	p, ok := t.places[r.System]
+	p, ok := t.places[r.Labels[0]]
 	if !ok {
 		p = &Place{ 
 			latest:   nil,
 			CheckIns: make([]*dccp.LogRecord, 0),
 		}
-		t.places[r.System] = p
+		t.places[r.Labels[0]] = p
 	}
 
 	if p.latest != nil && r.Time <= p.latest.Time {
@@ -98,7 +98,7 @@ func (t *LogReducer) tripForward(r *dccp.LogRecord) {
 
 	x.Forward = append(x.Forward, r)
 	sort.Sort(LogRecordChrono(x.Forward))
-	x.Source = x.Forward[0].System
+	x.Source = x.Forward[0].Labels[0]
 	
 	updateTrip(x)
 }
@@ -116,7 +116,7 @@ func (t *LogReducer) tripBackward(r *dccp.LogRecord) {
 
 	y.Backward = append(y.Backward, r)
 	sort.Sort(LogRecordChrono(y.Backward))
-	y.Sink = y.Backward[len(y.Backward)-1].System
+	y.Sink = y.Backward[len(y.Backward)-1].Labels[0]
 
 	updateTrip(y)
 }

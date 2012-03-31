@@ -19,14 +19,14 @@ type Pipe struct {
 	ha, hb headerHalfPipe
 }
 
+// NewPipe creates a new pipe with a given runtime shared by both endpoints, and a root logger
 func NewPipe(run *dccp.Runtime, logger *dccp.Logger, namea, nameb string) (a, b dccp.HeaderConn, line *Pipe) {
-
 	ab := make(chan *pipeHeader, pipeBufferLen)
 	ba := make(chan *pipeHeader, pipeBufferLen)
 	line = &Pipe{}
 	line.logger = logger
-	line.ha.Init(namea, run, line.logger, ba, ab)
-	line.hb.Init(nameb, run, line.logger, ab, ba)
+	line.ha.Init(run, line.logger.Refine(namea), ba, ab)
+	line.hb.Init(run, line.logger.Refine(nameb), ab, ba)
 	return &line.ha, &line.hb, line
 }
 
@@ -39,7 +39,6 @@ const pipeBufferLen = 2
 
 // headerHalfPipe implements HeaderConn. It enforces rate-limiting on its write side.
 type headerHalfPipe struct {
-	name   string
 	run    *dccp.Runtime
 	logger *dccp.Logger
 
@@ -82,12 +81,10 @@ type pipeHeader struct {
 	DeliverTime int64
 }
 
-func (hhl *headerHalfPipe) Init(name string, run *dccp.Runtime, logger *dccp.Logger,
-	r <-chan *pipeHeader, w chan<- *pipeHeader) {
-
-	hhl.name = name
+// Init resets a half pipe for initial use, using logger (without making a copy of it)
+func (hhl *headerHalfPipe) Init(run *dccp.Runtime, logger *dccp.Logger, r <-chan *pipeHeader, w chan<- *pipeHeader) {
 	hhl.run = run
-	hhl.logger = logger.Refine(name)
+	hhl.logger = logger
 	hhl.read = r
 	hhl.write = w
 	hhl.SetWriteRate(DefaultRateInterval, DefaultRatePacketsPerInterval)
