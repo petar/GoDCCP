@@ -5,7 +5,9 @@
 package dccp
 
 import (
+	"bytes"
 	"fmt"
+	"runtime"
 	"encoding/json"
 	"os"
 	goruntime "runtime"
@@ -60,6 +62,9 @@ type LogRecord struct {
 
 	// SourceLine is the line number in the source file where this log record was emitted.
 	SourceLine int    `json:"sl"`
+
+	// Trace is the stack trace at the log entry's creation point
+	Trace      string `json:"st"`
 }
 
 type LogArgs map[string]interface{}
@@ -135,6 +140,35 @@ func (t *Logger) SetState(s int) {
 	t.run.Filter().SetAttr([]string{t.System()}, "state", StateString(s))
 }
 
+// StackTrace formats the stack trace of the calling go routine, 
+// excluding pointer information and including DCCP runtime-specific information, 
+// in a manner convenient for debugging DCCP
+func stackTrace(system, module string, skip int) string {
+	var w bytes.Buffer
+	var stk []uintptr = make([]uintptr, 32)	// DCCP logic stack should not be deeper than that
+	n := runtime.Callers(skip+1, stk)
+	stk = stk[:n]
+	fmt.Fprintf(&w, "%s:%s\n", system, module)
+	var nondccp bool
+	for _, pc := range stk {
+		f := runtime.FuncForPC(pc)
+		if f == nil {
+			break
+		}
+		file, line := f.FileLine(pc)
+		fname, isdccp := TrimFuncName(f.Name())
+		if !isdccp {
+			nondccp = true
+		} else {
+			if nondccp {
+				fmt.Fprintf(&w, "    ···· ···· ···· \n")
+			}
+			fmt.Fprintf(&w, "    %-40s (%s:%d)\n", fname, TrimSourceFile(file), line)
+		}
+	}
+	return string(w.Bytes())
+}
+
 // E emits a new log record. The arguments args are scanned in turn. The first argument of
 // type *Header, *PreHeader, *FeedbackHeader or *FeedforwardHeader is considered the DCCP
 // header that this log pertains to. The first argument of type Args is saved in the log
@@ -143,7 +177,7 @@ func (t *Logger) E(module, event, comment string, args ...interface{}) {
 	t.EC(1, module, event, comment, args...)
 }
 
-func (t *Logger) EC(level int, module, event, comment string, args ...interface{}) {
+func (t *Logger) EC(skip int, module, event, comment string, args ...interface{}) {
 	if t.run == nil {
 		return
 	}
@@ -196,7 +230,7 @@ __FindArgs:
 		}
 	}
 
-	sfile, sline := FetchCaller(1+level)
+	sfile, sline := FetchCaller(1+skip)
 
 	if t.run.Writer() != nil {
 		r := &LogRecord{
@@ -212,6 +246,7 @@ __FindArgs:
 			AckNo:      hAckNo,
 			SourceFile: sfile,
 			SourceLine: sline,
+			Trace:      stackTrace(t.System(), module, skip+2),
 		}
 		t.run.Writer().Write(r)
 	}

@@ -116,6 +116,7 @@ func (t *senderRoundtripEstimator) OnRead(fb *dccp.FeedbackHeader) bool {
 		t.estimate = (est * SenderRoundtripWeightNew + est_old * SenderRoundtripWeightOld) / 
 			(SenderRoundtripWeightNew + SenderRoundtripWeightOld)
 	}
+	t.logger.E("s-rtt", "Good", fmt.Sprintf("S·RTT·OnR RTT=%d", t.estimate), fb)
 
 	return true
 }

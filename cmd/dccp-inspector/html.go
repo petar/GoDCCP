@@ -10,6 +10,25 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
+type emitPipe struct {
+	Time       string
+	SourceFile string
+	SourceLine string
+	Trace      string
+	Event      string
+	SeqNo      string
+	AckNo      string
+	Client     emitSubPipe
+	Pipe       emitSubPipe
+	Server     emitSubPipe
+}
+
+type emitSubPipe struct {
+	State       string
+	Detail      string
+	Left, Right string
+}
+
 type logPipe struct {
 	Log  *dccp.LogRecord
 	Pipe *emitPipe
@@ -73,6 +92,7 @@ func pipeEmit(t *dccp.LogRecord) *logPipe {
 	}
 	pipe.SourceFile = t.SourceFile
 	pipe.SourceLine = strconv.Itoa(t.SourceLine)
+	pipe.Trace = t.Trace
 	pipe.Event = classify(t.Event)
 	pipe.SeqNo = htmlizeAckSeqNo(t.Type, t.SeqNo)
 	pipe.AckNo = htmlizeAckSeqNo(t.Type, t.AckNo)
@@ -97,24 +117,6 @@ func classify(ev string) string {
 		}
 	}
 	return strings.ToLower(string(w.Bytes()))
-}
-
-type emitPipe struct {
-	Time       string
-	SourceFile string
-	SourceLine string
-	Event      string
-	SeqNo      string
-	AckNo      string
-	Client     emitSubPipe
-	Pipe       emitSubPipe
-	Server     emitSubPipe
-}
-
-type emitSubPipe struct {
-	State       string
-	Detail      string
-	Left, Right string
 }
 
 func htmlizePipe(e *emitPipe) string {

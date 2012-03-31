@@ -25,7 +25,17 @@ const (
 		$('tr').dblclick(toggleFoldRow);
 		$('td.time').click(rotateMarkClientRow);
 		$('td.file, td.sep, td.line').click(rotateMarkServerRow);
+		$('td:has(div.tooltip)').mouseenter(showTooltip);
+		$('td:has(div.tooltip)').mouseleave(hideTooltip);
 	})
+	function showTooltip() {
+		var tt = $('div.tooltip', this);
+		tt.css("display", "block");
+	}
+	function hideTooltip() {
+		var tt = $('div.tooltip', this);
+		tt.css("display", "none");
+	}
 	function onLeftClick(e) {
 		var seqno = $(this).attr("seqno");
 		if (_.isUndefined(seqno) || seqno == "") {

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"path"
 	goruntime "runtime"
+	"strings"
 	"sync"
 )
 
@@ -30,8 +31,8 @@ type GoRoutine struct {
 
 // Go runs f in a new goroutine and returns a handle object, which can
 // then be used for various synchronization mechanisms.
-func GoCaller(f func(), level int, fmt_ string, args_ ...interface{}) *GoRoutine {
-	sfile, sline := FetchCaller(1 + level)
+func GoCaller(f func(), skip int, fmt_ string, args_ ...interface{}) *GoRoutine {
+	sfile, sline := FetchCaller(1 + skip)
 	ch := make(chan int)
 	g := &GoRoutine{ 
 		ch:   ch,
@@ -70,14 +71,37 @@ func (g *GoRoutine) String() string {
 
 // FetchCaller returns a shortened (more readable) version of the
 // source file name, as well as the source line number of the caller.
-func FetchCaller(level int) (sfile string, sline int) {
-	_, sfile, sline, _ = goruntime.Caller(1+level)
+func FetchCaller(skip int) (sfile string, sline int) {
+	_, sfile, sline, _ = goruntime.Caller(1+skip)
+	return TrimSourceFile(sfile), sline
+}
+
+// TrimSourceFile shortens DCCP source file names for readability
+func TrimSourceFile(sfile string) string {
 	sdir, sfile := path.Split(sfile)
 	if len(sdir) > 0 {
 		_, sdir = path.Split(sdir[:len(sdir)-1])
 	}
 	sfile = path.Join(sdir, sfile)
-	return sfile, sline
+	return sfile
+}
+
+// TrimFuncName shortens DCCP function names for readability and whether this is a DCCP or anonymous function
+func TrimFuncName(fname string) (trimmed string, isDCCP bool) {
+	const pkgName = "dccp"
+	k := strings.Index(fname, pkgName) // Find first occurrence of package name
+	if k < 0 {
+		return fname, strings.HasPrefix(fname, "_func_") // Whether this is an anonymous func
+	}
+	k += len(pkgName)
+	if len(fname) <= k {
+		return fname, false
+	}
+	switch fname[k] {
+	case '.', '/':
+		return fname[k+1:], true
+	}
+	return fname, false
 }
 
 // GoConjunction waits until a set of GoRoutines all complete. It also allows
@@ -95,8 +119,8 @@ type GoConjunction struct {
 }
 
 // NewGoConjunctionCaller creates an object capable of waiting until all supplied GoRoutines complete.
-func NewGoConjunctionCaller(level int, annotation string, group ...Waiter) *GoConjunction {
-	sfile, sline := FetchCaller(1 + level)
+func NewGoConjunctionCaller(skip int, annotation string, group ...Waiter) *GoConjunction {
+	sfile, sline := FetchCaller(1 + skip)
 	var w *GoConjunction = &GoConjunction{ 
 		srcFile:    sfile,
 		srcLine:    sline,

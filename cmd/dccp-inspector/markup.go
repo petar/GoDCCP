@@ -46,6 +46,7 @@ const (
 		`pre { padding: 0; margin: 0 }` +
 		// Event coloring
 		`.ev_warn { color: #c00 }` + 
+		`.ev_good { color: #0c0 }` + 
 		`.client.ev_idle.nonempty { background: #f8e0e0 }` + 
 		`.server.ev_idle.nonempty { background: #e0e0f8 }` + 
 		`.ev_event, .ev_idle, .ev_rrtt_h, .ev_rrtt, .ev_wccval, .ev_info { color: #aaa }` + 
@@ -58,19 +59,25 @@ const (
 		`.yellow-bkg { background: yellow !important }` +
 		`.red-bkg { background: red !important }` +
 		// Bookmarking
-		`td.mark-0 { border-top: 3px solid #a66 }` +
-		`td.mark-0.time, td.mark-0.file, td.mark-0.line, td.mark-0.sep { background: #a66; color: white; }` +
-		`td.mark-1 { border-top: 3px solid #6a6 }` +
-		`td.mark-1.time, td.mark-1.file, td.mark-1.line, td.mark-1.sep { background: #6a6; color: white; }` +
-		`td.mark-2 { border-top: 3px solid #66a }` +
-		`td.mark-2.time, td.mark-2.file, td.mark-2.line, td.mark-2.sep { background: #66a; color: white; }` +
-		// Folding
+		`td.mark-0 { border-top: 3px solid ` + optMark0Color + ` }` +
+		`td.mark-0.time, td.mark-0.file, td.mark-0.line, td.mark-0.sep { background: ` + optMark0Color + `; color: white; }` +
+		`td.mark-1 { border-top: 3px solid ` + optMark1Color + ` }` +
+		`td.mark-1.time, td.mark-1.file, td.mark-1.line, td.mark-1.sep { background: ` + optMark1Color + `; color: white; }` +
+		`td.mark-2 { border-top: 3px solid `+ optMark2Color + ` }` +
+		`td.mark-2.time, td.mark-2.file, td.mark-2.line, td.mark-2.sep { background: ` + optMark2Color + `; color: white; }` +
+		// Tooltips
+		`div.tooltip { position: absolute; float:left; pointer-events: none; margin-top: 10px;` +
+			`padding: 7px; background: black; color: white; opacity: 0.7; box-shadow: 1px 1px 3px 0px #000; border-radius: 4px; }` +
+		// Folding (not working)
 		`tr.folded { height: 5px !important }`
+	optMark0Color = `#c33`
+	optMark1Color = `#3c3`
+	optMark2Color = `#33c`
 
 	emitTmplSource =
 		`{{ define "emit" }}` +
 			`<tr class="emit">` + 
-			`{{ $ev := .Event }}{{ $seqno := .SeqNo }}{{ $ackno := .AckNo }}` +
+			`{{ $ev := .Event }}{{ $seqno := .SeqNo }}{{ $ackno := .AckNo }}{{ $trace := .Trace }}` +
 				`<td class="time ev_{{ $ev }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}"><pre>{{ .Time }}</pre></td>` +
 				`{{ with .Client }}` +
 					`{{ $n0 := or .State .Left .Right .Detail }}` +
@@ -80,7 +87,9 @@ const (
 					`<td class="client left ev_{{ $ev }} {{ $ne }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}">` +
 						`<pre>{{ .Left  }}</pre></td>` +
 					`<td class="client detail ev_{{ $ev }} {{ $ne }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}">` +
-						`<pre>{{ .Detail }}</pre></td>` +
+						`<pre>{{ .Detail }}</pre>` + 
+						`{{ if $ne }}<div class="tooltip" style="display: none"><pre>{{ $trace }}</pre></div>{{ end }}` + 
+					`</td>` +
 					`<td class="client right ev_{{ $ev }} {{ $ne }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}">` +
 						`<pre>{{ .Right }}</pre></td>` +
 				`{{ end }}` +
@@ -90,7 +99,9 @@ const (
 					`<td class="pipe left ev_{{ $ev }} {{ $ne }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}">` +
 						`<pre>{{ .Left }}</pre></td>` +
 					`<td class="pipe detail ev_{{ $ev }} {{ $ne }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}">` +
-						`<pre>{{ .Detail }}</pre></td>` + 
+						`<pre>{{ .Detail }}</pre>` + 
+						`{{ if $ne }}<div class="tooltip" style="display: none"><pre>{{ $trace }}</pre></div>{{ end }}` + 
+					`</td>` + 
 					`<td class="pipe right ev_{{ $ev }} {{ $ne }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}">` +
 						`<pre>{{ .Right }}</pre></td>` +
 				`{{ end }}` +
@@ -100,7 +111,9 @@ const (
 					`<td class="server left ev_{{ $ev }} {{ $ne }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}">` +
 						`<pre>{{ .Left }}</pre></td>` +
 					`<td class="server detail ev_{{ $ev }} {{ $ne }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}">` +
-						`<pre>{{ .Detail }}</pre></td>` +
+						`<pre>{{ .Detail }}</pre>` +
+						`{{ if $ne }}<div class="tooltip" style="display: none"><pre>{{ $trace }}</pre></div>{{ end }}` + 
+					`</td>` +
 					`<td class="server right ev_{{ $ev }} {{ $ne }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}">` +
 						`<pre>{{ .Right }}</pre></td>` +
 					`<td class="server state ev_{{ $ev }} {{ $ne }}" seqno="{{ $seqno }}" ackno="{{ $ackno }}">` +
