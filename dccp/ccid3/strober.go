@@ -28,7 +28,7 @@ func BytesPerSecondToPacketsPer64Sec(bps uint32, ss uint32) int64 {
 // Init resets the senderStrober instance for new use
 func (s *senderStrober) Init(run *dccp.Runtime, logger *dccp.Logger, bps uint32, ss uint32) {
 	s.run = run
-	s.logger = logger
+	s.logger = logger.Refine("strober")
 	s.SetRate(bps, ss)
 }
 
@@ -49,7 +49,7 @@ func (s *senderStrober) SetRate(bps uint32, ss uint32) {
 	if s.interval == 0 {
 		panic("zero strobe rate")
 	}
-	defer s.logger.E("s-senderStrober", "Event", fmt.Sprintf("Set strobe rate %d pps", 1e9 / s.interval), nil)
+	defer s.logger.E("Event", fmt.Sprintf("Set strobe rate %d pps", 1e9 / s.interval), nil)
 }
 
 // Strobe ensures that the frequency with which (multiple calls) to Strobe return does not
@@ -66,7 +66,7 @@ func (s *senderStrober) Strobe() {
 	delta := s.interval - (now - s.last)
 	dbgInterval := s.interval // DBG
 	s.Unlock()
-	defer s.logger.E("s-senderStrober", "Event", fmt.Sprintf("Strobe at %d pps", 1e9 / dbgInterval), nil)
+	defer s.logger.E("Event", fmt.Sprintf("Strobe at %d pps", 1e9 / dbgInterval), nil)
 	if delta > 0 {
 		s.run.Sleep(delta)
 	}

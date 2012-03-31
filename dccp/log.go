@@ -17,54 +17,50 @@ import (
 // LogRecord stores a log event. It can be used to marshal to JSON and pass to external
 // visualisation tools.
 type LogRecord struct {
-	Time      int64   `json:"t"`   // Time of event
 
-	// System is a runtime identifier for a dynamic instance of some DCCP type.  For example, if
-	// two instances of Conn are available at runtime (as in the case of tests in the sandbox),
-	// one can be named "client" and the other "server". The System string is also kept as a
-	// field inside the Logger object, so that it can be filled in automatically upon calls to
-	// the Logger's E method.
-	System    string  `json:"y"`
+	// Time is the DCCP runtime time when the log was emitted
+	Time      int64   `json:"t"`
 
-	// Module is a compile-time identifier of some logical subset of a DCCP system. For
-	// instance, 's' can identify the sender congestion control logic, whereas 's-rtt' can
-	// identify spcifically the roundtrip time estimation logic inside the sender congestion
-	// control. Module is passed as a parameter to the Logger's E method, and is, ideally, a
-	// string constant.
-	Module    string  `json:"m"`
+	// Labels is a list of runtime labels that identify some dynamic
+	// instance of the DCCP stack.  For example, if two instances of Conn
+	// are available at runtime (as in the case of tests in the sandbox),
+	// one can be labeled "client" and the other "server". The labels slice
+	// is kept as a field inside the Logger object, so that it can be
+	// filled in automatically upon calls to the Logger's E method.
+	Labels    []string `json:"l"`
 
 	// Event is an identifier representing the type of event that this log record represents. It
 	// can be something like "Warn", "Info", etc.
-	Event     string  `json:"e"`
+	Event     string   `json:"e"`
 
 	// If applicable, State is the DCCP state of the runtime instance (or system) that this log
 	// record pertains to. This is typically used only if the system is a dccp.Conn.
-	State     string  `json:"s"`
+	State     string   `json:"s"`
 
 	// Comment is a free-form textual comment
-	Comment   string  `json:"c"`
+	Comment   string   `json:"c"`
 
 	// Args are any additional arguments in the form of string keys mapped to open-ended values
-	Args      LogArgs `json:"a"`
+	Args      LogArgs  `json:"a"`
 
 	// If this log record pertains to a DCCP header, Type is the DCCP type of this header.
-	Type      string  `json:"ht"`
+	Type      string   `json:"ht"`
 
 	// If this log record pertains to a DCCP header, SeqNo is the DCCP sequence number of this header.
-	SeqNo     int64   `json:"hs"`
+	SeqNo     int64    `json:"hs"`
 
 	// If this log record pertains to a DCCP header, AckNo is the DCCP acknowledgement number of
 	// this header.
-	AckNo     int64   `json:"ha"`
+	AckNo     int64    `json:"ha"`
 
 	// SourceFile is the name of the source file where this log record was emitted.
-	SourceFile string `json:"sf"`
+	SourceFile string  `json:"sf"`
 
 	// SourceLine is the line number in the source file where this log record was emitted.
-	SourceLine int    `json:"sl"`
+	SourceLine int     `json:"sl"`
 
 	// Trace is the stack trace at the log entry's creation point
-	Trace      string `json:"st"`
+	Trace      string  `json:"st"`
 }
 
 type LogArgs map[string]interface{}
@@ -103,52 +99,78 @@ func (t LogArgs) Bool(k string) (value bool, success bool) {
 // and analysis purposes. It lives in the context of a shared time framework and a shared
 // filter framework, which may filter some logs out
 type Logger struct {
-	run  *Runtime
-	system string
+	run    *Runtime
+	labels []string
 }
 
-// A zero-value Logger ignores all emits
+// A zero-value Logger has the special-case behavior of ignoring all emits
 var NoLogging *Logger = &Logger{}
 
+// NewLogger creates a new Logger object with an empty label stack
 func NewLogger(system string, run *Runtime) *Logger {
-	return &Logger{ run: run, system: system }
+	return &Logger{ run: run, labels: make([]string, 0) }
 }
 
-func (t *Logger) System() string {
-	return t.system
+// Refine clones this logger and stack the additional label l
+func (t *Logger) Refine(l string) *Logger {
+	return t.Copy().Push(l)
+}
+
+// Copy clones this logger into an identical new one
+func (t *Logger) Copy() *Logger {
+	c = *t
+	c.labels = make([]string, len(t.labels))
+	copy(c.labels, t.labels)
+	return &c
+}
+
+// Labels returns the label stack of this logger
+func (t *Logger) Labels() []string {
+	return t.labels
+}
+
+// Push adds the label l onto this logger's label stack
+func (t *Logger) Push(l string) *Logger {
+	t.labels = append(t.labels, l)
+	return t
 }
 
 func (t *Logger) Filter() *filter.Filter {
 	return t.run.Filter()
 }
 
+// GetState retrieves the state of the owning object, using the runtime value store
 func (t *Logger) GetState() string {
-	if t.run == nil {
+	if t.run == nil || len(t.labels) == 0 {
 		return ""
 	}
-	g := t.run.Filter().GetAttr([]string{t.System()}, "state")
+	g := t.run.Filter().GetAttr([]string{t.labels[0]}, "state")
 	if g == nil {
 		return ""
 	}
 	return g.(string)
 }
 
+// SetState saves the state s into the runtime value store
 func (t *Logger) SetState(s int) {
 	if t.run == nil {
 		return
 	}
-	t.run.Filter().SetAttr([]string{t.System()}, "state", StateString(s))
+	t.run.Filter().SetAttr([]string{t.labels[0]}, "state", StateString(s))
 }
 
 // StackTrace formats the stack trace of the calling go routine, 
 // excluding pointer information and including DCCP runtime-specific information, 
 // in a manner convenient for debugging DCCP
-func stackTrace(system, module string, skip int) string {
+func stackTrace(labels []string, skip int) string {
 	var w bytes.Buffer
 	var stk []uintptr = make([]uintptr, 32)	// DCCP logic stack should not be deeper than that
 	n := runtime.Callers(skip+1, stk)
 	stk = stk[:n]
-	fmt.Fprintf(&w, "%s:%s\n", system, module)
+	for _, l := range labels {
+		fmt.Fprintf(&w, "%s·", l)
+	}
+	fmt.Fprintf(&w, "\n")
 	var nondccp bool
 	for _, pc := range stk {
 		f := runtime.FuncForPC(pc)
@@ -173,19 +195,14 @@ func stackTrace(system, module string, skip int) string {
 // type *Header, *PreHeader, *FeedbackHeader or *FeedforwardHeader is considered the DCCP
 // header that this log pertains to. The first argument of type Args is saved in the log
 // record.
-func (t *Logger) E(module, event, comment string, args ...interface{}) {
-	t.EC(1, module, event, comment, args...)
+func (t *Logger) E(event, comment string, args ...interface{}) {
+	t.EC(1, event, comment, args...)
 }
 
-func (t *Logger) EC(skip int, module, event, comment string, args ...interface{}) {
+func (t *Logger) EC(skip int, event, comment string, args ...interface{}) {
 	if t.run == nil {
 		return
 	}
-	/*
-	if !t.run.Filter().Selected(t.System(), module) {
-		return
-	}
-	*/
 	sinceZero, sinceLast := t.run.Snap()
 
 	// Extract header information
@@ -235,8 +252,7 @@ __FindArgs:
 	if t.run.Writer() != nil {
 		r := &LogRecord{
 			Time:       sinceZero,
-			System:     t.System(),
-			Module:     module,
+			Labels:     t.labels,
 			Event:      event,
 			State:      t.GetState(),
 			Comment:    comment,
@@ -246,20 +262,9 @@ __FindArgs:
 			AckNo:      hAckNo,
 			SourceFile: sfile,
 			SourceLine: sline,
-			Trace:      stackTrace(t.System(), module, skip+2),
+			Trace:      stackTrace(t.labels, skip+2),
 		}
 		t.run.Writer().Write(r)
-	}
-	// Print log messages to os.Stdout if environment variable DCCPRAW set
-	if os.Getenv("DCCPRAW") != "" {
-		fmt.Printf("%15s %15s %18s:%-3d %-8s %6s:%-9s %-9s %8s %6x|%-6x * %s\n", 
-			Nstoa(sinceZero), Nstoa(sinceLast), 
-			sfile, sline,
-			t.GetState(), t.System(), 
-			module, event, 
-			hType, hSeqNo, hAckNo,
-			comment,
-		)
 	}
 }
 

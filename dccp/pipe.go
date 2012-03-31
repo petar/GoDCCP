@@ -8,7 +8,7 @@ func (c *Conn) readHeader() (h *Header, err error) {
 	h, err = c.hc.ReadHeader()
 	if err != nil {
 		if err != ErrTimeout {
-			c.logger.E("conn", "Drop", "Bad header", h)
+			c.logger.E("Drop", "Bad header", h)
 		}
 		return nil, err
 	}
@@ -35,7 +35,7 @@ func (c *Conn) idleLoop() {
 		if state == CLOSED {
 			break
 		}
-		c.logger.E("conn", "Idle", "")
+		c.logger.E("Idle", "")
 		c.run.Sleep(max64(RTT_MIN, min64(rtt, RoundtripDefault)))
 	}
 }
@@ -52,7 +52,7 @@ func (c *Conn) readLoop() {
 
 		// Adjust read timeout
 		if err := c.hc.SetReadExpire(5 * rtt); err != nil {
-			c.logger.E("conn", "Error", "SetReadExpire")
+			c.logger.E("Error", "SetReadExpire")
 			c.abortQuietly()
 			return
 		}
@@ -74,7 +74,7 @@ func (c *Conn) readLoop() {
 				return
 			}
 		}
-		c.logger.E("conn", "Read", "", h)
+		c.logger.E("Read", "", h)
 
 		c.Lock()
 		c.syncWithCongestionControl()
@@ -126,7 +126,7 @@ func (c *Conn) readLoop() {
 	Done:
 		c.Unlock()
 	}
-	c.logger.E("conn", "Event", "Read loop EXIT")
+	c.logger.E("Event", "Read loop EXIT")
 }
 
 func (c *Conn) pollCongestionControl() {
@@ -142,7 +142,7 @@ func (c *Conn) pollCongestionControl() {
 			c.Unlock()
 			return
 		}
-		c.logger.E("conn", "Error", "Sender CC unknown idle error")
+		c.logger.E("Error", "Sender CC unknown idle error")
 	}
 	if e := c.rcc.OnIdle(now); e != nil {
 		if re, ok := e.(CongestionReset); ok {
@@ -155,7 +155,7 @@ func (c *Conn) pollCongestionControl() {
 			c.Unlock()
 			return
 		}
-		c.logger.E("conn", "Error", "Receiver CC unknown idle error")
+		c.logger.E("Error", "Receiver CC unknown idle error")
 	}
 }
 

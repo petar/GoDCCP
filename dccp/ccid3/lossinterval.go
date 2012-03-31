@@ -68,7 +68,7 @@ type LossIntervalDetail struct {
 type pushIntervalFunc func(*LossIntervalDetail)
 
 func (t *evolveInterval) Init(logger *dccp.Logger, push pushIntervalFunc) {
-	t.logger = logger
+	t.logger = logger.Refine("evolveInterval")
 	t.push = push
 	t.lastSeqNo = 0
 	t.lastTime = 0
@@ -100,7 +100,7 @@ func (t *evolveInterval) OnRead(ff *dccp.FeedforwardHeader, rtt int64) {
 	// that of the previously received one
 	// XXX: How can this condition occur?
 	if ff.Time < t.lastTime {
-		t.logger.E("r-evolver", "Event", 
+		t.logger.E("Event", 
 			fmt.Sprintf("Time re-order; SeqNo %06x,%06x", t.lastSeqNo, ff.SeqNo),
 			ff)
 		return

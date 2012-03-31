@@ -10,7 +10,7 @@ import (
 )
 
 func newReceiver(run *dccp.Runtime, logger *dccp.Logger) *receiver {
-	return &receiver{ run: run, logger: logger }
+	return &receiver{ run: run, logger: logger.Refine("receiver") }
 }
 
 // receiver implements CCID3 congestion control and it conforms to dccp.ReceiverCongestionControl
@@ -107,20 +107,20 @@ func (r *receiver) OnWrite(ph *dccp.PreHeader) (options []*dccp.Option) {
 			opts := make([]*dccp.Option, 3)
 			opts[0] = encodeOption(r.makeElapsedTimeOption(ph.AckNo, ph.Time))
 			if opts[0] == nil {
-				r.logger.E("r", "Warn", "ElapsedTime option encoding == nil", ph)
+				r.logger.E("Warn", "ElapsedTime option encoding == nil", ph)
 			}
 			opts[1] = encodeOption(r.receiverRateCalculator.Flush(rtt, ph.Time))
 			if opts[1] == nil {
-				r.logger.E("r", "Warn", "ReceiveRate option encoding == nil", ph)
+				r.logger.E("Warn", "ReceiveRate option encoding == nil", ph)
 			}
 			opts[2] = encodeOption(r.receiverLossTracker.LossIntervalsOption(ph.AckNo))
 			if opts[2] == nil {
-				r.logger.E("r", "Warn", "LossIntervals option encoding == nil", ph)
+				r.logger.E("Warn", "LossIntervals option encoding == nil", ph)
 			}
-			r.logger.E("r", "Info", fmt.Sprintf("Placed %d receiver opts", len(opts)), ph)
+			r.logger.E("Info", fmt.Sprintf("Placed %d receiver opts", len(opts)), ph)
 			return opts
 		}
-		r.logger.E("r", "Info", "OnWrite, not seen packs before", ph)
+		r.logger.E("Info", "OnWrite, not seen packs before", ph)
 		return nil
 
 	case dccp.Data /*, dccp.DataAck */:
@@ -155,8 +155,8 @@ func (r *receiver) OnRead(ff *dccp.FeedforwardHeader) error {
 	// Update RTT estimate
 	r.receiverRoundtripEstimator.OnRead(ff)
 	rtt, est := r.receiverRoundtripEstimator.RTT(ff.Time)
-	r.logger.E("r", "Info", r.receiverRoundtripEstimator.String(), ff)
-	r.logger.E("r", "Info", fmt.Sprintf("R·OnR RTT=%s est=%v", dccp.Nstoa(rtt), est), ff, 
+	r.logger.E("Info", r.receiverRoundtripEstimator.String(), ff)
+	r.logger.E("Info", fmt.Sprintf("RTT=%s EST=%v", dccp.Nstoa(rtt), est), ff, 
 		dccp.LogArgs{"rtt": rtt, "est": est})
 
 	// Update receive rate

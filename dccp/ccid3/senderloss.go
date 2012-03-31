@@ -21,7 +21,7 @@ type senderLossTracker struct {
 
 // Init resets the senderLossTracker instance for new use
 func (t *senderLossTracker) Init(logger *dccp.Logger) {
-	t.logger = logger
+	t.logger = logger.Refine("senderLossTracker")
 	t.lastAckNo = 0
 	t.lastRateInv = UnknownLossEventRateInv
 	t.lossRateCalculator.Init(NINTERVAL)
@@ -47,15 +47,15 @@ func (t *senderLossTracker) OnRead(fb *dccp.FeedbackHeader) (LossFeedback, error
 		return LossFeedback{}, ErrNoAck
 	}
 	var lossIntervals *LossIntervalsOption
-	t.logger.E("s-tracker", "Event", fmt.Sprintf("Encoded option count = %d", len(fb.Options)), fb)
+	t.logger.E("Event", fmt.Sprintf("Encoded option count = %d", len(fb.Options)), fb)
 	for i, opt := range fb.Options {
 		if lossIntervals = DecodeLossIntervalsOption(opt); lossIntervals != nil {
 			break
 		}
-		t.logger.E("s-tracker", "Event", fmt.Sprintf("Decodingd option %d", i), fb)
+		t.logger.E("Event", fmt.Sprintf("Decodingd option %d", i), fb)
 	}
 	if lossIntervals == nil {
-		t.logger.E("s-tracker", "Event", "Missing lossIntervals", fb)
+		t.logger.E("Event", "Missing lossIntervals", fb)
 		return LossFeedback{}, ErrMissingOption
 	}
 

@@ -48,7 +48,7 @@ const (
 
 // Init resets the senderRoundtripEstimator object for new use
 func (t *senderRoundtripEstimator) Init(logger *dccp.Logger) {
-	t.logger = logger
+	t.logger = logger.Refine("senderRoundtripEstimator")
 	t.estimate = 0
 	t.k = 0
 	for i, _ := range t.history {
@@ -92,7 +92,7 @@ func (t *senderRoundtripEstimator) OnRead(fb *dccp.FeedbackHeader) bool {
 		}
 	}
 	if elapsed == nil {
-		t.logger.E("s-rtt", "Warn", "Elapsed missing", fb)
+		t.logger.E("Warn", "Elapsed missing", fb)
 		return false
 	}
 
@@ -116,7 +116,7 @@ func (t *senderRoundtripEstimator) OnRead(fb *dccp.FeedbackHeader) bool {
 		t.estimate = (est * SenderRoundtripWeightNew + est_old * SenderRoundtripWeightOld) / 
 			(SenderRoundtripWeightNew + SenderRoundtripWeightOld)
 	}
-	t.logger.E("s-rtt", "Good", fmt.Sprintf("S·RTT·OnR RTT=%d", t.estimate), fb)
+	t.logger.E("Good", fmt.Sprintf("S·RTT·OnR RTT=%d", t.estimate), fb)
 
 	return true
 }
@@ -151,7 +151,7 @@ type receiverRoundtripEstimator struct {
 
 // Init initializes the RTT estimator
 func (t *receiverRoundtripEstimator) Init(logger *dccp.Logger) {
-	t.logger = logger
+	t.logger = logger.Refine("receiverRoundtripEstimator")
 	t.rtt = 0
 	t.rttTime = 0
 }
@@ -159,7 +159,7 @@ func (t *receiverRoundtripEstimator) Init(logger *dccp.Logger) {
 // String returns the contents of the received ccvals history
 func (t *receiverRoundtripEstimator) String() string {
 	var w bytes.Buffer
-	fmt.Fprintf(&w, "RTT=%s ns", dccp.Nstoa(t.rtt))
+	fmt.Fprintf(&w, "R·RTT=%s", dccp.Nstoa(t.rtt))
 	return string(w.Bytes())
 }
 
@@ -176,7 +176,7 @@ func (t *receiverRoundtripEstimator) OnRead(ff *dccp.FeedforwardHeader) bool {
 		}
 	}
 	if report == nil {
-		t.logger.E("r-rtt", "Warn", "Roundtrip report missing", ff)
+		t.logger.E("Warn", "Roundtrip report missing", ff)
 		return false
 	}
 

@@ -10,7 +10,7 @@ import (
 )
 
 func newSender(run *dccp.Runtime, logger *dccp.Logger) *sender {
-	return &sender{ run: run, logger: logger }
+	return &sender{ run: run, logger: logger.Refine("sender") }
 }
 
 // sender implements a CCID3 congestion control sender.
@@ -85,7 +85,7 @@ func (s *sender) OnWrite(ph *dccp.PreHeader) (ccval int8, options []*dccp.Option
 	rtt, _ := s.senderRoundtripEstimator.RTT()
 
 	ccval = s.senderWindowCounter.OnWrite(rtt, ph.SeqNo, ph.Time)
-	s.logger.E("s", "wccval", fmt.Sprintf("S·OnW CCVal=%d, RTT=%d", ccval, rtt))
+	s.logger.E("wccval", fmt.Sprintf("S·OnW CCVal=%d, RTT=%d", ccval, rtt))
 
 	reportOpt := s.senderRoundtripReporter.OnWrite(rtt, ph.Time)
 	if reportOpt != nil {
@@ -115,7 +115,7 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) error {
 	s.senderRoundtripEstimator.OnRead(fb)
 	rtt, rttEstimated := s.senderRoundtripEstimator.RTT()
 	if rttEstimated {
-		s.logger.E("s", "srtt", fmt.Sprintf("sRTT=%s", dccp.Nstoa(rtt)), fb,
+		s.logger.E("srtt", fmt.Sprintf("sRTT=%s", dccp.Nstoa(rtt)), fb,
 			dccp.LogArgs{"rtt": rtt, "est": rttEstimated})
 	}
 
@@ -128,14 +128,14 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) error {
 	// Update loss estimates
 	lossFeedback, err := s.senderLossTracker.OnRead(fb)
 	if err != nil {
-		s.logger.E("s", "Warn", fmt.Sprintf("senderLossTracker.OnRead err (%s)", err), fb)
+		s.logger.E("Warn", fmt.Sprintf("senderLossTracker.OnRead err (%s)", err), fb)
 		return nil
 	}
 
 	// Update allowed sending rate
 	xrecv, err := readReceiveRate(fb)
 	if err != nil {
-		s.logger.E("s", "Warn", "Feedback packet with corrupt receive rate option", fb)
+		s.logger.E("Warn", "Feedback packet with corrupt receive rate option", fb)
 		return nil
 	}
 	xf := &XFeedback{
@@ -175,7 +175,7 @@ func (s *sender) Strobe() {
 	s.Unlock()
 
 	if !open {
-		s.logger.E("s", "Event", "Strobe immediate")
+		s.logger.E("Event", "Strobe immediate")
 		return
 	}
 
