@@ -66,7 +66,7 @@ func (t *senderRateCalculator) X() uint32 { return t.x }
 func (t *senderRateCalculator) onFirstRead(now int64) uint32 {
 	t.tld = now
 	t.x = initRate(t.ss, t.rtt)
-	t.logger.E("Event", fmt.Sprintf("Init rate = %d bps", t.x))
+	t.logger.E(dccp.EventInfo, fmt.Sprintf("Init rate = %d bps", t.x))
 	// XXX panic("a")
 	return t.x
 }
@@ -140,7 +140,7 @@ func (t *senderRateCalculator) recalculate(now int64) uint32 {
 // OnNoFeedback returns the new allowed sending rate.
 // See RFC 5348, Section 4.4
 func (t *senderRateCalculator) OnNoFeedback(now int64, hasRTT bool, idleSince int64, nofeedbackSet int64) uint32 {
-	t.logger.E("Event", fmt.Sprintf("OnNoFbk hrtt=%v idl=%d nofbks=%d", hasRTT, idleSince, nofeedbackSet))
+	t.logger.E(dccp.EventInfo, fmt.Sprintf("OnNoFbk hrtt=%v idl=%d nofbks=%d", hasRTT, idleSince, nofeedbackSet))
 	xRecv := t.xRecvSet.Max()
 	if !hasRTT && !t.hasFeedback && idleSince > nofeedbackSet {
 		// We do not have X_Bps or recover_rate yet.

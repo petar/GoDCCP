@@ -19,15 +19,14 @@ type Pipe struct {
 	ha, hb headerHalfPipe
 }
 
-func NewPipe(run *dccp.Runtime, logger *dccp.Logger, 
-	aName, bName string) (a, b dccp.HeaderConn, line *Pipe) {
+func NewPipe(run *dccp.Runtime, logger *dccp.Logger, namea, nameb string) (a, b dccp.HeaderConn, line *Pipe) {
 
 	ab := make(chan *pipeHeader, pipeBufferLen)
 	ba := make(chan *pipeHeader, pipeBufferLen)
 	line = &Pipe{}
 	line.logger = logger
-	line.ha.Init(aName, run, line.logger, ba, ab)
-	line.hb.Init(bName, run, line.logger, ab, ba)
+	line.ha.Init(namea, run, line.logger, ba, ab)
+	line.hb.Init(nameb, run, line.logger, ab, ba)
 	return &line.ha, &line.hb, line
 }
 
@@ -88,7 +87,7 @@ func (hhl *headerHalfPipe) Init(name string, run *dccp.Runtime, logger *dccp.Log
 
 	hhl.name = name
 	hhl.run = run
-	hhl.logger = logger
+	hhl.logger = logger.Refine(name)
 	hhl.read = r
 	hhl.write = w
 	hhl.SetWriteRate(DefaultRateInterval, DefaultRatePacketsPerInterval)
@@ -135,10 +134,10 @@ func (hhl *headerHalfPipe) ReadHeader() (h *dccp.Header, err error) {
 	select {
 	case ph, ok := <-hhl.read:
 		if !ok {
-			hhl.logger.E(hhl.name, "Warn", "Read EOF", ph.Header)
+			hhl.logger.E(dccp.EventWarn, "Read EOF", ph.Header)
 			return nil, dccp.ErrEOF
 		}
-		hhl.logger.E(hhl.name, "Read", fmt.Sprintf("SeqNo=%d", ph.Header.SeqNo), ph.Header)
+		hhl.logger.E(dccp.EventRead, fmt.Sprintf("SeqNo=%d", ph.Header.SeqNo), ph.Header)
 		return ph.Header, nil
 	case <-tmoch:
 		return nil, dccp.ErrTimeout
@@ -152,19 +151,19 @@ func (hhl *headerHalfPipe) WriteHeader(h *dccp.Header) (err error) {
 	defer hhl.writeLk.Unlock()
 
 	if hhl.write == nil {
-		hhl.logger.E(hhl.name, "Drop", fmt.Sprintf("EBADF"), h)
+		hhl.logger.E(dccp.EventDrop, fmt.Sprintf("EBADF"), h)
 		return dccp.ErrBad
 	}
 
 	if hhl.rateFilter() {
 		if len(hhl.write) >= cap(hhl.write) {
-			hhl.logger.E(hhl.name, "Drop", "Slow reader", h)
+			hhl.logger.E(dccp.EventDrop, "Slow reader", h)
 		} else {
-			hhl.logger.E(hhl.name, "Write", "", h)
+			hhl.logger.E(dccp.EventWrite, "", h)
 			hhl.write <- &pipeHeader{ Header: h }
 		}
 	} else {
-		hhl.logger.E(hhl.name, "Drop", "Fast writer", h)
+		hhl.logger.E(dccp.EventDrop, "Fast writer", h)
 	}
 	return nil
 }
@@ -194,13 +193,13 @@ func (hhl *headerHalfPipe) Close() error {
 	defer hhl.writeLk.Unlock()
 
 	if hhl.write == nil {
-		hhl.logger.E(hhl.name, "Warn", "Close EBADF")
+		hhl.logger.E(dccp.EventWarn, "Close EBADF")
 		return dccp.ErrBad
 	}
 	close(hhl.write)
 	hhl.write = nil
 
-	hhl.logger.E(hhl.name, "Event", "Close")
+	hhl.logger.E(dccp.EventInfo, "Close")
 	return nil
 }
 

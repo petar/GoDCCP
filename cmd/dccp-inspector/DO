@@ -6,3 +6,4 @@
 	* replace system with label stack
 	* remove module argument from E and add stacking command to Logger
 	* make events their own type and define set of values
+	* update REDUCER & INSPECTOR accordingly

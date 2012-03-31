@@ -15,7 +15,7 @@ func (c *Conn) emitCatchSeqNo(h *Header, seqNos ...int64) {
 	}
 	for _, seqNo := range seqNos {
 		if h.SeqNo == seqNo {
-			c.logger.EC(1, "Catch", 
+			c.logger.EC(1, EventCatch, 
 				fmt.Sprintf("Caught SeqNo=%d: %s\n%s", seqNo, h.String(), string(debug.Stack())), 
 				h)
 			break

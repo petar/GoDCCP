@@ -99,7 +99,7 @@ func (c *Conn) gotoREQUEST(serviceCode uint32) {
 				break
 			}
 			c.Lock()
-			c.logger.E("Event", "Request resend")
+			c.logger.E(EventTurn, "Request resend")
 			c.inject(c.generateRequest(serviceCode))
 			c.Unlock()
 		}
@@ -114,7 +114,7 @@ func (c *Conn) openCCID() {
 	c.scc.Open()
 	c.rcc.Open()
 	c.ccidOpen = true
-	c.logger.E("Event", "CCID open")
+	c.logger.E(EventMatch, "CCID open")
 }
 
 func (c *Conn) closeCCID() {
@@ -125,7 +125,7 @@ func (c *Conn) closeCCID() {
 	c.scc.Close()
 	c.rcc.Close()
 	c.ccidOpen = false
-	c.logger.E("Event", "CCID close")
+	c.logger.E(EventMatch, "CCID close")
 }
 
 func (c *Conn) gotoPARTOPEN() {
@@ -138,14 +138,14 @@ func (c *Conn) gotoPARTOPEN() {
 	// Start PARTOPEN timer, according to Section 8.1.5
 	c.run.Go(func() {
 		b := newBackOff(c.run, PARTOPEN_BACKOFF_FIRST, PARTOPEN_BACKOFF_TIMEOUT, PARTOPEN_BACKOFF_FREQ)
-		c.logger.E("Event", "PARTOPEN backoff start")
+		c.logger.E(EventInfo, "PARTOPEN backoff start")
 		for {
 			err, btm := b.Sleep()
 			c.Lock()
 			state := c.socket.GetState()
 			c.Unlock()
 			if state != PARTOPEN {
-				c.logger.E("Event", "PARTOPEN backoff EXIT via state change")
+				c.logger.E(EventInfo, "PARTOPEN backoff EXIT via state change")
 				break
 			}
 			// If the back-off timer has reached maximum wait. End the connection.
@@ -153,7 +153,7 @@ func (c *Conn) gotoPARTOPEN() {
 				c.abort()
 				break
 			}
-			c.logger.E("Event", fmt.Sprintf("PARTOPEN backoff %d", btm))
+			c.logger.E(EventInfo, fmt.Sprintf("PARTOPEN backoff %d", btm))
 			c.Lock()
 			c.inject(c.generateAck())
 			// XXX: This is a deviation from the RFC. The Sync packet necessitates a
@@ -199,7 +199,7 @@ func (c *Conn) gotoCLOSING() {
 		c.Lock()
 		rtt := c.socket.GetRTT()
 		c.Unlock()
-		c.logger.E("Event", fmt.Sprintf("CLOSING RTT=%dns", rtt))
+		c.logger.E(EventInfo, fmt.Sprintf("CLOSING RTT=%dns", rtt))
 		b := newBackOff(c.run, 2*rtt, CLOSING_BACKOFF_TIMEOUT, CLOSING_BACKOFF_FREQ)
 		for {
 			err, _ := b.Sleep()
@@ -215,7 +215,7 @@ func (c *Conn) gotoCLOSING() {
 				c.Unlock()
 				break
 			}
-			c.logger.E("Event", "Resend Close")
+			c.logger.E(EventInfo, "Resend Close")
 			c.Lock()
 			c.inject(c.generateClose())
 			c.Unlock()

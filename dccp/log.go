@@ -31,7 +31,7 @@ type LogRecord struct {
 
 	// Event is an identifier representing the type of event that this log record represents. It
 	// can be something like "Warn", "Info", etc.
-	Event     string   `json:"e"`
+	Event     Event   `json:"e"`
 
 	// If applicable, State is the DCCP state of the runtime instance (or system) that this log
 	// record pertains to. This is typically used only if the system is a dccp.Conn.
@@ -95,6 +95,60 @@ func (t LogArgs) Bool(k string) (value bool, success bool) {
 	return u, true
 }
 
+// Event is the type of logging event.
+// Events are wrapped in a special type to make sure that modifications/additions
+// to the set of events impose respective modifications in the reducer and the inspector.
+type Event int
+
+const (
+	EventTurn = Event(iota) // Turn events mark new information that is admissible (within expectations)
+	EventMatch              // Match events mark an admissible outcome of a complex event/computation sequence
+	EventCatch              // Catch events are breakpoints on conditions
+	EventInfo
+	EventWarn
+	EventError
+	EventIdle               // Idle events are emitted on the turn of the DCCP idle loop
+	EventDrop               // Drop events are related to a packet drop
+	EventRead               // Read events are related to a packet read
+	EventWrite              // Write events are related to a packet write
+)
+
+// String returns a textual representation of the event
+func (e Event) String() string {
+	switch e {
+	case EventTurn:
+		return "Turn"
+	case EventMatch:
+		return "Match"
+	case EventCatch:
+		return "Catch"
+	case EventInfo:
+		return "Info"
+	case EventWarn:
+		return "Warn"
+	case EventError:
+		return "Error"
+	case EventIdle:
+		return "Idle"
+	case EventDrop:
+		return "Drop"
+	case EventRead:
+		return "Read"
+	case EventWrite:
+		return "Write"
+	}
+	panic("unknown event")
+}
+
+func indentEvent(event Event) string {
+	s := event.String()
+	switch s {
+	case "Write", "Read", "Strobe":
+		return s
+	}
+	return "  " + s
+}
+
 // Logger is capable of emitting structured logs, which are consequently used for debuging
 // and analysis purposes. It lives in the context of a shared time framework and a shared
 // filter framework, which may filter some logs out
@@ -106,9 +160,9 @@ type Logger struct {
 // A zero-value Logger has the special-case behavior of ignoring all emits
 var NoLogging *Logger = &Logger{}
 
-// NewLogger creates a new Logger object with an empty label stack
-func NewLogger(system string, run *Runtime) *Logger {
-	return &Logger{ run: run, labels: make([]string, 0) }
+// NewLogger creates a new Logger object with a single entry in the label stack
+func NewLogger(label string, run *Runtime) *Logger {
+	return &Logger{ run: run, labels: []string{label} }
 }
 
 // Refine clones this logger and stack the additional label l
@@ -118,7 +172,7 @@ func (t *Logger) Refine(l string) *Logger {
 
 // Copy clones this logger into an identical new one
 func (t *Logger) Copy() *Logger {
-	c = *t
+	var c Logger = *t
 	c.labels = make([]string, len(t.labels))
 	copy(c.labels, t.labels)
 	return &c
@@ -195,15 +249,15 @@ func stackTrace(labels []string, skip int) string {
 // type *Header, *PreHeader, *FeedbackHeader or *FeedforwardHeader is considered the DCCP
 // header that this log pertains to. The first argument of type Args is saved in the log
 // record.
-func (t *Logger) E(event, comment string, args ...interface{}) {
+func (t *Logger) E(event Event, comment string, args ...interface{}) {
 	t.EC(1, event, comment, args...)
 }
 
-func (t *Logger) EC(skip int, event, comment string, args ...interface{}) {
+func (t *Logger) EC(skip int, event Event, comment string, args ...interface{}) {
 	if t.run == nil {
 		return
 	}
-	sinceZero, sinceLast := t.run.Snap()
+	sinceZero, _ := t.run.Snap()
 
 	// Extract header information
 	var hType string = ""
@@ -266,16 +320,6 @@ __FindArgs:
 		}
 		t.run.Writer().Write(r)
 	}
-}
-
-func indentEvent(event string) string {
-	switch event {
-	case "Write", "Read", "Strobe":
-		return event
-	default:
-		return "  " + event
-	}
-	panic("")
 }
 
 const nsAlpha = "0123456789"

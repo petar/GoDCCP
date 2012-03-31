@@ -92,7 +92,7 @@ func (t *senderRoundtripEstimator) OnRead(fb *dccp.FeedbackHeader) bool {
 		}
 	}
 	if elapsed == nil {
-		t.logger.E("Warn", "Elapsed missing", fb)
+		t.logger.E(dccp.EventWarn, "Elapsed missing", fb)
 		return false
 	}
 
@@ -116,7 +116,7 @@ func (t *senderRoundtripEstimator) OnRead(fb *dccp.FeedbackHeader) bool {
 		t.estimate = (est * SenderRoundtripWeightNew + est_old * SenderRoundtripWeightOld) / 
 			(SenderRoundtripWeightNew + SenderRoundtripWeightOld)
 	}
-	t.logger.E("Good", fmt.Sprintf("S·RTT·OnR RTT=%d", t.estimate), fb)
+	t.logger.E(dccp.EventMatch, fmt.Sprintf("S·RTT·OnR RTT=%d", t.estimate), fb)
 
 	return true
 }
@@ -176,7 +176,7 @@ func (t *receiverRoundtripEstimator) OnRead(ff *dccp.FeedforwardHeader) bool {
 		}
 	}
 	if report == nil {
-		t.logger.E("Warn", "Roundtrip report missing", ff)
+		t.logger.E(dccp.EventWarn, "Roundtrip report missing", ff)
 		return false
 	}
 
