@@ -162,6 +162,13 @@ func sprintPacket(r *dccp.LogRecord) string {
 	return sprintPacketWidth(r, 9)
 }
 
+func sprintPacketWide(r *dccp.LogRecord) string {
+	if r.Type == "" {
+		return ""
+	}
+	return fmt.Sprintf("Type=%s SeqNo=%06x AckNo=%06x", r.Type, r.SeqNo, r.AckNo)
+}
+
 func sprintPacketWidth(r *dccp.LogRecord, width int) string {
 	var w bytes.Buffer
 	w.WriteString(r.Type)

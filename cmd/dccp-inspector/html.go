@@ -94,10 +94,14 @@ func pipeEmit(t *dccp.LogRecord) *logPipe {
 	}
 	pipe.SourceFile = t.SourceFile
 	pipe.SourceLine = strconv.Itoa(t.SourceLine)
-	pipe.Trace = t.Trace
 	pipe.Event = classify(t.Event)
 	pipe.SeqNo = htmlizeAckSeqNo(t.Type, t.SeqNo)
 	pipe.AckNo = htmlizeAckSeqNo(t.Type, t.AckNo)
+	if t.Type == "" {
+		pipe.Trace = t.Trace
+	} else {
+		pipe.Trace = sprintPacketWide(t) + "\n" + t.Trace
+	}
 	return &logPipe{ Log: t, Pipe: pipe }
 }
 
@@ -282,10 +286,10 @@ func pipeDrop(r *dccp.LogRecord) *emitPipe {
 const htmlEventWidth = 41
 
 func sprintPacketEventCommentHTML(r *dccp.LogRecord) string {
-	if r.SeqNo == 0 {
-		return fmt.Sprintf(" %s ", cut(r.Comment, htmlEventWidth-2))
+	if r.Type == "" {
+		return fmt.Sprintf("   %s ", cut(r.Comment, htmlEventWidth-4))
 	}
-	return fmt.Sprintf(" %s %06x·%06x ", cut(r.Comment, htmlEventWidth-14-2), r.SeqNo, r.AckNo)
+	return fmt.Sprintf(" ¶ %s ", cut(r.Comment, htmlEventWidth-4))
 }
 
 func pipeGeneric(r *dccp.LogRecord) *emitPipe {

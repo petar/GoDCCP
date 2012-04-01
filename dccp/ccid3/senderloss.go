@@ -71,6 +71,7 @@ func (t *senderLossTracker) OnRead(fb *dccp.FeedbackHeader) (LossFeedback, error
 		r.RateInc = true
 	}
 	t.lastRateInv = rateInv
+	t.logger.E(dccp.EventMatch, fmt.Sprintf("Loss rate inv = %0.4g", 1 / float64(rateInv)))
 
 	// XXX: Must use circular arithmetic here
 	t.lastAckNo = max64(t.lastAckNo, fb.AckNo)
