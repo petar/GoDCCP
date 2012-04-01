@@ -156,10 +156,6 @@ func (c *Conn) gotoPARTOPEN() {
 			c.logger.E(EventInfo, fmt.Sprintf("PARTOPEN backoff %d", btm))
 			c.Lock()
 			c.inject(c.generateAck())
-			// XXX: This is a deviation from the RFC. The Sync packet necessitates a
-			// SyncAck response, which moves the client from PARTOPEN to OPEN in the
-			// lack of DataAck packets sent from the server to the client.
-			c.inject(c.generateSync())
 			c.Unlock()
 		}
 	}, "gotoPARTOPEN")

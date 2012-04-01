@@ -103,6 +103,7 @@ func (r *receiver) OnWrite(ph *dccp.PreHeader) (options []*dccp.Option) {
 		r.lastCCVal = r.latestCCVal
 
 		// Prepare feedback options, if we've seen packets before
+		// XXX: Maybe gsr = 0 should not indicate not seen packets, use something else
 		if r.gsr > 0 {
 			opts := make([]*dccp.Option, 3)
 			opts[0] = encodeOption(r.makeElapsedTimeOption(ph.AckNo, ph.Time))
@@ -120,7 +121,7 @@ func (r *receiver) OnWrite(ph *dccp.PreHeader) (options []*dccp.Option) {
 			r.logger.E(dccp.EventInfo, fmt.Sprintf("Placed %d receiver opts", len(opts)), ph)
 			return opts
 		}
-		r.logger.E(dccp.EventInfo, "OnWrite, not seen packs before", ph)
+		r.logger.E(dccp.EventInfo, "OnWrite, not seen packets before", ph)
 		return nil
 
 	case dccp.Data /*, dccp.DataAck */:
@@ -154,10 +155,7 @@ func (r *receiver) OnRead(ff *dccp.FeedforwardHeader) error {
 
 	// Update RTT estimate
 	r.receiverRoundtripEstimator.OnRead(ff)
-	rtt, est := r.receiverRoundtripEstimator.RTT(ff.Time)
-	r.logger.E(dccp.EventInfo, r.receiverRoundtripEstimator.String(), ff)
-	r.logger.E(dccp.EventInfo, fmt.Sprintf("RTT=%s EST=%v", dccp.Nstoa(rtt), est), ff, 
-		dccp.LogArgs{"rtt": rtt, "est": est})
+	rtt, _ := r.receiverRoundtripEstimator.RTT(ff.Time)
 
 	// Update receive rate
 	r.receiverRateCalculator.OnRead(ff)

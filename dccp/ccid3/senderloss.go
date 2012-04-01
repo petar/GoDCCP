@@ -55,7 +55,7 @@ func (t *senderLossTracker) OnRead(fb *dccp.FeedbackHeader) (LossFeedback, error
 		t.logger.E(dccp.EventInfo, fmt.Sprintf("Decodingd option %d", i), fb)
 	}
 	if lossIntervals == nil {
-		t.logger.E(dccp.EventInfo, "Missing lossIntervals", fb)
+		t.logger.E(dccp.EventWarn, "Missing lossIntervals option", fb)
 		return LossFeedback{}, ErrMissingOption
 	}
 

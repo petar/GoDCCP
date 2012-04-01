@@ -5,7 +5,6 @@
 package ccid3
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/petar/GoDCCP/dccp"
 )
@@ -92,7 +91,7 @@ func (t *senderRoundtripEstimator) OnRead(fb *dccp.FeedbackHeader) bool {
 		}
 	}
 	if elapsed == nil {
-		t.logger.E(dccp.EventWarn, "Elapsed missing", fb)
+		t.logger.E(dccp.EventWarn, "Missing elapsed opt", fb)
 		return false
 	}
 
@@ -103,10 +102,12 @@ func (t *senderRoundtripEstimator) OnRead(fb *dccp.FeedbackHeader) bool {
 	}
 	elapsedNS := dccp.NanoFromTenMicro(elapsed.Elapsed) // Elapsed time at receiver in nanoseconds
 	if elapsedNS < 0 {
+		t.logger.E(dccp.EventWarn, "Invalid elapsed opt", fb)
 		return false
 	}
 	est := (fb.Time - s.Time - elapsedNS) / 2
 	if est <= 0 {
+		t.logger.E(dccp.EventWarn, "Invalid elapsed opt", fb)
 		return false
 	}
 	est_old := t.estimate
@@ -116,7 +117,7 @@ func (t *senderRoundtripEstimator) OnRead(fb *dccp.FeedbackHeader) bool {
 		t.estimate = (est * SenderRoundtripWeightNew + est_old * SenderRoundtripWeightOld) / 
 			(SenderRoundtripWeightNew + SenderRoundtripWeightOld)
 	}
-	t.logger.E(dccp.EventMatch, fmt.Sprintf("S·RTT·OnR RTT=%d", t.estimate), fb)
+	t.logger.E(dccp.EventMatch, fmt.Sprintf("Elapsed —> RTT=%s", dccp.Nstoa(t.estimate)), fb)
 
 	return true
 }
@@ -156,13 +157,6 @@ func (t *receiverRoundtripEstimator) Init(logger *dccp.Logger) {
 	t.rttTime = 0
 }
 
-// String returns the contents of the received ccvals history
-func (t *receiverRoundtripEstimator) String() string {
-	var w bytes.Buffer
-	fmt.Fprintf(&w, "R·RTT=%s", dccp.Nstoa(t.rtt))
-	return string(w.Bytes())
-}
-
 // receiver calls OnRead every time a packet is received
 // OnRead returns true, if the roundtrip estimate has changed
 func (t *receiverRoundtripEstimator) OnRead(ff *dccp.FeedforwardHeader) bool {
@@ -176,18 +170,20 @@ func (t *receiverRoundtripEstimator) OnRead(ff *dccp.FeedforwardHeader) bool {
 		}
 	}
 	if report == nil {
-		t.logger.E(dccp.EventWarn, "Roundtrip report missing", ff)
+		t.logger.E(dccp.EventWarn, "Missing roundtrip report opt", ff)
 		return false
 	}
 
 	// Sanity checks
 	rtt := dccp.NanoFromTenMicro(report.Roundtrip)
 	if rtt <= 0 || rtt > 30e9 {
+		t.logger.E(dccp.EventWarn, "Invalid roundtrip report opt", ff)
 		return false
 	}
 
 	// Update RTT estimate
 	t.rtt, t.rttTime = rtt, ff.Time
+	t.logger.E(dccp.EventMatch, fmt.Sprintf("Report —> RTT=%s", dccp.Nstoa(t.rtt)), ff)
 
 	return true
 }

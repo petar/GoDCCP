@@ -65,12 +65,16 @@ func TestOpenClose(t *testing.T) {
 func TestIdle(t *testing.T) {
 
 	clientConn, serverConn, run := NewClientServerPipe("idle")
+	cargo := []byte{1, 2, 3}
 
 	cchan := make(chan int, 1)
 	go func() {
+		if err := clientConn.WriteSegment(cargo); err != nil {
+			t.Errorf("client write (%s)", err)
+		}
 		run.Sleep(10e9) // Stay idle for 10 sec
-		if err := clientConn.Close(); err != nil {
-			t.Errorf("client close error (%s)", err)
+		if err := clientConn.Close(); err != nil && err != dccp.ErrEOF {
+			t.Errorf("client close (%s)", err)
 		}
 		cchan <- 1
 		close(cchan)
@@ -78,10 +82,13 @@ func TestIdle(t *testing.T) {
 
 	schan := make(chan int, 1)
 	go func() {
+		if err := serverConn.WriteSegment(cargo); err != nil {
+			t.Errorf("server write (%s)", err)
+		}
 		run.Sleep(10e9) // Stay idle for 10 sec
-		if err := serverConn.Close(); err != nil {
+		if err := serverConn.Close(); err != nil && err != dccp.ErrEOF {
 			// XXX why not EOF
-			t.Logf("server close error (%s)", err)
+			t.Logf("server close (%s)", err)
 		}
 		schan <- 1
 		close(schan)

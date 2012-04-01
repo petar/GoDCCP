@@ -85,7 +85,7 @@ func (s *sender) OnWrite(ph *dccp.PreHeader) (ccval int8, options []*dccp.Option
 	rtt, _ := s.senderRoundtripEstimator.RTT()
 
 	ccval = s.senderWindowCounter.OnWrite(rtt, ph.SeqNo, ph.Time)
-	s.logger.E(dccp.EventInfo, fmt.Sprintf("CCVAL=%d, RTT=%d", ccval, rtt))
+	s.logger.E(dccp.EventInfo, fmt.Sprintf("CCVAL=%d", ccval))
 
 	reportOpt := s.senderRoundtripReporter.OnWrite(rtt, ph.Time)
 	if reportOpt != nil {
@@ -114,10 +114,6 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) error {
 	// Update the round-trip estimate
 	s.senderRoundtripEstimator.OnRead(fb)
 	rtt, rttEstimated := s.senderRoundtripEstimator.RTT()
-	if rttEstimated {
-		s.logger.E(dccp.EventMatch, fmt.Sprintf("S·RTT=%s", dccp.Nstoa(rtt)), fb,
-			dccp.LogArgs{"rtt": rtt, "est": rttEstimated})
-	}
 
 	// Update the nofeedback timeout interval and reset the timer
 	s.senderNoFeedbackTimer.OnRead(rtt, rttEstimated, fb)
@@ -128,7 +124,6 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) error {
 	// Update loss estimates
 	lossFeedback, err := s.senderLossTracker.OnRead(fb)
 	if err != nil {
-		s.logger.E(dccp.EventWarn, fmt.Sprintf("senderLossTracker.OnRead err (%s)", err), fb)
 		return nil
 	}
 

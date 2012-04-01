@@ -6,10 +6,18 @@ dccp_test.go:TestIdle
 			which carries Elapsed option,
 			which is needed for RTT estimate
 
-		1.1.1.	Should Elapsed options be limited to Ack and DataAck?
+		1.1.1.	Should Elapsed options be limited to Ack and DataAck, as opposed to also
+			other packets that contain acknowledgements? Are there other such packet types?
 
-		1.1.2.	Need mechanism to ensure Ack sent to client in presence of Idle!
+		1.1.2.	(OK) Need mechanism to ensure Ack sent back to client in presence of Idle?
+			* No. It's OK if client stays in PARTOPEN. Just means it must
+			send Acks with any data it sends. Section 8.1.5 for details.
+
+			1.1.2.1. (OK) Ensure that user-side of DCCP client is available for i/o when in
+			PARTOPEN, but until in PARTOPEN all data is sent in DataAcks.
+
+		1.1.3.  Add an on/off heartbeat mechanism that ensures one interaction each RTT interval.
 
 	1.2.	(OK) Client sends 10 packets in the first second, only 3 of which are received?
 		No drops are reported. Is there a programmatic delay?
-		(A) Sender's rate control switches to 1pps at the start
+		* Sender's rate control switches to 1pps at the start
