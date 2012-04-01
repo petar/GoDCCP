@@ -12,6 +12,7 @@ import (
 
 type emitPipe struct {
 	Time       string
+	TimeAbs    string
 	SourceFile string
 	SourceLine string
 	Trace      string
@@ -46,6 +47,7 @@ func htmlize(records []*logPipe, srt bool) {
 	var sflag rune = ' '
 	for _, r := range records {
 		r.Pipe.Time = fmt.Sprintf("%15s %c", dccp.Nstoa(r.Log.Time - last), sflag)
+		r.Pipe.TimeAbs = fmt.Sprintf("%c %-15s", sflag, dccp.Nstoa(r.Log.Time))
 		sflag = ' '
 		last = r.Log.Time
 		if last / 1e9 > sec {
@@ -128,7 +130,7 @@ func htmlizePipe(e *emitPipe) string {
 	return string(w.Bytes())
 }
 
-const htmlPacketWidth = 17
+const htmlPacketWidth = 21 
 
 func pipeWrite(r *dccp.LogRecord) *emitPipe {
 	switch r.Labels[0] {
@@ -277,7 +279,7 @@ func pipeDrop(r *dccp.LogRecord) *emitPipe {
 	return nil
 }
 
-const htmlEventWidth = 30 
+const htmlEventWidth = 41
 
 func sprintPacketEventCommentHTML(r *dccp.LogRecord) string {
 	if r.SeqNo == 0 {

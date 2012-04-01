@@ -9,10 +9,9 @@ package main
 		packet (AckNo is same as SeqNo of original packet)
 		(iv)  Removes highlighting on rows that were previously highlighted using this
 		procedure
-	o Clicking the (left-most) time cell of a row toggles a dark frame around the client-half of
+	o Clicking the (left-most) cell of a row toggles a dark frame around the client-half of
 	the row
-	o Clicking the (right-most) source file cell of a row toggles a dark frame around the
-	server-half of the row
+	o Clicking the (right-most) cell of a row toggles a dark frame around the server-half of the row
 	o Hovering over any row zooms on the row
  */
 
@@ -24,7 +23,7 @@ const (
 		$('tr').mouseenter(hilightRow);
 		$('tr').dblclick(toggleFoldRow);
 		$('td.time').click(rotateMarkClientRow);
-		$('td.file, td.sep, td.line').click(rotateMarkServerRow);
+		$('td.time-abs').click(rotateMarkServerRow);
 		$('td:has(div.tooltip)').mouseenter(showTooltip);
 		$('td:has(div.tooltip)').mouseleave(hideTooltip);
 	})
@@ -96,7 +95,7 @@ const (
 	}
 	function rotateMarkServerRow() {
 		var trow = $(this).parents()[0];
-		_.each($('td.server, td.file, td.sep, td.line', trow), _rotateMark);
+		_.each($('td.server, td.time-abs', trow), _rotateMark);
 	}
 	`
 )

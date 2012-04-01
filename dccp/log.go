@@ -216,15 +216,20 @@ func (t *Logger) SetState(s int) {
 // StackTrace formats the stack trace of the calling go routine, 
 // excluding pointer information and including DCCP runtime-specific information, 
 // in a manner convenient for debugging DCCP
-func stackTrace(labels []string, skip int) string {
+func stackTrace(labels []string, skip int, sfile string, sline int) string {
 	var w bytes.Buffer
 	var stk []uintptr = make([]uintptr, 32)	// DCCP logic stack should not be deeper than that
 	n := runtime.Callers(skip+1, stk)
 	stk = stk[:n]
+	var utf2byte int
 	for _, l := range labels {
 		fmt.Fprintf(&w, "%s·", l)
+		utf2byte++
 	}
-	fmt.Fprintf(&w, "\n")
+	for w.Len() < 40 + 4 + utf2byte {
+		w.WriteRune(' ')
+	}
+	fmt.Fprintf(&w, " (%s:%d)\n", sfile, sline)
 	var nondccp bool
 	for _, pc := range stk {
 		f := runtime.FuncForPC(pc)
@@ -316,7 +321,7 @@ __FindArgs:
 			AckNo:      hAckNo,
 			SourceFile: sfile,
 			SourceLine: sline,
-			Trace:      stackTrace(t.labels, skip+2),
+			Trace:      stackTrace(t.labels, skip+2, sfile, sline),
 		}
 		t.run.Writer().Write(r)
 	}
