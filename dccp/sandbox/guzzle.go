@@ -5,11 +5,12 @@
 package sandbox
 
 import (
-	"os"
-	"path"
 	"github.com/petar/GoDCCP/dccp"
-	"github.com/petar/GoDCCP/dccp/ccid3"
 )
+
+// ??
+type Guzzle struct {
+}
 
 func NewClientServerPipe(logname string) (clientConn, serverConn *dccp.Conn, run *dccp.Runtime) {
 	return NewClientServerPipeDup(logname, nil)

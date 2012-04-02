@@ -15,7 +15,7 @@ import (
 // (for testing purposes), as well as a logger interface.
 type Runtime struct {
 	time   Time
-	writer LogWriter
+	writer Guzzle
 	filter *filter.Filter
 	goconj *GoConjunction
 
@@ -24,7 +24,7 @@ type Runtime struct {
 	timeLast int64 // Time of last log message
 }
 
-func NewRuntime(time Time, writer LogWriter) *Runtime {
+func NewRuntime(time Time, writer Guzzle) *Runtime {
 	now := time.Nanoseconds()
 	r := &Runtime{
 		time:     time,
@@ -46,7 +46,7 @@ func (t *Runtime) Waiter() Waiter {
 	return t.goconj
 }
 
-func (t *Runtime) Writer() LogWriter {
+func (t *Runtime) Writer() Guzzle {
 	return t.writer
 }
 

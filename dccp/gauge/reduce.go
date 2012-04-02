@@ -12,7 +12,7 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-// LogReducer is a dccp.LogWriter which processes the logs to a form
+// LogReducer is a dccp.Guzzle which processes the logs to a form
 // that is convenient as input to illustration tools
 type LogReducer struct {
 	sync.Mutex

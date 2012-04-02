@@ -353,39 +353,39 @@ func Nstoa(ns int64) string {
 	return string(b[z-i+1:])
 }
 
-// LogWriter is a type that consumes log entries.
-type LogWriter interface {
+// Guzzle is a type that consumes log entries.
+type Guzzle interface {
 	Write(*LogRecord)
 	Sync() error
 	Close() error
 }
 
-// FileLogWriter saves all log entries to a file in JSON format
-type FileLogWriter struct {
+// FileGuzzle saves all log entries to a file in JSON format
+type FileGuzzle struct {
 	f   *os.File
 	enc *json.Encoder
-	dup LogWriter
+	dup Guzzle
 }
 
-// NewFileLogWriterDup creates a LogWriter that saves logs in a file and also passes them to dup.
-func NewFileLogWriterDup(filename string, dup LogWriter) *FileLogWriter {
+// NewFileGuzzleDup creates a Guzzle that saves logs in a file and also passes them to dup.
+func NewFileGuzzleDup(filename string, dup Guzzle) *FileGuzzle {
 	os.Remove(filename)
 	f, err := os.Create(filename)
 	if err != nil {
 		panic(fmt.Sprintf("cannot create log file '%s'", filename))
 	}
-	w := &FileLogWriter{ f, json.NewEncoder(f), dup }
-	goruntime.SetFinalizer(w, func(w *FileLogWriter) { 
+	w := &FileGuzzle{ f, json.NewEncoder(f), dup }
+	goruntime.SetFinalizer(w, func(w *FileGuzzle) { 
 		w.f.Close() 
 	})
 	return w
 }
 
-func NewFileLogWriter(filename string) *FileLogWriter {
-	return NewFileLogWriterDup(filename, nil)
+func NewFileGuzzle(filename string) *FileGuzzle {
+	return NewFileGuzzleDup(filename, nil)
 }
 
-func (t *FileLogWriter) Write(r *LogRecord) {
+func (t *FileGuzzle) Write(r *LogRecord) {
 	err := t.enc.Encode(r)
 	if err != nil {
 		panic(fmt.Sprintf("error encoding log entry (%s)", err))
@@ -395,14 +395,14 @@ func (t *FileLogWriter) Write(r *LogRecord) {
 	}
 }
 
-func (t *FileLogWriter) Sync() error {
+func (t *FileGuzzle) Sync() error {
 	if t.dup != nil {
 		t.dup.Sync()
 	}
 	return t.f.Sync()
 }
 
-func (t *FileLogWriter) Close() error {
+func (t *FileGuzzle) Close() error {
 	if t.dup != nil {
 		t.dup.Close()
 	}

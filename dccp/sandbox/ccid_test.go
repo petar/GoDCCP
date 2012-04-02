@@ -11,7 +11,7 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-// rttReducer is a dccp.LogWriter which listens to the logs
+// rttReducer is a dccp.Guzzle which listens to the logs
 // emitted from the RTT test and performs various checks.
 type rttReducer struct {
 	t *testing.T
