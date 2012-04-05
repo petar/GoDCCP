@@ -26,6 +26,7 @@ const (
 		$('td.time-abs').click(rotateMarkServerRow);
 		$('td:has(div.tooltip)').mouseenter(showTooltip);
 		$('td:has(div.tooltip)').mouseleave(hideTooltip);
+		buildGraph();
 	})
 	function showTooltip() {
 		var tt = $('div.tooltip', this);
@@ -97,5 +98,12 @@ const (
 		var trow = $(this).parents()[0];
 		_.each($('td.server, td.time-abs', trow), _rotateMark);
 	}
+	function buildGraph() {
+		g = new Dygraph(
+			$('div#graph-box'),    // document.getElementById("graph-box")
+			graphDataCSV ??
+		);
+	}
 	`
+	??
 )

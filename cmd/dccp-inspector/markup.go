@@ -18,9 +18,11 @@ const (
 			`<style>` + css + `</style>` +
 			`<script type="text/javascript">` + underscore_js_1_3_1 + `</script>` +
 			`<script type="text/javascript">` + jQuery_1_7_2 + `</script>` +
+			`<script type="text/javascript">` + dygraph + `</script>` +
 			`<script type="text/javascript">` + headJavaScript + `</script>` +
 		`</head>` +
-		`<body><table cellspacing="0">`
+		`<body>` + 
+		`<div id="graph-box"></div><table cellspacing="0">`
 
 	htmlFooter = `</table></body></html>`
 
@@ -66,7 +68,9 @@ const (
 		`div.tooltip { position: absolute; float:left; pointer-events: none; margin-top: 10px;` +
 			`padding: 7px; background: black; color: white; opacity: 0.7; box-shadow: 1px 1px 3px 0px #000; border-radius: 4px; }` +
 		// Folding (not working)
-		`tr.folded { height: 5px !important }`
+		`tr.folded { height: 5px !important }` +
+		// Graph box
+		`div#graph-box { width: 1000px; height: 650px; } `
 	optMark0Color = `#c33`
 	optMark1Color = `#3c3`
 	optMark2Color = `#33c`

@@ -40,8 +40,9 @@ type LogRecord struct {
 	// Comment is a free-form textual comment
 	Comment   string   `json:"c"`
 
-	// Args are any additional arguments in the form of string keys mapped to open-ended values
-	Args      LogArgs  `json:"a"`
+	// Args are any additional arguments in the form of string keys mapped to open-ended values.
+	// See documentation of E method for details how it is typically used.
+	Args      map[string]interface{}  `json:"a"`
 
 	// If this log record pertains to a DCCP header, Type is the DCCP type of this header.
 	Type      string   `json:"ht"`
@@ -63,6 +64,15 @@ type LogRecord struct {
 	Trace      string  `json:"st"`
 }
 
+// SeriesArg can be attached in the Args map of a LogRecord.
+// The DCCP inspector interprets it as a data point in a time series, whose name
+// is given by the key in the Args map, whose X-coordinate is the time of the LogRecord
+// and whose Y-coordinate is stored inside the SeriesArg instance.
+type Series struct {
+	Y float64
+}
+
+/*
 type LogArgs map[string]interface{}
 
 func (t LogArgs) Int64(k string) (value int64, success bool) {
@@ -94,6 +104,7 @@ func (t LogArgs) Bool(k string) (value bool, success bool) {
 	}
 	return u, true
 }
+*/
 
 // Event is the type of logging event.
 // Events are wrapped in a special type to make sure that modifications/additions
