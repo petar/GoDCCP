@@ -8,10 +8,7 @@ import (
 	"bytes"
 	"fmt"
 	"runtime"
-	"encoding/json"
-	"os"
 	"reflect"
-	goruntime "runtime"
 	"github.com/petar/GoGauge/filter"
 )
 
@@ -276,6 +273,9 @@ func (t *Logger) EC(skip int, event Event, comment string, args ...interface{}) 
 		// By default, take the argument's type and use it as a key in the arguments structure
 		default:
 			v := reflect.ValueOf(a)
+			if !v.IsValid() {
+				break
+			}
 			// Remove the '*' from pointer to type values
 			if v.Type().Kind() == reflect.Ptr {
 				v = v.Elem()
@@ -331,60 +331,4 @@ func Nstoa(ns int64) string {
 		ns /= 10
 	}
 	return string(b[z-i+1:])
-}
-
-// Guzzle is a type that consumes log entries.
-type Guzzle interface {
-	Write(*LogRecord)
-	Sync() error
-	Close() error
-}
-
-// FileGuzzle saves all log entries to a file in JSON format
-type FileGuzzle struct {
-	f   *os.File
-	enc *json.Encoder
-	dup Guzzle
-}
-
-// NewFileGuzzleDup creates a Guzzle that saves logs in a file and also passes them to dup.
-func NewFileGuzzleDup(filename string, dup Guzzle) *FileGuzzle {
-	os.Remove(filename)
-	f, err := os.Create(filename)
-	if err != nil {
-		panic(fmt.Sprintf("cannot create log file '%s'", filename))
-	}
-	w := &FileGuzzle{ f, json.NewEncoder(f), dup }
-	goruntime.SetFinalizer(w, func(w *FileGuzzle) { 
-		w.f.Close() 
-	})
-	return w
-}
-
-func NewFileGuzzle(filename string) *FileGuzzle {
-	return NewFileGuzzleDup(filename, nil)
-}
-
-func (t *FileGuzzle) Write(r *LogRecord) {
-	err := t.enc.Encode(r)
-	if err != nil {
-		panic(fmt.Sprintf("error encoding log entry (%s)", err))
-	}
-	if t.dup != nil {
-		t.dup.Write(r)
-	}
-}
-
-func (t *FileGuzzle) Sync() error {
-	if t.dup != nil {
-		t.dup.Sync()
-	}
-	return t.f.Sync()
-}
-
-func (t *FileGuzzle) Close() error {
-	if t.dup != nil {
-		t.dup.Close()
-	}
-	return t.f.Close()
 }

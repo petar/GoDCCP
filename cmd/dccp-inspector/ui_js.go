@@ -16,7 +16,7 @@ package main
  */
 
 const (
-	headJavaScript =
+	inspectorJavaScript =
 	`
 	jQuery(document).ready(function(){
 		$('td[seqno].nonempty').click(onLeftClick);
@@ -100,10 +100,14 @@ const (
 	}
 	function buildGraph() {
 		g = new Dygraph(
-			$('div#graph-box'),    // document.getElementById("graph-box")
-			graphDataCSV ??
+			document.getElementById("graph-box"),
+			// graphDataCSV(),
+			"Time, L1, L2\n" +
+			"1.0, 2.2, 2.7\n" +
+			"2.0, 2.1, 2.6\n" +
+			"3.0, 4.5, 2.9\n" +
+			"5.0, 2.8, 2.1\n"
 		);
 	}
 	`
-	??
 )

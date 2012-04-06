@@ -65,7 +65,7 @@ func (c *Conn) writeLoop(writeNonData chan *Header, writeData chan []byte) {
 
 	// This loop is active until state OPEN or PARTOPEN is observed, when a
 	// transition to _Loop II_is made
-	c.logger.E(EventInfo, "Write Loop I", nil)
+	c.logger.E(EventInfo, "Write Loop I")
 _Loop_I:
 
 	for {

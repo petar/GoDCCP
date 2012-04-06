@@ -19,7 +19,8 @@ const (
 			`<script type="text/javascript">` + underscore_js_1_3_1 + `</script>` +
 			`<script type="text/javascript">` + jQuery_1_7_2 + `</script>` +
 			`<script type="text/javascript">` + dygraph + `</script>` +
-			`<script type="text/javascript">` + headJavaScript + `</script>` +
+			//`<script type="text/javascript">` + dataJavaScript()?? + `</script>` +
+			`<script type="text/javascript">` + inspectorJavaScript + `</script>` +
 		`</head>` +
 		`<body>` + 
 		`<div id="graph-box"></div><table cellspacing="0">`
@@ -70,7 +71,7 @@ const (
 		// Folding (not working)
 		`tr.folded { height: 5px !important }` +
 		// Graph box
-		`div#graph-box { width: 1000px; height: 650px; } `
+		`div#graph-box { width: 1400px; height: 650px; margin-bottom: 20px;} `
 	optMark0Color = `#c33`
 	optMark1Color = `#3c3`
 	optMark2Color = `#33c`
