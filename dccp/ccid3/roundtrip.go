@@ -9,6 +9,11 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
+// RoundtripSample converts a roundtrip time in nanosecond to a floating-point time in milliseconds
+func RoundtripSample(rtt int64) dccp.Sample {
+	return dccp.NewSample(float64(rtt) / 1e6)
+}
+
 // senderRoundtripReporter ensures that the sender's RTT estimate is regularly sent to the receiver
 type senderRoundtripReporter struct {
 	lastReportTime int64
@@ -117,7 +122,7 @@ func (t *senderRoundtripEstimator) OnRead(fb *dccp.FeedbackHeader) bool {
 		t.estimate = (est * SenderRoundtripWeightNew + est_old * SenderRoundtripWeightOld) / 
 			(SenderRoundtripWeightNew + SenderRoundtripWeightOld)
 	}
-	t.logger.E(dccp.EventMatch, fmt.Sprintf("Elapsed —> RTT=%s", dccp.Nstoa(t.estimate)), fb)
+	t.logger.E(dccp.EventMatch, fmt.Sprintf("Elapsed —> RTT=%s", dccp.Nstoa(t.estimate)), fb, RoundtripSample(t.estimate))
 
 	return true
 }
@@ -183,7 +188,7 @@ func (t *receiverRoundtripEstimator) OnRead(ff *dccp.FeedforwardHeader) bool {
 
 	// Update RTT estimate
 	t.rtt, t.rttTime = rtt, ff.Time
-	t.logger.E(dccp.EventMatch, fmt.Sprintf("Report —> RTT=%s", dccp.Nstoa(t.rtt)), ff)
+	t.logger.E(dccp.EventMatch, fmt.Sprintf("Report —> RTT=%s", dccp.Nstoa(t.rtt)), ff, RoundtripSample(t.rtt))
 
 	return true
 }

@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"encoding/json"
 	"os"
+	"reflect"
 	goruntime "runtime"
 	"github.com/petar/GoGauge/filter"
 )
@@ -64,47 +65,18 @@ type LogRecord struct {
 	Trace      string  `json:"st"`
 }
 
-// SeriesArg can be attached in the Args map of a LogRecord.
-// The DCCP inspector interprets it as a data point in a time series, whose name
-// is given by the key in the Args map, whose X-coordinate is the time of the LogRecord
-// and whose Y-coordinate is stored inside the SeriesArg instance.
-type Series struct {
+// One Sample argument can be attached to a log. The inspector interprets it as a data point
+// in a time series where: 
+//   (i)   The time series name is given by the label stack of the logger
+//   (ii)  The X-value of the data point equals the time the log was emitted
+//   (iii) The Y-value of the data point is stored inside the Sample object
+type Sample struct {
 	Y float64
 }
 
-/*
-type LogArgs map[string]interface{}
-
-func (t LogArgs) Int64(k string) (value int64, success bool) {
-	if t == nil {
-		return 0, false
-	}
-	v, ok := t[k]
-	if !ok {
-		return 0, false
-	}
-	u, ok := v.(int64)
-	if !ok {
-		return 0, false
-	}
-	return u, true
+func NewSample(y float64) Sample {
+	return Sample{y}
 }
-
-func (t LogArgs) Bool(k string) (value bool, success bool) {
-	if t == nil {
-		return false, false
-	}
-	v, ok := t[k]
-	if !ok {
-		return false, false
-	}
-	u, ok := v.(bool)
-	if !ok {
-		return false, false
-	}
-	return u, true
-}
-*/
 
 // Event is the type of logging event.
 // Events are wrapped in a special type to make sure that modifications/additions
@@ -278,7 +250,7 @@ func (t *Logger) EC(skip int, event Event, comment string, args ...interface{}) 
 	// Extract header information
 	var hType string = ""
 	var hSeqNo, hAckNo int64
-__FindHeader:
+	logargs := make(map[string]interface{})
 	for _, a := range args {
 		switch t := a.(type) {
 		case *Header:
@@ -286,34 +258,31 @@ __FindHeader:
 				hSeqNo, hAckNo = t.SeqNo, t.AckNo
 				hType = typeString(t.Type)
 			}
-			break __FindHeader
 		case *PreHeader:
 			if t != nil {
 				hSeqNo, hAckNo = t.SeqNo, t.AckNo
 				hType = typeString(t.Type)
 			}
-			break __FindHeader
 		case *FeedbackHeader:
 			if t != nil {
 				hSeqNo, hAckNo = t.SeqNo, t.AckNo
 				hType = typeString(t.Type)
 			}
-			break __FindHeader
 		case *FeedforwardHeader:
 			if t != nil {
 				hSeqNo = t.SeqNo
 				hType = typeString(t.Type)
 			}
-			break __FindHeader
-		}
-	}
-	var largs LogArgs
-__FindArgs:
-	for _, a := range args {
-		m, ok := a.(LogArgs)
-		if ok {
-			largs = m
-			break __FindArgs
+		// By default, take the argument's type and use it as a key in the arguments structure
+		default:
+			v := reflect.ValueOf(a)
+			// Remove the '*' from pointer to type values
+			if v.Type().Kind() == reflect.Ptr {
+				v = v.Elem()
+			}
+			if v.IsValid() {
+				logargs[v.Type().String()] = a
+			}
 		}
 	}
 
@@ -326,7 +295,7 @@ __FindArgs:
 			Event:      event,
 			State:      t.GetState(),
 			Comment:    comment,
-			Args:       largs,
+			Args:       logargs,
 			Type:       hType,
 			SeqNo:      hSeqNo,
 			AckNo:      hAckNo,

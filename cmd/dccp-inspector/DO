@@ -1,9 +1,2 @@
-
-* figure out series mechanism
-	+ one series point per log
-	+ name of series = label stack of logger
-	+ have E store any varargs in the Args field under a key equalling the type of the object
-* attach series data to all RTT printouts
 * inspector printout series
-
 * add row folding
