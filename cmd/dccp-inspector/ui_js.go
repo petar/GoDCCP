@@ -114,6 +114,11 @@ func printGraphJavaScript(w io.Writer, sweeper *SeriesSweeper) error {
 		`
 				, {
 					connectSeparatedPoints: true,
+					labelsDivWidth: 700,
+					labelsDivStyles: { 'fontFamily': "Droid Sans Mono", 'fontWeight': "normal" },
+					labelsSeparateLines: true,
+					drawPoints: true,
+					colors: [ '#cc0000', '#00cc00', '#0000cc',' #00cccc', '#cc00cc', '#cccc00' ],
 					labels: `
 	const three =
 		`
