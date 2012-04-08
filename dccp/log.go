@@ -62,6 +62,19 @@ type LogRecord struct {
 	Trace      string  `json:"st"`
 }
 
+func (x *LogRecord) LabelString() string {
+	return labelString(x.Labels)
+}
+
+func labelString(labels []string) string {
+	var w bytes.Buffer
+	for _, token := range labels {
+		w.WriteString(token)
+		w.WriteRune('·')
+	}
+	return string(w.Bytes())
+}
+
 // One Sample argument can be attached to a log. The inspector interprets it as a data point
 // in a time series where: 
 //   (i)   The time series name is given by the label stack of the logger
@@ -70,6 +83,7 @@ type LogRecord struct {
 type Sample struct {
 	Y float64
 }
+var SampleType = TypeOf(Sample{})
 
 func NewSample(y float64) Sample {
 	return Sample{y}
@@ -272,16 +286,8 @@ func (t *Logger) EC(skip int, event Event, comment string, args ...interface{}) 
 			}
 		// By default, take the argument's type and use it as a key in the arguments structure
 		default:
-			v := reflect.ValueOf(a)
-			if !v.IsValid() {
-				break
-			}
-			// Remove the '*' from pointer to type values
-			if v.Type().Kind() == reflect.Ptr {
-				v = v.Elem()
-			}
-			if v.IsValid() {
-				logargs[v.Type().String()] = a
+			if a != nil {
+				logargs[TypeOf(a)] = a
 			}
 		}
 	}
@@ -305,6 +311,15 @@ func (t *Logger) EC(skip int, event Event, comment string, args ...interface{}) 
 		}
 		t.run.Writer().Write(r)
 	}
+}
+
+func TypeOf(a interface{}) string {
+	t := reflect.TypeOf(a)
+	// Remove the '*' from pointers
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	return t.String()
 }
 
 const nsAlpha = "0123456789"

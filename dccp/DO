@@ -15,6 +15,8 @@ backoffs/expires can be handled by a single thread
 
 * update the DCCP Mutex implementation
 
+* backward time bug dccp/gauge/reduce.go:74
+
 TODO LONG-TERM ——————————————————————————————————————————————————————————————————————————————————
 
 * dynamically changing SWAF/SWBF

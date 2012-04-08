@@ -42,10 +42,14 @@ func htmlize(records []*logPipe, srt bool) {
 		sort.Sort(logPipeTimeSort(records))
 	}
 	fmt.Println(htmlHeader)
+
 	var last int64
 	var sec  int64
 	var sflag rune = ' '
+	var series SeriesSweeper
+	series.Init()
 	for _, r := range records {
+		series.Add(r.Log)
 		r.Pipe.Time = fmt.Sprintf("%15s %c", dccp.Nstoa(r.Log.Time - last), sflag)
 		r.Pipe.TimeAbs = fmt.Sprintf("%c %-15s", sflag, dccp.Nstoa(r.Log.Time))
 		sflag = ' '
@@ -56,6 +60,8 @@ func htmlize(records []*logPipe, srt bool) {
 		}
 		fmt.Println(htmlizePipe(r.Pipe))
 	}
+
+	// TODO: The spacer row is a hack to prevent TDs from collapsing their width
 	subSpacer := emitSubPipe{
 		State:  "",
 		Detail: "",
@@ -69,7 +75,10 @@ func htmlize(records []*logPipe, srt bool) {
 		Event:  "spacer",
 	}
 	fmt.Println(htmlizePipe(spacer))
-	fmt.Println(htmlFooter)
+
+	fmt.Println(htmlFooterPreSeries)
+	printGraphJavaScript(os.Stdout, &series)
+	fmt.Println(htmlFooterPostSeries)
 }
 
 // pipeEmit converts a log record into an HTMLRecord.

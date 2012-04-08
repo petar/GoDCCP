@@ -21,6 +21,7 @@ type Guzzle interface {
 
 // FileGuzzle saves all log entries to a file in JSON format
 type FileGuzzle struct {
+	sync.Mutex
 	f   *os.File
 	enc *json.Encoder
 	dup Guzzle
@@ -33,7 +34,7 @@ func NewFileGuzzleDup(filename string, dup Guzzle) *FileGuzzle {
 	if err != nil {
 		panic(fmt.Sprintf("cannot create log file '%s'", filename))
 	}
-	w := &FileGuzzle{ f, json.NewEncoder(f), dup }
+	w := &FileGuzzle{ f:f, enc:json.NewEncoder(f), dup:dup }
 	runtime.SetFinalizer(w, func(w *FileGuzzle) { 
 		w.f.Close() 
 	})

@@ -19,13 +19,13 @@ const (
 			`<script type="text/javascript">` + underscore_js_1_3_1 + `</script>` +
 			`<script type="text/javascript">` + jQuery_1_7_2 + `</script>` +
 			`<script type="text/javascript">` + dygraph + `</script>` +
-			//`<script type="text/javascript">` + dataJavaScript()?? + `</script>` +
 			`<script type="text/javascript">` + inspectorJavaScript + `</script>` +
 		`</head>` +
 		`<body>` + 
 		`<div id="graph-box"></div><table cellspacing="0">`
 
-	htmlFooter = `</table></body></html>`
+	htmlFooterPreSeries = `</table><script type="text/javascript">`
+	htmlFooterPostSeries = `</script></body></html>`
 
 	css = 
 		`*, body, table, tr, td, p, div, pre { cursor: default }` +
