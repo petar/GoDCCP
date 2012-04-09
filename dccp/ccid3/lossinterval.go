@@ -13,7 +13,7 @@ import (
 // evolveInterval manages the incremental construction of a loss interval
 type evolveInterval struct {
 	
-	logger *dccp.Amb
+	amb *dccp.Amb
 
 	// push is called whenever an interval is finished
 	push        pushIntervalFunc
@@ -67,8 +67,8 @@ type LossIntervalDetail struct {
 
 type pushIntervalFunc func(*LossIntervalDetail)
 
-func (t *evolveInterval) Init(logger *dccp.Amb, push pushIntervalFunc) {
-	t.logger = logger.Refine("evolveInterval")
+func (t *evolveInterval) Init(amb *dccp.Amb, push pushIntervalFunc) {
+	t.amb = amb.Refine("evolveInterval")
 	t.push = push
 	t.lastSeqNo = 0
 	t.lastTime = 0
@@ -100,7 +100,7 @@ func (t *evolveInterval) OnRead(ff *dccp.FeedforwardHeader, rtt int64) {
 	// that of the previously received one
 	// XXX: How can this condition occur?
 	if ff.Time < t.lastTime {
-		t.logger.E(dccp.EventTurn, 
+		t.amb.E(dccp.EventTurn, 
 			fmt.Sprintf("Time re-order; SeqNo %06x,%06x", t.lastSeqNo, ff.SeqNo),
 			ff)
 		return

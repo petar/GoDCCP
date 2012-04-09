@@ -28,12 +28,12 @@ func NewAmb(label string, run *Runtime) *Amb {
 	return &Amb{ run: run, labels: []string{label} }
 }
 
-// Refine clones this logger and stack the additional label l
+// Refine clones this amb and stack the additional label l
 func (t *Amb) Refine(l string) *Amb {
 	return t.Copy().Push(l)
 }
 
-// Copy clones this logger into an identical new one
+// Copy clones this amb into an identical new one
 func (t *Amb) Copy() *Amb {
 	var c Amb = *t
 	c.labels = make([]string, len(t.labels))
@@ -41,12 +41,12 @@ func (t *Amb) Copy() *Amb {
 	return &c
 }
 
-// Labels returns the label stack of this logger
+// Labels returns the label stack of this amb
 func (t *Amb) Labels() []string {
 	return t.labels
 }
 
-// Push adds the label l onto this logger's label stack
+// Push adds the label l onto this amb's label stack
 func (t *Amb) Push(l string) *Amb {
 	t.labels = append(t.labels, l)
 	return t

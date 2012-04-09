@@ -12,7 +12,7 @@ import (
 // loss intervals option at the receiver.
 type receiverLossTracker struct {
 
-	logger *dccp.Amb
+	amb *dccp.Amb
 
 	// pastHeaders keeps track of the last NDUPACK headers to overcome network re-ordering
 	pastHeaders [NDUPACK]*dccp.FeedforwardHeader
@@ -28,9 +28,9 @@ type receiverLossTracker struct {
 }
 
 // Init initializes/resets the receiverLossTracker instance
-func (t *receiverLossTracker) Init(logger *dccp.Amb) {
-	t.logger = logger
-	t.evolveInterval.Init(logger, func(lid *LossIntervalDetail) { t.lossHistory.Push(lid) })
+func (t *receiverLossTracker) Init(amb *dccp.Amb) {
+	t.amb = amb
+	t.evolveInterval.Init(amb, func(lid *LossIntervalDetail) { t.lossHistory.Push(lid) })
 	t.lossHistory.Init(NINTERVAL)
 	t.lossRateCalculator.Init(NINTERVAL)
 }

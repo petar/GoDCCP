@@ -151,7 +151,7 @@ func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) error {
 		if err == ErrDrop {
 			return ErrDrop
 		}
-		c.logger.E(EventError, "Sender CC unknown read error", h)
+		c.amb.E(EventError, "Sender CC unknown read error", h)
 	}
 	sropts := filterCCIDSenderToReceiverOptions(h.Options)
 	if err := c.rcc.OnRead(&FeedforwardHeader{
@@ -173,7 +173,7 @@ func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) error {
 		if err == ErrDrop {
 			return ErrDrop
 		}
-		c.logger.E(EventError, "Receiver CC unknown read error", h)
+		c.amb.E(EventError, "Receiver CC unknown read error", h)
 	}
 	return nil
 }
@@ -218,7 +218,7 @@ func (c *Conn) step11_ProcessRESPOND(h *Header) error {
 			// This is not unusual. Our modification of DCCP has the client send a pair
 			// Ack, SyncAck to the server, after the server's Response.  If the Ack is
 			// dropped, the server will enter OPEN on a SyncAck.
-			c.logger.E(EventWarn, "Entering OPEN on non-Ack packet", h)
+			c.amb.E(EventWarn, "Entering OPEN on non-Ack packet", h)
 		}
 		c.gotoOPEN(h.SeqNo)
 	}
@@ -295,7 +295,7 @@ func (c *Conn) step16_ProcessData(h *Header) error {
 		if len(c.readApp) < cap(c.readApp) {
 			c.readApp <- h.Data
 		} else {
-			c.logger.E(EventDrop, "Slow app")
+			c.amb.E(EventDrop, "Slow app")
 		}
 	}
 	c.readAppLk.Unlock()

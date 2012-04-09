@@ -9,15 +9,15 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-func newSender(run *dccp.Runtime, logger *dccp.Amb) *sender {
-	return &sender{ run: run, logger: logger.Refine("sender") }
+func newSender(run *dccp.Runtime, amb *dccp.Amb) *sender {
+	return &sender{ run: run, amb: amb.Refine("sender") }
 }
 
 // sender implements a CCID3 congestion control sender.
 // It conforms to dccp.SenderCongestionControl.
 type sender struct {
 	run    *dccp.Runtime
-	logger *dccp.Amb
+	amb *dccp.Amb
 	senderStrober
 	dccp.Mutex // Locks all fields below
 	senderRoundtripEstimator
@@ -56,15 +56,15 @@ func (s *sender) Open() {
 		panic("opening an open ccid3 sender")
 	}
 	s.senderWindowCounter.Init()
-	s.senderRoundtripEstimator.Init(s.logger)
+	s.senderRoundtripEstimator.Init(s.amb)
 	rtt, _ := s.senderRoundtripEstimator.RTT()
 	s.senderRoundtripReporter.Init()
 	s.senderNoFeedbackTimer.Init()
 	s.senderSegmentSize.Init()
 	s.senderSegmentSize.SetMPS(FixedSegmentSize)
-	s.senderLossTracker.Init(s.logger)
-	s.senderRateCalculator.Init(s.logger, FixedSegmentSize, rtt)
-	s.senderStrober.Init(s.run, s.logger, s.senderRateCalculator.X(), FixedSegmentSize)
+	s.senderLossTracker.Init(s.amb)
+	s.senderRateCalculator.Init(s.amb, FixedSegmentSize, rtt)
+	s.senderStrober.Init(s.run, s.amb, s.senderRateCalculator.X(), FixedSegmentSize)
 	s.open = true
 }
 
@@ -85,7 +85,7 @@ func (s *sender) OnWrite(ph *dccp.PreHeader) (ccval int8, options []*dccp.Option
 	rtt, _ := s.senderRoundtripEstimator.RTT()
 
 	ccval = s.senderWindowCounter.OnWrite(rtt, ph.SeqNo, ph.Time)
-	s.logger.E(dccp.EventInfo, fmt.Sprintf("CCVAL=%d", ccval))
+	s.amb.E(dccp.EventInfo, fmt.Sprintf("CCVAL=%d", ccval))
 
 	reportOpt := s.senderRoundtripReporter.OnWrite(rtt, ph.Time)
 	if reportOpt != nil {
@@ -130,7 +130,7 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) error {
 	// Update allowed sending rate
 	xrecv, err := readReceiveRate(fb)
 	if err != nil {
-		s.logger.E(dccp.EventWarn, "Feedback packet with corrupt receive rate option", fb)
+		s.amb.E(dccp.EventWarn, "Feedback packet with corrupt receive rate option", fb)
 		return nil
 	}
 	xf := &XFeedback{
@@ -170,7 +170,7 @@ func (s *sender) Strobe() {
 	s.Unlock()
 
 	if !open {
-		s.logger.E(dccp.EventInfo, "Strobe immediate")
+		s.amb.E(dccp.EventInfo, "Strobe immediate")
 		return
 	}
 

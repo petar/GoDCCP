@@ -12,7 +12,7 @@ import (
 
 // Runtime encapsulates the runtime environment of a DCCP endpoint.  It includes a pluggable
 // time interface, in order to allow for use of real as well as synthetic (accelerated) time
-// (for testing purposes), as well as a logger interface.
+// (for testing purposes), as well as a amb interface.
 type Runtime struct {
 	time   Time
 	writer Guzzle

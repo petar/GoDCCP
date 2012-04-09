@@ -73,7 +73,7 @@ func labelString(labels []string) string {
 
 // One Sample argument can be attached to a log. The inspector interprets it as a data point
 // in a time series where: 
-//   (i)   The time series name is given by the label stack of the logger
+//   (i)   The time series name is given by the label stack of the amb
 //   (ii)  The X-value of the data point equals the time the log was emitted
 //   (iii) The Y-value of the data point is stored inside the Sample object
 type Sample struct {

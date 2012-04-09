@@ -13,7 +13,7 @@ import (
 // A senderStrober cannot be used before an initial call to SetInterval or SetRate.
 type senderStrober struct {
 	run    *dccp.Runtime
-	logger *dccp.Amb
+	amb *dccp.Amb
 	dccp.Mutex
 	interval int64		// Maximum average time interval between packets, in nanoseconds
 	last     int64
@@ -26,9 +26,9 @@ func BytesPerSecondToPacketsPer64Sec(bps uint32, ss uint32) int64 {
 }
 
 // Init resets the senderStrober instance for new use
-func (s *senderStrober) Init(run *dccp.Runtime, logger *dccp.Amb, bps uint32, ss uint32) {
+func (s *senderStrober) Init(run *dccp.Runtime, amb *dccp.Amb, bps uint32, ss uint32) {
 	s.run = run
-	s.logger = logger.Refine("strober")
+	s.amb = amb.Refine("strober")
 	s.SetRate(bps, ss)
 }
 
@@ -49,7 +49,7 @@ func (s *senderStrober) SetRate(bps uint32, ss uint32) {
 	if s.interval == 0 {
 		panic("zero strobe rate")
 	}
-	defer s.logger.E(dccp.EventInfo, fmt.Sprintf("Set strobe rate %d pps", 1e9 / s.interval), nil)
+	defer s.amb.E(dccp.EventInfo, fmt.Sprintf("Set strobe rate %d pps", 1e9 / s.interval), nil)
 }
 
 // Strobe ensures that the frequency with which (multiple calls) to Strobe return does not
@@ -66,7 +66,7 @@ func (s *senderStrober) Strobe() {
 	delta := s.interval - (now - s.last)
 	dbgInterval := s.interval // DBG
 	s.Unlock()
-	defer s.logger.E(dccp.EventInfo, fmt.Sprintf("Strobe at %d pps", 1e9 / dbgInterval), nil)
+	defer s.amb.E(dccp.EventInfo, fmt.Sprintf("Strobe at %d pps", 1e9 / dbgInterval), nil)
 	if delta > 0 {
 		s.run.Sleep(delta)
 	}

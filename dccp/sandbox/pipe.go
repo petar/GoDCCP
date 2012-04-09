@@ -15,18 +15,18 @@ import (
 // It supports rate limiting, latency emulation and receive buffer emulation (in order to
 // capture slow readers).
 type Pipe struct {
-	logger *dccp.Amb
+	amb *dccp.Amb
 	ha, hb headerHalfPipe
 }
 
-// NewPipe creates a new pipe with a given runtime shared by both endpoints, and a root logger
-func NewPipe(run *dccp.Runtime, logger *dccp.Amb, namea, nameb string) (a, b dccp.HeaderConn, line *Pipe) {
+// NewPipe creates a new pipe with a given runtime shared by both endpoints, and a root amb
+func NewPipe(run *dccp.Runtime, amb *dccp.Amb, namea, nameb string) (a, b dccp.HeaderConn, line *Pipe) {
 	ab := make(chan *pipeHeader, pipeBufferLen)
 	ba := make(chan *pipeHeader, pipeBufferLen)
 	line = &Pipe{}
-	line.logger = logger
-	line.ha.Init(run, line.logger.Refine(namea), ba, ab)
-	line.hb.Init(run, line.logger.Refine(nameb), ab, ba)
+	line.amb = amb
+	line.ha.Init(run, line.amb.Refine(namea), ba, ab)
+	line.hb.Init(run, line.amb.Refine(nameb), ab, ba)
 	return &line.ha, &line.hb, line
 }
 
@@ -40,7 +40,7 @@ const pipeBufferLen = 2
 // headerHalfPipe implements HeaderConn. It enforces rate-limiting on its write side.
 type headerHalfPipe struct {
 	run    *dccp.Runtime
-	logger *dccp.Amb
+	amb *dccp.Amb
 
 	// read, writeLk and write pertain to the communication mechanism of the pipe
 	read  <-chan *pipeHeader
@@ -81,10 +81,10 @@ type pipeHeader struct {
 	DeliverTime int64
 }
 
-// Init resets a half pipe for initial use, using logger (without making a copy of it)
-func (hhl *headerHalfPipe) Init(run *dccp.Runtime, logger *dccp.Amb, r <-chan *pipeHeader, w chan<- *pipeHeader) {
+// Init resets a half pipe for initial use, using amb (without making a copy of it)
+func (hhl *headerHalfPipe) Init(run *dccp.Runtime, amb *dccp.Amb, r <-chan *pipeHeader, w chan<- *pipeHeader) {
 	hhl.run = run
-	hhl.logger = logger
+	hhl.amb = amb
 	hhl.read = r
 	hhl.write = w
 	hhl.SetWriteRate(DefaultRateInterval, DefaultRatePacketsPerInterval)
@@ -131,10 +131,10 @@ func (hhl *headerHalfPipe) ReadHeader() (h *dccp.Header, err error) {
 	select {
 	case ph, ok := <-hhl.read:
 		if !ok {
-			hhl.logger.E(dccp.EventWarn, "Read EOF", ph.Header)
+			hhl.amb.E(dccp.EventWarn, "Read EOF", ph.Header)
 			return nil, dccp.ErrEOF
 		}
-		hhl.logger.E(dccp.EventRead, fmt.Sprintf("SeqNo=%d", ph.Header.SeqNo), ph.Header)
+		hhl.amb.E(dccp.EventRead, fmt.Sprintf("SeqNo=%d", ph.Header.SeqNo), ph.Header)
 		return ph.Header, nil
 	case <-tmoch:
 		return nil, dccp.ErrTimeout
@@ -148,19 +148,19 @@ func (hhl *headerHalfPipe) WriteHeader(h *dccp.Header) (err error) {
 	defer hhl.writeLk.Unlock()
 
 	if hhl.write == nil {
-		hhl.logger.E(dccp.EventDrop, fmt.Sprintf("EBADF"), h)
+		hhl.amb.E(dccp.EventDrop, fmt.Sprintf("EBADF"), h)
 		return dccp.ErrBad
 	}
 
 	if hhl.rateFilter() {
 		if len(hhl.write) >= cap(hhl.write) {
-			hhl.logger.E(dccp.EventDrop, "Slow reader", h)
+			hhl.amb.E(dccp.EventDrop, "Slow reader", h)
 		} else {
-			hhl.logger.E(dccp.EventWrite, "", h)
+			hhl.amb.E(dccp.EventWrite, "", h)
 			hhl.write <- &pipeHeader{ Header: h }
 		}
 	} else {
-		hhl.logger.E(dccp.EventDrop, "Fast writer", h)
+		hhl.amb.E(dccp.EventDrop, "Fast writer", h)
 	}
 	return nil
 }
@@ -190,13 +190,13 @@ func (hhl *headerHalfPipe) Close() error {
 	defer hhl.writeLk.Unlock()
 
 	if hhl.write == nil {
-		hhl.logger.E(dccp.EventWarn, "Close EBADF")
+		hhl.amb.E(dccp.EventWarn, "Close EBADF")
 		return dccp.ErrBad
 	}
 	close(hhl.write)
 	hhl.write = nil
 
-	hhl.logger.E(dccp.EventInfo, "Close")
+	hhl.amb.E(dccp.EventInfo, "Close")
 	return nil
 }
 

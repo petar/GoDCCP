@@ -13,15 +13,15 @@ import (
 // senderLossTracker processes loss intervals options received at the sender and maintains relevant loss
 // statistics.
 type senderLossTracker struct {
-	logger *dccp.Amb
+	amb *dccp.Amb
 	lastAckNo   int64  // SeqNo of the last ack'd segment; equals the AckNo of the last feedback
 	lastRateInv uint32 // Last known value of loss event rate inverse
 	lossRateCalculator
 }
 
 // Init resets the senderLossTracker instance for new use
-func (t *senderLossTracker) Init(logger *dccp.Amb) {
-	t.logger = logger.Refine("senderLossTracker")
+func (t *senderLossTracker) Init(amb *dccp.Amb) {
+	t.amb = amb.Refine("senderLossTracker")
 	t.lastAckNo = 0
 	t.lastRateInv = UnknownLossEventRateInv
 	t.lossRateCalculator.Init(NINTERVAL)
@@ -47,15 +47,15 @@ func (t *senderLossTracker) OnRead(fb *dccp.FeedbackHeader) (LossFeedback, error
 		return LossFeedback{}, ErrNoAck
 	}
 	var lossIntervals *LossIntervalsOption
-	t.logger.E(dccp.EventInfo, fmt.Sprintf("Encoded option count = %d", len(fb.Options)), fb)
+	t.amb.E(dccp.EventInfo, fmt.Sprintf("Encoded option count = %d", len(fb.Options)), fb)
 	for i, opt := range fb.Options {
 		if lossIntervals = DecodeLossIntervalsOption(opt); lossIntervals != nil {
 			break
 		}
-		t.logger.E(dccp.EventInfo, fmt.Sprintf("Decodingd option %d", i), fb)
+		t.amb.E(dccp.EventInfo, fmt.Sprintf("Decodingd option %d", i), fb)
 	}
 	if lossIntervals == nil {
-		t.logger.E(dccp.EventWarn, "Missing lossIntervals option", fb)
+		t.amb.E(dccp.EventWarn, "Missing lossIntervals option", fb)
 		return LossFeedback{}, ErrMissingOption
 	}
 
@@ -71,7 +71,7 @@ func (t *senderLossTracker) OnRead(fb *dccp.FeedbackHeader) (LossFeedback, error
 		r.RateInc = true
 	}
 	t.lastRateInv = rateInv
-	t.logger.E(dccp.EventMatch, fmt.Sprintf("Loss rate inv = %0.4g", 1 / float64(rateInv)))
+	t.amb.E(dccp.EventMatch, fmt.Sprintf("Loss rate inv = %0.4g", 1 / float64(rateInv)))
 
 	// XXX: Must use circular arithmetic here
 	t.lastAckNo = max64(t.lastAckNo, fb.AckNo)

@@ -12,7 +12,7 @@ import (
 
 // rateCaclulator computers the allowed sending rate of the sender
 type senderRateCalculator struct {
-	logger      *dccp.Amb
+	amb      *dccp.Amb
 	x           uint32 // Current allowed sending rate, in bytes per second
 	tld         int64  // Time Last Doubled (during slow start) or zero if unset; in ns since UTC zero
 	recvLimit   uint32 // Receive limit, in bytes per second
@@ -38,8 +38,8 @@ const (
 // allowed sending rate (in bytes per second). The latter is the rate
 // to be used before the first feedback packet is received and hence before
 // an RTT estimate is available.
-func (t *senderRateCalculator) Init(logger *dccp.Amb, ss uint32, rtt int64) {
-	t.logger = logger.Refine("senderRateCalculator")
+func (t *senderRateCalculator) Init(amb *dccp.Amb, ss uint32, rtt int64) {
+	t.amb = amb.Refine("senderRateCalculator")
 	// The allowed sending rate before the first feedback packet is received
 	// is one packet per second.
 	t.x = ss
@@ -66,7 +66,7 @@ func (t *senderRateCalculator) X() uint32 { return t.x }
 func (t *senderRateCalculator) onFirstRead(now int64) uint32 {
 	t.tld = now
 	t.x = initRate(t.ss, t.rtt)
-	t.logger.E(dccp.EventInfo, fmt.Sprintf("Init rate = %d bps", t.x))
+	t.amb.E(dccp.EventInfo, fmt.Sprintf("Init rate = %d bps", t.x))
 	// XXX panic("a")
 	return t.x
 }
@@ -140,7 +140,7 @@ func (t *senderRateCalculator) recalculate(now int64) uint32 {
 // OnNoFeedback returns the new allowed sending rate.
 // See RFC 5348, Section 4.4
 func (t *senderRateCalculator) OnNoFeedback(now int64, hasRTT bool, idleSince int64, nofeedbackSet int64) uint32 {
-	t.logger.E(dccp.EventInfo, fmt.Sprintf("OnNoFbk hrtt=%v idl=%d nofbks=%d", hasRTT, idleSince, nofeedbackSet))
+	t.amb.E(dccp.EventInfo, fmt.Sprintf("OnNoFbk hrtt=%v idl=%d nofbks=%d", hasRTT, idleSince, nofeedbackSet))
 	xRecv := t.xRecvSet.Max()
 	if !hasRTT && !t.hasFeedback && idleSince > nofeedbackSet {
 		// We do not have X_Bps or recover_rate yet.

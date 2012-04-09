@@ -8,11 +8,11 @@ type CCFixed struct {
 
 }
 
-func (CCFixed) NewSender(run *Runtime, logger *Amb) SenderCongestionControl {
+func (CCFixed) NewSender(run *Runtime, amb *Amb) SenderCongestionControl {
 	return newFixedRateSenderControl(run, 1e9) // one packet per second. sendsPerSecond
 }
 
-func (CCFixed) NewReceiver(run *Runtime, logger *Amb) ReceiverCongestionControl {
+func (CCFixed) NewReceiver(run *Runtime, amb *Amb) ReceiverCongestionControl {
 	return newFixedRateReceiverControl(run)
 }
 

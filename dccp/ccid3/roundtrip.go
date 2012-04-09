@@ -33,7 +33,7 @@ func (t *senderRoundtripReporter) OnWrite(rtt int64, now int64) *dccp.Option {
 
 // senderRoundtripEstimator is a data structure that estimates the RTT at the sender end.
 type senderRoundtripEstimator struct {
-	logger   *dccp.Amb
+	amb   *dccp.Amb
 	estimate int64
 	k        int					// The index of the next history cell to write in
 	history  [SenderRoundtripHistoryLen]sendTime	// Circular array, recording departure times of last few packets
@@ -51,8 +51,8 @@ const (
 )
 
 // Init resets the senderRoundtripEstimator object for new use
-func (t *senderRoundtripEstimator) Init(logger *dccp.Amb) {
-	t.logger = logger.Refine("senderRoundtripEstimator")
+func (t *senderRoundtripEstimator) Init(amb *dccp.Amb) {
+	t.amb = amb.Refine("senderRoundtripEstimator")
 	t.estimate = 0
 	t.k = 0
 	for i, _ := range t.history {
@@ -96,7 +96,7 @@ func (t *senderRoundtripEstimator) OnRead(fb *dccp.FeedbackHeader) bool {
 		}
 	}
 	if elapsed == nil {
-		t.logger.E(dccp.EventWarn, "Missing elapsed opt", fb)
+		t.amb.E(dccp.EventWarn, "Missing elapsed opt", fb)
 		return false
 	}
 
@@ -107,12 +107,12 @@ func (t *senderRoundtripEstimator) OnRead(fb *dccp.FeedbackHeader) bool {
 	}
 	elapsedNS := dccp.NanoFromTenMicro(elapsed.Elapsed) // Elapsed time at receiver in nanoseconds
 	if elapsedNS < 0 {
-		t.logger.E(dccp.EventWarn, "Invalid elapsed opt", fb)
+		t.amb.E(dccp.EventWarn, "Invalid elapsed opt", fb)
 		return false
 	}
 	est := (fb.Time - s.Time - elapsedNS) / 2
 	if est <= 0 {
-		t.logger.E(dccp.EventWarn, "Invalid elapsed opt", fb)
+		t.amb.E(dccp.EventWarn, "Invalid elapsed opt", fb)
 		return false
 	}
 	est_old := t.estimate
@@ -122,7 +122,7 @@ func (t *senderRoundtripEstimator) OnRead(fb *dccp.FeedbackHeader) bool {
 		t.estimate = (est * SenderRoundtripWeightNew + est_old * SenderRoundtripWeightOld) / 
 			(SenderRoundtripWeightNew + SenderRoundtripWeightOld)
 	}
-	t.logger.E(dccp.EventMatch, fmt.Sprintf("Elapsed —> RTT=%s", dccp.Nstoa(t.estimate)), fb, RoundtripSample(t.estimate))
+	t.amb.E(dccp.EventMatch, fmt.Sprintf("Elapsed —> RTT=%s", dccp.Nstoa(t.estimate)), fb, RoundtripSample(t.estimate))
 
 	return true
 }
@@ -146,7 +146,7 @@ func (t *senderRoundtripEstimator) HasRTT() bool {
 // Instead of using the less precise algorithm described in RFC 4342, towards the end of Section
 // 8.1, we simply record the RTT estimate calculated at the sender and communicated via an option.
 type receiverRoundtripEstimator struct {
-	logger *dccp.Amb
+	amb *dccp.Amb
 
 	// rtt equals the latest RTT estimate, or 0 otherwise
 	rtt int64
@@ -156,8 +156,8 @@ type receiverRoundtripEstimator struct {
 }
 
 // Init initializes the RTT estimator
-func (t *receiverRoundtripEstimator) Init(logger *dccp.Amb) {
-	t.logger = logger.Refine("receiverRoundtripEstimator")
+func (t *receiverRoundtripEstimator) Init(amb *dccp.Amb) {
+	t.amb = amb.Refine("receiverRoundtripEstimator")
 	t.rtt = 0
 	t.rttTime = 0
 }
@@ -175,20 +175,20 @@ func (t *receiverRoundtripEstimator) OnRead(ff *dccp.FeedforwardHeader) bool {
 		}
 	}
 	if report == nil {
-		t.logger.E(dccp.EventWarn, "Missing roundtrip report opt", ff)
+		t.amb.E(dccp.EventWarn, "Missing roundtrip report opt", ff)
 		return false
 	}
 
 	// Sanity checks
 	rtt := dccp.NanoFromTenMicro(report.Roundtrip)
 	if rtt <= 0 || rtt > 30e9 {
-		t.logger.E(dccp.EventWarn, "Invalid roundtrip report opt", ff)
+		t.amb.E(dccp.EventWarn, "Invalid roundtrip report opt", ff)
 		return false
 	}
 
 	// Update RTT estimate
 	t.rtt, t.rttTime = rtt, ff.Time
-	t.logger.E(dccp.EventMatch, fmt.Sprintf("Report —> RTT=%s", dccp.Nstoa(t.rtt)), ff, RoundtripSample(t.rtt))
+	t.amb.E(dccp.EventMatch, fmt.Sprintf("Report —> RTT=%s", dccp.Nstoa(t.rtt)), ff, RoundtripSample(t.rtt))
 
 	return true
 }
