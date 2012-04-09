@@ -3,6 +3,8 @@
 	* sender debug switch to send at constant rate
 	* add latency simulation in pipe
 
+* rtt test, without constant rate constraint, causes division by zero error in rate calculation (in SetRate)
+
 * infrastructre for tests of the form:
 	"first packet after switched to OPEN state does not produce 'missing rtt report' log"
 
