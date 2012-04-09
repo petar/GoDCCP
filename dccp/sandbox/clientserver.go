@@ -23,14 +23,14 @@ func NewClientServerPipeDup(logname string, dup dccp.Guzzle) (clientConn, server
 	logwriter := dccp.NewFileGuzzleDup(path.Join(os.Getenv("DCCPLOG"), logname+".emit"), dup)
 	run = dccp.NewRuntime(dccp.RealTime, logwriter)
 
-	llog := dccp.NewLogger("line", run)
+	llog := dccp.NewAmb("line", run)
 	hca, hcb, _ := NewPipe(run, llog, "client", "server")
 	ccid := ccid3.CCID3{}
 
-	clog := dccp.NewLogger("client", run)
+	clog := dccp.NewAmb("client", run)
 	clientConn = dccp.NewConnClient(run, clog, hca, ccid.NewSender(run, clog), ccid.NewReceiver(run, clog), 0)
 
-	slog := dccp.NewLogger("server", run)
+	slog := dccp.NewAmb("server", run)
 	serverConn = dccp.NewConnServer(run, slog, hcb, ccid.NewSender(run, slog), ccid.NewReceiver(run, slog))
 
 	return clientConn, serverConn, run

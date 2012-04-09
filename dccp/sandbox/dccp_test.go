@@ -54,7 +54,7 @@ func TestOpenClose(t *testing.T) {
 	// The next line ensures that we wait until all go routines are done.
 	dccp.NewGoConjunction("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
 
-	dccp.NewLogger("line", run).E(dccp.EventMatch, "Server and client done.")
+	dccp.NewAmb("line", run).E(dccp.EventMatch, "Server and client done.")
 	if err := run.Close(); err != nil {
 		t.Errorf("Error closing runtime (%s)", err)
 	}
@@ -100,7 +100,7 @@ func TestIdle(t *testing.T) {
 	serverConn.Abort()
 	dccp.NewGoConjunction("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
 
-	dccp.NewLogger("line", run).E(dccp.EventMatch, "Server and client done.")
+	dccp.NewAmb("line", run).E(dccp.EventMatch, "Server and client done.")
 	if err := run.Close(); err != nil {
 		t.Errorf("Error closing runtime (%s)", err)
 	}

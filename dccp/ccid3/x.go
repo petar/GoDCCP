@@ -12,7 +12,7 @@ import (
 
 // rateCaclulator computers the allowed sending rate of the sender
 type senderRateCalculator struct {
-	logger      *dccp.Logger
+	logger      *dccp.Amb
 	x           uint32 // Current allowed sending rate, in bytes per second
 	tld         int64  // Time Last Doubled (during slow start) or zero if unset; in ns since UTC zero
 	recvLimit   uint32 // Receive limit, in bytes per second
@@ -38,7 +38,7 @@ const (
 // allowed sending rate (in bytes per second). The latter is the rate
 // to be used before the first feedback packet is received and hence before
 // an RTT estimate is available.
-func (t *senderRateCalculator) Init(logger *dccp.Logger, ss uint32, rtt int64) {
+func (t *senderRateCalculator) Init(logger *dccp.Amb, ss uint32, rtt int64) {
 	t.logger = logger.Refine("senderRateCalculator")
 	// The allowed sending rate before the first feedback packet is received
 	// is one packet per second.

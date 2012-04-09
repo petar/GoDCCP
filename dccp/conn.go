@@ -7,7 +7,7 @@ package dccp
 // Conn 
 type Conn struct {
 	run      *Runtime
-	logger   *Logger
+	logger   *Amb
 
 	hc    HeaderConn
 	scc   SenderCongestionControl
@@ -32,7 +32,7 @@ func (c *Conn) Waiter() Waiter {
 	return c.run.Waiter()
 }
 
-func newConn(run *Runtime, logger *Logger, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
+func newConn(run *Runtime, logger *Amb, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
 	c := &Conn{
 		run:          run,
 		logger:       logger,
@@ -62,7 +62,7 @@ func newConn(run *Runtime, logger *Logger, hc HeaderConn, scc SenderCongestionCo
 	return c
 }
 
-func NewConnServer(run *Runtime, logger *Logger, hc HeaderConn, 
+func NewConnServer(run *Runtime, logger *Amb, hc HeaderConn, 
 	scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
 
 	c := newConn(run, logger, hc, scc, rcc)
@@ -77,7 +77,7 @@ func NewConnServer(run *Runtime, logger *Logger, hc HeaderConn,
 	return c
 }
 
-func NewConnClient(run *Runtime, logger *Logger, hc HeaderConn, 
+func NewConnClient(run *Runtime, logger *Amb, hc HeaderConn, 
 	scc SenderCongestionControl, rcc ReceiverCongestionControl, serviceCode uint32) *Conn {
 
 	c := newConn(run, logger, hc, scc, rcc)

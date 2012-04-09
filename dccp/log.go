@@ -19,8 +19,8 @@ type LogRecord struct {
 	// instance of the DCCP stack.  For example, if two instances of Conn
 	// are available at runtime (as in the case of tests in the sandbox),
 	// one can be labeled "client" and the other "server". The labels slice
-	// is kept as a field inside the Logger object, so that it can be
-	// filled in automatically upon calls to the Logger's E method.
+	// is kept as a field inside the Amb object, so that it can be
+	// filled in automatically upon calls to the Amb's E method.
 	Labels    []string `json:"l"`
 
 	// Event is an identifier representing the type of event that this log record represents. It

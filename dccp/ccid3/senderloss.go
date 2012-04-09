@@ -13,14 +13,14 @@ import (
 // senderLossTracker processes loss intervals options received at the sender and maintains relevant loss
 // statistics.
 type senderLossTracker struct {
-	logger *dccp.Logger
+	logger *dccp.Amb
 	lastAckNo   int64  // SeqNo of the last ack'd segment; equals the AckNo of the last feedback
 	lastRateInv uint32 // Last known value of loss event rate inverse
 	lossRateCalculator
 }
 
 // Init resets the senderLossTracker instance for new use
-func (t *senderLossTracker) Init(logger *dccp.Logger) {
+func (t *senderLossTracker) Init(logger *dccp.Amb) {
 	t.logger = logger.Refine("senderLossTracker")
 	t.lastAckNo = 0
 	t.lastRateInv = UnknownLossEventRateInv

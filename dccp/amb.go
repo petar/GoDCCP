@@ -12,52 +12,52 @@ import (
 	"github.com/petar/GoGauge/filter"
 )
 
-// Logger is capable of emitting structured logs, which are consequently used for debuging
+// Amb is capable of emitting structured logs, which are consequently used for debuging
 // and analysis purposes. It lives in the context of a shared time framework and a shared
 // filter framework, which may filter some logs out
-type Logger struct {
+type Amb struct {
 	run    *Runtime
 	labels []string
 }
 
-// A zero-value Logger has the special-case behavior of ignoring all emits
-var NoLogging *Logger = &Logger{}
+// A zero-value Amb has the special-case behavior of ignoring all emits
+var NoLogging *Amb = &Amb{}
 
-// NewLogger creates a new Logger object with a single entry in the label stack
-func NewLogger(label string, run *Runtime) *Logger {
-	return &Logger{ run: run, labels: []string{label} }
+// NewAmb creates a new Amb object with a single entry in the label stack
+func NewAmb(label string, run *Runtime) *Amb {
+	return &Amb{ run: run, labels: []string{label} }
 }
 
 // Refine clones this logger and stack the additional label l
-func (t *Logger) Refine(l string) *Logger {
+func (t *Amb) Refine(l string) *Amb {
 	return t.Copy().Push(l)
 }
 
 // Copy clones this logger into an identical new one
-func (t *Logger) Copy() *Logger {
-	var c Logger = *t
+func (t *Amb) Copy() *Amb {
+	var c Amb = *t
 	c.labels = make([]string, len(t.labels))
 	copy(c.labels, t.labels)
 	return &c
 }
 
 // Labels returns the label stack of this logger
-func (t *Logger) Labels() []string {
+func (t *Amb) Labels() []string {
 	return t.labels
 }
 
 // Push adds the label l onto this logger's label stack
-func (t *Logger) Push(l string) *Logger {
+func (t *Amb) Push(l string) *Amb {
 	t.labels = append(t.labels, l)
 	return t
 }
 
-func (t *Logger) Filter() *filter.Filter {
+func (t *Amb) Filter() *filter.Filter {
 	return t.run.Filter()
 }
 
 // GetState retrieves the state of the owning object, using the runtime value store
-func (t *Logger) GetState() string {
+func (t *Amb) GetState() string {
 	if t.run == nil || len(t.labels) == 0 {
 		return ""
 	}
@@ -69,7 +69,7 @@ func (t *Logger) GetState() string {
 }
 
 // SetState saves the state s into the runtime value store
-func (t *Logger) SetState(s int) {
+func (t *Amb) SetState(s int) {
 	if t.run == nil {
 		return
 	}
@@ -117,11 +117,11 @@ func stackTrace(labels []string, skip int, sfile string, sline int) string {
 // type *Header, *PreHeader, *FeedbackHeader or *FeedforwardHeader is considered the DCCP
 // header that this log pertains to. The first argument of type Args is saved in the log
 // record.
-func (t *Logger) E(event Event, comment string, args ...interface{}) {
+func (t *Amb) E(event Event, comment string, args ...interface{}) {
 	t.EC(1, event, comment, args...)
 }
 
-func (t *Logger) EC(skip int, event Event, comment string, args ...interface{}) {
+func (t *Amb) EC(skip int, event Event, comment string, args ...interface{}) {
 	if t.run == nil {
 		return
 	}

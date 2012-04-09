@@ -9,7 +9,7 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-func newSender(run *dccp.Runtime, logger *dccp.Logger) *sender {
+func newSender(run *dccp.Runtime, logger *dccp.Amb) *sender {
 	return &sender{ run: run, logger: logger.Refine("sender") }
 }
 
@@ -17,7 +17,7 @@ func newSender(run *dccp.Runtime, logger *dccp.Logger) *sender {
 // It conforms to dccp.SenderCongestionControl.
 type sender struct {
 	run    *dccp.Runtime
-	logger *dccp.Logger
+	logger *dccp.Amb
 	senderStrober
 	dccp.Mutex // Locks all fields below
 	senderRoundtripEstimator

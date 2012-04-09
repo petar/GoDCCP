@@ -15,12 +15,12 @@ import (
 // It supports rate limiting, latency emulation and receive buffer emulation (in order to
 // capture slow readers).
 type Pipe struct {
-	logger *dccp.Logger
+	logger *dccp.Amb
 	ha, hb headerHalfPipe
 }
 
 // NewPipe creates a new pipe with a given runtime shared by both endpoints, and a root logger
-func NewPipe(run *dccp.Runtime, logger *dccp.Logger, namea, nameb string) (a, b dccp.HeaderConn, line *Pipe) {
+func NewPipe(run *dccp.Runtime, logger *dccp.Amb, namea, nameb string) (a, b dccp.HeaderConn, line *Pipe) {
 	ab := make(chan *pipeHeader, pipeBufferLen)
 	ba := make(chan *pipeHeader, pipeBufferLen)
 	line = &Pipe{}
@@ -40,7 +40,7 @@ const pipeBufferLen = 2
 // headerHalfPipe implements HeaderConn. It enforces rate-limiting on its write side.
 type headerHalfPipe struct {
 	run    *dccp.Runtime
-	logger *dccp.Logger
+	logger *dccp.Amb
 
 	// read, writeLk and write pertain to the communication mechanism of the pipe
 	read  <-chan *pipeHeader
@@ -82,7 +82,7 @@ type pipeHeader struct {
 }
 
 // Init resets a half pipe for initial use, using logger (without making a copy of it)
-func (hhl *headerHalfPipe) Init(run *dccp.Runtime, logger *dccp.Logger, r <-chan *pipeHeader, w chan<- *pipeHeader) {
+func (hhl *headerHalfPipe) Init(run *dccp.Runtime, logger *dccp.Amb, r <-chan *pipeHeader, w chan<- *pipeHeader) {
 	hhl.run = run
 	hhl.logger = logger
 	hhl.read = r

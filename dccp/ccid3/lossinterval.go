@@ -13,7 +13,7 @@ import (
 // evolveInterval manages the incremental construction of a loss interval
 type evolveInterval struct {
 	
-	logger *dccp.Logger
+	logger *dccp.Amb
 
 	// push is called whenever an interval is finished
 	push        pushIntervalFunc
@@ -67,7 +67,7 @@ type LossIntervalDetail struct {
 
 type pushIntervalFunc func(*LossIntervalDetail)
 
-func (t *evolveInterval) Init(logger *dccp.Logger, push pushIntervalFunc) {
+func (t *evolveInterval) Init(logger *dccp.Amb, push pushIntervalFunc) {
 	t.logger = logger.Refine("evolveInterval")
 	t.push = push
 	t.lastSeqNo = 0

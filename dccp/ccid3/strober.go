@@ -13,7 +13,7 @@ import (
 // A senderStrober cannot be used before an initial call to SetInterval or SetRate.
 type senderStrober struct {
 	run    *dccp.Runtime
-	logger *dccp.Logger
+	logger *dccp.Amb
 	dccp.Mutex
 	interval int64		// Maximum average time interval between packets, in nanoseconds
 	last     int64
@@ -26,7 +26,7 @@ func BytesPerSecondToPacketsPer64Sec(bps uint32, ss uint32) int64 {
 }
 
 // Init resets the senderStrober instance for new use
-func (s *senderStrober) Init(run *dccp.Runtime, logger *dccp.Logger, bps uint32, ss uint32) {
+func (s *senderStrober) Init(run *dccp.Runtime, logger *dccp.Amb, bps uint32, ss uint32) {
 	s.run = run
 	s.logger = logger.Refine("strober")
 	s.SetRate(bps, ss)

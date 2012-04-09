@@ -33,7 +33,7 @@ func (t *senderRoundtripReporter) OnWrite(rtt int64, now int64) *dccp.Option {
 
 // senderRoundtripEstimator is a data structure that estimates the RTT at the sender end.
 type senderRoundtripEstimator struct {
-	logger   *dccp.Logger
+	logger   *dccp.Amb
 	estimate int64
 	k        int					// The index of the next history cell to write in
 	history  [SenderRoundtripHistoryLen]sendTime	// Circular array, recording departure times of last few packets
@@ -51,7 +51,7 @@ const (
 )
 
 // Init resets the senderRoundtripEstimator object for new use
-func (t *senderRoundtripEstimator) Init(logger *dccp.Logger) {
+func (t *senderRoundtripEstimator) Init(logger *dccp.Amb) {
 	t.logger = logger.Refine("senderRoundtripEstimator")
 	t.estimate = 0
 	t.k = 0
@@ -146,7 +146,7 @@ func (t *senderRoundtripEstimator) HasRTT() bool {
 // Instead of using the less precise algorithm described in RFC 4342, towards the end of Section
 // 8.1, we simply record the RTT estimate calculated at the sender and communicated via an option.
 type receiverRoundtripEstimator struct {
-	logger *dccp.Logger
+	logger *dccp.Amb
 
 	// rtt equals the latest RTT estimate, or 0 otherwise
 	rtt int64
@@ -156,7 +156,7 @@ type receiverRoundtripEstimator struct {
 }
 
 // Init initializes the RTT estimator
-func (t *receiverRoundtripEstimator) Init(logger *dccp.Logger) {
+func (t *receiverRoundtripEstimator) Init(logger *dccp.Amb) {
 	t.logger = logger.Refine("receiverRoundtripEstimator")
 	t.rtt = 0
 	t.rttTime = 0
