@@ -39,23 +39,34 @@ func (t *rttReducer) Close() error {
 	return nil 
 }
 
-// TestRTT checks that round-trip times are estimated accurately.
-func TestRTT(t *testing.T) {
+// TestRoundtripEstimation checks that round-trip times are estimated accurately.
+func TestRoundtripEstimation(t *testing.T) {
 	reducer := &rttReducer{t}
 	clientConn, serverConn, run := NewClientServerPipeDup("rtt", reducer)
 
+	// Roundtrip estimates might be imprecise during long idle periods,
+	// as a product of the CCID3 design, since during such period precise
+	// estimates are not necessary. Therefore, to focus on roundtrip time
+	// estimation without saturating the link, we generate sufficiently 
+	// regular transmissions.
+
+	cargo := []byte{1, 2, 3}
+	buf := make([]byte, len(cargo))
+	const (
+		duration = 20e9
+		interval = 100e6
+	)
+
 	cchan := make(chan int, 1)
-	mtu := clientConn.GetMTU()
-	buf := make([]byte, mtu)
 	go func() {
 		t0 := run.Nanoseconds()
-		for run.Nanoseconds() - t0 < 10e9 {
+		for run.Nanoseconds() - t0 < duration {
 			err := clientConn.WriteSegment(buf)
 			if err != nil {
 				break
 			}
+			run.Sleep(interval)
 		}
-		clientConn.Close()
 		close(cchan)
 	}()
 
@@ -63,9 +74,7 @@ func TestRTT(t *testing.T) {
 	go func() {
 		for {
 			_, err := serverConn.ReadSegment()
-			if err == dccp.ErrEOF {
-				break 
-			} else if err != nil {
+			if err != nil {
 				break
 			}
 		}
@@ -74,6 +83,10 @@ func TestRTT(t *testing.T) {
 
 	_, _ = <-cchan
 	_, _ = <-schan
+
+	// Shutdown the connections properly
+	clientConn.Abort()
+	serverConn.Abort()
 	dccp.NewGoConjunction("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
 	dccp.NewLogger("line", run).E(dccp.EventMatch, "Server and client done.")
 	if err := run.Close(); err != nil {

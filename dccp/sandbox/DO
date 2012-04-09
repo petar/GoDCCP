@@ -1,6 +1,7 @@
 
 * add RTT estimation test
-* add latency simulation in pipe
+	* sender debug switch to send at constant rate
+	* add latency simulation in pipe
 
 * infrastructre for tests of the form:
 	"first packet after switched to OPEN state does not produce 'missing rtt report' log"
