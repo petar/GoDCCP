@@ -59,7 +59,7 @@ func (s *senderStrober) SetRate(bps uint32, ss uint32) {
 // not use a lock to prevent concurrent invocation. DCCP currently calls Strobe in a loop,
 // so concurrent invocations are not a concern.
 //
-// TODO: This routine should be optimized
+// XXX: This routine should be optimized
 func (s *senderStrober) Strobe() {
 	s.Lock()
 	now := s.run.Nanoseconds()

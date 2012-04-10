@@ -6,7 +6,7 @@ package sandbox
 
 import (
 	"fmt"
-	//"os"
+	"os"
 	"testing"
 	"github.com/petar/GoDCCP/dccp"
 )
@@ -41,8 +41,8 @@ func (t *rttReducer) Close() error {
 
 // TestRoundtripEstimation checks that round-trip times are estimated accurately.
 func TestRoundtripEstimation(t *testing.T) {
-	reducer := &rttReducer{t}
-	clientConn, serverConn, run := NewClientServerPipeDup("rtt", reducer)
+	//reducer := &rttReducer{t}
+	clientConn, serverConn, run := NewClientServerPipe("rtt"/*, reducer*/)
 
 	// Roundtrip estimates might be imprecise during long idle periods,
 	// as a product of the CCID3 design, since during such period precise
@@ -53,7 +53,7 @@ func TestRoundtripEstimation(t *testing.T) {
 	cargo := []byte{1, 2, 3}
 	buf := make([]byte, len(cargo))
 	const (
-		duration = 20e9              // Duration of the experiment
+		duration = 10e9              // Duration of the experiment
 		interval = 100e6             // How often we perform heartbeat writes to avoid idle periods
 		rate     = 64e9 / interval   // Fixed send rate for both endpoints in strobes per 64 seconds
 	)
@@ -68,6 +68,7 @@ func TestRoundtripEstimation(t *testing.T) {
 	go func() {
 		t0 := run.Nanoseconds()
 		for run.Nanoseconds() - t0 < duration {
+			fmt.Fprintf(os.Stderr, "Writing\n")
 			err := clientConn.WriteSegment(buf)
 			if err != nil {
 				break
@@ -80,6 +81,7 @@ func TestRoundtripEstimation(t *testing.T) {
 	schan := make(chan int, 1)
 	go func() {
 		for {
+			fmt.Fprintf(os.Stderr, "Reading\n")
 			_, err := serverConn.ReadSegment()
 			if err != nil {
 				break
@@ -92,6 +94,7 @@ func TestRoundtripEstimation(t *testing.T) {
 	_, _ = <-schan
 
 	// Shutdown the connections properly
+	fmt.Fprintf(os.Stderr, "Shutting down ...\n")
 	clientConn.Abort()
 	serverConn.Abort()
 	dccp.NewGoConjunction("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
