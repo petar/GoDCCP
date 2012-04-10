@@ -6,7 +6,7 @@ package dccp
 
 // Conn 
 type Conn struct {
-	run      *Runtime
+	run   *Runtime
 	amb   *Amb
 
 	hc    HeaderConn
@@ -30,6 +30,11 @@ type Conn struct {
 // associated with the connection have completed.
 func (c *Conn) Waiter() Waiter {
 	return c.run.Waiter()
+}
+
+// Amb returns the Amb instance associated with this connection
+func (c *Conn) Amb() *Amb {
+	return c.amb
 }
 
 func newConn(run *Runtime, amb *Amb, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {

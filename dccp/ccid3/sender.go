@@ -16,7 +16,7 @@ func newSender(run *dccp.Runtime, amb *dccp.Amb) *sender {
 // sender implements a CCID3 congestion control sender.
 // It conforms to dccp.SenderCongestionControl.
 type sender struct {
-	run    *dccp.Runtime
+	run *dccp.Runtime
 	amb *dccp.Amb
 	senderStrober
 	dccp.Mutex // Locks all fields below
@@ -141,7 +141,13 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) error {
 		LossFeedback: lossFeedback,
 	}
 	x := s.senderRateCalculator.OnRead(xf)
-	s.senderStrober.SetRate(x, FixedSegmentSize)
+	// Flag "FixRate", if present, enforces a fixed send rate in strobes per 64 seconds
+	flagFixRate, flagFixRatePresent := s.amb.Flags().GetUint32("FixRate")
+	if flagFixRatePresent {
+		s.senderStrober.SetRate(flagFixRate, FixedSegmentSize)
+	} else {
+		s.senderStrober.SetRate(x, FixedSegmentSize)
+	}
 
 	return nil
 }
@@ -189,8 +195,16 @@ func (s *sender) OnIdle(now int64) error {
 	if s.senderNoFeedbackTimer.IsExpired(now) {
 		idleSince, nofeedbackSet := s.senderNoFeedbackTimer.GetIdleSinceAndReset()
 		_, hasRTT := s.senderRoundtripEstimator.RTT()
+
 		x := s.senderRateCalculator.OnNoFeedback(now, hasRTT, idleSince, nofeedbackSet)
-		s.senderStrober.SetRate(x, FixedSegmentSize)
+		// Flag "FixRate" described above
+		flagFixRate, flagFixRatePresent := s.amb.Flags().GetUint32("FixRate")
+		if flagFixRatePresent {
+			s.senderStrober.SetRate(flagFixRate, FixedSegmentSize)
+		} else {
+			s.senderStrober.SetRate(x, FixedSegmentSize)
+		}
+
 		s.senderNoFeedbackTimer.Reset(now)
 	}
 

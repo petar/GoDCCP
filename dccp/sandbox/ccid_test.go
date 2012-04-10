@@ -53,9 +53,16 @@ func TestRoundtripEstimation(t *testing.T) {
 	cargo := []byte{1, 2, 3}
 	buf := make([]byte, len(cargo))
 	const (
-		duration = 20e9
-		interval = 100e6
+		duration = 20e9              // Duration of the experiment
+		interval = 100e6             // How often we perform heartbeat writes to avoid idle periods
+		rate     = 64e9 / interval   // Fixed send rate for both endpoints in strobes per 64 seconds
 	)
+
+	// In order to isolate roundtrip measurement testing from the complexities
+	// of the send rate calculation mechanism, we fix the send rate of both
+	// endpoints using the debug flag FixRate.
+	clientConn.Amb().Flags().SetUint32("FixRate", rate)
+	serverConn.Amb().Flags().SetUint32("FixRate", rate)
 
 	cchan := make(chan int, 1)
 	go func() {

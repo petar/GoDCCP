@@ -12,11 +12,20 @@ import (
 	"github.com/petar/GoGauge/filter"
 )
 
-// Amb is capable of emitting structured logs, which are consequently used for debuging
-// and analysis purposes. It lives in the context of a shared time framework and a shared
-// filter framework, which may filter some logs out
+// Amb represents a runtime context, embodied by a runtime, a stack of labels
+// and set of options.  It is also capable of emitting structured logs, that
+// are relative to the overall context, and are consequently used for debuging
+// and analysis purposes. It lives in the context of a shared time framework
+// and a shared filter framework, which may filter some logs out
 type Amb struct {
 	run    *Runtime
+
+	// Debug flags are associated with Amb and not with Runtime because we
+	// might want to pass different debug flags to a server and a client
+	// connection in an experiment, while we would like them to share the
+	// same runtime so that they share the same notion of time.
+	flags  *Flags
+
 	labels []string
 }
 
@@ -25,7 +34,11 @@ var NoLogging *Amb = &Amb{}
 
 // NewAmb creates a new Amb object with a single entry in the label stack
 func NewAmb(label string, run *Runtime) *Amb {
-	return &Amb{ run: run, labels: []string{label} }
+	return &Amb{ 
+		run:    run, 
+		flags:  NewFlags(),
+		labels: []string{label},
+	}
 }
 
 // Refine clones this amb and stack the additional label l
@@ -39,6 +52,11 @@ func (t *Amb) Copy() *Amb {
 	c.labels = make([]string, len(t.labels))
 	copy(c.labels, t.labels)
 	return &c
+}
+
+// Flags returns the flags associated with this Amb instance
+func (t *Amb) Flags() *Flags {
+	return t.flags
 }
 
 // Labels returns the label stack of this amb

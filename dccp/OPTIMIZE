@@ -1,2 +1,4 @@
 
 * idle ticker should use Go's ticker
+
+* implement BACKOFFS using table lookups?
