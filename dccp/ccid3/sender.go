@@ -141,10 +141,10 @@ func (s *sender) OnRead(fb *dccp.FeedbackHeader) error {
 		LossFeedback: lossFeedback,
 	}
 	x := s.senderRateCalculator.OnRead(xf)
-	// Flag "FixRate", if present, enforces a fixed send rate in strobes per 64 seconds
+	// Flag "FixRate", if present, enforces a fixed send rate given in packets per second
 	flagFixRate, flagFixRatePresent := s.amb.Flags().GetUint32("FixRate")
 	if flagFixRatePresent {
-		s.senderStrober.SetRate(flagFixRate, FixedSegmentSize)
+		s.senderStrober.SetRatePPS(flagFixRate)
 	} else {
 		s.senderStrober.SetRate(x, FixedSegmentSize)
 	}
@@ -200,7 +200,7 @@ func (s *sender) OnIdle(now int64) error {
 		// Flag "FixRate" described above
 		flagFixRate, flagFixRatePresent := s.amb.Flags().GetUint32("FixRate")
 		if flagFixRatePresent {
-			s.senderStrober.SetRate(flagFixRate, FixedSegmentSize)
+			s.senderStrober.SetRatePPS(flagFixRate)
 		} else {
 			s.senderStrober.SetRate(x, FixedSegmentSize)
 		}

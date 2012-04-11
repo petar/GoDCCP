@@ -1,13 +1,15 @@
-dccp_test.go:TestIdle
-
 1.	Can endpoints estimate RTT?
 
-	1.1.	Client·Sender never gets an Ack or DataAck,
+	1.1.	(OK) Client·Sender never gets an Ack or DataAck (during idle periods),
 			which carries Elapsed option,
 			which is needed for RTT estimate
+			* See 1.1.1 below.
 
-		1.1.1.	Should Elapsed options be limited to Ack and DataAck, as opposed to also
+		1.1.1.	(OK) Should Elapsed options be limited to Ack and DataAck, as opposed to also
 			other packets that contain acknowledgements? Are there other such packet types?
+			* Only Ack and DataAck have acks and, yes, Elapsed is limitted to those only by
+			design, since the lack of those implies slow app send speed an no need for good
+			estimates of RTT.
 
 		1.1.2.	(OK) Need mechanism to ensure Ack sent back to client in presence of Idle?
 			* No. It's OK if client stays in PARTOPEN. Just means it must

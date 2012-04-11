@@ -1,6 +1,6 @@
 
 * add RTT estimation test
-	* sender debug switch to send at constant rate
+	* why are the RTT curves different every time and with values quite high
 	* add latency simulation in pipe
 
 * rtt test, without constant rate constraint, causes division by zero error in rate calculation (in SetRate)

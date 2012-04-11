@@ -53,9 +53,9 @@ func TestRoundtripEstimation(t *testing.T) {
 	cargo := []byte{1, 2, 3}
 	buf := make([]byte, len(cargo))
 	const (
-		duration = 10e9              // Duration of the experiment
-		interval = 100e6             // How often we perform heartbeat writes to avoid idle periods
-		rate     = 64e9 / interval   // Fixed send rate for both endpoints in strobes per 64 seconds
+		duration = 10e9              // Duration of the experiment = 10 sec
+		interval = 100e6             // How often we perform heartbeat writes to avoid idle periods = 100 ms
+		rate     = 1e9 / interval    // Fixed send rate for both endpoints in packets per second = 10 pps
 	)
 
 	// In order to isolate roundtrip measurement testing from the complexities
@@ -75,6 +75,9 @@ func TestRoundtripEstimation(t *testing.T) {
 			}
 			run.Sleep(interval)
 		}
+		// Close is necessary because otherwise, if no read timeout is in place, the
+		// server sides hangs forever on ReadSegment
+		clientConn.Close()
 		close(cchan)
 	}()
 

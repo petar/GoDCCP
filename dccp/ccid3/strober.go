@@ -40,16 +40,29 @@ func (s *senderStrober) SetInterval(interval int64) {
 	s.last = 0
 }
 
-// SetRate sets the strobing rate in strobes per 64 seconds
+// SetRate sets the strobing rate. The argument bps is the desired
+// maximum bytes per second, while ss equals the maximum packet size.
+// Internally, SetRate converts the two arguments into a maximum
+// number of packets per 64 seconds, assuming all packets are of size ss.
 // Rates below 1 strobe per 64 sec are not allowed by RFC 4342
 func (s *senderStrober) SetRate(bps uint32, ss uint32) {
 	s.Lock()
 	defer s.Unlock()
 	s.interval = 64e9 / BytesPerSecondToPacketsPer64Sec(bps, ss)
 	if s.interval == 0 {
-		panic("zero strobe rate")
+		panic("strobe rate infinity")
 	}
-	defer s.amb.E(dccp.EventInfo, fmt.Sprintf("Set strobe rate %d pps", 1e9 / s.interval), nil)
+	s.amb.E(dccp.EventInfo, fmt.Sprintf("Set strobe rate %d pps", 1e9 / s.interval))
+}
+
+func (s *senderStrober) SetRatePPS(pps uint32) {
+	s.Lock()
+	defer s.Unlock()
+	if pps == 0 {
+		panic("strobe rate zero pps")
+	}
+	s.interval = 1e9 / int64(pps)
+	s.amb.E(dccp.EventInfo, fmt.Sprintf("Set strobe rate %d pps", 1e9 / s.interval))
 }
 
 // Strobe ensures that the frequency with which (multiple calls) to Strobe return does not
@@ -64,9 +77,9 @@ func (s *senderStrober) Strobe() {
 	s.Lock()
 	now := s.run.Nanoseconds()
 	delta := s.interval - (now - s.last)
-	dbgInterval := s.interval // DBG
+	_interval := s.interval
 	s.Unlock()
-	defer s.amb.E(dccp.EventInfo, fmt.Sprintf("Strobe at %d pps", 1e9 / dbgInterval), nil)
+	defer s.amb.E(dccp.EventInfo, fmt.Sprintf("Strobe at %d pps", 1e9 / _interval), nil)
 	if delta > 0 {
 		s.run.Sleep(delta)
 	}
