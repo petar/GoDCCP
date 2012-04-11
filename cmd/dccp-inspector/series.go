@@ -51,7 +51,7 @@ func (x *SeriesSweeper) Add(r *dccp.LogRecord) {
 	// Remember the sample
 	u := &sample{
 		Series: series,
-		X:      float64(r.Time) / 1e6,	// Time in milliseconds
+		X:      float64(r.Time) / 1e6,	// Time, X-coordinate, always in milliseconds
 		Y:      y,
 	}
 	x.chrono.PushBack(u)

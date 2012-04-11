@@ -1,2 +1,3 @@
-* add dimension labels on time series charts
+* (THINKING) add dimension labels on time series charts
+	+ unclear what to do when different time series have different dimensions
 * add row folding

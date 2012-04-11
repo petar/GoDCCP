@@ -117,6 +117,13 @@ func printGraphJavaScript(w io.Writer, sweeper *SeriesSweeper) error {
 					labelsDivWidth: 700,
 					labelsDivStyles: { 'fontFamily': "Droid Sans Mono", 'fontWeight': "normal" },
 					labelsSeparateLines: true,
+					axes: {
+						x: {
+							axisLabelFormatter: function(x) {
+								return x + 'ms';
+							}
+						}
+					},
 					drawPoints: true,
 					colors: [ '#cc0000', '#00cc00', '#0000cc',' #00cccc', '#cc00cc', '#cccc00' ],
 					labels: `
