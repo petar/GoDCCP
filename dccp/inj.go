@@ -39,11 +39,7 @@ func (c *Conn) inject(h *Header) {
 	// c.emitCatchSeqNo(h, 161019, 161020, 161021)
 
 	// Dropping a nil is OK, since it happens only if there are other packets in the queue
-	c.amb.E(EventWrite, "Non-data to injection queue", h)
 	if len(c.writeNonData) < cap(c.writeNonData) {
-		if h != nil {
-			h = c.writeCCID(h)
-		}
 		c.writeNonData <- h
 	} else {
 		c.amb.E(EventDrop, "Slow strobe", h)
@@ -78,6 +74,13 @@ _Loop_I:
 		// from the above send operator and (without resulting into an actual
 		// send) activate the state check after the "if" statement below
 		if h != nil {
+			// Tell the CCID about h right before it gets sent.
+			// This way, the roundtrip measurements e.g. which are done inside CCID
+			// will not be affected by the wait time incurred due to send rate considerations
+			c.Lock()
+			h = c.writeCCID(h)
+			c.Unlock()
+			c.amb.E(EventWrite, "Non-data to injection queue", h)
 			err := c.write(h)
 			// If the underlying layer is broken, abort
 			if err != nil {
@@ -153,6 +156,10 @@ _Loop_III:
 		// We'll allow nil headers, since they can be used to trigger unblock
 		// from the above send operator
 		if h != nil {
+			c.Lock()
+			h = c.writeCCID(h)
+			c.Unlock()
+			c.amb.E(EventWrite, "Non-data to injection queue", h)
 			err := c.write(h)
 			// If the underlying layer is broken, abort
 			if err != nil {

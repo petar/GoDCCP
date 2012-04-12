@@ -1,6 +1,7 @@
 
 * add RTT estimation test
-	* strobe wait time is currently captured in RTT measure!!!
+	* strobe wait time is currently captured in RTT emit measure
+		* this same issue probably applies to RTT measurements themselves
 	* profile w/ pprof
 	* memory profile
 	* why are the RTT curves different every time and with values quite high
