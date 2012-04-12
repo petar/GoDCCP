@@ -1,2 +1,2 @@
 #!/bin/sh
-go test -test.run=RoundtripEstimation && dccp-inspector -emits=false var/rtt.emit > var/rtt.html
+go test -test.run=RoundtripEstimation && dccp-inspector -emits=true var/rtt.emit > var/rtt.html

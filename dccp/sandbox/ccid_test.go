@@ -25,7 +25,7 @@ func TestRoundtripEstimation(t *testing.T) {
 	cargo := []byte{1, 2, 3}
 	buf := make([]byte, len(cargo))
 	const (
-		duration = 40e9              // Duration of the experiment = 10 sec
+		duration = 10e9              // Duration of the experiment = 10 sec
 		interval = 100e6             // How often we perform heartbeat writes to avoid idle periods = 100 ms
 		rate     = 1e9 / interval    // Fixed send rate for both endpoints in packets per second = 10 pps
 	)

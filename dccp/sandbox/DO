@@ -4,6 +4,7 @@
 	* memory profile
 	* why are the RTT curves different every time and with values quite high
 	* add latency simulation in pipe
+	* why are there unclaimed packets in roundtrip reducer measurements
 
 * rtt test, without constant rate constraint, causes division by zero error in rate calculation (in SetRate)
 
