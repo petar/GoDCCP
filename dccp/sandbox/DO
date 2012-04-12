@@ -1,9 +1,9 @@
 
 * add RTT estimation test
+	* profile w/ pprof
+	* memory profile
 	* why are the RTT curves different every time and with values quite high
 	* add latency simulation in pipe
-
-* resolve backward time panic in reducer
 
 * rtt test, without constant rate constraint, causes division by zero error in rate calculation (in SetRate)
 

@@ -23,3 +23,8 @@
 	1.2.	(OK) Client sends 10 packets in the first second, only 3 of which are received?
 		No drops are reported. Is there a programmatic delay?
 		* Sender's rate control switches to 1pps at the start
+
+	1.3.	(HALF) Why is RTT estimate curve different every time?
+		* Maybe because we had GOMAXPROCS=1
+
+	1.4.	Why is RTT estimate in 50ms - 100ms and estimate curve has bumps?

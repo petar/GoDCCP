@@ -11,38 +11,10 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-// rttReducer is a dccp.Guzzle which listens to the logs
-// emitted from the RTT test and performs various checks.
-type rttReducer struct {
-	t *testing.T
-}
-
-func (t *rttReducer) Write(r *dccp.LogRecord) {
-	/*
-	switch r.Event {
-	case "rrtt": 
-		rtt, _ := r.Args.Int64("rtt")
-		fmt.Printf("%s rRTT: %d\n", r.Module, rtt)
-	case "srtt":
-		rtt, _ := r.Args.Int64("rtt")
-		est, _ := r.Args.Bool("est")
-		fmt.Printf("%s sRTT: %d %v\n", r.Module, rtt, est)
-	}
-	*/
-}
-
-func (t *rttReducer) Sync() error { 
-	return nil 
-}
-
-func (t *rttReducer) Close() error { 
-	return nil 
-}
-
 // TestRoundtripEstimation checks that round-trip times are estimated accurately.
 func TestRoundtripEstimation(t *testing.T) {
-	//reducer := &rttReducer{t}
-	clientConn, serverConn, run := NewClientServerPipe("rtt"/*, reducer*/)
+	reducer := newRoundtripReducer(t)
+	clientConn, serverConn, run := NewClientServerPipeDup("rtt", reducer)
 
 	// Roundtrip estimates might be imprecise during long idle periods,
 	// as a product of the CCID3 design, since during such period precise
@@ -53,7 +25,7 @@ func TestRoundtripEstimation(t *testing.T) {
 	cargo := []byte{1, 2, 3}
 	buf := make([]byte, len(cargo))
 	const (
-		duration = 10e9              // Duration of the experiment = 10 sec
+		duration = 40e9              // Duration of the experiment = 10 sec
 		interval = 100e6             // How often we perform heartbeat writes to avoid idle periods = 100 ms
 		rate     = 1e9 / interval    // Fixed send rate for both endpoints in packets per second = 10 pps
 	)

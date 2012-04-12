@@ -18,7 +18,7 @@ import (
 
 var (
 	flagReport *string = flag.String("report", "basic", "Report types: basic, trip")
-	flagFmt *string = flag.String("fmt", "html", "Output formats: text, html")
+	flagEmits  *bool = flag.Bool("emits", true, "Include emits with stack trace logs")
 )
 
 func usage() {
@@ -62,26 +62,16 @@ func main() {
 	// Fork to desired reducer
 	switch *flagReport {
 	case "basic":
-		switch *flagFmt {
-		case "text":
-			printBasic(emits)
-		case "html":
-			htmlBasic(emits)
-		}
+		htmlBasic(emits, *flagEmits)
 	case "trip":
-		switch *flagFmt {
-		case "text":
-			printTrip(emits)
-		case "html":
-			fmt.Fprintf(os.Stderr, "Unsupported combination: Report=trip, Format=html\n")
-			os.Exit(1)
-		}
+		printTrip(emits)
 	}
 
 	printStats(emits)
 }
 
 func printStats(emits []*dccp.LogRecord) {
+	sort.Sort(LogRecordTimeSort(emits))
 	reducer := dccp_gauge.NewLogReducer()
 	for _, rec := range emits {
 		reducer.Write(rec)
@@ -92,6 +82,22 @@ func printStats(emits []*dccp.LogRecord) {
 	fmt.Fprintf(os.Stderr, "Send rate: %g pkt/sec, Receive rate: %g pkt/sec\n", sr, rr)
 }
 
+// LogRecordTimeSort sorts LogRecord records by timestamp
+type LogRecordTimeSort []*dccp.LogRecord
+
+func (t LogRecordTimeSort) Len() int {
+	return len(t)
+}
+
+func (t LogRecordTimeSort) Less(i, j int) bool {
+	return t[i].Time < t[j].Time
+}
+
+func (t LogRecordTimeSort) Swap(i, j int) {
+	t[i], t[j] = t[j], t[i]
+}
+
+// TODO: Not used any more; Remove
 func printBasic(emits []*dccp.LogRecord) {
 	prints := make([]*PrintRecord, 0)
 	for _, t := range emits {
@@ -103,7 +109,7 @@ func printBasic(emits []*dccp.LogRecord) {
 	Print(prints, true)
 }
 
-func htmlBasic(emits []*dccp.LogRecord) {
+func htmlBasic(emits []*dccp.LogRecord, includeEmits bool) {
 	lps := make([]*logPipe, 0)
 	for _, t := range emits {
 		p := pipeEmit(t)
@@ -111,5 +117,5 @@ func htmlBasic(emits []*dccp.LogRecord) {
 			lps = append(lps, p)
 		}
 	}
-	htmlize(lps, true)
+	htmlize(lps, true, includeEmits)
 }

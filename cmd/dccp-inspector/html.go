@@ -37,7 +37,7 @@ type logPipe struct {
 
 // htmlize orders a slice of logPipes by time and prints them to standard output with the
 // surrounding HTML boilerplate
-func htmlize(records []*logPipe, srt bool) {
+func htmlize(records []*logPipe, srt bool, includeEmits bool) {
 	if srt {
 		sort.Sort(logPipeTimeSort(records))
 	}
@@ -58,23 +58,27 @@ func htmlize(records []*logPipe, srt bool) {
 			sflag = '*'
 			sec = last / 1e9
 		}
-		fmt.Println(htmlizePipe(r.Pipe))
+		if includeEmits {
+			fmt.Println(htmlizePipe(r.Pipe))
+		}
 	}
 
-	// TODO: The spacer row is a hack to prevent TDs from collapsing their width
-	subSpacer := emitSubPipe{
-		State:  "",
-		Detail: "",
-		Left:   "    ",
-		Right:  "    ",
+	if includeEmits {
+		// TODO: The spacer row is a hack to prevent TDs from collapsing their width
+		subSpacer := emitSubPipe{
+			State:  "",
+			Detail: "",
+			Left:   "    ",
+			Right:  "    ",
+		}
+		spacer := &emitPipe{
+			Client: subSpacer,
+			Pipe:   subSpacer,
+			Server: subSpacer,
+			Event:  "spacer",
+		}
+		fmt.Println(htmlizePipe(spacer))
 	}
-	spacer := &emitPipe{
-		Client: subSpacer,
-		Pipe:   subSpacer,
-		Server: subSpacer,
-		Event:  "spacer",
-	}
-	fmt.Println(htmlizePipe(spacer))
 
 	fmt.Println(htmlFooterPreSeries)
 	printGraphJavaScript(os.Stdout, &series)
