@@ -46,10 +46,11 @@ const (
 		`pre { padding: 0; margin: 0 }` +
 		// Event coloring
 		`.ev_warn { color: #c00 }` + 
+		`.ev_error { color: #c0c }` + 
 		`.ev_match { color: #0c0 }` + 
 		`.client.ev_idle.nonempty { background: #f8e0e0 }` + 
 		`.server.ev_idle.nonempty { background: #e0e0f8 }` + 
-		`.ev_event, .ev_idle, .ev_rrtt_h, .ev_rrtt, .ev_wccval, .ev_info { color: #aaa }` + 
+		`.ev_event, .ev_idle, .ev_wccval, .ev_info { color: #aaa }` + 
 		`.ev_write, .ev_read, .ev_drop { color: #000 }` + 
 		`.ev_end { background: #0c0 !important; color: #fff !important }` + 
 		`.ev_spacer { background: white !important; color: white !important }` + 

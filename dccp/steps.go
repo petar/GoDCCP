@@ -4,6 +4,8 @@
 
 package dccp
 
+import "fmt"
+
 // Step 2, Section 8.5: Check ports and process TIMEWAIT state
 func (c *Conn) step2_ProcessTIMEWAIT(h *Header) error {
 	if c.socket.GetState() != TIMEWAIT {
@@ -145,13 +147,15 @@ func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) error {
 			c.reset(re.ResetCode(), ErrAbort)
 			return ErrDrop
 		}
-		if err == CongestionAck {
-			c.inject(c.generateAck())
-		}
 		if err == ErrDrop {
 			return ErrDrop
 		}
-		c.amb.E(EventError, "Sender CC unknown read error", h)
+		if err == CongestionAck {
+			// XX // has this packet been remember in socket so that ack pkt refers to it?
+			c.inject(c.generateAck())
+		} else {
+			c.amb.E(EventError, fmt.Sprintf("S·CC read error (%s)", err), h)
+		}
 	}
 	sropts := filterCCIDSenderToReceiverOptions(h.Options)
 	if err := c.rcc.OnRead(&FeedforwardHeader{
@@ -167,13 +171,15 @@ func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) error {
 			c.reset(re.ResetCode(), ErrAbort)
 			return ErrDrop
 		}
-		if err == CongestionAck {
-			c.inject(c.generateAck())
-		}
 		if err == ErrDrop {
 			return ErrDrop
 		}
-		c.amb.E(EventError, "Receiver CC unknown read error", h)
+		if err == CongestionAck {
+			// XX // has this packet been remember in socket so that ack pkt refers to it?
+			c.inject(c.generateAck())
+		} else {
+			c.amb.E(EventError, fmt.Sprintf("R·CC read error (%s)", err), h)
+		}
 	}
 	return nil
 }

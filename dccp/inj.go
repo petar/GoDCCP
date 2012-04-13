@@ -48,6 +48,7 @@ func (c *Conn) inject(h *Header) {
 
 func (c *Conn) write(h *Header) error {
 	c.scc.Strobe()
+	c.amb.E(EventWrite, "Write to header link", h)
 	return c.hc.WriteHeader(h)
 }
 
@@ -80,7 +81,6 @@ _Loop_I:
 			c.Lock()
 			h = c.writeCCID(h)
 			c.Unlock()
-			c.amb.E(EventWrite, "Non-data to injection queue", h)
 			err := c.write(h)
 			// If the underlying layer is broken, abort
 			if err != nil {
@@ -132,7 +132,6 @@ _Loop_II:
 			h = c.generateDataAck(appData)
 			h = c.writeCCID(h)
 			c.Unlock()
-			c.amb.E(EventWrite, "Data", h)
 		}
 		if h != nil {
 			err := c.write(h)
@@ -159,7 +158,6 @@ _Loop_III:
 			c.Lock()
 			h = c.writeCCID(h)
 			c.Unlock()
-			c.amb.E(EventWrite, "Non-data to injection queue", h)
 			err := c.write(h)
 			// If the underlying layer is broken, abort
 			if err != nil {
