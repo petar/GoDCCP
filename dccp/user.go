@@ -23,13 +23,13 @@ func (c *Conn) GetMTU() int {
 }
 
 // WriteSegment blocks until the slice b is sent.
-func (c *Conn) WriteSegment(b []byte) error {
+func (c *Conn) WriteSegment(data []byte) error {
 	c.writeDataLk.Lock()
 	defer c.writeDataLk.Unlock()
 	if c.writeData == nil {
 		return ErrBad
 	}
-	c.writeData <- b
+	c.writeData <- data
 	return nil
 }
 

@@ -30,11 +30,11 @@ func (c *Conn) WriteSeqAck(h *writeHeader) {
 	c.AssertLocked()
 	switch h.SeqAckType {
 	case seqAckNormal:
-		c.TakeSeqAck(&h.Header)
+		c.takeSeqAck(&h.Header)
 	case seqAckAbnormal:
-		c.TakeAbnormalSeqAck(&h.Header, h.InResponseTo)
+		c.takeAbnormalSeqAck(&h.Header, h.InResponseTo)
 	case seqAckSyncAck:
-		c.TakeSeqAck(&h.Header)
+		c.takeSeqAck(&h.Header)
 		if h.InResponseTo.Type != Sync {
 			panic("SyncAck without a Sync")
 		}
@@ -44,7 +44,7 @@ func (c *Conn) WriteSeqAck(h *writeHeader) {
 	}
 }
 
-func (c *Conn) TakeSeqAck(h *Header) *Header {
+func (c *Conn) takeSeqAck(h *Header) *Header {
 	c.AssertLocked()
 
 	h.SeqNo = max64(c.socket.GetISS(), c.socket.GetGSS() + 1)
@@ -54,7 +54,7 @@ func (c *Conn) TakeSeqAck(h *Header) *Header {
 	return h
 }
 
-func (c *Conn) TakeAbnormalSeqAck(h, inResponseTo *Header) *Header {
+func (c *Conn) takeAbnormalSeqAck(h, inResponseTo *Header) *Header {
 	c.AssertLocked()
 
 	if inResponseTo.HasAckNo() {

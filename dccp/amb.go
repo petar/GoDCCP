@@ -156,6 +156,11 @@ func (t *Amb) EC(skip int, event Event, comment string, args ...interface{}) {
 				hSeqNo, hAckNo = t.SeqNo, t.AckNo
 				hType = typeString(t.Type)
 			}
+		case *writeHeader:
+			if t != nil {
+				hSeqNo, hAckNo = t.SeqNo, t.AckNo
+				hType = typeString(t.Type)
+			}
 		case *PreHeader:
 			if t != nil {
 				hSeqNo, hAckNo = t.SeqNo, t.AckNo

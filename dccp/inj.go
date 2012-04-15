@@ -16,23 +16,6 @@ type writeHeader struct {
 	InResponseTo *Header
 }
 
-func (c *Conn) writeCCID(h *Header, timeWrite int64) {
-	// HC-Sender CCID
-	ccval, sropts := c.scc.OnWrite(&PreHeader{Type: h.Type, X: h.X, SeqNo: h.SeqNo, AckNo: h.AckNo, TimeWrite: timeWrite})
-	if !validateCCIDSenderToReceiver(sropts) {
-		panic("sender congestion control writes disallowed options")
-	}
-	h.CCVal = ccval
-	// HC-Receiver CCID
-	rsopts := c.rcc.OnWrite(&PreHeader{Type: h.Type, X: h.X, SeqNo: h.SeqNo, AckNo: h.AckNo, TimeWrite: timeWrite})
-	if !validateCCIDReceiverToSender(rsopts) {
-		panic("receiver congestion control writes disallowed options")
-	}
-	// TODO: Also check option compatibility with respect to packet type (Data vs. other)
-	h.Options = append(h.Options, append(sropts, rsopts...)...)
-	c.amb.E(EventInfo, fmt.Sprintf("CC placed %d options", len(h.Options)), h)
-}
-
 // inject adds the packet h to the outgoing non-Data pipeline, without blocking.  The
 // pipeline is flushed continuously respecting the CongestionControl's rate-limiting policy.
 //
@@ -57,6 +40,23 @@ func (c *Conn) inject(h *writeHeader) {
 	}
 }
 
+func (c *Conn) WriteCC(h *Header, timeWrite int64) {
+	// HC-Sender CCID
+	ccval, sropts := c.scc.OnWrite(&PreHeader{Type: h.Type, X: h.X, SeqNo: h.SeqNo, AckNo: h.AckNo, TimeWrite: timeWrite})
+	if !validateCCIDSenderToReceiver(sropts) {
+		panic("sender congestion control writes disallowed options")
+	}
+	h.CCVal = ccval
+	// HC-Receiver CCID
+	rsopts := c.rcc.OnWrite(&PreHeader{Type: h.Type, X: h.X, SeqNo: h.SeqNo, AckNo: h.AckNo, TimeWrite: timeWrite})
+	if !validateCCIDReceiverToSender(rsopts) {
+		panic("receiver congestion control writes disallowed options")
+	}
+	// TODO: Also check option compatibility with respect to packet type (Data vs. other)
+	h.Options = append(h.Options, append(sropts, rsopts...)...)
+	c.amb.E(EventInfo, fmt.Sprintf("CC placed %d options", len(h.Options)), h)
+}
+
 func (c *Conn) write(h *writeHeader) error {
 	c.scc.Strobe()
 
@@ -68,7 +68,8 @@ func (c *Conn) write(h *writeHeader) error {
 	// XXX: Should the AckNo also be filled in here, right before the packet goes out and
 	// before the CCID gets to see it?
 	c.Lock()
-	c.writeCCID(&h.Header, c.writeTime.Nanoseconds())
+	c.WriteSeqAck(h)
+	c.WriteCC(&h.Header, c.writeTime.Nanoseconds())
 	c.Unlock()
 
 	c.amb.E(EventWrite, "Write to header link", h)
