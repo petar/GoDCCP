@@ -6,7 +6,17 @@ package dccp
 
 import "fmt"
 
-func (c *Conn) writeCCID(h *Header, timeWrite int64) *Header {
+// writeHeader annotates a Header with some additional information regarding how
+// its seq and ack numbers should be filled in. This is needed because a writeHeader
+// is what is inserted in the write queue, but the ack and seq numbers are filled in
+// when the packet is extracted from the queue and right before it is sent.
+type writeHeader struct {
+	Header
+	SeqAckType   int
+	InResponseTo *Header
+}
+
+func (c *Conn) writeCCID(h *Header, timeWrite int64) {
 	// HC-Sender CCID
 	ccval, sropts := c.scc.OnWrite(&PreHeader{Type: h.Type, X: h.X, SeqNo: h.SeqNo, AckNo: h.AckNo, TimeWrite: timeWrite})
 	if !validateCCIDSenderToReceiver(sropts) {
@@ -21,7 +31,6 @@ func (c *Conn) writeCCID(h *Header, timeWrite int64) *Header {
 	// TODO: Also check option compatibility with respect to packet type (Data vs. other)
 	h.Options = append(h.Options, append(sropts, rsopts...)...)
 	c.amb.E(EventInfo, fmt.Sprintf("CC placed %d options", len(h.Options)), h)
-	return h
 }
 
 // inject adds the packet h to the outgoing non-Data pipeline, without blocking.  The
@@ -29,7 +38,7 @@ func (c *Conn) writeCCID(h *Header, timeWrite int64) *Header {
 //
 // inject is called at most once (currently) from inside readLoop and inside a lock
 // on Conn, so it must not block, hence writeNonData has buffer space
-func (c *Conn) inject(h *Header) {
+func (c *Conn) inject(h *writeHeader) {
 	c.writeNonDataLk.Lock()
 	defer c.writeNonDataLk.Unlock()
 
@@ -44,11 +53,11 @@ func (c *Conn) inject(h *Header) {
 	if len(c.writeNonData) < cap(c.writeNonData) {
 		c.writeNonData <- h
 	} else {
-		c.amb.E(EventDrop, "Slow strobe", h)
+		c.amb.E(EventDrop, "Slow strobe (non-data header)", h)
 	}
 }
 
-func (c *Conn) write(h *Header) error {
+func (c *Conn) write(h *writeHeader) error {
 	c.scc.Strobe()
 
 	// Tell the CCID about h right before it gets sent, so we can fill in
@@ -59,16 +68,16 @@ func (c *Conn) write(h *Header) error {
 	// XXX: Should the AckNo also be filled in here, right before the packet goes out and
 	// before the CCID gets to see it?
 	c.Lock()
-	h = c.writeCCID(h, c.writeTime.Nanoseconds())
+	c.writeCCID(&h.Header, c.writeTime.Nanoseconds())
 	c.Unlock()
 
 	c.amb.E(EventWrite, "Write to header link", h)
-	return c.hc.WriteHeader(h)
+	return c.hc.WriteHeader(&h.Header)
 }
 
 // writeLoop() sends headers incoming on the writeData and writeNonData channels, while
 // giving priority to writeNonData. It continues to do so until writeNonData is closed.
-func (c *Conn) writeLoop(writeNonData chan *Header, writeData chan []byte) {
+func (c *Conn) writeLoop(writeNonData chan *writeHeader, writeData chan []byte) {
 
 	// The presence of multiple loops below allows user calls to WriteSegment to
 	// block in "writeNonData <-" while the connection moves into a state where
@@ -111,7 +120,7 @@ _Loop_I:
 _Loop_II:
 
 	for {
-		var h *Header
+		var h *writeHeader
 		var ok bool
 		var appData []byte
 		select {

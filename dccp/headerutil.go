@@ -6,86 +6,61 @@ package dccp
 
 func (h *Header) HasAckNo() bool { return getAckNoSubheaderSize(h.Type, h.X) > 0 }
 
-func NewHeaderSkeleton(htype byte) *Header {
-	return &Header{
-		Type:       htype,
-		X:          true,
-	}
+// InitResetHeader() creates a new Reset header
+func (h *Header) InitResetHeader(resetCode byte) {
+	h.Type      = Reset
+	h.X         = true
+	h.ResetCode = resetCode
 }
 
-// NewResetHeader() creates a new Reset header
-func NewResetHeader(resetCode byte) *Header {
-	return &Header{
-		Type:       Reset,
-		X:          true,
-		ResetCode:  resetCode,
-	}
+// InitCloseHeader() creates a new Close header
+func (h *Header) InitCloseHeader() {
+	h.Type = Close
+	h.X    = true
 }
 
-// NewCloseHeader() creates a new Close header
-func NewCloseHeader() *Header {
-	return &Header{
-		Type:       Close,
-		X:          true,
-	}
+// InitAckHeader() creates a new Ack header
+func (h *Header) InitAckHeader() {
+	h.Type = Ack
+	h.X    = true
 }
 
-// NewAckHeader() creates a new Ack header
-func NewAckHeader() *Header {
-	return &Header{
-		Type:       Ack,
-		X:          true,
-	}
+// InitDataHeader() creates a new Data header
+func (h *Header) InitDataHeader(data []byte) {
+	h.Type = Data
+	h.X    = true
+	h.Data = data
 }
 
-// NewDataHeader() creates a new Data header
-func NewDataHeader(data []byte) *Header {
-	return &Header{
-		Type:       Data,
-		X:          true,
-		Data:       data,
-	}
+// InitDataAckHeader() creates a new DataAck header
+func (h *Header) InitDataAckHeader(data []byte) {
+	h.Type = DataAck
+	h.X    = true
+	h.Data = data
 }
 
-// NewDataAckHeader() creates a new DataAck header
-func NewDataAckHeader(data []byte) *Header {
-	return &Header{
-		Type:       DataAck,
-		X:          true,
-		Data:       data,
-	}
+// InitSyncHeader() creates a new Sync header
+func (h *Header) InitSyncHeader() {
+	h.Type = Sync
+	h.X    = true
 }
 
-// NewSyncHeader() creates a new Sync header
-func NewSyncHeader() *Header {
-	return &Header{
-		Type:       Sync,
-		X:          true,
-	}
+// InitSyncAckHeader() creates a new Sync header
+func (h *Header) InitSyncAckHeader() {
+	h.Type = SyncAck
+	h.X    = true
 }
 
-// NewSyncAckHeader() creates a new Sync header
-func NewSyncAckHeader() *Header {
-	return &Header{
-		Type:       SyncAck,
-		X:          true,
-	}
+// InitRequestHeader() creates a new Request header
+func (h *Header) InitRequestHeader(serviceCode uint32) {
+	h.Type        = Request
+	h.X           = true
+	h.ServiceCode = serviceCode
 }
 
-// NewRequestHeader() creates a new Request header
-func NewRequestHeader(serviceCode uint32) *Header {
-	return &Header{
-		Type:        Request,
-		X:           true,
-		ServiceCode: serviceCode,
-	}
-}
-
-// NewResponseHeader() creates a new Response header
-func NewResponseHeader(serviceCode uint32) *Header {
-	return &Header{
-		Type:        Response,
-		X:           true,
-		ServiceCode: serviceCode,
-	}
+// InitResponseHeader() creates a new Response header
+func (h *Header) InitResponseHeader(serviceCode uint32) {
+	h.Type        = Response
+	h.X           = true
+	h.ServiceCode = serviceCode
 }

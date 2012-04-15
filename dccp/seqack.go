@@ -20,6 +20,30 @@ func (c *Conn) PlaceSeqAck(h *Header) {
 	}
 }
 
+const (
+	seqAckNormal = iota + 1
+	seqAckAbnormal
+	seqAckSyncAck
+)
+
+func (c *Conn) WriteSeqAck(h *writeHeader) {
+	c.AssertLocked()
+	switch h.SeqAckType {
+	case seqAckNormal:
+		c.TakeSeqAck(&h.Header)
+	case seqAckAbnormal:
+		c.TakeAbnormalSeqAck(&h.Header, h.InResponseTo)
+	case seqAckSyncAck:
+		c.TakeSeqAck(&h.Header)
+		if h.InResponseTo.Type != Sync {
+			panic("SyncAck without a Sync")
+		}
+		h.Header.AckNo = h.InResponseTo.SeqNo
+	default:
+		panic("missing seq ack type")
+	}
+}
+
 func (c *Conn) TakeSeqAck(h *Header) *Header {
 	c.AssertLocked()
 

@@ -28,3 +28,5 @@
 		* Maybe because we had GOMAXPROCS=1
 
 	1.4.	Why is RTT estimate in 50ms - 100ms and estimate curve has bumps?
+
+2.	Should we send non-Data packets immediately, bypassing rate control?

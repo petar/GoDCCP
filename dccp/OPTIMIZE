@@ -1,4 +1,6 @@
 
+* should nonData packets be sent out IMMEDIATELY always, bypassing the strobe queue?
+
 * idle ticker should use Go's ticker
 
 * implement BACKOFFS using table lookups?

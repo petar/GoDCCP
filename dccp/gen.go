@@ -4,48 +4,79 @@
 
 package dccp
 
+// Special case seq and ack numbers
+
 // generateAbnormalReset() generates a new out-of-sync Reset header, according to Section 8.3.1
-func (c *Conn) generateAbnormalReset(resetCode byte, inResponseTo *Header) *Header {
-	return c.TakeAbnormalSeqAck(NewResetHeader(resetCode), inResponseTo)
+func (c *Conn) generateAbnormalReset(resetCode byte, inResponseTo *Header) *writeHeader {
+	h := &writeHeader{}
+	h.Header.InitResetHeader(resetCode)
+	h.SeqAckType = seqAckAbnormal
+	h.InResponseTo = inResponseTo
+	return h
 }
 
-func (c *Conn) generateReset(resetCode byte) *Header {
-	return c.TakeSeqAck(NewResetHeader(resetCode))
+func (c *Conn) generateSyncAck(inResponseTo *Header) *writeHeader {
+	h := &writeHeader{}
+	h.Header.InitSyncAckHeader()
+	h.SeqAckType = seqAckSyncAck
+	h.InResponseTo = inResponseTo
+	return h
 }
 
-func (c *Conn) generateSync() *Header {
-	return c.TakeSeqAck(NewSyncHeader())
+// Common case seq and ack numbers
+
+func (c *Conn) generateReset(resetCode byte) *writeHeader {
+	h := &writeHeader{}
+	h.Header.InitResetHeader(resetCode)
+	h.SeqAckType = seqAckNormal
+	return h
 }
 
-func (c *Conn) generateSyncAck(inResponseTo *Header) *Header {
-	g := c.TakeSeqAck(NewSyncAckHeader())
-	if inResponseTo.Type != Sync {
-		panic("SyncAck without a Sync")
-	}
-	g.AckNo = inResponseTo.SeqNo
-	return g
+func (c *Conn) generateSync() *writeHeader {
+	h := &writeHeader{}
+	h.Header.InitSyncHeader()
+	h.SeqAckType = seqAckNormal
+	return h
 }
 
-func (c *Conn) generateRequest(serviceCode uint32) *Header {
-	return c.TakeSeqAck(NewRequestHeader(serviceCode))
+func (c *Conn) generateRequest(serviceCode uint32) *writeHeader {
+	h := &writeHeader{}
+	h.Header.InitRequestHeader(serviceCode)
+	h.SeqAckType = seqAckNormal
+	return h
 }
 
-func (c *Conn) generateResponse(serviceCode uint32) *Header {
-	return c.TakeSeqAck(NewResponseHeader(serviceCode))
+func (c *Conn) generateResponse(serviceCode uint32) *writeHeader {
+	h := &writeHeader{}
+	h.Header.InitResponseHeader(serviceCode)
+	h.SeqAckType = seqAckNormal
+	return h
 }
 
-func (c *Conn) generateClose() *Header {
-	return c.TakeSeqAck(NewCloseHeader())
+func (c *Conn) generateClose() *writeHeader {
+	h := &writeHeader{}
+	h.Header.InitCloseHeader()
+	h.SeqAckType = seqAckNormal
+	return h
 }
 
-func (c *Conn) generateAck() *Header {
-	return c.TakeSeqAck(NewAckHeader())
+func (c *Conn) generateAck() *writeHeader {
+	h := &writeHeader{}
+	h.Header.InitAckHeader()
+	h.SeqAckType = seqAckNormal
+	return h
 }
 
-func (c *Conn) generateData(data []byte) *Header {
-	return c.TakeSeqAck(NewDataHeader(data))
+func (c *Conn) generateData(data []byte) *writeHeader {
+	h := &writeHeader{}
+	h.Header.InitDataHeader(data)
+	h.SeqAckType = seqAckNormal
+	return h
 }
 
-func (c *Conn) generateDataAck(data []byte) *Header {
-	return c.TakeSeqAck(NewDataAckHeader(data))
+func (c *Conn) generateDataAck(data []byte) *writeHeader {
+	h := &writeHeader{}
+	h.Header.InitDataAckHeader(data)
+	h.SeqAckType = seqAckNormal
+	return h
 }

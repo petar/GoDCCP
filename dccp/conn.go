@@ -23,7 +23,7 @@ type Conn struct {
 	writeDataLk    Mutex
 	writeData      chan []byte  // Write() sends application data to writeLoop()
 	writeNonDataLk Mutex
-	writeNonData   chan *Header // inject() sends wire-format non-Data packets (higher priority) to writeLoop()
+	writeNonData   chan *writeHeader // inject() sends wire-format non-Data packets (higher priority) to writeLoop()
 
 	writeTime      monotoneTime
 }
@@ -49,7 +49,7 @@ func newConn(run *Runtime, amb *Amb, hc HeaderConn, scc SenderCongestionControl,
 		ccidOpen:     false,
 		readApp:      make(chan []byte, 5),
 		writeData:    make(chan []byte),
-		writeNonData: make(chan *Header, 5),
+		writeNonData: make(chan *writeHeader, 5),
 	}
 	c.writeTime.Init(run)
 

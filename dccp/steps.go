@@ -95,7 +95,7 @@ func (c *Conn) step6_CheckSeqNo(h *Header) error {
 		}
 		return nil
 	} else {
-		var g *Header = c.generateSync()
+		var g *writeHeader = c.generateSync()
 		if h.Type == Reset {
 			// Send Sync packet acknowledging S.GSR
 			g.AckNo = gsr
