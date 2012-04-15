@@ -24,6 +24,8 @@ type Conn struct {
 	writeData      chan []byte  // Write() sends application data to writeLoop()
 	writeNonDataLk Mutex
 	writeNonData   chan *Header // inject() sends wire-format non-Data packets (higher priority) to writeLoop()
+
+	writeTime      monotoneTime
 }
 
 // Waiter returns a Waiter instance that can wait until all goroutines
@@ -40,7 +42,7 @@ func (c *Conn) Amb() *Amb {
 func newConn(run *Runtime, amb *Amb, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
 	c := &Conn{
 		run:          run,
-		amb:       amb,
+		amb:          amb,
 		hc:           hc,
 		scc:          scc,
 		rcc:          rcc,
@@ -49,6 +51,7 @@ func newConn(run *Runtime, amb *Amb, hc HeaderConn, scc SenderCongestionControl,
 		writeData:    make(chan []byte),
 		writeNonData: make(chan *Header, 5),
 	}
+	c.writeTime.Init(run)
 
 	c.Lock()
 	// Currently, CCID is not negotiated, rather both sides use the same

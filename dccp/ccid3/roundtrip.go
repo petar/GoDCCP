@@ -23,11 +23,11 @@ func (t *senderRoundtripReporter) Init() {
 	t.lastReportTime = 0
 }
 
-func (t *senderRoundtripReporter) OnWrite(rtt int64, now int64) *dccp.Option {
-	if rtt <= 0 || now - t.lastReportTime < rtt {
+func (t *senderRoundtripReporter) OnWrite(rtt int64, timeWrite int64) *dccp.Option {
+	if rtt <= 0 || timeWrite - t.lastReportTime < rtt {
 		return nil
 	}
-	t.lastReportTime = now
+	t.lastReportTime = timeWrite
 	return encodeOption(&RoundtripReportOption{ Roundtrip: dccp.TenMicroFromNano(rtt) })
 }
 
@@ -61,8 +61,8 @@ func (t *senderRoundtripEstimator) Init(amb *dccp.Amb) {
 }
 
 // Sender calls OnWrite for every packet sent.
-func (t *senderRoundtripEstimator) OnWrite(seqNo int64, now int64) {
-	t.history[t.k % SenderRoundtripHistoryLen] = sendTime{seqNo, now}
+func (t *senderRoundtripEstimator) OnWrite(seqNo int64, timeWrite int64) {
+	t.history[t.k % SenderRoundtripHistoryLen] = sendTime{seqNo, timeWrite}
 	t.k++
 	// Keep k small
 	if t.k > 100 * SenderRoundtripHistoryLen {

@@ -69,7 +69,7 @@ func (r *receiver) Open() {
 	r.latestCCVal = 0
 }
 
-func (r *receiver) makeElapsedTimeOption(ackNo int64, now int64) *dccp.ElapsedTimeOption {
+func (r *receiver) makeElapsedTimeOption(ackNo int64, timeWrite int64) *dccp.ElapsedTimeOption {
 	// The first Ack may be sent before receiver has had a chance to see a gsr, in which
 	// case we return nil
 	if r.gsr == 0 {
@@ -78,7 +78,7 @@ func (r *receiver) makeElapsedTimeOption(ackNo int64, now int64) *dccp.ElapsedTi
 	if ackNo != r.gsr {
 		panic("ccid3 receiver: GSR != AckNo")
 	}
-	elapsedNS := max64(0, now-r.gsrTimestamp)
+	elapsedNS := max64(0, timeWrite - r.gsrTimestamp)
 	return &dccp.ElapsedTimeOption{dccp.TenMicroFromNano(elapsedNS)}
 }
 
@@ -87,9 +87,9 @@ func (r *receiver) makeElapsedTimeOption(ackNo int64, now int64) *dccp.ElapsedTi
 func (r *receiver) OnWrite(ph *dccp.PreHeader) (options []*dccp.Option) {
 	r.Lock()
 	defer r.Unlock()
-	rtt, _ := r.receiverRoundtripEstimator.RTT(ph.Time)
+	rtt, _ := r.receiverRoundtripEstimator.RTT(ph.TimeWrite)
 
-	r.lastWrite = ph.Time
+	r.lastWrite = ph.TimeWrite
 	if !r.open {
 		return nil
 	}
@@ -97,7 +97,7 @@ func (r *receiver) OnWrite(ph *dccp.PreHeader) (options []*dccp.Option) {
 	switch ph.Type {
 	case dccp.Ack, dccp.DataAck:
 		// Record last Ack write separately from last writes (in general)
-		r.lastAck = ph.Time
+		r.lastAck = ph.TimeWrite
 		r.dataSinceAck = false
 		r.lastLossEventRateInv = r.receiverLossTracker.LossEventRateInv()
 		r.lastCCVal = r.latestCCVal
@@ -106,11 +106,11 @@ func (r *receiver) OnWrite(ph *dccp.PreHeader) (options []*dccp.Option) {
 		// XXX: Maybe gsr = 0 should not indicate not seen packets, use something else
 		if r.gsr > 0 {
 			opts := make([]*dccp.Option, 3)
-			opts[0] = encodeOption(r.makeElapsedTimeOption(ph.AckNo, ph.Time))
+			opts[0] = encodeOption(r.makeElapsedTimeOption(ph.AckNo, ph.TimeWrite))
 			if opts[0] == nil {
 				r.amb.E(dccp.EventWarn, "ElapsedTime option encoding == nil", ph)
 			}
-			opts[1] = encodeOption(r.receiverRateCalculator.Flush(rtt, ph.Time))
+			opts[1] = encodeOption(r.receiverRateCalculator.Flush(rtt, ph.TimeWrite))
 			if opts[1] == nil {
 				r.amb.E(dccp.EventWarn, "ReceiveRate option encoding == nil", ph)
 			}

@@ -42,12 +42,12 @@ func (r *receiverRateCalculator) OnRead(ff *dccp.FeedforwardHeader) {
 
 // Flush returns a Receive Rate option and indicates to receiverRateCalculator 
 // that the next Ack-to-Ack window has begun
-func (r *receiverRateCalculator) Flush(rtt int64, now int64) *ReceiveRateOption {
-	if r.time0 > now || r.time1 > now {
+func (r *receiverRateCalculator) Flush(rtt int64, timeWrite int64) *ReceiveRateOption {
+	if r.time0 > timeWrite || r.time1 > timeWrite {
 		panic("receive rate time")
 	}
-	d0 := now - r.time0
-	d1 := now - r.time1
+	d0 := timeWrite - r.time0
+	d1 := timeWrite - r.time1
 	if d0 < d1 {
 		panic("receive rate period")
 	}
@@ -56,7 +56,7 @@ func (r *receiverRateCalculator) Flush(rtt int64, now int64) *ReceiveRateOption 
 	}
 	rval := rate(r.data0, d0)
 	r.data0, r.data1 = r.data1, 0
-	r.time0, r.time1 = r.time1, now
+	r.time0, r.time1 = r.time1, timeWrite
 	return &ReceiveRateOption{rval}
 }
 

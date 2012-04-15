@@ -81,13 +81,13 @@ func (s *sender) OnWrite(ph *dccp.PreHeader) (ccval int8, options []*dccp.Option
 
 	s.senderNoFeedbackTimer.OnWrite(ph)
 
-	s.senderRoundtripEstimator.OnWrite(ph.SeqNo, ph.Time)
+	s.senderRoundtripEstimator.OnWrite(ph.SeqNo, ph.TimeWrite)
 	rtt, _ := s.senderRoundtripEstimator.RTT()
 
-	ccval = s.senderWindowCounter.OnWrite(rtt, ph.SeqNo, ph.Time)
+	ccval = s.senderWindowCounter.OnWrite(rtt, ph.SeqNo, ph.TimeWrite)
 	s.amb.E(dccp.EventInfo, fmt.Sprintf("CCVAL=%d", ccval))
 
-	reportOpt := s.senderRoundtripReporter.OnWrite(rtt, ph.Time)
+	reportOpt := s.senderRoundtripReporter.OnWrite(rtt, ph.TimeWrite)
 	if reportOpt != nil {
 		options = []*dccp.Option{ reportOpt }
 	}

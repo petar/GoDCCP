@@ -111,6 +111,8 @@ type ReceiverCongestionControl interface {
 	Close()
 }
 
+// PreHeader contains information that is shown to the 
+// sender and receiver congesion controls before a packet is sent.
 // PreHeader contains the parts of the DCCP header than are fixed before the
 // CCID has made its changes to CCVal and Options.
 type PreHeader struct {
@@ -119,9 +121,25 @@ type PreHeader struct {
 	SeqNo int64
 	AckNo int64
 
-	Time int64
+	// TimeInject is the time when the packet was injected into the write
+	// queue. This is either in the readLoop in response to a received
+	// packet, in the idleLoop in response to idleness, or in the user
+	// facing WriteSegment method. TimeInject is currently commented out,
+	// since it is not used by the CC logic.
+	// TimeInject int64
+
+	// TimeWrite is the time just before the packet is handed off to the
+	// network layer.  The bulk of the time difference between TimeWrite and
+	// TimeMake reflects the duration that the packet spends in the write
+	// queue before it is pulled for sending, which itself is a function of
+	// the send rate. TimeWrite is currently used by the CC logic to measure
+	// the roundtrip time without factoring rate-related wait times in
+	// endpoint queues.
+	TimeWrite int64
 }
 
+// FeedbackHeader contains information that is shown to the 
+// sender congesion control at packet reception.
 // FeedbackHeader encloses the parts of the packet header that
 // are sent by the HC-Receiver and received by the HC-Sender
 type FeedbackHeader struct {
@@ -132,9 +150,11 @@ type FeedbackHeader struct {
 	AckNo   int64
 
 	// Time when header received
-	Time int64
+	Time    int64
 }
 
+// FeedforwardHeader contains information that is shown to the 
+// receiver congesion control at packet reception.
 // FeedforwardHeader encloses the parts of the packet header that
 // are sent by the HC-Sender and received by the HC-Receiver
 type FeedforwardHeader struct {

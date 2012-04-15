@@ -4,21 +4,23 @@
 
 package dccp
 
-func (c *Conn) writeCCID(h *Header) *Header {
-	now := c.run.Nanoseconds()
+import "fmt"
+
+func (c *Conn) writeCCID(h *Header, timeWrite int64) *Header {
 	// HC-Sender CCID
-	ccval, sropts := c.scc.OnWrite(&PreHeader{Type: h.Type, X: h.X, SeqNo: h.SeqNo, AckNo: h.AckNo, Time: now})
+	ccval, sropts := c.scc.OnWrite(&PreHeader{Type: h.Type, X: h.X, SeqNo: h.SeqNo, AckNo: h.AckNo, TimeWrite: timeWrite})
 	if !validateCCIDSenderToReceiver(sropts) {
 		panic("sender congestion control writes disallowed options")
 	}
 	h.CCVal = ccval
 	// HC-Receiver CCID
-	rsopts := c.rcc.OnWrite(&PreHeader{Type: h.Type, X: h.X, SeqNo: h.SeqNo, AckNo: h.AckNo, Time: now})
+	rsopts := c.rcc.OnWrite(&PreHeader{Type: h.Type, X: h.X, SeqNo: h.SeqNo, AckNo: h.AckNo, TimeWrite: timeWrite})
 	if !validateCCIDReceiverToSender(rsopts) {
 		panic("receiver congestion control writes disallowed options")
 	}
 	// TODO: Also check option compatibility with respect to packet type (Data vs. other)
 	h.Options = append(h.Options, append(sropts, rsopts...)...)
+	c.amb.E(EventInfo, fmt.Sprintf("CC placed %d options", len(h.Options)), h)
 	return h
 }
 
@@ -48,6 +50,18 @@ func (c *Conn) inject(h *Header) {
 
 func (c *Conn) write(h *Header) error {
 	c.scc.Strobe()
+
+	// Tell the CCID about h right before it gets sent, so we can fill in
+	// the nearly exact time of sending.  This way, the roundtrip
+	// measurements e.g. which are done inside CCID will not be affected by
+	// the wait time incurred due to send rate (i.e. strobing) considerations
+
+	// XXX: Should the AckNo also be filled in here, right before the packet goes out and
+	// before the CCID gets to see it?
+	c.Lock()
+	h = c.writeCCID(h, c.writeTime.Nanoseconds())
+	c.Unlock()
+
 	c.amb.E(EventWrite, "Write to header link", h)
 	return c.hc.WriteHeader(h)
 }
@@ -75,12 +89,6 @@ _Loop_I:
 		// from the above send operator and (without resulting into an actual
 		// send) activate the state check after the "if" statement below
 		if h != nil {
-			// Tell the CCID about h right before it gets sent.
-			// This way, the roundtrip measurements e.g. which are done inside CCID
-			// will not be affected by the wait time incurred due to send rate considerations
-			c.Lock()
-			h = c.writeCCID(h)
-			c.Unlock()
 			err := c.write(h)
 			// If the underlying layer is broken, abort
 			if err != nil {
@@ -130,7 +138,6 @@ _Loop_II:
 			// It should be that it doesn't. Must verify this.
 			c.Lock()
 			h = c.generateDataAck(appData)
-			h = c.writeCCID(h)
 			c.Unlock()
 		}
 		if h != nil {
@@ -155,9 +162,6 @@ _Loop_III:
 		// We'll allow nil headers, since they can be used to trigger unblock
 		// from the above send operator
 		if h != nil {
-			c.Lock()
-			h = c.writeCCID(h)
-			c.Unlock()
 			err := c.write(h)
 			// If the underlying layer is broken, abort
 			if err != nil {

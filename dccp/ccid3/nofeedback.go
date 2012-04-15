@@ -58,19 +58,19 @@ func (t *senderNoFeedbackTimer) OnWrite(ph *dccp.PreHeader) {
 	// since we are waiting for a feedback since that starting time. Afterwards, resetTime
 	// can only assume times of incoming feedback packets.
 	if t.resetTime <= 0 {
-		t.resetTime = ph.Time
+		t.resetTime = ph.TimeWrite
 	}
-	t.idleSince = ph.Time
+	t.idleSince = ph.TimeWrite
 
 	// Update inverse frequency of data packets estimate
 	if ph.Type != dccp.Data && ph.Type != dccp.DataAck {
 		return
 	}
 	if t.lastDataSent == 0 {
-		t.lastDataSent = ph.Time
+		t.lastDataSent = ph.TimeWrite
 		return
 	}
-	d := ph.Time - t.lastDataSent
+	d := ph.TimeWrite - t.lastDataSent
 	if d <= 0 {
 		return
 	}
