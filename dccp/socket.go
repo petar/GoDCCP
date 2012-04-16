@@ -73,7 +73,7 @@ const (
 	SEQWIN_FIXED            = 700      // Large enough constant for SWAF/SWBF until the feature is implemented
 	SEQWIN_MAX              = 2^46 - 1 // Maximum acceptable SWAF and SWBF value
 	RoundtripDefault        = 2e8      // 0.2 sec, default Round-Trip Time when no measurement is available
-	RTT_MIN                 = 2e6      // ...
+	RoundtripMin                 = 2e6      // ...
 	MSL                     = 2 * 60e9 // 2 mins in nanoseconds, Maximum Segment Lifetime, Section 3.4
 	MAX_OPTIONS_SIZE        = 128
 )

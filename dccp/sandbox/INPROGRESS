@@ -30,3 +30,7 @@
 	1.4.	Why is RTT estimate in 50ms - 100ms and estimate curve has bumps?
 
 2.	Should we send non-Data packets immediately, bypassing rate control?
+
+3.	(OK) Why don't we drop data packets if the data queue is full?
+	* Because making the user Write wait is the only way to communicate to the user
+	at what rate to send data.

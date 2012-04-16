@@ -140,7 +140,8 @@ func (t *senderRateCalculator) recalculate(now int64) uint32 {
 // OnNoFeedback returns the new allowed sending rate.
 // See RFC 5348, Section 4.4
 func (t *senderRateCalculator) OnNoFeedback(now int64, hasRTT bool, idleSince int64, nofeedbackSet int64) uint32 {
-	t.amb.E(dccp.EventInfo, fmt.Sprintf("OnNoFbk hrtt=%v idl=%d nofbks=%d", hasRTT, idleSince, nofeedbackSet))
+	// This is a high frequency emit
+	// t.amb.E(dccp.EventInfo, fmt.Sprintf("OnNoFbk hrtt=%v idl=%d nofbks=%d", hasRTT, idleSince, nofeedbackSet))
 	xRecv := t.xRecvSet.Max()
 	if !hasRTT && !t.hasFeedback && idleSince > nofeedbackSet {
 		// We do not have X_Bps or recover_rate yet.

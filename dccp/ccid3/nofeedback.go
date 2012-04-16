@@ -19,9 +19,9 @@ type senderNoFeedbackTimer struct {
 }
 
 const (
-	NOFEEDBACK_WEIGHT_NEW      = 1
-	NOFEEDBACK_WEIGHT_OLD      = 2
-	NOFEEDBACK_TMO_WITHOUT_RTT = 2e9 // nofeedback timer expiration before RTT estimate, 2 sec
+	NoFeedbackWeightNew      = 1
+	NoFeedbackWeightOld      = 2
+	NoFeedbackTimeoutWithoutRoundtrip = 2e9 // nofeedback timer expiration before RTT estimate, 2 sec
 )
 
 // Init resets the nofeedback timer for new use
@@ -78,8 +78,8 @@ func (t *senderNoFeedbackTimer) OnWrite(ph *dccp.PreHeader) {
 		t.dataInvFreq = d
 		return
 	}
-	t.dataInvFreq = (d*NOFEEDBACK_WEIGHT_NEW + t.dataInvFreq*NOFEEDBACK_WEIGHT_OLD) / 
-		(NOFEEDBACK_WEIGHT_NEW + NOFEEDBACK_WEIGHT_OLD)
+	t.dataInvFreq = (d*NoFeedbackWeightNew + t.dataInvFreq*NoFeedbackWeightOld) / 
+		(NoFeedbackWeightNew + NoFeedbackWeightOld)
 }
 
 // Sender calls OnIdle every time the idle clock ticks. OnIdle returns true if the
@@ -98,7 +98,7 @@ func (t *senderNoFeedbackTimer) Reset(now int64) {
 // timeout returns the current duration of the nofeedback timer in ns
 func (t *senderNoFeedbackTimer) timeout() int64 {
 	if t.rtt <= 0 {
-		return NOFEEDBACK_TMO_WITHOUT_RTT
+		return NoFeedbackTimeoutWithoutRoundtrip
 	}
 	if t.dataInvFreq <= 0 {
 		return 4*t.rtt

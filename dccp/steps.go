@@ -151,7 +151,6 @@ func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) error {
 			return ErrDrop
 		}
 		if err == CongestionAck {
-			// XX // has this packet been remember in socket so that ack pkt refers to it?
 			c.inject(c.generateAck())
 		} else {
 			c.amb.E(EventError, fmt.Sprintf("S·CC read error (%s)", err), h)
@@ -175,7 +174,6 @@ func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) error {
 			return ErrDrop
 		}
 		if err == CongestionAck {
-			// XX // has this packet been remember in socket so that ack pkt refers to it?
 			c.inject(c.generateAck())
 		} else {
 			c.amb.E(EventError, fmt.Sprintf("R·CC read error (%s)", err), h)

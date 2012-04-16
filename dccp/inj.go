@@ -36,6 +36,11 @@ func (c *Conn) inject(h *writeHeader) {
 	if len(c.writeNonData) < cap(c.writeNonData) {
 		c.writeNonData <- h
 	} else {
+		// This first emit is a workaround. The inspector does not recognize drop events,
+		// unless they have been preceeded by a write event.
+		// TODO: It may help to introduce an inject event to distinguish between write queue
+		// injection and actual writing to the network layer.
+		c.amb.E(EventWrite, "Write before drop", h)
 		c.amb.E(EventDrop, "Slow strobe (non-data header)", h)
 	}
 }

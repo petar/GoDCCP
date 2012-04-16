@@ -52,7 +52,8 @@ func (s *senderStrober) SetRate(bps uint32, ss uint32) {
 	if s.interval == 0 {
 		panic("strobe rate infinity")
 	}
-	s.amb.E(dccp.EventInfo, fmt.Sprintf("Set strobe rate %d pps", 1e9 / s.interval))
+	// This is high frequency. Consider calling it only when rate changes.
+	// s.amb.E(dccp.EventInfo, fmt.Sprintf("Set strobe rate %d pps", 1e9 / s.interval))
 }
 
 func (s *senderStrober) SetRatePPS(pps uint32) {
@@ -62,7 +63,8 @@ func (s *senderStrober) SetRatePPS(pps uint32) {
 		panic("strobe rate zero pps")
 	}
 	s.interval = 1e9 / int64(pps)
-	s.amb.E(dccp.EventInfo, fmt.Sprintf("Set strobe rate %d pps", 1e9 / s.interval))
+	// This is high frequency. Consider calling it only when rate changes.
+	// s.amb.E(dccp.EventInfo, fmt.Sprintf("Set strobe rate %d pps", 1e9 / s.interval))
 }
 
 // Strobe ensures that the frequency with which (multiple calls) to Strobe return does not
