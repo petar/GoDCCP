@@ -1,0 +1,14 @@
+
+Repeat:
+
+	INVARIANT: Keep track of the time remaining until the next packet in the pipe should be
+	released to the reader side
+
+	Block until either timeout is reached, or a new packet has entered the pipe
+
+	If new packet arrived, place all queued packets in chronological order, ascending in 
+	delivery time
+
+	If timeout reached, deliver packet to user read (unblock the read call)
+
+	Repeat forever

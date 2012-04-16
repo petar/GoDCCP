@@ -66,14 +66,11 @@ type headerHalfPipe struct {
 	readDeadlineLk         sync.Mutex
 	readDeadline           time.Time
 
-	// latency is the delay before non-dropped packets are delivered to the other side of the pipe
+	// writeLatency is the delay before non-dropped packets are delivered to the other side of the pipe
 	latencyLk              sync.Mutex
-	latency                int64
+	writeLatency           int64
 
-	// latencyReadQueue is a buffer of packets internally received at this end of the pipe,
-	// annotated with a lower bound on the time before they can be delivered to ReadHeader
-	latencyReadQueueLk     sync.Mutex
-	latencyReadQueue       []*pipeHeader
+	latencyQueue
 }
 
 type pipeHeader struct {
@@ -89,15 +86,15 @@ func (hhl *headerHalfPipe) Init(run *dccp.Runtime, amb *dccp.Amb, r <-chan *pipe
 	hhl.write = w
 	hhl.SetWriteRate(DefaultRateInterval, DefaultRatePacketsPerInterval)
 	hhl.readDeadline = time.Now().Add(-time.Second)
-	hhl.latency = 0
-	hhl.latencyReadQueue = make([]*pipeHeader, 0)
+	hhl.writeLatency = 0
+	hhl.latencyQueue.Init(run, amb)
 }
 
 // SetWriteLatency sets the write packet latency and it is given in nanoseconds
 func (hhl *headerHalfPipe) SetWriteLatency(latency int64) {
 	hhl.latencyLk.Lock()
 	defer hhl.latencyLk.Unlock()
-	hhl.latency = latency
+	hhl.writeLatency = latency
 }
 
 // SetWriteRate sets the transmission rate of this side of the pipe to ratePacketsPerInterval packets for each
