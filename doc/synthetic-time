@@ -1,0 +1,10 @@
+
+The key insight in multi-goroutine synthetic time is that between every two
+moments of simulated time, exactly all active goroutines must perform exactly
+one state-changing (e.g. time query operations don't count) interaction
+(functional call) with the runtime.
+These interactions would be one of:
+	sleep
+	return from blocking exchange with external environment
+	kill goroutine (can we capture these?)
+	spawn go-routine	

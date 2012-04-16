@@ -1,13 +1,6 @@
 
 * add RTT estimation test
-	* strobe wait time is currently captured in RTT emit measure
-		* this same issue probably applies to RTT measurements themselves
-	* sandbox reducer should feed its measruements of rtt/2 back into emit stream
-	* profile w/ pprof
-	* memory profile
-	* why are the RTT curves different every time and with values quite high
 	* add latency simulation in pipe
-	* why are there unclaimed packets in roundtrip reducer measurements
 
 * rtt test, without constant rate constraint, causes division by zero error in rate calculation (in SetRate)
 

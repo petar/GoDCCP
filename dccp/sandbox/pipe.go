@@ -39,13 +39,13 @@ const pipeBufferLen = 2
 
 // headerHalfPipe implements HeaderConn. It enforces rate-limiting on its write side.
 type headerHalfPipe struct {
-	run    *dccp.Runtime
-	amb *dccp.Amb
+	run                    *dccp.Runtime
+	amb                    *dccp.Amb
 
 	// read, writeLk and write pertain to the communication mechanism of the pipe
-	read  <-chan *pipeHeader
-	writeLk sync.Mutex
-	write chan<- *pipeHeader
+	read                   <-chan *pipeHeader
+	writeLk                sync.Mutex
+	write                  chan<- *pipeHeader
 
 	// rateLk is used to lock on all rate* variables below as well as readDeadline
 	rateLk                 sync.Mutex
@@ -67,13 +67,13 @@ type headerHalfPipe struct {
 	readDeadline           time.Time
 
 	// latency is the delay before non-dropped packets are delivered to the other side of the pipe
-	latencyLk sync.Mutex
-	latency   int64
+	latencyLk              sync.Mutex
+	latency                int64
 
 	// latencyReadQueue is a buffer of packets internally received at this end of the pipe,
 	// annotated with a lower bound on the time before they can be delivered to ReadHeader
-	latencyReadQueueLk sync.Mutex
-	latencyReadQueue   []*pipeHeader
+	latencyReadQueueLk     sync.Mutex
+	latencyReadQueue       []*pipeHeader
 }
 
 type pipeHeader struct {
