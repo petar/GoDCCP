@@ -51,6 +51,7 @@ func (x *roundtripReducer) Write(r *dccp.LogRecord) {
 				fmt.Printf("client read, no server write, seqno=%06x\n", r.SeqNo)
 			} else {
 				x.serverToClient.Add(float64(now - left))
+				delete(x.leftServer, r.SeqNo)
 			}
 		case "server":
 			left, ok := x.leftClient[r.SeqNo]
@@ -58,6 +59,7 @@ func (x *roundtripReducer) Write(r *dccp.LogRecord) {
 				fmt.Printf("server read, no client write, seqno=%06x\n", r.SeqNo)
 			} else {
 				x.clientToServer.Add(float64(now - left))
+				delete(x.leftClient, r.SeqNo)
 			}
 		}
 	case dccp.EventDrop:
@@ -72,11 +74,22 @@ func (x *roundtripReducer) Sync() error {
 
 func (x *roundtripReducer) String() string {
 	var w bytes.Buffer
-	fmt.Fprintf(&w, "c—>s %0.1f/%0.1f ms, c<—s %0.1f/%0.1f, unclaimed lc:%d ls:%d", 
+	fmt.Fprintf(&w, "c—>s %0.1f/%0.1f ms, c<—s %0.1f/%0.1f\n", 
 		x.clientToServer.Average()/1e6, x.clientToServer.StdDev()/1e6,
 		x.serverToClient.Average()/1e6, x.serverToClient.StdDev()/1e6,
-		len(x.leftClient), len(x.leftServer),
 	)
+	if len(x.leftClient) > 0 {
+		fmt.Fprintf(&w, "Left client and unclaimed:\n")
+	}
+	for s, _ := range x.leftClient {
+		fmt.Fprintf(&w, "  %06x\n", s)
+	}
+	if len(x.leftServer) > 0 {
+		fmt.Fprintf(&w, "Left server and unclaimed:\n")
+	}
+	for s, _ := range x.leftServer {
+		fmt.Fprintf(&w, "  %06x\n", s)
+	}
 	return string(w.Bytes())
 }
 

@@ -25,11 +25,14 @@ func newBackOff(run *Runtime, firstSleep, timeout, backoffFreq int64) *backOff {
 		run:         run,
 		sleep:       firstSleep,
 		lifetime:    0,
-		timeout: timeout,
+		timeout:     timeout,
 		backoffFreq: backoffFreq,
 		lastBackoff: 0,
 	}
 }
+
+// BackoffMin is the minimum time before two firings of the backoff timers
+const BackoffMin = 100e6
 
 // Sleep() blocks for the duration of the next sleep interval in the back-off 
 // sequence and return nil. If the maximum total sleep time has been reached,
@@ -38,11 +41,9 @@ func (b *backOff) Sleep() (error, int64) {
 	if b.lifetime >= b.timeout {
 		return io.EOF, 0
 	}
-	if b.sleep < 100e6 {
-		panic("backoff less than 200 milisec")
-	}
-	b.run.Sleep(b.sleep)
-	b.lifetime += b.sleep
+	effectiveSleep := max64(BackoffMin, b.sleep)
+	b.run.Sleep(effectiveSleep)
+	b.lifetime += effectiveSleep
 	if b.lifetime-b.lastBackoff >= b.backoffFreq {
 		b.sleep = (4 * b.sleep) / 3
 		b.lastBackoff = b.lifetime

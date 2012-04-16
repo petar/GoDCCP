@@ -41,7 +41,7 @@ func (c *Conn) inject(h *writeHeader) {
 		// TODO: It may help to introduce an inject event to distinguish between write queue
 		// injection and actual writing to the network layer.
 		c.amb.E(EventWrite, "Write before drop", h)
-		c.amb.E(EventDrop, "Slow strobe (non-data header)", h)
+		c.amb.E(EventDrop, "Slow strobe", h)
 	}
 }
 
