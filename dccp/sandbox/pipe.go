@@ -79,141 +79,153 @@ type pipeHeader struct {
 }
 
 // Init resets a half pipe for initial use, using amb (without making a copy of it)
-func (hhl *headerHalfPipe) Init(run *dccp.Runtime, amb *dccp.Amb, r <-chan *pipeHeader, w chan<- *pipeHeader) {
-	hhl.run = run
-	hhl.amb = amb
-	hhl.read = r
-	hhl.write = w
-	hhl.SetWriteRate(DefaultRateInterval, DefaultRatePacketsPerInterval)
-	hhl.readDeadline = time.Now().Add(-time.Second)
-	hhl.writeLatency = 0
-	hhl.latencyQueue.Init(run, amb)
+func (x *headerHalfPipe) Init(run *dccp.Runtime, amb *dccp.Amb, r <-chan *pipeHeader, w chan<- *pipeHeader) {
+	x.run = run
+	x.amb = amb
+	x.read = r
+	x.write = w
+	x.SetWriteRate(DefaultRateInterval, DefaultRatePacketsPerInterval)
+	x.readDeadline = time.Now().Add(-time.Second)
+	x.writeLatency = 0
+	x.latencyQueue.Init(run, amb)
 }
 
 // SetWriteLatency sets the write packet latency and it is given in nanoseconds
-func (hhl *headerHalfPipe) SetWriteLatency(latency int64) {
-	hhl.latencyLk.Lock()
-	defer hhl.latencyLk.Unlock()
-	hhl.writeLatency = latency
+func (x *headerHalfPipe) SetWriteLatency(latency int64) {
+	x.latencyLk.Lock()
+	defer x.latencyLk.Unlock()
+	x.writeLatency = latency
 }
 
 // SetWriteRate sets the transmission rate of this side of the pipe to ratePacketsPerInterval packets for each
 // interval of rateInterval nanoseconds
-func (hhl *headerHalfPipe) SetWriteRate(rateInterval int64, ratePacketsPerInterval uint32) {
-	hhl.rateLk.Lock()
-	defer hhl.rateLk.Unlock()
-	hhl.rateInterval = rateInterval
-	hhl.ratePacketsPerInterval = ratePacketsPerInterval
-	hhl.rateIntervalCounter = 0
-	hhl.rateIntervalFill = 0
+func (x *headerHalfPipe) SetWriteRate(rateInterval int64, ratePacketsPerInterval uint32) {
+	x.rateLk.Lock()
+	defer x.rateLk.Unlock()
+	x.rateInterval = rateInterval
+	x.ratePacketsPerInterval = ratePacketsPerInterval
+	x.rateIntervalCounter = 0
+	x.rateIntervalFill = 0
 }
 
 // GetMTU implements dccp.HeaderConn.GetMTU
-func (hhl *headerHalfPipe) GetMTU() int {
+func (x *headerHalfPipe) GetMTU() int {
 	return 1500
 }
 
 // ReadHeader implements dccp.HeaderConn.ReadHeader
-func (hhl *headerHalfPipe) ReadHeader() (h *dccp.Header, err error) {
-	hhl.readDeadlineLk.Lock()
-	readDeadline := hhl.readDeadline
-	hhl.readDeadlineLk.Unlock()
-	tmo := readDeadline.Sub(time.Now())
-	var tmoch <-chan int64
-	if tmo > 0 {
-		tmoch = hhl.run.After(int64(tmo))
-	} else {
-		tmoch = make(chan int64)
-	}
-	select {
-	case ph, ok := <-hhl.read:
-		if !ok {
-			hhl.amb.E(dccp.EventWarn, "Read EOF", ph.Header)
-			return nil, dccp.ErrEOF
+func (x *headerHalfPipe) ReadHeader() (h *dccp.Header, err error) {
+	x.readDeadlineLk.Lock()
+	readDeadline := x.readDeadline
+	x.readDeadlineLk.Unlock()
+
+	sleepingChan := make(chan int64)
+
+	for {
+		XX?
+		tmo := readDeadline.Sub(time.Now())
+		var tmoch <-chan int64
+		if tmo > 0 {
+			tmoch = x.run.After(int64(tmo))
+		} else {
+			tmoch = sleepingChan
 		}
-		hhl.amb.E(dccp.EventRead, fmt.Sprintf("SeqNo=%d", ph.Header.SeqNo), ph.Header)
-		return ph.Header, nil
-	case <-tmoch:
-		return nil, dccp.ErrTimeout
+
+		select {
+		case ph, ok := <-x.read:
+			if !ok {
+				x.amb.E(dccp.EventWarn, "Read EOF", ph.Header)
+				return nil, dccp.ErrEOF
+			}
+			x.amb.E(dccp.EventRead, fmt.Sprintf("SeqNo=%d", ph.Header.SeqNo), ph.Header)
+			return ph.Header, nil
+		case <-tmoch:
+			return nil, dccp.ErrTimeout
+		default:
+			panic("un")
+		}
 	}
-	panic("un")
 }
 
 // WriteHeader implements dccp.HeaderConn.WriteHeader
-func (hhl *headerHalfPipe) WriteHeader(h *dccp.Header) (err error) {
-	hhl.writeLk.Lock()
-	defer hhl.writeLk.Unlock()
+func (x *headerHalfPipe) WriteHeader(h *dccp.Header) (err error) {
+	x.writeLk.Lock()
+	defer x.writeLk.Unlock()
 
-	if hhl.write == nil {
-		hhl.amb.E(dccp.EventDrop, fmt.Sprintf("EBADF"), h)
+	if x.write == nil {
+		x.amb.E(dccp.EventDrop, fmt.Sprintf("ErrBad"), h)
 		return dccp.ErrBad
 	}
 
-	if hhl.rateFilter() {
-		if len(hhl.write) >= cap(hhl.write) {
-			hhl.amb.E(dccp.EventDrop, "Slow reader", h)
+	if x.rateFilter() {
+		if len(x.write) >= cap(x.write) {
+			x.amb.E(dccp.EventDrop, "Slow reader", h)
 		} else {
-			hhl.amb.E(dccp.EventWrite, "", h)
-			hhl.write <- &pipeHeader{ Header: h }
+			x.amb.E(dccp.EventWrite, "", h)
+			x.latencyLk.Lock()
+			latency := x.writeLatency
+			x.latencyLk.Unlock()
+			now := x.run.Nanoseconds()
+			x.write <- &pipeHeader{ Header: h, DeliverTime: now + latency }
 		}
 	} else {
-		hhl.amb.E(dccp.EventDrop, "Fast writer", h)
+		x.amb.E(dccp.EventDrop, "Fast writer", h)
 	}
 	return nil
 }
 
 // rateFilter returns true if another packet can be sent now without violating the rate
 // limit set by SetWriteRate
-func (hhl *headerHalfPipe) rateFilter() bool {
-	hhl.rateLk.Lock()
-	defer hhl.rateLk.Unlock()
+func (x *headerHalfPipe) rateFilter() bool {
+	x.rateLk.Lock()
+	defer x.rateLk.Unlock()
 
-	now := hhl.run.Nanoseconds()
-	gctr := now / hhl.rateInterval
-	if gctr != hhl.rateIntervalCounter {
-		hhl.rateIntervalCounter = gctr
-		hhl.rateIntervalFill = 1
+	now := x.run.Nanoseconds()
+	gctr := now / x.rateInterval
+	if gctr != x.rateIntervalCounter {
+		x.rateIntervalCounter = gctr
+		x.rateIntervalFill = 1
 		return true
-	} else if hhl.rateIntervalFill < hhl.ratePacketsPerInterval {
-		hhl.rateIntervalFill++
+	} else if x.rateIntervalFill < x.ratePacketsPerInterval {
+		x.rateIntervalFill++
 		return true
 	}
 	return false
 }
 
 // Close implements dccp.HeaderConn.Close
-func (hhl *headerHalfPipe) Close() error {
-	hhl.writeLk.Lock()
-	defer hhl.writeLk.Unlock()
+func (x *headerHalfPipe) Close() error {
+	x.writeLk.Lock()
+	defer x.writeLk.Unlock()
 
-	if hhl.write == nil {
-		hhl.amb.E(dccp.EventWarn, "Close EBADF")
+	if x.write == nil {
+		x.amb.E(dccp.EventWarn, "Close EBADF")
 		return dccp.ErrBad
 	}
-	close(hhl.write)
-	hhl.write = nil
+	close(x.write)
+	x.write = nil
 
-	hhl.amb.E(dccp.EventInfo, "Close")
+	x.amb.E(dccp.EventInfo, "Close")
 	return nil
 }
 
 // LocalLabel implements dccp.HeaderConn.LocalLabel
-func (hhl *headerHalfPipe) LocalLabel() dccp.Bytes {
+func (x *headerHalfPipe) LocalLabel() dccp.Bytes {
 	return &dccp.Label{}
 }
 
 // RemoteLabel implements dccp.HeaderConn.RemoteLabel
-func (hhl *headerHalfPipe) RemoteLabel() dccp.Bytes {
+func (x *headerHalfPipe) RemoteLabel() dccp.Bytes {
 	return &dccp.Label{}
 }
 
 // SetReadExpire implements dccp.HeaderConn.SetReadExpire
-func (hhl *headerHalfPipe) SetReadExpire(nsec int64) error {
-	hhl.readDeadlineLk.Lock()
-	defer hhl.readDeadlineLk.Unlock()
+func (x *headerHalfPipe) SetReadExpire(nsec int64) error {
+	x.readDeadlineLk.Lock()
+	defer x.readDeadlineLk.Unlock()
 	if nsec < 0 {
 		panic("invalid timeout")
 	}
-	hhl.readDeadline = time.Now().Add(time.Duration(nsec))
+	x.readDeadline = time.Now().Add(time.Duration(nsec))
 	return nil
 }
