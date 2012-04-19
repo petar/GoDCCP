@@ -12,7 +12,9 @@ import (
 // TestRoundtripEstimation checks that round-trip times are estimated accurately.
 func TestRoundtripEstimation(t *testing.T) {
 	reducer := newRoundtripMeasure(t)
-	clientConn, serverConn, run, clientToServer, _ := NewClientServerPipeDup("rtt", reducer)
+	clientConn, serverConn, run, clientToServer, _ := NewClientServerPipeDup(
+		"rtt", NewGuzzlePlex(reducer, ??),
+	)
 
 	// Roundtrip estimates might be imprecise during long idle periods,
 	// as a product of the CCID3 design, since during such period precise
