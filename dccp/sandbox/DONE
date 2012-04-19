@@ -1,0 +1,27 @@
+Can endpoints estimate RTT?
+* Yes. Test included.
+
+	client·sender never gets an Ack or DataAck (during idle periods), which
+	carries Elapsed option, which is needed for RTT estimate
+		* See [OptAck] below.
+
+	[OptAck] Should Elapsed options be limited to Ack and DataAck, as opposed to also
+	other packets that contain acknowledgements? Are there other such packet types?
+		* Only Ack and DataAck have acks which is needed for Elapsed and, yes,
+		Elapsed is limitted to those only by design, since the lack of those implies
+		slow app send speed an no need for good estimates of RTT.
+
+	Need mechanism to ensure Ack sent back to client in presence of Idle?
+		* No. It's OK if client stays in PARTOPEN. Just means it must
+		send Acks with any data it sends. RFC Section 8.1.5 for details.
+
+	Ensure that user-side of DCCP client is available for i/o when in
+	PARTOPEN, but until in PARTOPEN all data is sent in DataAcks.
+
+Client sends 10 packets in the first second, only 3 of which are received?  
+No drops are reported. Is there a programmatic delay?
+	* Sender's rate control switches to 1pps at the start
+
+Why don't we drop data packets if the data queue is full?
+	* Because making the user Write wait is the only way to communicate to the user
+	at what rate to send data.

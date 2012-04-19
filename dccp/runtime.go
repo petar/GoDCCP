@@ -15,7 +15,7 @@ import (
 // (for testing purposes), as well as a amb interface.
 type Runtime struct {
 	time   Time
-	writer Guzzle
+	guzzle Guzzle
 	filter *filter.Filter
 	goconj *GoConjunction
 
@@ -24,11 +24,11 @@ type Runtime struct {
 	timeLast int64 // Time of last log message
 }
 
-func NewRuntime(time Time, writer Guzzle) *Runtime {
+func NewRuntime(time Time, guzzle Guzzle) *Runtime {
 	now := time.Now()
 	r := &Runtime{
 		time:     time,
-		writer:   writer,
+		guzzle:   guzzle,
 		filter:   filter.NewFilter(),
 		goconj:   NewGoConjunction("Runtime"),
 		timeZero: now,
@@ -46,8 +46,8 @@ func (t *Runtime) Waiter() Waiter {
 	return t.goconj
 }
 
-func (t *Runtime) Writer() Guzzle {
-	return t.writer
+func (t *Runtime) Guzzle() Guzzle {
+	return t.guzzle
 }
 
 func (t *Runtime) Filter() *filter.Filter {
@@ -55,11 +55,11 @@ func (t *Runtime) Filter() *filter.Filter {
 }
 
 func (t *Runtime) Sync() error {
-	return t.writer.Sync()
+	return t.guzzle.Sync()
 }
 
 func (t *Runtime) Close() error {
-	return t.writer.Close()
+	return t.guzzle.Close()
 }
 
 func (t *Runtime) Now() int64 {

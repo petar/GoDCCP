@@ -1,0 +1,31 @@
+PRE-RELEASE
+
+	Implement Conn.SetReadExpire
+
+	Address Ack-Sync pair in client connection establishement, marked XXX in code
+
+	Add heartbeat optional function (in ccid? once every so many RTTs?)
+
+	Handshake with 0-latency, no drops should be fast
+
+POST-RELEASE
+
+	Deal with circular arithmetic of sequence numbers
+		In theory, long lived connections may wrap around the AckNo/SeqNo space in which case circular
+		versions of things like maxu64() should be used.  This is unlikely to happen however if we are using
+		48-bit numbers exclusively
+
+	Update the DCCP Mutex implementation
+
+LONG-TERM
+
+	Dynamically changing SWAF/SWBF
+
+	Abridged header read/write (no ports, no checksums). Not needed in user-space mode
+
+	Make ccvals int8
+
+	Denial of service considerations (Not needed in the context of the Tonika security stack)
+		Section 7.5.4: To protect against denial-of-service attacks, DCCP implementations SHOULD impose a
+		rate limit on DCCP-Syncs sent in response to sequence-invalid packets, such as not more than eight
+		DCCP-Syncs per second.

@@ -19,6 +19,10 @@ func NewGuzzlePlex(guzzles ...dccp.Guzzle) *GuzzlePlex {
 	}
 }
 
+func (t *GuzzlePlex) Add(g dccp.Guzzle) {
+	t.guzzles = append(t.guzzles, g)
+}
+
 func (t *GuzzlePlex) Write(r *dccp.LogRecord) {
 	for _, g := range t.guzzles {
 		g.Write(r)

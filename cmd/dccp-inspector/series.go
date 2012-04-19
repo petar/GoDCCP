@@ -38,7 +38,7 @@ func (x *SeriesSweeper) Add(r *dccp.LogRecord) {
 		return
 	}
 	// Extract the sample data
-	y := m_.(map[string]interface{})["Y"].(float64)
+	y := m_.(map[string]interface{})["Value"].(float64)
 	// Remember the series
 	series := r.LabelString()
 	for _, u := range x.series {

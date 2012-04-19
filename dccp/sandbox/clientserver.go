@@ -11,18 +11,19 @@ import (
 	"github.com/petar/GoDCCP/dccp/ccid3"
 )
 
-func NewClientServerPipe(logname string) (clientConn, serverConn *dccp.Conn, run *dccp.Runtime, clientToServer, serverToClient *headerHalfPipe) {
-	return NewClientServerPipeDup(logname, nil)
+// NewRuntime creates a dccp.Runtime for test purposes, whose dccp.Guzzle writes to a file
+// and duplicates all emits to any number of additional guzzles, which are usually used to check
+// test conditions. The GuzzlePlex is returned to facilitate adding further guzzles.
+func NewRuntime(guzzleFilename string, guzzles ...dccp.Guzzle) (run *dccp.Runtime, plex *GuzzlePlex) {
+	plex = NewGuzzlePlex(guzzles...)
+	fileGuzzle := dccp.NewFileGuzzleDup(path.Join(os.Getenv("DCCPLOG"), guzzleFilename + ".emit"), plex)
+	return dccp.NewRuntime(dccp.RealTime, fileGuzzle), plex
 }
 
-// NewClientServerPipeDup creates a sandbox communication pipe and attaches a DCCP client and a DCCP
+// NewClientServerPipe creates a sandbox communication pipe and attaches a DCCP client and a DCCP
 // server to its endpoints. In addition to sending all emits to a standard DCCP log file, it sends a
 // copy of all emits to the dup Guzzle.
-func NewClientServerPipeDup(logname string, dup dccp.Guzzle) (clientConn, serverConn *dccp.Conn, run *dccp.Runtime, clientToServer, serverToClient *headerHalfPipe) {
-
-	logwriter := dccp.NewFileGuzzleDup(path.Join(os.Getenv("DCCPLOG"), logname+".emit"), dup)
-	run = dccp.NewRuntime(dccp.RealTime, logwriter)
-
+func NewClientServerPipe(run *dccp.Runtime) (clientConn, serverConn *dccp.Conn, clientToServer, serverToClient *headerHalfPipe) {
 	llog := dccp.NewAmb("line", run)
 	hca, hcb, _ := NewPipe(run, llog, "client", "server")
 	ccid := ccid3.CCID3{}
@@ -33,5 +34,5 @@ func NewClientServerPipeDup(logname string, dup dccp.Guzzle) (clientConn, server
 	slog := dccp.NewAmb("server", run)
 	serverConn = dccp.NewConnServer(run, slog, hcb, ccid.NewSender(run, slog), ccid.NewReceiver(run, slog))
 
-	return clientConn, serverConn, run, hca, hcb
+	return clientConn, serverConn, hca, hcb
 }

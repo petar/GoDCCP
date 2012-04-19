@@ -58,6 +58,7 @@ type LogRecord struct {
 	Trace      string  `json:"st"`
 }
 
+// LabelString returns a textual representation of the label stack of this log
 func (x *LogRecord) LabelString() string {
 	return labelString(x.Labels)
 }
@@ -71,18 +72,38 @@ func labelString(labels []string) string {
 	return string(w.Bytes())
 }
 
+// ArgOfType returns an argument of the same type as example, if one is present
+// in the log, or nil otherwise
+func (x *LogRecord) ArgOfType(example interface{}) interface{} {
+	a, ok := x.Args[TypeOf(example)]
+	if !ok {
+		return nil
+	}
+	return a
+}
+
+// Sample returns the value of a sample embedded in this log record, if it exists
+func (x *LogRecord) Sample() (value float64, prsent bool) {
+	s_, ok := x.Args[TypeOf(Sample{})]
+	if !ok {
+		return 0, false
+	}
+	s := s_.(Sample)
+	return s.Value, true
+}
+
 // One Sample argument can be attached to a log. The inspector interprets it as a data point
 // in a time series where: 
 //   (i)   The time series name is given by the label stack of the amb
 //   (ii)  The X-value of the data point equals the time the log was emitted
 //   (iii) The Y-value of the data point is stored inside the Sample object
 type Sample struct {
-	Y float64
+	Value float64
 }
 var SampleType = TypeOf(Sample{})
 
-func NewSample(y float64) Sample {
-	return Sample{y}
+func NewSample(value float64) Sample {
+	return Sample{value}
 }
 
 // Event is the type of logging event.

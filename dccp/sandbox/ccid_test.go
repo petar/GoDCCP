@@ -12,8 +12,8 @@ import (
 
 func TestConverge(t *testing.T) {
 
-	dccp.InstallCtrlCPanic()
-	clientConn, serverConn, run, _, _ := NewClientServerPipe("converge")
+	run, _ := NewRuntime("converge")
+	clientConn, serverConn, _, _ := NewClientServerPipe(run)
 
 	cchan := make(chan int, 1)
 	mtu := clientConn.GetMTU()

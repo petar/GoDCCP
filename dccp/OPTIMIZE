@@ -1,6 +1,8 @@
+Idle ticker should use Go's ticker
 
-* should nonData packets be sent out IMMEDIATELY always, bypassing the strobe queue?
+Backoff optimizations
+	Convert backoff/expire mechanisms to work in a polling model, so that all concurrent 
+	backoffs/expires can be handled by a the connection thread thread.
+		This would enable synthetic time simulation more easily
 
-* idle ticker should use Go's ticker
-
-* implement BACKOFFS using table lookups?
+	Implement BACKOFFS using table lookups?

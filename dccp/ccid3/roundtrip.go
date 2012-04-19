@@ -14,6 +14,16 @@ func RoundtripSample(rtt int64) dccp.Sample {
 	return dccp.NewSample(float64(rtt) / 1e6)
 }
 
+// Checkpoint types are attached to emits to mark them so they can be singled out in test guzzles
+// that check for certain conditions on these "checkpoint emits"
+type roundtripElapsedCheckpoint struct{}
+type roundtripReportCheckpoint struct{}
+
+var (
+	RoundtripElapsedCheckpoint roundtripElapsedCheckpoint
+	RoundtripReportCheckpoint  roundtripReportCheckpoint
+)
+
 // senderRoundtripReporter ensures that the sender's RTT estimate is regularly sent to the receiver
 type senderRoundtripReporter struct {
 	lastReportTime int64
@@ -110,7 +120,7 @@ func (t *senderRoundtripEstimator) OnRead(fb *dccp.FeedbackHeader) bool {
 		t.amb.E(dccp.EventWarn, "Invalid elapsed opt", fb)
 		return false
 	}
-	est := (fb.Time - s.Time - elapsedNS) / 2
+	est := (fb.Time - s.Time - elapsedNS)
 	if est <= 0 {
 		t.amb.E(dccp.EventWarn, "Invalid elapsed opt", fb)
 		return false
@@ -122,7 +132,8 @@ func (t *senderRoundtripEstimator) OnRead(fb *dccp.FeedbackHeader) bool {
 		t.estimate = (est * SenderRoundtripWeightNew + est_old * SenderRoundtripWeightOld) / 
 			(SenderRoundtripWeightNew + SenderRoundtripWeightOld)
 	}
-	t.amb.E(dccp.EventMatch, fmt.Sprintf("Elapsed —> RTT=%s", dccp.Nstoa(t.estimate)), fb, RoundtripSample(t.estimate))
+	t.amb.E(dccp.EventMatch, fmt.Sprintf("Elapsed —> RTT=%s", dccp.Nstoa(t.estimate)), fb, 
+		RoundtripSample(t.estimate), RoundtripElapsedCheckpoint)
 
 	return true
 }
@@ -188,7 +199,8 @@ func (t *receiverRoundtripEstimator) OnRead(ff *dccp.FeedforwardHeader) bool {
 
 	// Update RTT estimate
 	t.rtt, t.rttTime = rtt, ff.Time
-	t.amb.E(dccp.EventMatch, fmt.Sprintf("Report —> RTT=%s", dccp.Nstoa(t.rtt)), ff, RoundtripSample(t.rtt))
+	t.amb.E(dccp.EventMatch, fmt.Sprintf("Report —> RTT=%s", dccp.Nstoa(t.rtt)), ff, 
+		RoundtripSample(t.rtt), RoundtripReportCheckpoint)
 
 	return true
 }

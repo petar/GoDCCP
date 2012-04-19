@@ -1,3 +1,7 @@
+// Copyright 2011 GoDCCP Authors. All rights reserved.
+// Use of this source code is governed by a 
+// license that can be found in the LICENSE file.
+
 package sandbox
 
 import (
@@ -11,17 +15,20 @@ type latencyQueue struct {
 	queue       []*pipeHeader
 }
 
+// Init initializes the queue for initial use
 func (x *latencyQueue) Init(run *dccp.Runtime, amb *dccp.Amb) {
 	x.run = run
 	x.amb = amb
 	x.queue = make([]*pipeHeader, 0)
 }
 
+// Add adds a new item to the queue
 func (x *latencyQueue) Add(ph *pipeHeader) {
 	x.queue = append(x.queue, ph)
 	sort.Sort(pipeHeaderTimeSort(x.queue))
 }
 
+// DeleteMin removes the item with lowest timestamp from the queue
 func (x *latencyQueue) DeleteMin() *pipeHeader {
 	if len(x.queue) == 0 {
 		return nil
@@ -31,26 +38,14 @@ func (x *latencyQueue) DeleteMin() *pipeHeader {
 	return ph
 }
 
+// TimeToMin returns the duration of time from now until the timestamp of the
+// earliest item in the queue
 func (x *latencyQueue) TimeToMin() (dur int64, present bool) {
 	if len(x.queue) == 0 {
 		return 0, false
 	}
 	now := x.run.Now()
 	return max64(0, x.queue[0].DeliverTime - now), true
-}
-
-func max64(x, y int64) int64 {
-	if x > y {
-		return x
-	}
-	return y
-}
-
-func min64(x, y int64) int64 {
-	if x < y {
-		return x
-	}
-	return y
 }
 
 // pipeHeaderTimeSort sorts a slice of *pipeHeader by timestamp

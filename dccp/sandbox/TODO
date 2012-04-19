@@ -1,0 +1,12 @@
+Rate tests
+	ensure convergence test converges to rate limit of sandbox line
+	ensure two competing connections behave fairly
+
+Should loss.go's reorder buffer enforce ascending seq no output?
+
+RTT test, without constant rate constraint, causes division by zero error in rate calculation (in SetRate)
+
+Ensure behavior stabilizes if both sides remain silent after connect and connection does not close perpetually
+
+Infrastructre for tests of the form:
+	"first packet after switched to OPEN state does not produce 'missing rtt report' log"

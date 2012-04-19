@@ -186,7 +186,7 @@ func (t *Amb) EC(skip int, event Event, comment string, args ...interface{}) {
 
 	sfile, sline := FetchCaller(1+skip)
 
-	if t.run.Writer() != nil {
+	if t.run.Guzzle() != nil {
 		r := &LogRecord{
 			Time:       sinceZero,
 			Labels:     t.labels,
@@ -201,7 +201,7 @@ func (t *Amb) EC(skip int, event Event, comment string, args ...interface{}) {
 			SourceLine: sline,
 			Trace:      stackTrace(t.labels, skip+2, sfile, sline),
 		}
-		t.run.Writer().Write(r)
+		t.run.Guzzle().Write(r)
 	}
 }
 
