@@ -52,14 +52,14 @@ func TestRoundtripEstimation(t *testing.T) {
 	go func() {
 		t0 := run.Now()
 		for run.Now() - t0 < roundtripDuration {
-			err := clientConn.WriteSegment(buf)
+			err := clientConn.Write(buf)
 			if err != nil {
 				break
 			}
 			run.Sleep(roundtripInterval)
 		}
 		// Close is necessary because otherwise, if no read timeout is in place, the
-		// server sides hangs forever on ReadSegment
+		// server sides hangs forever on Read
 		clientConn.Close()
 		close(cchan)
 	}()
@@ -67,7 +67,7 @@ func TestRoundtripEstimation(t *testing.T) {
 	schan := make(chan int, 1)
 	go func() {
 		for {
-			_, err := serverConn.ReadSegment()
+			_, err := serverConn.Read()
 			if err != nil {
 				break
 			}

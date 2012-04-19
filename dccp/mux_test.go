@@ -98,7 +98,7 @@ func (ee *endToEnd) dialLoop(link Link) {
 }
 
 func readUint32(t *testing.T, c SegmentConn) uint32 {
-	p, err := c.ReadSegment()
+	p, err := c.Read()
 	if err != nil {
 		t.Fatalf("read: %s", err)
 	}
@@ -112,7 +112,7 @@ func readUint32(t *testing.T, c SegmentConn) uint32 {
 func writeUint32(t *testing.T, c SegmentConn, u uint32) {
 	p := make([]byte, 4)
 	EncodeUint32(u, p)
-	err := c.WriteSegment(p)
+	err := c.Write(p)
 	if err != nil {
 		t.Fatalf("write: %s", err)
 	}

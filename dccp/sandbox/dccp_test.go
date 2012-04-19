@@ -26,7 +26,7 @@ func TestOpenClose(t *testing.T) {
 	cchan := make(chan int, 1)
 	go func() {
 		run.Sleep(2e9)
-		_, err := clientConn.ReadSegment()
+		_, err := clientConn.Read()
 		if err != dccp.ErrEOF {
 			t.Errorf("client read error (%s), expected EBADF", err)
 		}
@@ -70,7 +70,7 @@ func TestIdle(t *testing.T) {
 
 	cchan := make(chan int, 1)
 	go func() {
-		if err := clientConn.WriteSegment(cargo); err != nil {
+		if err := clientConn.Write(cargo); err != nil {
 			t.Errorf("client write (%s)", err)
 		}
 		run.Sleep(10e9) // Stay idle for 10 sec
@@ -83,7 +83,7 @@ func TestIdle(t *testing.T) {
 
 	schan := make(chan int, 1)
 	go func() {
-		if err := serverConn.WriteSegment(cargo); err != nil {
+		if err := serverConn.Write(cargo); err != nil {
 			t.Errorf("server write (%s)", err)
 		}
 		run.Sleep(10e9) // Stay idle for 10 sec

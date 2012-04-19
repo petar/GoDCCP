@@ -113,8 +113,8 @@ func (x *headerHalfPipe) GetMTU() int {
 	return 1500
 }
 
-// ReadHeader implements dccp.HeaderConn.ReadHeader
-func (x *headerHalfPipe) ReadHeader() (h *dccp.Header, err error) {
+// Read implements dccp.HeaderConn.Read
+func (x *headerHalfPipe) Read() (h *dccp.Header, err error) {
 	x.readDeadlineLk.Lock()
 	readDeadline := x.readDeadline
 	x.readDeadlineLk.Unlock()
@@ -172,8 +172,8 @@ func (x *headerHalfPipe) makeTimeoutChan(timeout int64) (ch <-chan int64) {
 	return ch
 }
 
-// WriteHeader implements dccp.HeaderConn.WriteHeader
-func (x *headerHalfPipe) WriteHeader(h *dccp.Header) (err error) {
+// Write implements dccp.HeaderConn.Write
+func (x *headerHalfPipe) Write(h *dccp.Header) (err error) {
 	x.writeLk.Lock()
 	defer x.writeLk.Unlock()
 

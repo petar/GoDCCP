@@ -10,9 +10,16 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-func TestConverge(t *testing.T) {
+// TestRate tests whether a single connection's one-way client-to-server rate converges to
+// limit imposed by connection in that the send rate has to:
+//	(1) converge and stabilize, and
+//	(2) the stable rate should 
+//		(2.a) either be closely below the connection limit,
+//		(2.b) or be closely above the connection limit (and maintain a drop rate below some threshold)
+// A two-way test is not necessary as the congestion mechanisms in either direction are completely independent.
+func TestRate(t *testing.T) {
 
-	run, _ := NewRuntime("converge")
+	run, _ := NewRuntime("rate")
 	clientConn, serverConn, _, _ := NewClientServerPipe(run)
 
 	cchan := make(chan int, 1)
@@ -21,7 +28,7 @@ func TestConverge(t *testing.T) {
 	go func() {
 		t0 := run.Now()
 		for run.Now() - t0 < 10e9 {
-			err := clientConn.WriteSegment(buf)
+			err := clientConn.Write(buf)
 			if err != nil {
 				t.Errorf("error writing (%s)", err)
 				break
@@ -35,7 +42,7 @@ func TestConverge(t *testing.T) {
 	go func() {
 		for {
 			fmt.Printf("pre-read\n")
-			_, err := serverConn.ReadSegment()
+			_, err := serverConn.Read()
 			fmt.Printf("post-read\n")
 			if err == dccp.ErrEOF {
 				break 

@@ -124,7 +124,7 @@ type PreHeader struct {
 	// TimeInject is the time when the packet was injected into the write
 	// queue. This is either in the readLoop in response to a received
 	// packet, in the idleLoop in response to idleness, or in the user
-	// facing WriteSegment method. TimeInject is currently commented out,
+	// facing Write method. TimeInject is currently commented out,
 	// since it is not used by the CC logic.
 	// TimeInject int64
 

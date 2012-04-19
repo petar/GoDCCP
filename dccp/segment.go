@@ -19,21 +19,21 @@ type SegmentConn interface {
 	// GetMTU returns th he largest allowable block size (for read and write). The MTU may vary.
 	GetMTU() int
 
-	// ReadSegment returns an ErrTimeout in the event of a timeout. See SetReadExpire.
-	ReadSegment() (block []byte, err error)
+	// Read returns an ErrTimeout in the event of a timeout. See SetReadExpire.
+	Read() (block []byte, err error)
 
 	// If the user attempts to write a block that is too big, an ErrTooBig is returned
 	// and the block is not sent.
-	WriteSegment(block []byte) (err error)
+	Write(block []byte) (err error)
 
 	LocalLabel() Bytes
 
 	RemoteLabel() Bytes
 
-	// SetReadExpire sets the expiration time for any blocked calls to ReadSegment
+	// SetReadExpire sets the expiration time for any blocked calls to Read
 	// as a time represented in nanoseconds from now. It's semantics are similar to that
 	// of net.Conn.SetReadDeadline except that the deadline is specified in time from now,
-	// rather than absolute time. Also note that ReadSegment is expected to return 
+	// rather than absolute time. Also note that Read is expected to return 
 	// an ErrTimeout in the event of timeouts.
 	SetReadExpire(nsec int64) error
 
@@ -54,11 +54,11 @@ type HeaderConn interface {
 	// byte size of the header and app data wire-format footprint.
 	GetMTU() int
 
-	// ReadHeader returns ErrTimeout in the event of timeout. See SetReadExpire.
-	ReadHeader() (h *Header, err error)
+	// Read returns ErrTimeout in the event of timeout. See SetReadExpire.
+	Read() (h *Header, err error)
 
-	// WriteHeader can return ErrTooBig, if the wire-format of h exceeds the MTU
-	WriteHeader(h *Header) (err error)
+	// Write can return ErrTooBig, if the wire-format of h exceeds the MTU
+	Write(h *Header) (err error)
 
 	LocalLabel() Bytes
 
@@ -84,24 +84,24 @@ func (hc *headerConn) GetMTU() int {
 	return hc.bc.GetMTU()
 }
 
-// Since a SegmentConn already has the notion of a flow, both ReadHeader
-// and WriteHeader pass zero labels for the Source and Dest IPs
+// Since a SegmentConn already has the notion of a flow, both Read
+// and Write pass zero labels for the Source and Dest IPs
 // to the DCCP header's read and write functions.
 
-func (hc *headerConn) ReadHeader() (h *Header, err error) {
-	p, err := hc.bc.ReadSegment()
+func (hc *headerConn) Read() (h *Header, err error) {
+	p, err := hc.bc.Read()
 	if err != nil {
 		return nil, err
 	}
 	return ReadHeader(p, LabelZero.Bytes(), LabelZero.Bytes(), AnyProto, false)
 }
 
-func (hc *headerConn) WriteHeader(h *Header) (err error) {
+func (hc *headerConn) Write(h *Header) (err error) {
 	p, err := h.Write(LabelZero.Bytes(), LabelZero.Bytes(), AnyProto, false)
 	if err != nil {
 		return err
 	}
-	return hc.bc.WriteSegment(p)
+	return hc.bc.Write(p)
 }
 
 func (hc *headerConn) LocalLabel() Bytes {

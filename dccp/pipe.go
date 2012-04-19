@@ -5,7 +5,7 @@
 package dccp
 
 func (c *Conn) readHeader() (h *Header, err error) {
-	h, err = c.hc.ReadHeader()
+	h, err = c.hc.Read()
 	if err != nil {
 		if err != ErrTimeout {
 			c.amb.E(EventDrop, "Bad header", h)

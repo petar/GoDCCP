@@ -78,14 +78,14 @@ func (c *Conn) write(h *writeHeader) error {
 	c.Unlock()
 
 	c.amb.E(EventWrite, "Write to header link", h)
-	return c.hc.WriteHeader(&h.Header)
+	return c.hc.Write(&h.Header)
 }
 
 // writeLoop() sends headers incoming on the writeData and writeNonData channels, while
 // giving priority to writeNonData. It continues to do so until writeNonData is closed.
 func (c *Conn) writeLoop(writeNonData chan *writeHeader, writeData chan []byte) {
 
-	// The presence of multiple loops below allows user calls to WriteSegment to
+	// The presence of multiple loops below allows user calls to Write to
 	// block in "writeNonData <-" while the connection moves into a state where
 	// it accepts app data (in _Loop_II)
 

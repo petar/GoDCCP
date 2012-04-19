@@ -104,8 +104,8 @@ func (f *flow) String() string {
 	return f.getLocal().String() + "--" + f.getRemote().String()
 }
 
-// WriteSegment implements SegmentConn.WriteSegment
-func (f *flow) WriteSegment(block []byte) error {
+// Write implements SegmentConn.Write
+func (f *flow) Write(block []byte) error {
 	f.Lock()
 	m := f.m
 	f.Unlock()
@@ -121,8 +121,8 @@ func (f *flow) WriteSegment(block []byte) error {
 	return err
 }
 
-// ReadSegment implements SegmentConn.ReadSegment
-func (f *flow) ReadSegment() (block []byte, err error) {
+// Read implements SegmentConn.Read
+func (f *flow) Read() (block []byte, err error) {
 	f.rlk.Lock()
 	defer f.rlk.Unlock()
 
