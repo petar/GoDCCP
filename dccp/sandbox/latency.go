@@ -31,16 +31,23 @@ func (x *latencyQueue) DeleteMin() *pipeHeader {
 	return ph
 }
 
-func (x *latencyQueue) TimeToNext() int64 {
+func (x *latencyQueue) TimeToMin() (dur int64, present bool) {
 	if len(x.queue) == 0 {
-		return -1
+		return 0, false
 	}
-	now := x.run.Nanoseconds()
-	return max64(0, x.queue[0].DeliverTime - now)
+	now := x.run.Now()
+	return max64(0, x.queue[0].DeliverTime - now), true
 }
 
 func max64(x, y int64) int64 {
 	if x > y {
+		return x
+	}
+	return y
+}
+
+func min64(x, y int64) int64 {
+	if x < y {
 		return x
 	}
 	return y

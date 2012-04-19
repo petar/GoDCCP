@@ -12,9 +12,10 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-// roundtripReducer is a dccp.Guzzle which listens to the logs
-// emitted from the RTT test and performs various checks.
-type roundtripReducer struct {
+// roundtripMeasure is a dccp.Guzzle which listens to the logs emitted from the
+// Roundtrip. It measures the real roundtrip time between the sender and
+// receiver, based on read and write logs and prints out this information.
+type roundtripMeasure struct {
 	t *testing.T
 	leftClient map[int64]int64  // SeqNo —> Time left client
 	leftServer map[int64]int64  // SeqNo —> Time left server
@@ -22,8 +23,8 @@ type roundtripReducer struct {
 	serverToClient Moment
 }
 
-func newRoundtripReducer(t *testing.T) *roundtripReducer {
-	x := &roundtripReducer{
+func newRoundtripMeasure(t *testing.T) *roundtripMeasure {
+	x := &roundtripMeasure{
 		t: t,
 		leftClient: make(map[int64]int64),
 		leftServer: make(map[int64]int64),
@@ -33,7 +34,7 @@ func newRoundtripReducer(t *testing.T) *roundtripReducer {
 	return x
 }
 
-func (x *roundtripReducer) Write(r *dccp.LogRecord) {
+func (x *roundtripMeasure) Write(r *dccp.LogRecord) {
 	now := time.Now().UnixNano()
 	switch r.Event {
 	case dccp.EventWrite:
@@ -68,11 +69,11 @@ func (x *roundtripReducer) Write(r *dccp.LogRecord) {
 	}
 }
 
-func (x *roundtripReducer) Sync() error { 
+func (x *roundtripMeasure) Sync() error { 
 	return nil 
 }
 
-func (x *roundtripReducer) String() string {
+func (x *roundtripMeasure) String() string {
 	var w bytes.Buffer
 	fmt.Fprintf(&w, "c—>s %0.1f/%0.1f ms, c<—s %0.1f/%0.1f\n", 
 		x.clientToServer.Average()/1e6, x.clientToServer.StdDev()/1e6,
@@ -93,7 +94,7 @@ func (x *roundtripReducer) String() string {
 	return string(w.Bytes())
 }
 
-func (x *roundtripReducer) Close() error { 
+func (x *roundtripMeasure) Close() error { 
 	fmt.Println(x.String())
 	return nil 
 }

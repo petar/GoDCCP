@@ -25,7 +25,7 @@ type Runtime struct {
 }
 
 func NewRuntime(time Time, writer Guzzle) *Runtime {
-	now := time.Nanoseconds()
+	now := time.Now()
 	r := &Runtime{
 		time:     time,
 		writer:   writer,
@@ -62,8 +62,8 @@ func (t *Runtime) Close() error {
 	return t.writer.Close()
 }
 
-func (t *Runtime) Nanoseconds() int64 {
-	return t.time.Nanoseconds()
+func (t *Runtime) Now() int64 {
+	return t.time.Now()
 }
 
 func (t *Runtime) Sleep(ns int64) {
@@ -78,7 +78,7 @@ func (t *Runtime) Snap() (sinceZero int64, sinceLast int64) {
 	t.Lock()
 	defer t.Unlock()
 
-	logTime := t.Nanoseconds()
+	logTime := t.Now()
 	timeLast := t.timeLast
 	t.timeLast = logTime
 	return logTime - t.timeZero, logTime - timeLast
@@ -105,8 +105,8 @@ func (t *Runtime) Expire(test func()bool, onexpire func(), timeout, interval int
 
 // Time is an interface for interacting time
 type Time interface {
-	// Nanoseconds returns the current time in nanoseconds since UTC zero
-	Nanoseconds() int64
+	// Now returns the current time in nanoseconds since UTC zero
+	Now() int64
 
 	// Sleep blocks for ns nanoseconds 
 	Sleep(ns int64)
@@ -130,7 +130,7 @@ var RealTime realTime
 type realTime struct {}
 
 
-func (realTime) Nanoseconds() int64 {
+func (realTime) Now() int64 {
 	return gotime.Now().UnixNano()
 }
 

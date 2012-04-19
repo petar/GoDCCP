@@ -77,7 +77,7 @@ func (s *senderStrober) SetRatePPS(pps uint32) {
 // XXX: This routine should be optimized
 func (s *senderStrober) Strobe() {
 	s.Lock()
-	now := s.run.Nanoseconds()
+	now := s.run.Now()
 	delta := s.interval - (now - s.last)
 	_interval := s.interval
 	s.Unlock()
@@ -86,6 +86,6 @@ func (s *senderStrober) Strobe() {
 		s.run.Sleep(delta)
 	}
 	s.Lock()
-	s.last = s.run.Nanoseconds()
+	s.last = s.run.Now()
 	s.Unlock()
 }

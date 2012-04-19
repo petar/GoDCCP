@@ -7,7 +7,6 @@ package sandbox
 import (
 	"fmt"
 	"sync"
-	"time"
 	"github.com/petar/GoDCCP/dccp"
 )
 
@@ -20,7 +19,7 @@ type Pipe struct {
 }
 
 // NewPipe creates a new pipe with a given runtime shared by both endpoints, and a root amb
-func NewPipe(run *dccp.Runtime, amb *dccp.Amb, namea, nameb string) (a, b dccp.HeaderConn, line *Pipe) {
+func NewPipe(run *dccp.Runtime, amb *dccp.Amb, namea, nameb string) (a, b *headerHalfPipe, line *Pipe) {
 	ab := make(chan *pipeHeader, pipeBufferLen)
 	ba := make(chan *pipeHeader, pipeBufferLen)
 	line = &Pipe{}
@@ -64,12 +63,13 @@ type headerHalfPipe struct {
 
 	// readDeadline is the absolute time deadline for the reads on this side of the connection
 	readDeadlineLk         sync.Mutex
-	readDeadline           time.Time
+	readDeadline           int64
 
-	// writeLatency is the delay before non-dropped packets are delivered to the other side of the pipe
-	latencyLk              sync.Mutex
+	// writeLatency is the delay imposed on packets written from this endpoint before they are delivered
+	writeLatencyLk         sync.Mutex
 	writeLatency           int64
 
+	latencyQueueLk         sync.Mutex
 	latencyQueue
 }
 
@@ -85,15 +85,15 @@ func (x *headerHalfPipe) Init(run *dccp.Runtime, amb *dccp.Amb, r <-chan *pipeHe
 	x.read = r
 	x.write = w
 	x.SetWriteRate(DefaultRateInterval, DefaultRatePacketsPerInterval)
-	x.readDeadline = time.Now().Add(-time.Second)
+	x.readDeadline = x.run.Now() - 1e9
 	x.writeLatency = 0
 	x.latencyQueue.Init(run, amb)
 }
 
 // SetWriteLatency sets the write packet latency and it is given in nanoseconds
 func (x *headerHalfPipe) SetWriteLatency(latency int64) {
-	x.latencyLk.Lock()
-	defer x.latencyLk.Unlock()
+	x.writeLatencyLk.Lock()
+	defer x.writeLatencyLk.Unlock()
 	x.writeLatency = latency
 }
 
@@ -119,32 +119,57 @@ func (x *headerHalfPipe) ReadHeader() (h *dccp.Header, err error) {
 	readDeadline := x.readDeadline
 	x.readDeadlineLk.Unlock()
 
-	sleepingChan := make(chan int64)
-
 	for {
-		XX?
-		tmo := readDeadline.Sub(time.Now())
-		var tmoch <-chan int64
-		if tmo > 0 {
-			tmoch = x.run.After(int64(tmo))
-		} else {
-			tmoch = sleepingChan
+		// Is there a queued packet ready for delivery
+		x.latencyQueueLk.Lock()
+		timeToQueued, existQueued := x.latencyQueue.TimeToMin()
+		x.latencyQueueLk.Unlock()
+		if existQueued && timeToQueued == 0 {
+			x.latencyQueueLk.Lock()
+			ph := x.latencyQueue.DeleteMin()
+			x.latencyQueueLk.Unlock()
+			x.amb.E(dccp.EventRead, fmt.Sprintf("SeqNo=%d", ph.Header.SeqNo), ph.Header)
+			return ph.Header, nil
+		}
+		
+		// Calculate time to wait until either queued packet is available or read timeout is reached
+		timeout := readDeadline - x.run.Now()
+		if existQueued {
+			if timeout == 0 {
+				timeout = timeToQueued
+			} else {
+				timeout = min64(timeout, timeToQueued)
+			}
 		}
 
+		timeoutChan := x.makeTimeoutChan(timeout)
+
+		// Either timeout or receive a new packet which goes to the latency queue
 		select {
 		case ph, ok := <-x.read:
 			if !ok {
 				x.amb.E(dccp.EventWarn, "Read EOF", ph.Header)
 				return nil, dccp.ErrEOF
 			}
-			x.amb.E(dccp.EventRead, fmt.Sprintf("SeqNo=%d", ph.Header.SeqNo), ph.Header)
-			return ph.Header, nil
-		case <-tmoch:
+			x.latencyQueueLk.Lock()
+			x.latencyQueue.Add(ph)
+			x.latencyQueueLk.Unlock()
+		case <-timeoutChan:
 			return nil, dccp.ErrTimeout
-		default:
-			panic("un")
 		}
 	}
+	panic("un")
+}
+
+var sleepingChan = make(chan int64)
+
+func (x *headerHalfPipe) makeTimeoutChan(timeout int64) (ch <-chan int64) {
+	if timeout > 0 {
+		ch = x.run.After(int64(timeout))
+	} else {
+		ch = sleepingChan
+	}
+	return ch
 }
 
 // WriteHeader implements dccp.HeaderConn.WriteHeader
@@ -162,10 +187,10 @@ func (x *headerHalfPipe) WriteHeader(h *dccp.Header) (err error) {
 			x.amb.E(dccp.EventDrop, "Slow reader", h)
 		} else {
 			x.amb.E(dccp.EventWrite, "", h)
-			x.latencyLk.Lock()
+			x.writeLatencyLk.Lock()
 			latency := x.writeLatency
-			x.latencyLk.Unlock()
-			now := x.run.Nanoseconds()
+			x.writeLatencyLk.Unlock()
+			now := x.run.Now()
 			x.write <- &pipeHeader{ Header: h, DeliverTime: now + latency }
 		}
 	} else {
@@ -180,7 +205,7 @@ func (x *headerHalfPipe) rateFilter() bool {
 	x.rateLk.Lock()
 	defer x.rateLk.Unlock()
 
-	now := x.run.Nanoseconds()
+	now := x.run.Now()
 	gctr := now / x.rateInterval
 	if gctr != x.rateIntervalCounter {
 		x.rateIntervalCounter = gctr
@@ -226,6 +251,6 @@ func (x *headerHalfPipe) SetReadExpire(nsec int64) error {
 	if nsec < 0 {
 		panic("invalid timeout")
 	}
-	x.readDeadline = time.Now().Add(time.Duration(nsec))
+	x.readDeadline = x.run.Now() + nsec
 	return nil
 }

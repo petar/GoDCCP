@@ -1,6 +1,5 @@
 
 * add RTT estimation test
-	* add latency simulation in pipe
 
 * rtt test, without constant rate constraint, causes division by zero error in rate calculation (in SetRate)
 

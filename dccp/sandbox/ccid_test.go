@@ -6,90 +6,21 @@ package sandbox
 
 import (
 	"fmt"
-	"os"
 	"testing"
 	"github.com/petar/GoDCCP/dccp"
 )
 
-// TestRoundtripEstimation checks that round-trip times are estimated accurately.
-func TestRoundtripEstimation(t *testing.T) {
-	reducer := newRoundtripReducer(t)
-	clientConn, serverConn, run := NewClientServerPipeDup("rtt", reducer)
-
-	// Roundtrip estimates might be imprecise during long idle periods,
-	// as a product of the CCID3 design, since during such period precise
-	// estimates are not necessary. Therefore, to focus on roundtrip time
-	// estimation without saturating the link, we generate sufficiently 
-	// regular transmissions.
-
-	cargo := []byte{1, 2, 3}
-	buf := make([]byte, len(cargo))
-	const (
-		duration = 5e9               // Duration of the experiment = 10 sec
-		interval = 100e6             // How often we perform heartbeat writes to avoid idle periods = 100 ms
-		rate     = 1e9 / interval    // Fixed send rate for both endpoints in packets per second = 10 pps
-	)
-
-	// In order to isolate roundtrip measurement testing from the complexities
-	// of the send rate calculation mechanism, we fix the send rate of both
-	// endpoints using the debug flag FixRate.
-	clientConn.Amb().Flags().SetUint32("FixRate", rate)
-	serverConn.Amb().Flags().SetUint32("FixRate", rate)
-
-	cchan := make(chan int, 1)
-	go func() {
-		t0 := run.Nanoseconds()
-		for run.Nanoseconds() - t0 < duration {
-			fmt.Fprintf(os.Stderr, "Writing\n")
-			err := clientConn.WriteSegment(buf)
-			if err != nil {
-				break
-			}
-			run.Sleep(interval)
-		}
-		// Close is necessary because otherwise, if no read timeout is in place, the
-		// server sides hangs forever on ReadSegment
-		clientConn.Close()
-		close(cchan)
-	}()
-
-	schan := make(chan int, 1)
-	go func() {
-		for {
-			fmt.Fprintf(os.Stderr, "Reading\n")
-			_, err := serverConn.ReadSegment()
-			if err != nil {
-				break
-			}
-		}
-		close(schan)
-	}()
-
-	_, _ = <-cchan
-	_, _ = <-schan
-
-	// Shutdown the connections properly
-	fmt.Fprintf(os.Stderr, "Shutting down ...\n")
-	clientConn.Abort()
-	serverConn.Abort()
-	dccp.NewGoConjunction("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
-	dccp.NewAmb("line", run).E(dccp.EventMatch, "Server and client done.")
-	if err := run.Close(); err != nil {
-		t.Errorf("error closing runtime (%s)", err)
-	}
-}
-
 func TestConverge(t *testing.T) {
 
 	dccp.InstallCtrlCPanic()
-	clientConn, serverConn, run := NewClientServerPipe("converge")
+	clientConn, serverConn, run, _, _ := NewClientServerPipe("converge")
 
 	cchan := make(chan int, 1)
 	mtu := clientConn.GetMTU()
 	buf := make([]byte, mtu)
 	go func() {
-		t0 := run.Nanoseconds()
-		for run.Nanoseconds() - t0 < 10e9 {
+		t0 := run.Now()
+		for run.Now() - t0 < 10e9 {
 			err := clientConn.WriteSegment(buf)
 			if err != nil {
 				t.Errorf("error writing (%s)", err)

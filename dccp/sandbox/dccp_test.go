@@ -13,7 +13,7 @@ import (
 func TestNop(t *testing.T) {
 	// dccp.InstallCtrlCPanic()
 	// dccp.InstallTimeout(10e9)
-	_, _, run := NewClientServerPipe("nop")
+	_, _, run, _, _ := NewClientServerPipe("nop")
 	run.Sleep(5e9)
 }
 
@@ -21,7 +21,7 @@ func TestNop(t *testing.T) {
 func TestOpenClose(t *testing.T) {
 	// dccp.InstallCtrlCPanic()
 	// dccp.InstallTimeout(40e9)
-	clientConn, serverConn, run := NewClientServerPipe("openclose")
+	clientConn, serverConn, run, _, _ := NewClientServerPipe("openclose")
 
 	cchan := make(chan int, 1)
 	go func() {
@@ -64,7 +64,7 @@ func TestOpenClose(t *testing.T) {
 // no unusual behavior occurs.
 func TestIdle(t *testing.T) {
 
-	clientConn, serverConn, run := NewClientServerPipe("idle")
+	clientConn, serverConn, run, _, _ := NewClientServerPipe("idle")
 	cargo := []byte{1, 2, 3}
 
 	cchan := make(chan int, 1)

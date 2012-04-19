@@ -22,10 +22,10 @@ func (x *monotoneTime) Init(runtime *Runtime) {
 	x.last = 0
 }
 
-func (x *monotoneTime) Nanoseconds() int64 {
+func (x *monotoneTime) Now() int64 {
 	x.Lock()
 	defer x.Unlock()
-	now := x.run.Nanoseconds()
+	now := x.run.Now()
 	// TODO: If now - x.last is hugely negative we might want to report some sort of error
 	x.last = max64(now, x.last)
 	return x.last

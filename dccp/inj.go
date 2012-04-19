@@ -74,7 +74,7 @@ func (c *Conn) write(h *writeHeader) error {
 	// before the CCID gets to see it?
 	c.Lock()
 	c.WriteSeqAck(h)
-	c.WriteCC(&h.Header, c.writeTime.Nanoseconds())
+	c.WriteCC(&h.Header, c.writeTime.Now())
 	c.Unlock()
 
 	c.amb.E(EventWrite, "Write to header link", h)
