@@ -10,6 +10,10 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
+const (
+	rateDuration = 10e9   // Duration of rate test
+)
+
 // TestRate tests whether a single connection's one-way client-to-server rate converges to
 // limit imposed by connection in that the send rate has to:
 //	(1) converge and stabilize, and
@@ -20,20 +24,25 @@ import (
 func TestRate(t *testing.T) {
 
 	run, _ := NewRuntime("rate")
-	clientConn, serverConn, _, _ := NewClientServerPipe(run)
+	clientConn, serverConn, clientToServer, _ := NewClientServerPipe(run)
+
+	// Set rate limit on client-to-server connection
+	clientToServer.??
 
 	cchan := make(chan int, 1)
 	mtu := clientConn.GetMTU()
 	buf := make([]byte, mtu)
 	go func() {
 		t0 := run.Now()
-		for run.Now() - t0 < 10e9 {
+		for run.Now() - t0 < rateDuration {
 			err := clientConn.Write(buf)
 			if err != nil {
 				t.Errorf("error writing (%s)", err)
 				break
 			}
 		}
+		// Close is necessary because otherwise, if no read timeout is in place, the
+		// server sides hangs forever on Read
 		clientConn.Close()
 		close(cchan)
 	}()
@@ -41,9 +50,7 @@ func TestRate(t *testing.T) {
 	schan := make(chan int, 1)
 	go func() {
 		for {
-			fmt.Printf("pre-read\n")
 			_, err := serverConn.Read()
-			fmt.Printf("post-read\n")
 			if err == dccp.ErrEOF {
 				break 
 			} else if err != nil {
@@ -51,11 +58,16 @@ func TestRate(t *testing.T) {
 				break
 			}
 		}
+		serverConn.Close()
 		close(schan)
 	}()
 
 	_, _ = <-cchan
 	_, _ = <-schan
+
+	clientConn.Abort()
+	serverConn.Abort()
+
 	dccp.NewGoConjunction("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
 	dccp.NewAmb("line", run).E(dccp.EventMatch, "Server and client done.")
 	if err := run.Close(); err != nil {

@@ -1,5 +1,0 @@
-
-GoConj hangs in openclose
-	Run openclose without GoConj so I can ctrl+c
-
-gotoLISTEN: periodically wake up and check for abort
