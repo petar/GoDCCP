@@ -1,9 +1,13 @@
+Loss tests
+
 Rate tests
 	ensure one-way convergence test converges to rate limit of sandbox line
 		vary data size
 		vary roundtrip time
 		measure response to changes to either
 	ensure two competing connections behave fairly
+
+Make an experiment class to unify boilerplate in tests
 
 Should loss.go's reorder buffer enforce ascending seq no output?
 
