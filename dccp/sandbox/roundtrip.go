@@ -163,7 +163,7 @@ func (x *roundtripCheckpoint) Write(r *dccp.LogRecord) {
 	}
 	for i, checkTime := range x.checkTimes {
 		if r.Time < checkTime {
-			slot[i] = reading
+			slot[i] = reading.Value
 		}
 	}
 }

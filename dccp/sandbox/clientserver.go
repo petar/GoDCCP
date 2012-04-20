@@ -15,9 +15,9 @@ import (
 // and duplicates all emits to any number of additional guzzles, which are usually used to check
 // test conditions. The GuzzlePlex is returned to facilitate adding further guzzles.
 func NewRuntime(guzzleFilename string, guzzles ...dccp.Guzzle) (run *dccp.Runtime, plex *GuzzlePlex) {
-	plex = NewGuzzlePlex(guzzles...)
-	fileGuzzle := dccp.NewFileGuzzleDup(path.Join(os.Getenv("DCCPLOG"), guzzleFilename + ".emit"), plex)
-	return dccp.NewRuntime(dccp.RealTime, fileGuzzle), plex
+	fileGuzzle := dccp.NewFileGuzzle(path.Join(os.Getenv("DCCPLOG"), guzzleFilename + ".emit"))
+	plex = NewGuzzlePlex(append(guzzles, fileGuzzle)...)
+	return dccp.NewRuntime(dccp.RealTime, plex), plex
 }
 
 // NewClientServerPipe creates a sandbox communication pipe and attaches a DCCP client and a DCCP

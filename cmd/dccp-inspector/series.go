@@ -19,8 +19,8 @@ type SeriesSweeper struct {
 
 type sample struct {
 	Series string
-	X      float64
-	Y      float64
+	Time   float64
+	Value  float64
 }
 
 // Init resets the SeriesSweeper for new user.
@@ -32,27 +32,30 @@ func (x *SeriesSweeper) Init() {
 // Add adds a new log record to the series. It assumes that records are added
 // in increasing chronological order
 func (x *SeriesSweeper) Add(r *dccp.LogRecord) {
+	if !r.IsHighlighted() {
+		return
+	}
 	// Check that the argument is a sample
 	m_, ok := r.Args[dccp.SampleType]
 	if !ok {
 		return
 	}
-	// Extract the sample data
-	y := m_.(map[string]interface{})["Value"].(float64)
-	// Remember the series
-	series := r.LabelString()
+	// Read sample data
+	m := m_.(map[string]interface{})
+	value := m["Value"].(float64)
+	series := r.LabelString() + m["Series"].(string)
 	for _, u := range x.series {
 		if u == series {
 			goto __SeriesSaved
 		}
 	}
 	x.series = append(x.series, series)
-	__SeriesSaved:
+__SeriesSaved:
 	// Remember the sample
 	u := &sample{
 		Series: series,
-		X:      float64(r.Time) / 1e6,	// Time, X-coordinate, always in milliseconds
-		Y:      y,
+		Time:   float64(r.Time) / 1e6,	// Time, X-coordinate, always in milliseconds
+		Value:  value,
 	}
 	x.chrono.PushBack(u)
 }
@@ -64,10 +67,10 @@ func (x *SeriesSweeper) EncodeData(w io.Writer) error {
 	for e := x.chrono.Front(); e != nil; e = e.Next() {
 		s := e.Value.(*sample)
 		bw.WriteByte(byte('['))
-		fmt.Fprintf(bw, "%0.3f,", s.X)
+		fmt.Fprintf(bw, "%0.3f,", s.Time)
 		for i, series := range x.series {
 			if series == s.Series {
-				fmt.Fprintf(bw, "%0.3f", s.Y)
+				fmt.Fprintf(bw, "%0.3f", s.Value)
 			} else {
 				bw.WriteString("null")
 			}

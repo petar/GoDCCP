@@ -10,9 +10,14 @@ import (
 )
 
 // RoundtripSample converts a roundtrip time in nanosecond to a floating-point time in milliseconds
-func RoundtripSample(rtt int64) dccp.Sample {
-	return dccp.NewSample(float64(rtt) / 1e6)
+func RoundtripSample(series string, rtt int64) dccp.Sample {
+	return dccp.NewSample(series, float64(rtt) / 1e6, "ms")
 }
+
+const (
+	RoundtripElapsedSample = "RTT-Elapsed"
+	RoundtripReportSample  = "RTT-Report"
+)
 
 // Checkpoint types are attached to emits to mark them so they can be singled out in test guzzles
 // that check for certain conditions on these "checkpoint emits"
@@ -133,7 +138,7 @@ func (t *senderRoundtripEstimator) OnRead(fb *dccp.FeedbackHeader) bool {
 			(SenderRoundtripWeightNew + SenderRoundtripWeightOld)
 	}
 	t.amb.E(dccp.EventMatch, fmt.Sprintf("Elapsed —> RTT=%s", dccp.Nstoa(t.estimate)), fb, 
-		RoundtripSample(t.estimate), RoundtripElapsedCheckpoint)
+		RoundtripSample(RoundtripElapsedSample, t.estimate), RoundtripElapsedCheckpoint)
 
 	return true
 }
@@ -200,7 +205,7 @@ func (t *receiverRoundtripEstimator) OnRead(ff *dccp.FeedforwardHeader) bool {
 	// Update RTT estimate
 	t.rtt, t.rttTime = rtt, ff.Time
 	t.amb.E(dccp.EventMatch, fmt.Sprintf("Report —> RTT=%s", dccp.Nstoa(t.rtt)), ff, 
-		RoundtripSample(t.rtt), RoundtripReportCheckpoint)
+		RoundtripSample(RoundtripReportSample, t.rtt), RoundtripReportCheckpoint)
 
 	return true
 }

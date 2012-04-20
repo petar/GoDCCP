@@ -7,6 +7,7 @@ package sandbox
 import (
 	"testing"
 	"github.com/petar/GoDCCP/dccp"
+	"github.com/petar/GoDCCP/dccp/ccid3"
 )
 
 const (
@@ -24,6 +25,7 @@ func TestRoundtripEstimation(t *testing.T) {
 	run, plex := NewRuntime("rtt")
 	plex.Add(reducer)
 	plex.Add(newRoundtripCheckpoint(run, t))
+	plex.HighlightSamples(ccid3.RoundtripElapsedSample, ccid3.RoundtripReportSample)
 
 	clientConn, serverConn, clientToServer, _ := NewClientServerPipe(run)
 

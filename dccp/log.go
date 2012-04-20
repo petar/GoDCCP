@@ -56,6 +56,10 @@ type LogRecord struct {
 
 	// Trace is the stack trace at the log entry's creation point
 	Trace      string  `json:"st"`
+
+	// Highlight indicates whether this record is of particular interest. Used for visualization purposes.
+	// Currently, the inspector draws time series only for highlighted records.
+	Highlight  bool
 }
 
 // LabelString returns a textual representation of the label stack of this log
@@ -83,13 +87,24 @@ func (x *LogRecord) ArgOfType(example interface{}) interface{} {
 }
 
 // Sample returns the value of a sample embedded in this log record, if it exists
-func (x *LogRecord) Sample() (value float64, prsent bool) {
+func (x *LogRecord) Sample() (sample *Sample, present bool) {
 	s_, ok := x.Args[TypeOf(Sample{})]
 	if !ok {
-		return 0, false
+		return nil, false
 	}
 	s := s_.(Sample)
-	return s.Value, true
+	return &s, true
+}
+
+// Highlight sets the highlight flag on this LogRecord. This is used in test-specific
+// Guzzles to indicate to the inspector that this record is of particular interest for
+// visualization purposes.
+func (x *LogRecord) SetHighlight() {
+	x.Highlight = true
+}
+
+func (x *LogRecord) IsHighlighted() bool {
+	return x.Highlight
 }
 
 // One Sample argument can be attached to a log. The inspector interprets it as a data point
@@ -98,12 +113,14 @@ func (x *LogRecord) Sample() (value float64, prsent bool) {
 //   (ii)  The X-value of the data point equals the time the log was emitted
 //   (iii) The Y-value of the data point is stored inside the Sample object
 type Sample struct {
-	Value float64
+	Series string
+	Value  float64
+	Unit   string
 }
 var SampleType = TypeOf(Sample{})
 
-func NewSample(value float64) Sample {
-	return Sample{value}
+func NewSample(name string, value float64, unit string) Sample {
+	return Sample{name, value, unit}
 }
 
 // Event is the type of logging event.

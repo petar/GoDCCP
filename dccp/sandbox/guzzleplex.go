@@ -10,7 +10,8 @@ import (
 
 // GuzzlePlex is a dccp.Guzzle that replicates Guzzle method invocations to a set of Guzzles
 type GuzzlePlex struct {
-	guzzles []dccp.Guzzle
+	guzzles   []dccp.Guzzle
+	highlight []string
 }
 
 func NewGuzzlePlex(guzzles ...dccp.Guzzle) *GuzzlePlex {
@@ -19,16 +20,32 @@ func NewGuzzlePlex(guzzles ...dccp.Guzzle) *GuzzlePlex {
 	}
 }
 
+// HighlightSamples instructs the guzzle to highlight any records carrying samples of the given names
+func (t *GuzzlePlex) HighlightSamples(samples ...string) {
+	t.highlight = samples
+}
+
+// Add adds an additional guzzle to the plex
 func (t *GuzzlePlex) Add(g dccp.Guzzle) {
 	t.guzzles = append(t.guzzles, g)
 }
 
 func (t *GuzzlePlex) Write(r *dccp.LogRecord) {
+	sample, ok := r.Sample()
+	if ok {
+		for _, hi := range t.highlight {
+			if sample.Series == hi {
+				r.SetHighlight()
+				break
+			}
+		}
+	}
 	for _, g := range t.guzzles {
 		g.Write(r)
 	}
 }
 
+// Sync syncs all the guzzles in the plex
 func (t *GuzzlePlex) Sync() error {
 	var err error
 	for _, g := range t.guzzles {
@@ -40,6 +57,7 @@ func (t *GuzzlePlex) Sync() error {
 	return err
 }
 
+// Close closes all the guzzles in the plex
 func (t *GuzzlePlex) Close() error {
 	var err error
 	for _, g := range t.guzzles {
