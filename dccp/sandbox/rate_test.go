@@ -11,7 +11,9 @@ import (
 )
 
 const (
-	rateDuration = 10e9   // Duration of rate test
+	rateDuration           = 10e9   // Duration of rate test
+	rateInterval           = 1e9
+	ratePacketsPerInterval = 50
 )
 
 // TestRate tests whether a single connection's one-way client-to-server rate converges to
@@ -21,13 +23,16 @@ const (
 //		(2.a) either be closely below the connection limit,
 //		(2.b) or be closely above the connection limit (and maintain a drop rate below some threshold)
 // A two-way test is not necessary as the congestion mechanisms in either direction are completely independent.
+//
+// NOTE: Pipe currently supports rate simulation in packets per time interval. If we want to test behavior
+// under variable packet sizes, we need to implement rate simulation in bytes per interval.
 func TestRate(t *testing.T) {
 
 	run, _ := NewRuntime("rate")
 	clientConn, serverConn, clientToServer, _ := NewClientServerPipe(run)
 
 	// Set rate limit on client-to-server connection
-	clientToServer.??
+	clientToServer.SetWriteRate(rateInterval, ratePacketsPerInterval)
 
 	cchan := make(chan int, 1)
 	mtu := clientConn.GetMTU()

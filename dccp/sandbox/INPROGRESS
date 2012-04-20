@@ -1,1 +1,6 @@
+Produce setRate samples
+	Test logic append a "show" token to log arguments that pertain to this test and should be displayed in inspector output
+
+Reducer for actual rate
+
 Should we send NON-data packets immediately, bypassing rate control?

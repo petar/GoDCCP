@@ -8,3 +8,32 @@ These interactions would be one of:
 	return from blocking exchange with external environment
 	kill goroutine (can we capture these?)
 	spawn go-routine	
+
+
+Example program for article:
+Say F is as follows:
+
+func F(api TimeAPI) (dur time.Duration) {
+	d := make(chan int)
+	c := make(chan time.Time)
+	go func() {
+		api.Sleep(2e9)
+		c <- api.Now()
+		d <- 1
+	}()
+	go func() {
+		api.Sleep(1e9)
+		c <- api.Now()
+		d <- 1
+	}()
+	go func() {
+		t0 := <-c
+		t1 := <-c
+		dur = t1.Sub(t0)
+		d <- 1
+	}()
+	<-d
+	<-d
+	<-d
+	return
+}

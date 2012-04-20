@@ -1,0 +1,2 @@
+#!/bin/sh
+go test -test.run=Rate; dccp-inspector -emits=true var/rate.emit > var/rate.html
