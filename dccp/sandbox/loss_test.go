@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	lossDuration     = 5e9        // Duration of the experiment in ns
+	lossDuration     = 10e9        // Duration of the experiment in ns
 	lossSendRate     = 23          // Fixed sender rate in pps
 	lossTransmitRate = 20          // Fixed transmission rate of the network in pps
 )

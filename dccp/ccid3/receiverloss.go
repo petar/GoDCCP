@@ -80,6 +80,7 @@ func (t *receiverLossTracker) OnRead(ff *dccp.FeedforwardHeader, rtt int64) erro
 	ff = t.pushPopHeader(ff)
 	if ff != nil {
 		t.evolveInterval.OnRead(ff, rtt)
+		XX
 	}
 	return nil
 }
@@ -144,7 +145,13 @@ func (t *receiverLossTracker) LossDigestOption() *LossDigestOption {
 // history of loss intervals as well as the current (unfinished) interval, if sufficiently long.
 // A return value of UknownLossEventRateInv indicates that no lost packets have been encountered yet.
 func (t *receiverLossTracker) LossEventRateInv() uint32 {
-	return t.lossRateCalculator.CalcLossEventRateInv(t.listIntervals())
+	rateInv := t.lossRateCalculator.CalcLossEventRateInv(t.listIntervals())
+	t.amb.E(
+		dccp.EventMatch, 
+		fmt.Sprintf("receiver est loss event rate inv %0.3f%%", 100 / float64(rateInv)),
+		LossSample(LossReceiverEstimateSample, rateInv),
+	)
+	return rateInv
 }
 
 // lossHistory is a data structure that keeps track of a limited number of past loss
