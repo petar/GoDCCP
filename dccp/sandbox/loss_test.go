@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	lossDuration     = 10e9        // Duration of the experiment in ns
+	lossDuration     = 5e9        // Duration of the experiment in ns
 	lossSendRate     = 23          // Fixed sender rate in pps
 	lossTransmitRate = 20          // Fixed transmission rate of the network in pps
 )
@@ -20,7 +20,7 @@ const (
 func TestLoss(t *testing.T) {
 
 	run, plex := NewRuntime("loss")
-	plex.HighlightSamples(??)
+	plex.HighlightSamples(ccid3.LossReceiverEstimateSample)
 
 	clientConn, serverConn, clientToServer, _ := NewClientServerPipe(run)
 

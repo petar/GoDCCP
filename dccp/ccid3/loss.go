@@ -6,6 +6,16 @@ package ccid3
 
 import (
 	"math"
+	"github.com/petar/GoDCCP/dccp"
+)
+
+// LossSample generates a log sample with loss information
+func LossSample(series string, lossRateInv uint32) dccp.Sample {
+	return dccp.NewSample(series, 100 /float64(lossRateInv), "%")
+}
+
+const (
+	LossReceiverEstimateSample = "Loss-Receiver"
 )
 
 // lossRateCalculator calculates the inverse of the loss event rate as

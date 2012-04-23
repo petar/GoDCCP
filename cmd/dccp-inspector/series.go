@@ -78,10 +78,11 @@ func (x *SeriesSweeper) EncodeData(w io.Writer) error {
 				bw.WriteByte(byte(','))
 			}
 		}
-		bw.WriteString("]\n")
+		bw.WriteByte(']')
 		if e.Next() != nil {
 			bw.WriteByte(byte(','))
 		}
+		bw.WriteByte('\n')
 	}
 	bw.WriteByte(byte(']'))
 	return bw.Flush()

@@ -100,6 +100,11 @@ func (r *receiver) OnWrite(ph *dccp.PreHeader) (options []*dccp.Option) {
 		r.lastAck = ph.TimeWrite
 		r.dataSinceAck = false
 		r.lastLossEventRateInv = r.receiverLossTracker.LossEventRateInv()
+		r.amb.E(
+			dccp.EventMatch, 
+			fmt.Sprintf("R·lossTracker %g", 1 / float64(r.lastLossEventRateInv)),
+			LossSample(LossReceiverEstimateSample, r.lastLossEventRateInv),
+		)
 		r.lastCCVal = r.latestCCVal
 
 		// Prepare feedback options, if we've seen packets before
