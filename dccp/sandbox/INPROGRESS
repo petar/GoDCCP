@@ -1,10 +1,24 @@
 Loss
 	Why is the server series null sometimes?
-	Make reducer that measures actual loss.
+	Why does c<—s report 20+ percent loss when inspector shows none
 
+Why does the (roundtrip/loss) measure report ~15% loss server-to-client, when the pipe is configured not
+to drop at all.
+	These are packets dropped due to full send queue. They are Acks that are send in response to
+	every received DataAck packet.
+
+		?		
+
+	Packets that are dropped due to "Slow strobe", i.e. before they even get into the send queue,
+	are never assigned sequence numbers and therefore they are never captured by the internal 
+	sequence-number-based loss estimation mechanism.
+
+
+____________________________________
 Produce setRate samples
 	Test logic append a "show" token to log arguments that pertain to this test and should be displayed in inspector output
 
 Reducer for actual rate
 
+____________________________________
 Should we send NON-data packets immediately, bypassing rate control?

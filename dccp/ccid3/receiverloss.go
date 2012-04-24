@@ -5,6 +5,7 @@
 package ccid3
 
 import (
+	"fmt"
 	"github.com/petar/GoDCCP/dccp"
 )
 
@@ -80,7 +81,6 @@ func (t *receiverLossTracker) OnRead(ff *dccp.FeedforwardHeader, rtt int64) erro
 	ff = t.pushPopHeader(ff)
 	if ff != nil {
 		t.evolveInterval.OnRead(ff, rtt)
-		XX
 	}
 	return nil
 }

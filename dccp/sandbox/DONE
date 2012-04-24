@@ -1,3 +1,20 @@
+Loss
+----
+
+Why does the (roundtrip/loss) gauge report ~15% loss server-to-client, when the pipe is configured not
+to drop at all.
+	These are packets dropped due to full send queue. They are Acks that are send in response to
+	every received DataAck packet.
+
+		?		
+
+	Packets that are dropped due to "Slow strobe", i.e. before they even get into the send queue,
+	are never assigned sequence numbers and therefore they are never captured by the internal 
+	sequence-number-based loss estimation mechanism.
+
+Roundtrip
+---------
+
 Can endpoints estimate RTT?
 * Yes. Test included.
 

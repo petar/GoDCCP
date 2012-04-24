@@ -21,7 +21,7 @@ const (
 // TestRoundtripEstimation checks that round-trip times are estimated accurately.
 func TestRoundtripEstimation(t *testing.T) {
 
-	reducer := newRoundtripMeasure(t)
+	reducer := NewMeasure(t)
 	run, plex := NewRuntime("rtt")
 	plex.Add(reducer)
 	plex.Add(newRoundtripCheckpoint(run, t))

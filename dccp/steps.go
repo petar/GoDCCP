@@ -299,7 +299,7 @@ func (c *Conn) step16_ProcessData(h *Header) error {
 		if len(c.readApp) < cap(c.readApp) {
 			c.readApp <- h.Data
 		} else {
-			c.amb.E(EventDrop, "Slow app")
+			c.amb.E(EventDrop, "Slow app", h)
 		}
 	}
 	c.readAppLk.Unlock()

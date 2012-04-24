@@ -5,6 +5,7 @@
 package sandbox
 
 import (
+	"fmt"
 	"testing"
 	"github.com/petar/GoDCCP/dccp"
 	"github.com/petar/GoDCCP/dccp/ccid3"
@@ -12,14 +13,16 @@ import (
 
 const (
 	lossDuration     = 10e9        // Duration of the experiment in ns
-	lossSendRate     = 23          // Fixed sender rate in pps
+	lossSendRate     = 40          // Fixed sender rate in pps
 	lossTransmitRate = 20          // Fixed transmission rate of the network in pps
 )
 
 // TestLoss checks that loss estimation matches actual
 func TestLoss(t *testing.T) {
 
+	reducer := NewMeasure(t)
 	run, plex := NewRuntime("loss")
+	plex.Add(reducer)
 	plex.HighlightSamples(ccid3.LossReceiverEstimateSample)
 
 	clientConn, serverConn, clientToServer, _ := NewClientServerPipe(run)
@@ -59,6 +62,8 @@ func TestLoss(t *testing.T) {
 
 	_, _ = <-cchan
 	_, _ = <-schan
+
+	fmt.Println(reducer.String())
 
 	// Shutdown the connections properly
 	clientConn.Abort()

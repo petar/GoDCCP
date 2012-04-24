@@ -247,48 +247,64 @@ func pipeDrop(r *dccp.LogRecord) *emitPipe {
 			return &emitPipe{
 				Pipe: emitSubPipe{
 					Detail: sprintPacketWidth(r, htmlPacketWidth),
-					Left:   "D<——",
+					Left:   "X<——",
 				},
 			}
 		case "client":
 			return &emitPipe{
 				Pipe: emitSubPipe{
 					Detail: sprintPacketWidth(r, htmlPacketWidth),
-					Right:  "——>D",
+					Right:  "——>X",
 				},
 			}
+		default:
+			panic("line drop without side")
 		}
 	case "client":
 		switch r.Comment {
-		case "Slow app":
+		case "Slow app", "Bad header":
 			return &emitPipe{
 				Client: emitSubPipe{
 					Detail: sprintPacketWidth(r, htmlPacketWidth),
-					Right:  "D<——",
+					Right:  "X<——",
 				},
 			}
 		case "Slow strobe":
 			return &emitPipe{
 				Client: emitSubPipe{
 					Detail: sprintPacketWidth(r, htmlPacketWidth),
-					Right:  "——>D",
+					Right:  "——>X",
+				},
+			}
+		default:
+			return &emitPipe{
+				Client: emitSubPipe{
+					Detail: sprintPacketWidth(r, htmlPacketWidth),
+					Right:  "—XX—",
 				},
 			}
 		}
 	case "server":
 		switch r.Comment {
-		case "Slow app":
+		case "Slow app", "Bad header":
 			return &emitPipe{
 				Server: emitSubPipe{
 					Detail: sprintPacketWidth(r, htmlPacketWidth),
-					Left:  "——>D",
+					Left:  "——>X",
 				},
 			}
 		case "Slow strobe":
 			return &emitPipe{
 				Server: emitSubPipe{
 					Detail: sprintPacketWidth(r, htmlPacketWidth),
-					Left:  "D<——",
+					Left:  "X<——",
+				},
+			}
+		default:
+			return &emitPipe{
+				Server: emitSubPipe{
+					Detail: sprintPacketWidth(r, htmlPacketWidth),
+					Left:  "—XX—",
 				},
 			}
 		}
