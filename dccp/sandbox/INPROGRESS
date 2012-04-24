@@ -7,7 +7,9 @@ to drop at all.
 	These are packets dropped due to full send queue. They are Acks that are send in response to
 	every received DataAck packet.
 
-		?		
+		Why are they dropped? Send queue should never fill up given that the server-to-client
+		has fixed speed at same rate as client-to-server send rate and higher rate than
+		actually transmitted client-to-server traffic.
 
 	Packets that are dropped due to "Slow strobe", i.e. before they even get into the send queue,
 	are never assigned sequence numbers and therefore they are never captured by the internal 
