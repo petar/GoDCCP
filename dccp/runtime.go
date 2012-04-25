@@ -103,7 +103,7 @@ func (t *Runtime) Expire(test func()bool, onexpire func(), timeout, interval int
 	}, fmt_, args_...)
 }
 
-// Time is an interface for interacting time
+// Time is an interface for interacting with time
 type Time interface {
 	// Now returns the current time in nanoseconds since UTC zero
 	Now() int64

@@ -14,7 +14,7 @@ type Runtime interface {
 	Go(f func())
 }
 
-type SynTime struct {
+type syntheticTime struct {
 	reqch chan interface{}
 }
 
@@ -39,7 +39,7 @@ type requestDie struct{}
 // for the duration of time required to execute all non-blocking (in the
 // traditional sense of the word) code in g.
 func GoSynthetic(g func(Runtime)) {
-	s := &SynTime{
+	s := &syntheticTime{
 		reqch: make(chan interface{}, 1),
 	}
 	s.Go(func() { g(s) })
@@ -51,7 +51,7 @@ type scheduledToSleep struct {
 	resp chan int
 }
 
-func (x *SynTime) loop() {
+func (x *syntheticTime) loop() {
 	var sleepers sleeperQueue
 	var now int64
 	var ntogo int = 0
@@ -92,7 +92,7 @@ func (x *SynTime) loop() {
 	}
 }
 
-func (x *SynTime) Sleep(nsec int64) {
+func (x *syntheticTime) Sleep(nsec int64) {
 	resp := make(chan int)
 	x.reqch <- requestSleep{
 		duration: nsec,
@@ -101,7 +101,7 @@ func (x *SynTime) Sleep(nsec int64) {
 	<-resp
 }
 
-func (x *SynTime) Now() int64 {
+func (x *syntheticTime) Now() int64 {
 	resp := make(chan int64)
 	x.reqch <- requestNow{
 		resp: resp,
@@ -109,7 +109,7 @@ func (x *SynTime) Now() int64 {
 	return <-resp
 }
 
-func (x *SynTime) Go(f func()) {
+func (x *syntheticTime) Go(f func()) {
 	x.reqch <- requestGo{}
 	go func() {
 		f()
@@ -117,7 +117,7 @@ func (x *SynTime) Go(f func()) {
 	}()
 }
 
-func (x *SynTime) die() {
+func (x *syntheticTime) die() {
 	x.reqch <- requestDie{}
 }
 

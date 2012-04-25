@@ -7,12 +7,9 @@ package sandbox
 import (
 	"bytes"
 	"fmt"
-	"math"
-	"os"
 	"testing"
 	"time"
 	"github.com/petar/GoDCCP/dccp"
-	"github.com/petar/GoDCCP/dccp/ccid3"
 )
 
 // Measure is a dccp.Guzzle which listens to the logs emitted from the
@@ -136,92 +133,4 @@ func (x *Measure) String() string {
 func (x *Measure) Close() error { 
 	//fmt.Println(x.String())
 	return nil 
-}
-
-// roundtripCheckpoint verifies that roundtrip estimates are within expected at
-// different point in time in the Roundtrip test.
-type roundtripCheckpoint struct {
-	run   *dccp.Runtime
-	t     *testing.T
-
-	checkTimes    []int64		// Times when test conditions are checked
-	expected      []float64		// Approximate expected value of variables at respective times
-	tolerance     []float64         // Multiplicative error tolerance with respect to expected
-
-	clientElapsed []float64		// Readings for test variables from client of roundtrip estimate after "elapsed" event
-	clientReport  []float64
-	serverElapsed []float64
-	serverReport  []float64
-
-}
-
-func newRoundtripCheckpoint(run *dccp.Runtime, t *testing.T) *roundtripCheckpoint {
-	return &roundtripCheckpoint{
-		run: run,
-		t:   t,
-		checkTimes:    []int64{roundtripDuration / 2, roundtripDuration},
-		expected:      []float64{NanoToMilli(roundtripComputationalLatency), NanoToMilli(roundtripLatency)},
-		tolerance:     []float64{1.0, 0.15},
-		clientElapsed: make([]float64, 2),
-		clientReport:  make([]float64, 2),
-		serverElapsed: make([]float64, 2),
-		serverReport:  make([]float64, 2),
-	}
-}
-
-func (x *roundtripCheckpoint) Write(r *dccp.LogRecord) {
-	reading, ok := r.Sample()
-	if !ok {
-		return
-	}
-
-	var slot []float64
-	switch {
-	case r.ArgOfType(ccid3.RoundtripElapsedCheckpoint) != nil:
-		endpoint := r.Labels[0]
-		switch endpoint {
-		case "client":
-			slot = x.clientElapsed
-		case "server":
-			slot = x.serverElapsed
-		}
-	case r.ArgOfType(ccid3.RoundtripReportCheckpoint) != nil:
-		endpoint := r.Labels[0]
-		switch endpoint {
-		case "client":
-			slot = x.clientReport
-		case "server":
-			slot = x.serverReport
-		}
-	}
-	if slot == nil {
-		return
-	}
-	for i, checkTime := range x.checkTimes {
-		if r.Time < checkTime {
-			slot[i] = reading.Value
-		}
-	}
-}
-
-func (x *roundtripCheckpoint) Sync() error { 
-	return nil 
-}
-
-func (x *roundtripCheckpoint) Close() error { 
-	checkDeviation(x.t, "client-elapsed", x.clientElapsed, x.expected, x.tolerance)
-	checkDeviation(x.t, "client-report", x.clientReport, x.expected, x.tolerance)
-	checkDeviation(x.t, "server-elapsed", x.serverElapsed, x.expected, x.tolerance)
-	checkDeviation(x.t, "server-report", x.serverReport, x.expected, x.tolerance)
-	return nil 
-}
-
-func checkDeviation(t *testing.T, name string, actual []float64, expected []float64, tolerance []float64) {
-	for i, _ := range actual {
-		dev := math.Abs(actual[i]-expected[i]) / expected[i]
-		if dev > tolerance[i] {
-			fmt.Fprintf(os.Stderr, "%s=%v, expected=%v, tolerance=%v\n", name, actual, expected, tolerance)
-			t.Errorf("%s deviates by %0.2f%% in i-th term", name, dev * 100, i)
-		}
-	}
 }
