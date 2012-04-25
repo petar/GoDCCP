@@ -1,7 +1,8 @@
-package sandbox
+package dccp
 
 import (
 	"sort"
+	"time"
 )
 
 // Runtime represents an environment of execution, and in particular the notion of time.
@@ -9,17 +10,40 @@ import (
 // "What time is it?") as well as in way of asking for actions (e.g. "Fork a
 // new goroutine!") being taken.
 type Runtime interface {
+
+	// Sleep blocks for ns nanoseconds 
 	Sleep(nsec int64)
+
+	// Now returns the current time in nanoseconds since an abstract 0-moment
 	Now() int64
+
+	// Go executes f in a new goroutine
 	Go(f func())
 }
 
+// RealTime is an implementation of Runtime that represents real time
+type realTime struct {}
+
+var RealTime realTime
+
+func (realTime) Now() int64 {
+	return time.Now().UnixNano()
+}
+
+func (realTime) Sleep(ns int64) {
+	time.Sleep(time.Duration(ns))
+}
+
+func (realTime) Go(f func()) {
+	go f()
+}
+
+// syntheticTime is a Runtime implementation that simulates real time without performing real sleeping
 type syntheticTime struct {
 	reqch chan interface{}
 }
 
-// Internal request types
-
+// request message types
 type requestSleep struct {
 	duration int64
 	resp     chan int

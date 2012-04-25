@@ -163,9 +163,14 @@ func (x *headerHalfPipe) Read() (h *dccp.Header, err error) {
 
 var sleepingChan = make(chan int64)
 
-func (x *headerHalfPipe) makeTimeoutChan(timeout int64) (ch <-chan int64) {
+func (x *headerHalfPipe) makeTimeoutChan(timeout int64) (<-chan int64) {
+	var ch chan int64
 	if timeout > 0 {
-		ch = x.env.After(int64(timeout))
+		ch = make(chan int64)
+		x.env.Go(func() {
+			x.env.Sleep(timeout)
+			close(ch)
+		}, "pipe timeout")
 	} else {
 		ch = sleepingChan
 	}

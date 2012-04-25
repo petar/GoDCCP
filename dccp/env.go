@@ -6,7 +6,6 @@ package dccp
 
 import (
 	"sync"
-	gotime "time"
 	"github.com/petar/GoGauge/filter"
 )
 
@@ -14,20 +13,20 @@ import (
 // time interface, in order to allow for use of real as well as synthetic (accelerated) time
 // (for testing purposes), as well as a amb interface.
 type Env struct {
-	time   Time
-	guzzle Guzzle
-	filter *filter.Filter
-	gojoin *GoJoin
+	runtime Runtime
+	guzzle  Guzzle
+	filter  *filter.Filter
+	gojoin  *GoJoin
 
 	sync.Mutex
 	timeZero int64 // Time when execution started
 	timeLast int64 // Time of last log message
 }
 
-func NewEnv(time Time, guzzle Guzzle) *Env {
-	now := time.Now()
+func NewEnv(runtime Runtime, guzzle Guzzle) *Env {
+	now := runtime.Now()
 	r := &Env{
-		time:     time,
+		runtime:  runtime,
 		guzzle:   guzzle,
 		filter:   filter.NewFilter(),
 		gojoin:   NewGoJoin("Env"),
@@ -37,9 +36,9 @@ func NewEnv(time Time, guzzle Guzzle) *Env {
 	return r
 }
 
-// Go runs f in a new GoRoutine, which is also added to the GoConj of the Env
-func (t *Env) Go(f func(), afmt string, aargs ...interface{}) {
-	t.gojoin.Go(f, afmt, aargs...)
+// Go runs f in a new GoRoutine. The GoRoutine is also added to the GoJoin of the Env.
+func (t *Env) Go(f func(), fmt_ string, args_ ...interface{}) {
+	t.gojoin.Go(f, fmt_, args_...)
 }
 
 func (t *Env) Waiter() Waiter {
@@ -63,15 +62,11 @@ func (t *Env) Close() error {
 }
 
 func (t *Env) Now() int64 {
-	return t.time.Now()
+	return t.runtime.Now()
 }
 
 func (t *Env) Sleep(ns int64) {
-	t.time.Sleep(ns)
-}
-
-func (t *Env) After(ns int64) <-chan int64 {
-	return t.time.After(ns)
+	t.runtime.Sleep(ns)
 }
 
 func (t *Env) Snap() (sinceZero int64, sinceLast int64) {
@@ -101,91 +96,4 @@ func (t *Env) Expire(test func()bool, onexpire func(), timeout, interval int64, 
 		}
 		onexpire()
 	}, fmt_, args_...)
-}
-
-// Time is an interface for interacting with time
-type Time interface {
-	// Now returns the current time in nanoseconds since UTC zero
-	Now() int64
-
-	// Sleep blocks for ns nanoseconds 
-	Sleep(ns int64)
-
-	// After returns a channel which sends the current time once, exactly ns later
-	After(ns int64) <-chan int64
-
-	// NewTicker creates a new time ticker that attemps to beat each ns
-	NewTicker(ns int64) Ticker
-}
-
-// Ticker is an interface for representing a uniform time ticker
-type Ticker interface {
-	Chan() <-chan int64
-	Stop()
-}
-
-// RealTime is an implementation of Time that represents real time
-var RealTime realTime
-
-type realTime struct {}
-
-
-func (realTime) Now() int64 {
-	return gotime.Now().UnixNano()
-}
-
-func (realTime) Sleep(ns int64) {
-	gotime.Sleep(gotime.Duration(ns))
-}
-
-func (realTime) After(ns int64) <-chan int64 {
-	d := make(chan int64, 1)
-	go func(){
-		gotime.Sleep(gotime.Duration(ns))
-		d <- gotime.Now().UnixNano()
-		close(d)
-	}()
-	return d
-}
-
-func (realTime) NewTicker(ns int64) Ticker {
-	return newTicker(gotime.NewTicker(gotime.Duration(ns)))
-}
-
-// realTicker proxies time.Ticker to the local interface Ticker
-type realTicker struct {
-	sync.Mutex
-	tkr *gotime.Ticker
-	c   chan int64
-}
-
-func newTicker(tkr *gotime.Ticker) *realTicker {
-	t := &realTicker{ tkr: tkr, c : make(chan int64) }
-	go func(){
-		for {
-			t.Lock()
-			tkr := t.tkr
-			t.Unlock()
-			if tkr == nil {
-				break
-			}
-			tm, ok := <-t.tkr.C
-			if !ok {
-				break
-			}
-			t.c <- tm.UnixNano()
-		}
-	}()
-	return t
-}
-
-func (t *realTicker) Chan() <-chan int64 {
-	return t.c
-}
-
-func (t *realTicker) Stop() {
-	t.Lock()
-	defer t.Unlock()
-	t.tkr.Stop()
-	t.tkr = nil
 }
