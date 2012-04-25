@@ -9,9 +9,9 @@ import (
 	"time"
 )
 
-func TestGoConjunction(t *testing.T) {
+func TestGoJoin(t *testing.T) {
 	var hello, world bool
-	NewGoConjunction("hello+world", 
+	NewGoJoin("hello+world", 
 		Go(func() { 
 			hello = true
 			time.Sleep(time.Second)

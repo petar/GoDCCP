@@ -104,9 +104,9 @@ func TrimFuncName(fname string) (trimmed string, isDCCP bool) {
 	return fname, false
 }
 
-// GoConjunction waits until a set of GoRoutines all complete. It also allows
+// GoJoin waits until a set of GoRoutines all complete. It also allows
 // new routines to be added dynamically before the completion event.
-type GoConjunction struct {
+type GoJoin struct {
 	srcFile    string
 	srcLine    int
 	annotation string
@@ -118,10 +118,10 @@ type GoConjunction struct {
 	slk     sync.Mutex	// Only one Wait can be called at a time
 }
 
-// NewGoConjunctionCaller creates an object capable of waiting until all supplied GoRoutines complete.
-func NewGoConjunctionCaller(skip int, annotation string, group ...Waiter) *GoConjunction {
+// NewGoJoinCaller creates an object capable of waiting until all supplied GoRoutines complete.
+func NewGoJoinCaller(skip int, annotation string, group ...Waiter) *GoJoin {
 	sfile, sline := FetchCaller(1 + skip)
-	var w *GoConjunction = &GoConjunction{ 
+	var w *GoJoin = &GoJoin{ 
 		srcFile:    sfile,
 		srcLine:    sline,
 		annotation: annotation,
@@ -134,12 +134,12 @@ func NewGoConjunctionCaller(skip int, annotation string, group ...Waiter) *GoCon
 	return w
 }
 
-func NewGoConjunction(annotation string, group ...Waiter) *GoConjunction {
-	return NewGoConjunctionCaller(1, annotation, group...)
+func NewGoJoin(annotation string, group ...Waiter) *GoJoin {
+	return NewGoJoinCaller(1, annotation, group...)
 }
 
 // String returns a unique, readable string representation of this instance.
-func (t *GoConjunction) String() string {
+func (t *GoJoin) String() string {
 	return fmt.Sprintf("%s:%d %s (%x)", t.srcFile, t.srcLine, t.annotation, t)
 }
 
@@ -147,7 +147,7 @@ func (t *GoConjunction) String() string {
 // as long as the current set of goroutines hasn't completed.
 // For instance, as long as you call Add from a GoRoutine which
 // is waited on by this object, the condtion will be met.
-func (t *GoConjunction) Add(u Waiter) {
+func (t *GoJoin) Add(u Waiter) {
 	t.lk.Lock()
 	defer t.lk.Unlock()
 	if t.kdone < 0 {
@@ -164,14 +164,14 @@ func (t *GoConjunction) Add(u Waiter) {
 // Go is a convenience method which forks f into a new GoRoutine and
 // adds the latter to the waiting queue. fmt is a formatted annotation
 // with arguments args.
-func (t *GoConjunction) Go(f func(), afmt string, aargs ...interface{}) {
-	t.Add(GoCaller(f, 1, afmt, aargs...))
+func (t *GoJoin) Go(f func(), fmt_ string, args_ ...interface{}) {
+	t.Add(GoCaller(f, 1, fmt_, args_...))
 }
 
 // Wait blocks until all goroutines in the group have completed.
 // Wait can be called concurrently. If called post-completion of the
 // goroutine group, Wait returns immediately.
-func (t *GoConjunction) Wait() {
+func (t *GoJoin) Wait() {
 	t.slk.Lock()
 	defer t.slk.Unlock()
 
@@ -203,7 +203,7 @@ func (t *GoConjunction) Wait() {
 	}
 }
 
-func (t* GoConjunction) stillRemain() bool {
+func (t* GoJoin) stillRemain() bool {
 	t.lk.Lock()
 	defer t.lk.Unlock()
 	return t.kdone >= 0 && t.kdone < len(t.group)

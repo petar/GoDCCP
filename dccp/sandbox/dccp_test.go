@@ -52,7 +52,7 @@ func TestOpenClose(t *testing.T) {
 	serverConn.Abort()
 	// However, even aborting leaves various connection go-routines lingering for a short while.
 	// The next line ensures that we wait until all go routines are done.
-	dccp.NewGoConjunction("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
+	dccp.NewGoJoin("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
 
 	dccp.NewAmb("line", env).E(dccp.EventMatch, "Server and client done.")
 	if err := env.Close(); err != nil {
@@ -99,7 +99,7 @@ func TestIdle(t *testing.T) {
 	<-schan
 	clientConn.Abort()
 	serverConn.Abort()
-	dccp.NewGoConjunction("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
+	dccp.NewGoJoin("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
 
 	dccp.NewAmb("line", env).E(dccp.EventMatch, "Server and client done.")
 	if err := env.Close(); err != nil {

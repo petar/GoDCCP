@@ -17,7 +17,7 @@ type Env struct {
 	time   Time
 	guzzle Guzzle
 	filter *filter.Filter
-	goconj *GoConjunction
+	gojoin *GoJoin
 
 	sync.Mutex
 	timeZero int64 // Time when execution started
@@ -30,7 +30,7 @@ func NewEnv(time Time, guzzle Guzzle) *Env {
 		time:     time,
 		guzzle:   guzzle,
 		filter:   filter.NewFilter(),
-		goconj:   NewGoConjunction("Env"),
+		gojoin:   NewGoJoin("Env"),
 		timeZero: now,
 		timeLast: now,
 	}
@@ -39,11 +39,11 @@ func NewEnv(time Time, guzzle Guzzle) *Env {
 
 // Go runs f in a new GoRoutine, which is also added to the GoConj of the Env
 func (t *Env) Go(f func(), afmt string, aargs ...interface{}) {
-	t.goconj.Go(f, afmt, aargs...)
+	t.gojoin.Go(f, afmt, aargs...)
 }
 
 func (t *Env) Waiter() Waiter {
-	return t.goconj
+	return t.gojoin
 }
 
 func (t *Env) Guzzle() Guzzle {

@@ -73,7 +73,7 @@ func TestRate(t *testing.T) {
 	clientConn.Abort()
 	serverConn.Abort()
 
-	dccp.NewGoConjunction("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
+	dccp.NewGoJoin("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
 	dccp.NewAmb("line", env).E(dccp.EventMatch, "Server and client done.")
 	if err := env.Close(); err != nil {
 		t.Errorf("error closing runtime (%s)", err)
