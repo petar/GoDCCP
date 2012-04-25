@@ -13,14 +13,14 @@ import (
 func TestNop(t *testing.T) {
 	// dccp.InstallCtrlCPanic()
 	// dccp.InstallTimeout(10e9)
-	run, _ := NewRuntime("nop")
+	run, _ := NewEnv("nop")
 	NewClientServerPipe(run)
 	run.Sleep(5e9)
 }
 
 // TestOpenClose verifies that connect and close handshakes function correctly
 func TestOpenClose(t *testing.T) {
-	run, _ := NewRuntime("openclose")
+	run, _ := NewEnv("openclose")
 	clientConn, serverConn, _, _ := NewClientServerPipe(run)
 
 	cchan := make(chan int, 1)
@@ -64,7 +64,7 @@ func TestOpenClose(t *testing.T) {
 // no unusual behavior occurs.
 func TestIdle(t *testing.T) {
 
-	run, _ := NewRuntime("idle")
+	run, _ := NewEnv("idle")
 	clientConn, serverConn, _, _ := NewClientServerPipe(run)
 	cargo := []byte{1, 2, 3}
 

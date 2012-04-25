@@ -13,11 +13,11 @@ import (
 // This may provide superfluous logic, but we use it for piece of mind.
 type monotoneTime struct {
 	sync.Mutex
-	run  *Runtime
+	run  *Env
 	last int64
 }
 
-func (x *monotoneTime) Init(runtime *Runtime) {
+func (x *monotoneTime) Init(runtime *Env) {
 	x.run = runtime
 	x.last = 0
 }

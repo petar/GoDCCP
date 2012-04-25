@@ -12,7 +12,7 @@ import (
 // senderStrober is an object that produces regular strobe intervals at a specified rate.
 // A senderStrober cannot be used before an initial call to SetInterval or SetRate.
 type senderStrober struct {
-	run    *dccp.Runtime
+	run    *dccp.Env
 	amb *dccp.Amb
 	dccp.Mutex
 	interval int64		// Maximum average time interval between packets, in nanoseconds
@@ -26,7 +26,7 @@ func BytesPerSecondToPacketsPer64Sec(bps uint32, ss uint32) int64 {
 }
 
 // Init resets the senderStrober instance for new use
-func (s *senderStrober) Init(run *dccp.Runtime, amb *dccp.Amb, bps uint32, ss uint32) {
+func (s *senderStrober) Init(run *dccp.Env, amb *dccp.Amb, bps uint32, ss uint32) {
 	s.run = run
 	s.amb = amb.Refine("strober")
 	s.SetRate(bps, ss)

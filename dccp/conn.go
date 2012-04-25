@@ -6,7 +6,7 @@ package dccp
 
 // Conn 
 type Conn struct {
-	run   *Runtime
+	run   *Env
 	amb   *Amb
 
 	hc    HeaderConn
@@ -39,7 +39,7 @@ func (c *Conn) Amb() *Amb {
 	return c.amb
 }
 
-func newConn(run *Runtime, amb *Amb, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
+func newConn(run *Env, amb *Amb, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
 	c := &Conn{
 		run:          run,
 		amb:          amb,
@@ -70,7 +70,7 @@ func newConn(run *Runtime, amb *Amb, hc HeaderConn, scc SenderCongestionControl,
 	return c
 }
 
-func NewConnServer(run *Runtime, amb *Amb, hc HeaderConn, 
+func NewConnServer(run *Env, amb *Amb, hc HeaderConn, 
 	scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
 
 	c := newConn(run, amb, hc, scc, rcc)
@@ -85,7 +85,7 @@ func NewConnServer(run *Runtime, amb *Amb, hc HeaderConn,
 	return c
 }
 
-func NewConnClient(run *Runtime, amb *Amb, hc HeaderConn, 
+func NewConnClient(run *Env, amb *Amb, hc HeaderConn, 
 	scc SenderCongestionControl, rcc ReceiverCongestionControl, serviceCode uint32) *Conn {
 
 	c := newConn(run, amb, hc, scc, rcc)

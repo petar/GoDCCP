@@ -28,7 +28,7 @@ const (
 // under variable packet sizes, we need to implement rate simulation in bytes per interval.
 func TestRate(t *testing.T) {
 
-	run, _ := NewRuntime("rate")
+	run, _ := NewEnv("rate")
 	clientConn, serverConn, clientToServer, _ := NewClientServerPipe(run)
 
 	// Set rate limit on client-to-server connection

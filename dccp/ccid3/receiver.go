@@ -9,13 +9,13 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-func newReceiver(run *dccp.Runtime, amb *dccp.Amb) *receiver {
+func newReceiver(run *dccp.Env, amb *dccp.Amb) *receiver {
 	return &receiver{ run: run, amb: amb.Refine("receiver") }
 }
 
 // receiver implements CCID3 congestion control and it conforms to dccp.ReceiverCongestionControl
 type receiver struct {
-	run    *dccp.Runtime
+	run    *dccp.Env
 	amb *dccp.Amb
 	dccp.Mutex
 	receiverRoundtripEstimator

@@ -25,7 +25,7 @@ const (
 func TestRoundtripEstimation(t *testing.T) {
 
 	reducer := NewMeasure(t)
-	run, plex := NewRuntime("rtt")
+	run, plex := NewEnv("rtt")
 	plex.Add(reducer)
 	plex.Add(newRoundtripCheckpoint(run, t))
 	plex.HighlightSamples(ccid3.RoundtripElapsedSample, ccid3.RoundtripReportSample)
@@ -96,7 +96,7 @@ func TestRoundtripEstimation(t *testing.T) {
 // roundtripCheckpoint verifies that roundtrip estimates are within expected at
 // different point in time in the Roundtrip test.
 type roundtripCheckpoint struct {
-	run   *dccp.Runtime
+	run   *dccp.Env
 	t     *testing.T
 
 	checkTimes    []int64		// Times when test conditions are checked
@@ -110,7 +110,7 @@ type roundtripCheckpoint struct {
 
 }
 
-func newRoundtripCheckpoint(run *dccp.Runtime, t *testing.T) *roundtripCheckpoint {
+func newRoundtripCheckpoint(run *dccp.Env, t *testing.T) *roundtripCheckpoint {
 	return &roundtripCheckpoint{
 		run: run,
 		t:   t,

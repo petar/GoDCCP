@@ -21,7 +21,7 @@ const (
 func TestLoss(t *testing.T) {
 
 	reducer := NewMeasure(t)
-	run, plex := NewRuntime("loss")
+	run, plex := NewEnv("loss")
 	plex.Add(reducer)
 	plex.HighlightSamples(ccid3.LossReceiverEstimateSample)
 

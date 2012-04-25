@@ -18,9 +18,9 @@ import (
 // and analysis purposes. It lives in the context of a shared time framework
 // and a shared filter framework, which may filter some logs out
 type Amb struct {
-	run    *Runtime
+	run    *Env
 
-	// Debug flags are associated with Amb and not with Runtime because we
+	// Debug flags are associated with Amb and not with Env because we
 	// might want to pass different debug flags to a server and a client
 	// connection in an experiment, while we would like them to share the
 	// same runtime so that they share the same notion of time.
@@ -33,7 +33,7 @@ type Amb struct {
 var NoLogging *Amb = &Amb{}
 
 // NewAmb creates a new Amb object with a single entry in the label stack
-func NewAmb(label string, run *Runtime) *Amb {
+func NewAmb(label string, run *Env) *Amb {
 	return &Amb{ 
 		run:    run, 
 		flags:  NewFlags(),

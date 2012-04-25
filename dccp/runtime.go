@@ -10,10 +10,10 @@ import (
 	"github.com/petar/GoGauge/filter"
 )
 
-// Runtime encapsulates the runtime environment of a DCCP endpoint.  It includes a pluggable
+// Env encapsulates the runtime environment of a DCCP endpoint.  It includes a pluggable
 // time interface, in order to allow for use of real as well as synthetic (accelerated) time
 // (for testing purposes), as well as a amb interface.
-type Runtime struct {
+type Env struct {
 	time   Time
 	guzzle Guzzle
 	filter *filter.Filter
@@ -24,57 +24,57 @@ type Runtime struct {
 	timeLast int64 // Time of last log message
 }
 
-func NewRuntime(time Time, guzzle Guzzle) *Runtime {
+func NewEnv(time Time, guzzle Guzzle) *Env {
 	now := time.Now()
-	r := &Runtime{
+	r := &Env{
 		time:     time,
 		guzzle:   guzzle,
 		filter:   filter.NewFilter(),
-		goconj:   NewGoConjunction("Runtime"),
+		goconj:   NewGoConjunction("Env"),
 		timeZero: now,
 		timeLast: now,
 	}
 	return r
 }
 
-// Go runs f in a new GoRoutine, which is also added to the GoConj of the Runtime
-func (t *Runtime) Go(f func(), afmt string, aargs ...interface{}) {
+// Go runs f in a new GoRoutine, which is also added to the GoConj of the Env
+func (t *Env) Go(f func(), afmt string, aargs ...interface{}) {
 	t.goconj.Go(f, afmt, aargs...)
 }
 
-func (t *Runtime) Waiter() Waiter {
+func (t *Env) Waiter() Waiter {
 	return t.goconj
 }
 
-func (t *Runtime) Guzzle() Guzzle {
+func (t *Env) Guzzle() Guzzle {
 	return t.guzzle
 }
 
-func (t *Runtime) Filter() *filter.Filter {
+func (t *Env) Filter() *filter.Filter {
 	return t.filter
 }
 
-func (t *Runtime) Sync() error {
+func (t *Env) Sync() error {
 	return t.guzzle.Sync()
 }
 
-func (t *Runtime) Close() error {
+func (t *Env) Close() error {
 	return t.guzzle.Close()
 }
 
-func (t *Runtime) Now() int64 {
+func (t *Env) Now() int64 {
 	return t.time.Now()
 }
 
-func (t *Runtime) Sleep(ns int64) {
+func (t *Env) Sleep(ns int64) {
 	t.time.Sleep(ns)
 }
 
-func (t *Runtime) After(ns int64) <-chan int64 {
+func (t *Env) After(ns int64) <-chan int64 {
 	return t.time.After(ns)
 }
 
-func (t *Runtime) Snap() (sinceZero int64, sinceLast int64) {
+func (t *Env) Snap() (sinceZero int64, sinceLast int64) {
 	t.Lock()
 	defer t.Unlock()
 
@@ -87,7 +87,7 @@ func (t *Runtime) Snap() (sinceZero int64, sinceLast int64) {
 // Expire periodically, on every interval duration, checks if the test condition has been met. If
 // the condition is met within the timeout period, no further action is taken. Otherwise, the
 // onexpire function is invoked.
-func (t *Runtime) Expire(test func()bool, onexpire func(), timeout, interval int64, fmt_ string, args_ ...interface{}) {
+func (t *Env) Expire(test func()bool, onexpire func(), timeout, interval int64, fmt_ string, args_ ...interface{}) {
 	t.Go(func() {
 		k := timeout / interval
 		if k <= 0 {

@@ -10,13 +10,13 @@ import (
 )
 
 type latencyQueue struct {
-	run         *dccp.Runtime
+	run         *dccp.Env
 	amb         *dccp.Amb
 	queue       []*pipeHeader
 }
 
 // Init initializes the queue for initial use
-func (x *latencyQueue) Init(run *dccp.Runtime, amb *dccp.Amb) {
+func (x *latencyQueue) Init(run *dccp.Env, amb *dccp.Amb) {
 	x.run = run
 	x.amb = amb
 	x.queue = make([]*pipeHeader, 0)

@@ -19,7 +19,7 @@ type Pipe struct {
 }
 
 // NewPipe creates a new pipe with a given runtime shared by both endpoints, and a root amb
-func NewPipe(run *dccp.Runtime, amb *dccp.Amb, namea, nameb string) (a, b *headerHalfPipe, line *Pipe) {
+func NewPipe(run *dccp.Env, amb *dccp.Amb, namea, nameb string) (a, b *headerHalfPipe, line *Pipe) {
 	ab := make(chan *pipeHeader, pipeBufferLen)
 	ba := make(chan *pipeHeader, pipeBufferLen)
 	line = &Pipe{}
@@ -38,7 +38,7 @@ const pipeBufferLen = 2
 
 // headerHalfPipe implements HeaderConn. It enforces rate-limiting on its write side.
 type headerHalfPipe struct {
-	run                    *dccp.Runtime
+	run                    *dccp.Env
 	amb                    *dccp.Amb
 
 	// read, writeLk and write pertain to the communication mechanism of the pipe
@@ -79,7 +79,7 @@ type pipeHeader struct {
 }
 
 // Init resets a half pipe for initial use, using amb (without making a copy of it)
-func (x *headerHalfPipe) Init(run *dccp.Runtime, amb *dccp.Amb, r <-chan *pipeHeader, w chan<- *pipeHeader) {
+func (x *headerHalfPipe) Init(run *dccp.Env, amb *dccp.Amb, r <-chan *pipeHeader, w chan<- *pipeHeader) {
 	x.run = run
 	x.amb = amb
 	x.read = r

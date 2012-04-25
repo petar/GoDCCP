@@ -8,7 +8,7 @@ import "io"
 
 // backOff{}
 type backOff struct {
-	run         *Runtime
+	run         *Env
 	sleep       int64 // Duration of next sleep interval
 	lifetime    int64 // Total lifetime so far
 	timeout     int64 // Maximum time the backoff mechanism stays alive
@@ -20,7 +20,7 @@ type backOff struct {
 // nanoseconds. Approximately every backoffFreq nanoseconds, the sleep timers backs off
 // (increases by a factor of 4/3).  The lifetime of the backoff sleep intervals does not
 // exceed timeout.
-func newBackOff(run *Runtime, firstSleep, timeout, backoffFreq int64) *backOff {
+func newBackOff(run *Env, firstSleep, timeout, backoffFreq int64) *backOff {
 	return &backOff{
 		run:         run,
 		sleep:       firstSleep,
