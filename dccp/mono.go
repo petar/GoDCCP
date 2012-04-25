@@ -13,19 +13,19 @@ import (
 // This may provide superfluous logic, but we use it for piece of mind.
 type monotoneTime struct {
 	sync.Mutex
-	run  *Env
+	env  *Env
 	last int64
 }
 
-func (x *monotoneTime) Init(runtime *Env) {
-	x.run = runtime
+func (x *monotoneTime) Init(env *Env) {
+	x.env = env
 	x.last = 0
 }
 
 func (x *monotoneTime) Now() int64 {
 	x.Lock()
 	defer x.Unlock()
-	now := x.run.Now()
+	now := x.env.Now()
 	// TODO: If now - x.last is hugely negative we might want to report some sort of error
 	x.last = max64(now, x.last)
 	return x.last

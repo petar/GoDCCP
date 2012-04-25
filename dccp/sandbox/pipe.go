@@ -19,13 +19,13 @@ type Pipe struct {
 }
 
 // NewPipe creates a new pipe with a given runtime shared by both endpoints, and a root amb
-func NewPipe(run *dccp.Env, amb *dccp.Amb, namea, nameb string) (a, b *headerHalfPipe, line *Pipe) {
+func NewPipe(env *dccp.Env, amb *dccp.Amb, namea, nameb string) (a, b *headerHalfPipe, line *Pipe) {
 	ab := make(chan *pipeHeader, pipeBufferLen)
 	ba := make(chan *pipeHeader, pipeBufferLen)
 	line = &Pipe{}
 	line.amb = amb
-	line.ha.Init(run, line.amb.Refine(namea), ba, ab)
-	line.hb.Init(run, line.amb.Refine(nameb), ab, ba)
+	line.ha.Init(env, line.amb.Refine(namea), ba, ab)
+	line.hb.Init(env, line.amb.Refine(nameb), ab, ba)
 	return &line.ha, &line.hb, line
 }
 
@@ -38,7 +38,7 @@ const pipeBufferLen = 2
 
 // headerHalfPipe implements HeaderConn. It enforces rate-limiting on its write side.
 type headerHalfPipe struct {
-	run                    *dccp.Env
+	env                    *dccp.Env
 	amb                    *dccp.Amb
 
 	// read, writeLk and write pertain to the communication mechanism of the pipe
@@ -79,15 +79,15 @@ type pipeHeader struct {
 }
 
 // Init resets a half pipe for initial use, using amb (without making a copy of it)
-func (x *headerHalfPipe) Init(run *dccp.Env, amb *dccp.Amb, r <-chan *pipeHeader, w chan<- *pipeHeader) {
-	x.run = run
+func (x *headerHalfPipe) Init(env *dccp.Env, amb *dccp.Amb, r <-chan *pipeHeader, w chan<- *pipeHeader) {
+	x.env = env
 	x.amb = amb
 	x.read = r
 	x.write = w
 	x.SetWriteRate(DefaultRateInterval, DefaultRatePacketsPerInterval)
-	x.readDeadline = x.run.Now() - 1e9
+	x.readDeadline = x.env.Now() - 1e9
 	x.writeLatency = 0
-	x.latencyQueue.Init(run, amb)
+	x.latencyQueue.Init(env, amb)
 }
 
 // SetWriteLatency sets the write packet latency and it is given in nanoseconds
@@ -133,7 +133,7 @@ func (x *headerHalfPipe) Read() (h *dccp.Header, err error) {
 		}
 		
 		// Calculate time to wait until either queued packet is available or read timeout is reached
-		timeout := readDeadline - x.run.Now()
+		timeout := readDeadline - x.env.Now()
 		if existQueued {
 			if timeout == 0 {
 				timeout = timeToQueued
@@ -165,7 +165,7 @@ var sleepingChan = make(chan int64)
 
 func (x *headerHalfPipe) makeTimeoutChan(timeout int64) (ch <-chan int64) {
 	if timeout > 0 {
-		ch = x.run.After(int64(timeout))
+		ch = x.env.After(int64(timeout))
 	} else {
 		ch = sleepingChan
 	}
@@ -190,7 +190,7 @@ func (x *headerHalfPipe) Write(h *dccp.Header) (err error) {
 			x.writeLatencyLk.Lock()
 			latency := x.writeLatency
 			x.writeLatencyLk.Unlock()
-			now := x.run.Now()
+			now := x.env.Now()
 			x.write <- &pipeHeader{ Header: h, DeliverTime: now + latency }
 		}
 	} else {
@@ -205,7 +205,7 @@ func (x *headerHalfPipe) rateFilter() bool {
 	x.rateLk.Lock()
 	defer x.rateLk.Unlock()
 
-	now := x.run.Now()
+	now := x.env.Now()
 	gctr := now / x.rateInterval
 	if gctr != x.rateIntervalCounter {
 		x.rateIntervalCounter = gctr
@@ -251,6 +251,6 @@ func (x *headerHalfPipe) SetReadExpire(nsec int64) error {
 	if nsec < 0 {
 		panic("invalid timeout")
 	}
-	x.readDeadline = x.run.Now() + nsec
+	x.readDeadline = x.env.Now() + nsec
 	return nil
 }

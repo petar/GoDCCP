@@ -36,7 +36,7 @@ func (c *Conn) idleLoop() {
 		}
 		// This emit prints very often. Use when really necessary
 		//c.amb.E(EventIdle, "")
-		c.run.Sleep(max64(RoundtripMin, min64(rtt, RoundtripDefault)))
+		c.env.Sleep(max64(RoundtripMin, min64(rtt, RoundtripDefault)))
 	}
 }
 
@@ -130,7 +130,7 @@ func (c *Conn) readLoop() {
 }
 
 func (c *Conn) pollCongestionControl() {
-	now := c.run.Now()
+	now := c.env.Now()
 	if e := c.scc.OnIdle(now); e != nil {
 		if re, ok := e.(CongestionReset); ok {
 			c.abortWith(re.ResetCode())

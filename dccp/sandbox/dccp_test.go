@@ -13,19 +13,19 @@ import (
 func TestNop(t *testing.T) {
 	// dccp.InstallCtrlCPanic()
 	// dccp.InstallTimeout(10e9)
-	run, _ := NewEnv("nop")
-	NewClientServerPipe(run)
-	run.Sleep(5e9)
+	env, _ := NewEnv("nop")
+	NewClientServerPipe(env)
+	env.Sleep(5e9)
 }
 
 // TestOpenClose verifies that connect and close handshakes function correctly
 func TestOpenClose(t *testing.T) {
-	run, _ := NewEnv("openclose")
-	clientConn, serverConn, _, _ := NewClientServerPipe(run)
+	env, _ := NewEnv("openclose")
+	clientConn, serverConn, _, _ := NewClientServerPipe(env)
 
 	cchan := make(chan int, 1)
 	go func() {
-		run.Sleep(2e9)
+		env.Sleep(2e9)
 		_, err := clientConn.Read()
 		if err != dccp.ErrEOF {
 			t.Errorf("client read error (%s), expected EBADF", err)
@@ -36,7 +36,7 @@ func TestOpenClose(t *testing.T) {
 
 	schan := make(chan int, 1)
 	go func() {
-		run.Sleep(1e9)
+		env.Sleep(1e9)
 		if err := serverConn.Close(); err != nil {
 			t.Errorf("server close error (%s)", err)
 		}
@@ -54,8 +54,8 @@ func TestOpenClose(t *testing.T) {
 	// The next line ensures that we wait until all go routines are done.
 	dccp.NewGoConjunction("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
 
-	dccp.NewAmb("line", run).E(dccp.EventMatch, "Server and client done.")
-	if err := run.Close(); err != nil {
+	dccp.NewAmb("line", env).E(dccp.EventMatch, "Server and client done.")
+	if err := env.Close(); err != nil {
 		t.Errorf("Error closing runtime (%s)", err)
 	}
 }
@@ -64,8 +64,8 @@ func TestOpenClose(t *testing.T) {
 // no unusual behavior occurs.
 func TestIdle(t *testing.T) {
 
-	run, _ := NewEnv("idle")
-	clientConn, serverConn, _, _ := NewClientServerPipe(run)
+	env, _ := NewEnv("idle")
+	clientConn, serverConn, _, _ := NewClientServerPipe(env)
 	cargo := []byte{1, 2, 3}
 
 	cchan := make(chan int, 1)
@@ -73,7 +73,7 @@ func TestIdle(t *testing.T) {
 		if err := clientConn.Write(cargo); err != nil {
 			t.Errorf("client write (%s)", err)
 		}
-		run.Sleep(10e9) // Stay idle for 10 sec
+		env.Sleep(10e9) // Stay idle for 10 sec
 		if err := clientConn.Close(); err != nil && err != dccp.ErrEOF {
 			t.Errorf("client close (%s)", err)
 		}
@@ -86,7 +86,7 @@ func TestIdle(t *testing.T) {
 		if err := serverConn.Write(cargo); err != nil {
 			t.Errorf("server write (%s)", err)
 		}
-		run.Sleep(10e9) // Stay idle for 10 sec
+		env.Sleep(10e9) // Stay idle for 10 sec
 		if err := serverConn.Close(); err != nil && err != dccp.ErrEOF {
 			// XXX why not EOF
 			t.Logf("server close (%s)", err)
@@ -101,8 +101,8 @@ func TestIdle(t *testing.T) {
 	serverConn.Abort()
 	dccp.NewGoConjunction("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
 
-	dccp.NewAmb("line", run).E(dccp.EventMatch, "Server and client done.")
-	if err := run.Close(); err != nil {
+	dccp.NewAmb("line", env).E(dccp.EventMatch, "Server and client done.")
+	if err := env.Close(); err != nil {
 		t.Errorf("Error closing runtime (%s)", err)
 	}
 }

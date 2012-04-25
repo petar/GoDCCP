@@ -6,7 +6,7 @@ package dccp
 
 // Conn 
 type Conn struct {
-	run   *Env
+	env   *Env
 	amb   *Amb
 
 	hc    HeaderConn
@@ -31,7 +31,7 @@ type Conn struct {
 // Waiter returns a Waiter instance that can wait until all goroutines
 // associated with the connection have completed.
 func (c *Conn) Waiter() Waiter {
-	return c.run.Waiter()
+	return c.env.Waiter()
 }
 
 // Amb returns the Amb instance associated with this connection
@@ -39,9 +39,9 @@ func (c *Conn) Amb() *Amb {
 	return c.amb
 }
 
-func newConn(run *Env, amb *Amb, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
+func newConn(env *Env, amb *Amb, hc HeaderConn, scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
 	c := &Conn{
-		run:          run,
+		env:          env,
 		amb:          amb,
 		hc:           hc,
 		scc:          scc,
@@ -51,7 +51,7 @@ func newConn(run *Env, amb *Amb, hc HeaderConn, scc SenderCongestionControl, rcc
 		writeData:    make(chan []byte),
 		writeNonData: make(chan *writeHeader, 5),
 	}
-	c.writeTime.Init(run)
+	c.writeTime.Init(env)
 
 	c.Lock()
 	// Currently, CCID is not negotiated, rather both sides use the same
@@ -70,32 +70,32 @@ func newConn(run *Env, amb *Amb, hc HeaderConn, scc SenderCongestionControl, rcc
 	return c
 }
 
-func NewConnServer(run *Env, amb *Amb, hc HeaderConn, 
+func NewConnServer(env *Env, amb *Amb, hc HeaderConn, 
 	scc SenderCongestionControl, rcc ReceiverCongestionControl) *Conn {
 
-	c := newConn(run, amb, hc, scc, rcc)
+	c := newConn(env, amb, hc, scc, rcc)
 
 	c.Lock()
 	c.gotoLISTEN()
 	c.Unlock()
 
-	c.run.Go(func() { c.writeLoop(c.writeNonData, c.writeData) }, "ConnServer·writLoop")
-	c.run.Go(func() { c.readLoop() }, "ConnServer·readLoop")
-	c.run.Go(func() { c.idleLoop() }, "ConnServer·idleLoop")
+	c.env.Go(func() { c.writeLoop(c.writeNonData, c.writeData) }, "ConnServer·writLoop")
+	c.env.Go(func() { c.readLoop() }, "ConnServer·readLoop")
+	c.env.Go(func() { c.idleLoop() }, "ConnServer·idleLoop")
 	return c
 }
 
-func NewConnClient(run *Env, amb *Amb, hc HeaderConn, 
+func NewConnClient(env *Env, amb *Amb, hc HeaderConn, 
 	scc SenderCongestionControl, rcc ReceiverCongestionControl, serviceCode uint32) *Conn {
 
-	c := newConn(run, amb, hc, scc, rcc)
+	c := newConn(env, amb, hc, scc, rcc)
 
 	c.Lock()
 	c.gotoREQUEST(serviceCode)
 	c.Unlock()
 
-	c.run.Go(func() { c.writeLoop(c.writeNonData, c.writeData) }, "ConnClient·writeLoop")
-	c.run.Go(func() { c.readLoop() }, "ConnClient·readLoop")
-	c.run.Go(func() { c.idleLoop() }, "ConnClient·idleLoop")
+	c.env.Go(func() { c.writeLoop(c.writeNonData, c.writeData) }, "ConnClient·writeLoop")
+	c.env.Go(func() { c.readLoop() }, "ConnClient·readLoop")
+	c.env.Go(func() { c.idleLoop() }, "ConnClient·idleLoop")
 	return c
 }

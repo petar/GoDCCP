@@ -21,11 +21,11 @@ const (
 func TestLoss(t *testing.T) {
 
 	reducer := NewMeasure(t)
-	run, plex := NewEnv("loss")
+	env, plex := NewEnv("loss")
 	plex.Add(reducer)
 	plex.HighlightSamples(ccid3.LossReceiverEstimateSample)
 
-	clientConn, serverConn, clientToServer, _ := NewClientServerPipe(run)
+	clientConn, serverConn, clientToServer, _ := NewClientServerPipe(env)
 
 	cargo := []byte{1, 2, 3}
 	buf := make([]byte, len(cargo))
@@ -38,8 +38,8 @@ func TestLoss(t *testing.T) {
 
 	cchan := make(chan int, 1)
 	go func() {
-		t0 := run.Now()
-		for run.Now() - t0 < lossDuration {
+		t0 := env.Now()
+		for env.Now() - t0 < lossDuration {
 			err := clientConn.Write(buf)
 			if err != nil {
 				break
@@ -69,8 +69,8 @@ func TestLoss(t *testing.T) {
 	clientConn.Abort()
 	serverConn.Abort()
 	dccp.NewGoConjunction("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
-	dccp.NewAmb("line", run).E(dccp.EventMatch, "Server and client done.")
-	if err := run.Close(); err != nil {
+	dccp.NewAmb("line", env).E(dccp.EventMatch, "Server and client done.")
+	if err := env.Close(); err != nil {
 		t.Errorf("error closing runtime (%s)", err)
 	}
 }

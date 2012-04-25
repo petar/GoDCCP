@@ -10,14 +10,14 @@ import (
 )
 
 type latencyQueue struct {
-	run         *dccp.Env
+	env         *dccp.Env
 	amb         *dccp.Amb
 	queue       []*pipeHeader
 }
 
 // Init initializes the queue for initial use
-func (x *latencyQueue) Init(run *dccp.Env, amb *dccp.Amb) {
-	x.run = run
+func (x *latencyQueue) Init(env *dccp.Env, amb *dccp.Amb) {
+	x.env = env
 	x.amb = amb
 	x.queue = make([]*pipeHeader, 0)
 }
@@ -44,7 +44,7 @@ func (x *latencyQueue) TimeToMin() (dur int64, present bool) {
 	if len(x.queue) == 0 {
 		return 0, false
 	}
-	now := x.run.Now()
+	now := x.env.Now()
 	return max64(0, x.queue[0].DeliverTime - now), true
 }
 

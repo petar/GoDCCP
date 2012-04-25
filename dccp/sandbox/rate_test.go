@@ -28,8 +28,8 @@ const (
 // under variable packet sizes, we need to implement rate simulation in bytes per interval.
 func TestRate(t *testing.T) {
 
-	run, _ := NewEnv("rate")
-	clientConn, serverConn, clientToServer, _ := NewClientServerPipe(run)
+	env, _ := NewEnv("rate")
+	clientConn, serverConn, clientToServer, _ := NewClientServerPipe(env)
 
 	// Set rate limit on client-to-server connection
 	clientToServer.SetWriteRate(rateInterval, ratePacketsPerInterval)
@@ -38,8 +38,8 @@ func TestRate(t *testing.T) {
 	mtu := clientConn.GetMTU()
 	buf := make([]byte, mtu)
 	go func() {
-		t0 := run.Now()
-		for run.Now() - t0 < rateDuration {
+		t0 := env.Now()
+		for env.Now() - t0 < rateDuration {
 			err := clientConn.Write(buf)
 			if err != nil {
 				t.Errorf("error writing (%s)", err)
@@ -74,8 +74,8 @@ func TestRate(t *testing.T) {
 	serverConn.Abort()
 
 	dccp.NewGoConjunction("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
-	dccp.NewAmb("line", run).E(dccp.EventMatch, "Server and client done.")
-	if err := run.Close(); err != nil {
+	dccp.NewAmb("line", env).E(dccp.EventMatch, "Server and client done.")
+	if err := env.Close(); err != nil {
 		t.Errorf("error closing runtime (%s)", err)
 	}
 }

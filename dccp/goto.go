@@ -32,7 +32,7 @@ func (c *Conn) gotoLISTEN() {
 	c.socket.SetServer(true)
 	c.socket.SetState(LISTEN)
 	c.emitSetState()
-	c.run.Expire(
+	c.env.Expire(
 		func()bool {
 			c.Lock()
 			state := c.socket.GetState()
@@ -59,7 +59,7 @@ func (c *Conn) gotoRESPOND(hServiceCode uint32, hSeqNo int64) {
 	// otherwise check that h.ServiceCode matches socket service code
 	c.socket.SetServiceCode(hServiceCode)
 
-	c.run.Expire(
+	c.env.Expire(
 		func()bool {
 			c.Lock()
 			state := c.socket.GetState()
@@ -83,8 +83,8 @@ func (c *Conn) gotoREQUEST(serviceCode uint32) {
 	c.inject(c.generateRequest(serviceCode))
 
 	// Resend Request using exponential backoff, if no response
-	c.run.Go(func() {
-		b := newBackOff(c.run, REQUEST_BACKOFF_FIRST, REQUEST_BACKOFF_TIMEOUT, REQUEST_BACKOFF_FREQ)
+	c.env.Go(func() {
+		b := newBackOff(c.env, REQUEST_BACKOFF_FIRST, REQUEST_BACKOFF_TIMEOUT, REQUEST_BACKOFF_FREQ)
 		for {
 			err, _ := b.Sleep()
 			c.Lock()
@@ -136,8 +136,8 @@ func (c *Conn) gotoPARTOPEN() {
 	c.inject(nil) // Unblocks the writeLoop select, so it can see the state change
 
 	// Start PARTOPEN timer, according to Section 8.1.5
-	c.run.Go(func() {
-		b := newBackOff(c.run, PARTOPEN_BACKOFF_FIRST, PARTOPEN_BACKOFF_TIMEOUT, PARTOPEN_BACKOFF_FREQ)
+	c.env.Go(func() {
+		b := newBackOff(c.env, PARTOPEN_BACKOFF_FIRST, PARTOPEN_BACKOFF_TIMEOUT, PARTOPEN_BACKOFF_FREQ)
 		c.amb.E(EventInfo, "PARTOPEN backoff start")
 		for {
 			err, btm := b.Sleep()
@@ -178,8 +178,8 @@ func (c *Conn) gotoTIMEWAIT() {
 	c.emitSetState()
 	c.closeCCID()
 
-	c.run.Go(func() {
-		c.run.Sleep(TIMEWAIT_TIMEOUT)
+	c.env.Go(func() {
+		c.env.Sleep(TIMEWAIT_TIMEOUT)
 		c.abortQuietly()
 	}, "gotoTIMEWAIT")
 }
@@ -191,12 +191,12 @@ func (c *Conn) gotoCLOSING() {
 	c.socket.SetState(CLOSING)
 	c.emitSetState()
 	c.closeCCID()
-	c.run.Go(func() {
+	c.env.Go(func() {
 		c.Lock()
 		rtt := c.socket.GetRTT()
 		c.Unlock()
 		c.amb.E(EventInfo, fmt.Sprintf("CLOSING RTT=%dns", rtt))
-		b := newBackOff(c.run, 2*rtt, CLOSING_BACKOFF_TIMEOUT, CLOSING_BACKOFF_FREQ)
+		b := newBackOff(c.env, 2*rtt, CLOSING_BACKOFF_TIMEOUT, CLOSING_BACKOFF_FREQ)
 		for {
 			err, _ := b.Sleep()
 			c.Lock()

@@ -8,27 +8,27 @@ type CCFixed struct {
 
 }
 
-func (CCFixed) NewSender(run *Env, amb *Amb) SenderCongestionControl {
-	return newFixedRateSenderControl(run, 1e9) // one packet per second. sendsPerSecond
+func (CCFixed) NewSender(env *Env, amb *Amb) SenderCongestionControl {
+	return newFixedRateSenderControl(env, 1e9) // one packet per second. sendsPerSecond
 }
 
-func (CCFixed) NewReceiver(run *Env, amb *Amb) ReceiverCongestionControl {
-	return newFixedRateReceiverControl(run)
+func (CCFixed) NewReceiver(env *Env, amb *Amb) ReceiverCongestionControl {
+	return newFixedRateReceiverControl(env)
 }
 
 // ---> Fixed-rate HC-Sender Congestion Control
 
 type fixedRateSenderControl struct {
-	run         *Env
+	env         *Env
 	Mutex
 	every       int64 // Strobe every every nanoseconds
 	strobeRead  chan int
 	strobeWrite chan int
 }
 
-func newFixedRateSenderControl(run *Env, every int64) *fixedRateSenderControl {
+func newFixedRateSenderControl(env *Env, every int64) *fixedRateSenderControl {
 	strobe := make(chan int)
-	return &fixedRateSenderControl{run: run, every: every, strobeRead: strobe, strobeWrite: strobe}
+	return &fixedRateSenderControl{env: env, every: every, strobeRead: strobe, strobeWrite: strobe}
 }
 
 func (scc *fixedRateSenderControl) Open() {
@@ -41,7 +41,7 @@ func (scc *fixedRateSenderControl) Open() {
 			}
 			scc.strobeWrite <- 1
 			scc.Unlock()
-			scc.run.Sleep(scc.every)
+			scc.env.Sleep(scc.every)
 		}
 	}()
 }
@@ -81,11 +81,11 @@ func (scc *fixedRateSenderControl) Close() {
 // ---> Fixed-rate HC-Receiver Congestion Control
 
 type fixedRateReceiverControl struct{
-	run *Env
+	env *Env
 }
 
-func newFixedRateReceiverControl(run *Env) *fixedRateReceiverControl {
-	return &fixedRateReceiverControl{ run: run }
+func newFixedRateReceiverControl(env *Env) *fixedRateReceiverControl {
+	return &fixedRateReceiverControl{ env: env }
 }
 
 func (rcc *fixedRateReceiverControl) Open() {}

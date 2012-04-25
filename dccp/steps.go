@@ -133,7 +133,7 @@ func (c *Conn) step7_CheckUnexpectedTypes(h *Header) error {
 func (c *Conn) step8_OptionsAndMarkAckbl(h *Header) error {
 
 	defer c.syncWithCongestionControl()
-	now := c.run.Now()
+	now := c.env.Now()
 	rsopts := filterCCIDReceiverToSenderOptions(h.Options)
 	if err := c.scc.OnRead(&FeedbackHeader{
 		Type:    h.Type, 

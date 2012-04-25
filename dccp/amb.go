@@ -18,7 +18,7 @@ import (
 // and analysis purposes. It lives in the context of a shared time framework
 // and a shared filter framework, which may filter some logs out
 type Amb struct {
-	run    *Env
+	env    *Env
 
 	// Debug flags are associated with Amb and not with Env because we
 	// might want to pass different debug flags to a server and a client
@@ -33,9 +33,9 @@ type Amb struct {
 var NoLogging *Amb = &Amb{}
 
 // NewAmb creates a new Amb object with a single entry in the label stack
-func NewAmb(label string, run *Env) *Amb {
+func NewAmb(label string, env *Env) *Amb {
 	return &Amb{ 
-		run:    run, 
+		env:    env, 
 		flags:  NewFlags(),
 		labels: []string{label},
 	}
@@ -71,15 +71,15 @@ func (t *Amb) Push(l string) *Amb {
 }
 
 func (t *Amb) Filter() *filter.Filter {
-	return t.run.Filter()
+	return t.env.Filter()
 }
 
 // GetState retrieves the state of the owning object, using the runtime value store
 func (t *Amb) GetState() string {
-	if t.run == nil || len(t.labels) == 0 {
+	if t.env == nil || len(t.labels) == 0 {
 		return ""
 	}
-	g := t.run.Filter().GetAttr([]string{t.labels[0]}, "state")
+	g := t.env.Filter().GetAttr([]string{t.labels[0]}, "state")
 	if g == nil {
 		return ""
 	}
@@ -88,10 +88,10 @@ func (t *Amb) GetState() string {
 
 // SetState saves the state s into the runtime value store
 func (t *Amb) SetState(s int) {
-	if t.run == nil {
+	if t.env == nil {
 		return
 	}
-	t.run.Filter().SetAttr([]string{t.labels[0]}, "state", StateString(s))
+	t.env.Filter().SetAttr([]string{t.labels[0]}, "state", StateString(s))
 }
 
 // StackTrace formats the stack trace of the calling go routine, 
@@ -140,10 +140,10 @@ func (t *Amb) E(event Event, comment string, args ...interface{}) {
 }
 
 func (t *Amb) EC(skip int, event Event, comment string, args ...interface{}) {
-	if t.run == nil {
+	if t.env == nil {
 		return
 	}
-	sinceZero, _ := t.run.Snap()
+	sinceZero, _ := t.env.Snap()
 
 	// Extract header information
 	var hType string = ""
@@ -186,7 +186,7 @@ func (t *Amb) EC(skip int, event Event, comment string, args ...interface{}) {
 
 	sfile, sline := FetchCaller(1+skip)
 
-	if t.run.Guzzle() != nil {
+	if t.env.Guzzle() != nil {
 		r := &LogRecord{
 			Time:       sinceZero,
 			Labels:     t.labels,
@@ -201,7 +201,7 @@ func (t *Amb) EC(skip int, event Event, comment string, args ...interface{}) {
 			SourceLine: sline,
 			Trace:      stackTrace(t.labels, skip+2, sfile, sline),
 		}
-		t.run.Guzzle().Write(r)
+		t.env.Guzzle().Write(r)
 	}
 }
 

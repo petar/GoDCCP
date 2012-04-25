@@ -9,14 +9,14 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-func newSender(run *dccp.Env, amb *dccp.Amb) *sender {
-	return &sender{ run: run, amb: amb.Refine("sender") }
+func newSender(env *dccp.Env, amb *dccp.Amb) *sender {
+	return &sender{ env: env, amb: amb.Refine("sender") }
 }
 
 // sender implements a CCID3 congestion control sender.
 // It conforms to dccp.SenderCongestionControl.
 type sender struct {
-	run *dccp.Env
+	env *dccp.Env
 	amb *dccp.Amb
 	senderStrober
 	dccp.Mutex // Locks all fields below
@@ -64,7 +64,7 @@ func (s *sender) Open() {
 	s.senderSegmentSize.SetMPS(FixedSegmentSize)
 	s.senderLossTracker.Init(s.amb)
 	s.senderRateCalculator.Init(s.amb, FixedSegmentSize, rtt)
-	s.senderStrober.Init(s.run, s.amb, s.senderRateCalculator.X(), FixedSegmentSize)
+	s.senderStrober.Init(s.env, s.amb, s.senderRateCalculator.X(), FixedSegmentSize)
 	s.open = true
 }
 

@@ -25,12 +25,12 @@ const (
 func TestRoundtripEstimation(t *testing.T) {
 
 	reducer := NewMeasure(t)
-	run, plex := NewEnv("rtt")
+	env, plex := NewEnv("rtt")
 	plex.Add(reducer)
-	plex.Add(newRoundtripCheckpoint(run, t))
+	plex.Add(newRoundtripCheckpoint(env, t))
 	plex.HighlightSamples(ccid3.RoundtripElapsedSample, ccid3.RoundtripReportSample)
 
-	clientConn, serverConn, clientToServer, _ := NewClientServerPipe(run)
+	clientConn, serverConn, clientToServer, _ := NewClientServerPipe(env)
 
 	// Roundtrip estimates might be imprecise during long idle periods,
 	// as a product of the CCID3 design, since during such period precise
@@ -49,19 +49,19 @@ func TestRoundtripEstimation(t *testing.T) {
 
 	// Increase the client—>server latency from 0 to latency at half time
 	go func() {
-		run.Sleep(roundtripDuration / 2)
+		env.Sleep(roundtripDuration / 2)
 		clientToServer.SetWriteLatency(roundtripLatency)
 	}()
 
 	cchan := make(chan int, 1)
 	go func() {
-		t0 := run.Now()
-		for run.Now() - t0 < roundtripDuration {
+		t0 := env.Now()
+		for env.Now() - t0 < roundtripDuration {
 			err := clientConn.Write(buf)
 			if err != nil {
 				break
 			}
-			run.Sleep(roundtripInterval)
+			env.Sleep(roundtripInterval)
 		}
 		// Close is necessary because otherwise, if no read timeout is in place, the
 		// server sides hangs forever on Read
@@ -87,8 +87,8 @@ func TestRoundtripEstimation(t *testing.T) {
 	clientConn.Abort()
 	serverConn.Abort()
 	dccp.NewGoConjunction("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
-	dccp.NewAmb("line", run).E(dccp.EventMatch, "Server and client done.")
-	if err := run.Close(); err != nil {
+	dccp.NewAmb("line", env).E(dccp.EventMatch, "Server and client done.")
+	if err := env.Close(); err != nil {
 		t.Errorf("error closing runtime (%s)", err)
 	}
 }
@@ -96,7 +96,7 @@ func TestRoundtripEstimation(t *testing.T) {
 // roundtripCheckpoint verifies that roundtrip estimates are within expected at
 // different point in time in the Roundtrip test.
 type roundtripCheckpoint struct {
-	run   *dccp.Env
+	env   *dccp.Env
 	t     *testing.T
 
 	checkTimes    []int64		// Times when test conditions are checked
@@ -110,9 +110,9 @@ type roundtripCheckpoint struct {
 
 }
 
-func newRoundtripCheckpoint(run *dccp.Env, t *testing.T) *roundtripCheckpoint {
+func newRoundtripCheckpoint(env *dccp.Env, t *testing.T) *roundtripCheckpoint {
 	return &roundtripCheckpoint{
-		run: run,
+		env: env,
 		t:   t,
 		checkTimes:    []int64{roundtripDuration / 2, roundtripDuration},
 		expected:      []float64{NanoToMilli(roundtripComputationalLatency), NanoToMilli(roundtripLatency)},
