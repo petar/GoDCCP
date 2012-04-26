@@ -109,6 +109,7 @@ func (x *SyntheticRuntime) loop() {
 }
 
 func (x *SyntheticRuntime) Sleep(nsec int64) {
+	log.Printf("sleep: %s", StackTrace(nil, 0, "", 0))
 	resp := make(chan int)
 	x.reqch <- requestSleep{
 		duration: nsec,
@@ -124,6 +125,7 @@ func (x *SyntheticRuntime) Join() {
 
 // Now returns the current time inside the synthetic runtime
 func (x *SyntheticRuntime) Now() int64 {
+	log.Printf("now: %s", StackTrace(nil, 0, "", 0))
 	resp := make(chan int64)
 	x.reqch <- requestNow{
 		resp: resp,
@@ -132,6 +134,7 @@ func (x *SyntheticRuntime) Now() int64 {
 }
 
 func (x *SyntheticRuntime) Go(f func()) {
+	log.Printf("go: %s", StackTrace(nil, 0, "", 0))
 	x.reqch <- requestGo{}
 	go func() {
 		// REMARK: Here we intentionally don't recover from panic in f, since proper program
@@ -142,6 +145,7 @@ func (x *SyntheticRuntime) Go(f func()) {
 }
 
 func (x *SyntheticRuntime) die() {
+	log.Printf("die: %s", StackTrace(nil, 0, "", 0))
 	x.reqch <- requestDie{}
 }
 

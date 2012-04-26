@@ -97,7 +97,7 @@ func (t *Amb) SetState(s int) {
 // StackTrace formats the stack trace of the calling goroutine, 
 // excluding pointer information and including DCCP runtime-specific information, 
 // in a manner convenient for debugging DCCP
-func stackTrace(labels []string, skip int, sfile string, sline int) string {
+func StackTrace(labels []string, skip int, sfile string, sline int) string {
 	var w bytes.Buffer
 	var stk []uintptr = make([]uintptr, 32)	// DCCP logic stack should not be deeper than that
 	n := runtime.Callers(skip+1, stk)
@@ -199,7 +199,7 @@ func (t *Amb) EC(skip int, event Event, comment string, args ...interface{}) {
 			AckNo:      hAckNo,
 			SourceFile: sfile,
 			SourceLine: sline,
-			Trace:      stackTrace(t.labels, skip+2, sfile, sline),
+			Trace:      StackTrace(t.labels, skip+2, sfile, sline),
 		}
 		t.env.Guzzle().Write(r)
 	}
