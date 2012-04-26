@@ -2,45 +2,12 @@ package dccp
 
 import (
 	"sort"
-	"time"
 )
 
-// Runtime represents an environment of execution, and in particular the notion of time.
-// Its methods provide access to that environment both in way of querying (e.g.
-// "What time is it?") as well as in way of asking for actions (e.g. "Fork a
-// new goroutine!") being taken.
-type Runtime interface {
-
-	// Sleep blocks for ns nanoseconds 
-	Sleep(nsec int64)
-
-	// Now returns the current time in nanoseconds since an abstract 0-moment
-	Now() int64
-
-	// Go executes f in a new goroutine
-	Go(f func())
-}
-
-// RealTime is an implementation of Runtime that represents real time
-type realTime struct {}
-
-var RealTime realTime
-
-func (realTime) Now() int64 {
-	return time.Now().UnixNano()
-}
-
-func (realTime) Sleep(ns int64) {
-	time.Sleep(time.Duration(ns))
-}
-
-func (realTime) Go(f func()) {
-	go f()
-}
-
-// syntheticTime is a Runtime implementation that simulates real time without performing real sleeping
-type syntheticTime struct {
-	reqch chan interface{}
+// SyntheticRuntime is a Runtime implementation that simulates real time without performing real sleeping
+type SyntheticRuntime struct {
+	reqch  chan interface{}
+	donech chan int
 }
 
 // request message types
@@ -63,11 +30,22 @@ type requestDie struct{}
 // for the duration of time required to execute all non-blocking (in the
 // traditional sense of the word) code in g.
 func GoSynthetic(g func(Runtime)) {
-	s := &syntheticTime{
-		reqch: make(chan interface{}, 1),
+	s := &SyntheticRuntime{
+		reqch:  make(chan interface{}, 1),
+		donech: make(chan int),
 	}
 	s.Go(func() { g(s) })
 	s.loop()
+}
+
+// NewSyntheticRuntime creates a new synthetic time Runtime
+func NewSyntheticRuntime() *SyntheticRuntime {
+	s := &SyntheticRuntime{
+		reqch:  make(chan interface{}, 1),
+		donech: make(chan int),
+	}
+	go s.loop()
+	return s
 }
 
 type scheduledToSleep struct {
@@ -75,7 +53,7 @@ type scheduledToSleep struct {
 	resp chan int
 }
 
-func (x *syntheticTime) loop() {
+func (x *SyntheticRuntime) loop() {
 	var sleepers sleeperQueue
 	var now int64
 	var ntogo int = 0
@@ -114,9 +92,10 @@ func (x *syntheticTime) loop() {
 		now = nextToWake.wake
 		close(nextToWake.resp)
 	}
+	close(x.donech)
 }
 
-func (x *syntheticTime) Sleep(nsec int64) {
+func (x *SyntheticRuntime) Sleep(nsec int64) {
 	resp := make(chan int)
 	x.reqch <- requestSleep{
 		duration: nsec,
@@ -125,7 +104,13 @@ func (x *syntheticTime) Sleep(nsec int64) {
 	<-resp
 }
 
-func (x *syntheticTime) Now() int64 {
+// Join blocks until all goroutines running inside the synthetic runtime complete
+func (x *SyntheticRuntime) Join() {
+	<-x.donech
+}
+
+// Now returns the current time inside the synthetic runtime
+func (x *SyntheticRuntime) Now() int64 {
 	resp := make(chan int64)
 	x.reqch <- requestNow{
 		resp: resp,
@@ -133,15 +118,17 @@ func (x *syntheticTime) Now() int64 {
 	return <-resp
 }
 
-func (x *syntheticTime) Go(f func()) {
+func (x *SyntheticRuntime) Go(f func()) {
 	x.reqch <- requestGo{}
 	go func() {
+		// REMARK: Here we intentionally don't recover from panic in f, since proper program
+		// logic demands that no subroutine ever panics
 		f()
 		x.die()
 	}()
 }
 
-func (x *syntheticTime) die() {
+func (x *SyntheticRuntime) die() {
 	x.reqch <- requestDie{}
 }
 

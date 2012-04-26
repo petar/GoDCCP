@@ -17,7 +17,7 @@ import (
 func NewEnv(guzzleFilename string, guzzles ...dccp.Guzzle) (env *dccp.Env, plex *GuzzlePlex) {
 	fileGuzzle := dccp.NewFileGuzzle(path.Join(os.Getenv("DCCPLOG"), guzzleFilename + ".emit"))
 	plex = NewGuzzlePlex(append(guzzles, fileGuzzle)...)
-	return dccp.NewEnv(dccp.RealTime, plex), plex
+	return dccp.NewEnv(dccp.NewSyntheticRuntime(), plex), plex
 }
 
 // NewClientServerPipe creates a sandbox communication pipe and attaches a DCCP client and a DCCP

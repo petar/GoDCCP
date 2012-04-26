@@ -24,7 +24,7 @@ func TestOpenClose(t *testing.T) {
 	clientConn, serverConn, _, _ := NewClientServerPipe(env)
 
 	cchan := make(chan int, 1)
-	go func() {
+	env.Go(func() {
 		env.Sleep(2e9)
 		_, err := clientConn.Read()
 		if err != dccp.ErrEOF {
@@ -32,17 +32,17 @@ func TestOpenClose(t *testing.T) {
 		}
 		cchan <- 1
 		close(cchan)
-	}()
+	}, "test client")
 
 	schan := make(chan int, 1)
-	go func() {
+	env.Go(func() {
 		env.Sleep(1e9)
 		if err := serverConn.Close(); err != nil {
 			t.Errorf("server close error (%s)", err)
 		}
 		schan <- 1
 		close(schan)
-	}()
+	}, "test server")
 
 	<-cchan
 	<-schan
@@ -50,9 +50,9 @@ func TestOpenClose(t *testing.T) {
 	// Abort casuses both connection to wrap up the connection quickly
 	clientConn.Abort()
 	serverConn.Abort()
-	// However, even aborting leaves various connection go-routines lingering for a short while.
-	// The next line ensures that we wait until all go routines are done.
-	dccp.NewGoJoin("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
+	// However, even aborting leaves various connection goroutines lingering for a short while.
+	// The next line ensures that we wait until all goroutines are done.
+	env.NewGoJoin("end-of-test", clientConn.Joiner(), serverConn.Joiner()).Join()
 
 	dccp.NewAmb("line", env).E(dccp.EventMatch, "Server and client done.")
 	if err := env.Close(); err != nil {
@@ -66,11 +66,11 @@ func TestIdle(t *testing.T) {
 
 	env, _ := NewEnv("idle")
 	clientConn, serverConn, _, _ := NewClientServerPipe(env)
-	cargo := []byte{1, 2, 3}
+	payload := []byte{1, 2, 3}
 
 	cchan := make(chan int, 1)
-	go func() {
-		if err := clientConn.Write(cargo); err != nil {
+	env.Go(func() {
+		if err := clientConn.Write(payload); err != nil {
 			t.Errorf("client write (%s)", err)
 		}
 		env.Sleep(10e9) // Stay idle for 10 sec
@@ -79,11 +79,11 @@ func TestIdle(t *testing.T) {
 		}
 		cchan <- 1
 		close(cchan)
-	}()
+	}, "test client")
 
 	schan := make(chan int, 1)
-	go func() {
-		if err := serverConn.Write(cargo); err != nil {
+	env.Go(func() {
+		if err := serverConn.Write(payload); err != nil {
 			t.Errorf("server write (%s)", err)
 		}
 		env.Sleep(10e9) // Stay idle for 10 sec
@@ -93,13 +93,13 @@ func TestIdle(t *testing.T) {
 		}
 		schan <- 1
 		close(schan)
-	}()
+	}, "test server")
 
 	<-cchan
 	<-schan
 	clientConn.Abort()
 	serverConn.Abort()
-	dccp.NewGoJoin("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
+	env.NewGoJoin("end-of-test", clientConn.Joiner(), serverConn.Joiner()).Join()
 
 	dccp.NewAmb("line", env).E(dccp.EventMatch, "Server and client done.")
 	if err := env.Close(); err != nil {

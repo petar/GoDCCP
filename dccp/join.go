@@ -12,12 +12,12 @@ import (
 	"sync"
 )
 
-// Waiter is an interface to objects that can wait for some event.
-type Waiter interface {
-	// Wait blocks until an underlying event occurs.
+// Joiner is an interface to objects that can wait for some event.
+type Joiner interface {
+	// Join blocks until an underlying event occurs.
 	// It returns immediately if called post-event.
 	// It is re-entrant.
-	Wait()
+	Join()
 	String() string
 }
 
@@ -31,7 +31,7 @@ type GoRoutine struct {
 
 // Go runs f in a new goroutine and returns a handle object, which can
 // then be used for various synchronization mechanisms.
-func GoCaller(f func(), skip int, fmt_ string, args_ ...interface{}) *GoRoutine {
+func GoCaller(run Runtime, f func(), skip int, fmt_ string, args_ ...interface{}) *GoRoutine {
 	sfile, sline := FetchCaller(1 + skip)
 	ch := make(chan int)
 	g := &GoRoutine{ 
@@ -40,21 +40,21 @@ func GoCaller(f func(), skip int, fmt_ string, args_ ...interface{}) *GoRoutine 
 		line: sline,
 		anno: fmt.Sprintf(fmt_, args_...),
 	}
-	go func() {
+	run.Go(func() {
 		f()
 		close(ch)
-	}()
+	})
 	return g
 }
 
-func Go(f func(), fmt_ string, args_ ...interface{}) *GoRoutine {
-	return GoCaller(f, 1, fmt_, args_...)
+func Go(run Runtime, f func(), fmt_ string, args_ ...interface{}) *GoRoutine {
+	return GoCaller(run, f, 1, fmt_, args_...)
 }
 
-// Wait blocks until the goroutine completes; otherwise,
+// Join blocks until the goroutine completes; otherwise,
 // if the goroutine has completed, it returns immediately.
-// Wait can be called concurrently.
-func (g *GoRoutine) Wait() {
+// Join can be called concurrently.
+func (g *GoRoutine) Join() {
 	_, _ = <-g.ch
 }
 
@@ -107,26 +107,28 @@ func TrimFuncName(fname string) (trimmed string, isDCCP bool) {
 // GoJoin waits until a set of GoRoutines all complete. It also allows
 // new routines to be added dynamically before the completion event.
 type GoJoin struct {
+	run        Runtime
 	srcFile    string
 	srcLine    int
 	annotation string
 
 	lk      sync.Mutex	// Locks the fields below
-	group   []Waiter	// Slice of waiters included in this conjunction sync
-	kdone   int		// Counts the number of Waiters that have already completed
-	ch      chan Waiter
-	slk     sync.Mutex	// Only one Wait can be called at a time
+	group   []Joiner	// Slice of joiners included in this conjunction sync
+	kdone   int		// Counts the number of Joiners that have already completed
+	ch      chan Joiner
+	slk     sync.Mutex	// Only one Join can be called at a time
 }
 
 // NewGoJoinCaller creates an object capable of waiting until all supplied GoRoutines complete.
-func NewGoJoinCaller(skip int, annotation string, group ...Waiter) *GoJoin {
+func NewGoJoinCaller(run Runtime, skip int, annotation string, group ...Joiner) *GoJoin {
 	sfile, sline := FetchCaller(1 + skip)
 	var w *GoJoin = &GoJoin{ 
+		run:        run,
 		srcFile:    sfile,
 		srcLine:    sline,
 		annotation: annotation,
 		kdone:      0, 
-		ch:         make(chan Waiter, 10),
+		ch:         make(chan Joiner, 10),
 	}
 	for _, u := range group {
 		w.Add(u)
@@ -134,8 +136,8 @@ func NewGoJoinCaller(skip int, annotation string, group ...Waiter) *GoJoin {
 	return w
 }
 
-func NewGoJoin(annotation string, group ...Waiter) *GoJoin {
-	return NewGoJoinCaller(1, annotation, group...)
+func NewGoJoin(run Runtime, annotation string, group ...Joiner) *GoJoin {
+	return NewGoJoinCaller(run, 1, annotation, group...)
 }
 
 // String returns a unique, readable string representation of this instance.
@@ -143,39 +145,39 @@ func (t *GoJoin) String() string {
 	return fmt.Sprintf("%s:%d %s (%x)", t.srcFile, t.srcLine, t.annotation, t)
 }
 
-// Add adds a Waiter to the group. It can be called at any time
+// Add adds a Joiner to the group. It can be called at any time
 // as long as the current set of goroutines hasn't completed.
 // For instance, as long as you call Add from a GoRoutine which
 // is waited on by this object, the condtion will be met.
-func (t *GoJoin) Add(u Waiter) {
+func (t *GoJoin) Add(u Joiner) {
 	t.lk.Lock()
 	defer t.lk.Unlock()
 	if t.kdone < 0 {
-		panic("adding waiters after conjunction event")
+		panic("adding joiners after conjunction event")
 	}
 	t.group = append(t.group, u)
 	ch := t.ch
-	go func(){
-		u.Wait()
+	t.run.Go(func(){
+		u.Join()
 		ch <- u
-	}()
+	})
 }
 
 // Go is a convenience method which forks f into a new GoRoutine and
 // adds the latter to the waiting queue. fmt is a formatted annotation
 // with arguments args.
 func (t *GoJoin) Go(f func(), fmt_ string, args_ ...interface{}) {
-	t.Add(GoCaller(f, 1, fmt_, args_...))
+	t.Add(GoCaller(t.run, f, 1, fmt_, args_...))
 }
 
-// Wait blocks until all goroutines in the group have completed.
-// Wait can be called concurrently. If called post-completion of the
-// goroutine group, Wait returns immediately.
-func (t *GoJoin) Wait() {
+// Join blocks until all goroutines in the group have completed.
+// Join can be called concurrently. If called post-completion of the
+// goroutine group, Join returns immediately.
+func (t *GoJoin) Join() {
 	t.slk.Lock()
 	defer t.slk.Unlock()
 
-	// Prevent calling Wait before any waitees have been added
+	// Prevent calling Join before any waitees have been added
 	t.lk.Lock()
 	n := len(t.group)
 	ch := t.ch
@@ -191,11 +193,11 @@ func (t *GoJoin) Wait() {
 		}
 		t.lk.Lock()
 		if t.kdone < 0 {
-			panic("no waiters should complete past junction event")
+			panic("no joiners should complete past junction event")
 		}
 		t.kdone++
 		if t.kdone == len(t.group) {
-			// Ensure future calls to Wait return immediately
+			// Ensure future calls to Join return immediately
 			t.kdone = -1
 			close(ch)
 		}

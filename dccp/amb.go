@@ -94,7 +94,7 @@ func (t *Amb) SetState(s int) {
 	t.env.Filter().SetAttr([]string{t.labels[0]}, "state", StateString(s))
 }
 
-// StackTrace formats the stack trace of the calling go routine, 
+// StackTrace formats the stack trace of the calling goroutine, 
 // excluding pointer information and including DCCP runtime-specific information, 
 // in a manner convenient for debugging DCCP
 func stackTrace(labels []string, skip int, sfile string, sline int) string {

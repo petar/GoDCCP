@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"fmt"
 	"testing"
-	"time"
 	"github.com/petar/GoDCCP/dccp"
 )
 
@@ -17,6 +16,7 @@ import (
 // receiver, based on read and write logs and prints out this information.
 type Measure struct {
 	t                      *testing.T
+	env                    *dccp.Env
 	leftClient             map[int64]int64  // SeqNo —> Time left client
 	leftServer             map[int64]int64  // SeqNo —> Time left server
 
@@ -30,9 +30,10 @@ type Measure struct {
 	serverToClientTriptime Moment
 }
 
-func NewMeasure(t *testing.T) *Measure {
+func NewMeasure(env *dccp.Env, t *testing.T) *Measure {
 	x := &Measure{
-		t: t,
+		env: env,
+		t:   t,
 		leftClient: make(map[int64]int64),
 		leftServer: make(map[int64]int64),
 	}
@@ -42,7 +43,7 @@ func NewMeasure(t *testing.T) *Measure {
 }
 
 func (x *Measure) Write(r *dccp.LogRecord) {
-	now := time.Now().UnixNano()
+	now := x.env.Now()
 	switch r.Event {
 	case dccp.EventWrite:
 		switch r.Labels[0] {

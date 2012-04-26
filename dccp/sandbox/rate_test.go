@@ -37,7 +37,7 @@ func TestRate(t *testing.T) {
 	cchan := make(chan int, 1)
 	mtu := clientConn.GetMTU()
 	buf := make([]byte, mtu)
-	go func() {
+	env.Go(func() {
 		t0 := env.Now()
 		for env.Now() - t0 < rateDuration {
 			err := clientConn.Write(buf)
@@ -50,10 +50,10 @@ func TestRate(t *testing.T) {
 		// server sides hangs forever on Read
 		clientConn.Close()
 		close(cchan)
-	}()
+	}, "test client")
 
 	schan := make(chan int, 1)
-	go func() {
+	env.Go(func() {
 		for {
 			_, err := serverConn.Read()
 			if err == dccp.ErrEOF {
@@ -65,7 +65,7 @@ func TestRate(t *testing.T) {
 		}
 		serverConn.Close()
 		close(schan)
-	}()
+	}, "test server")
 
 	_, _ = <-cchan
 	_, _ = <-schan
@@ -73,7 +73,7 @@ func TestRate(t *testing.T) {
 	clientConn.Abort()
 	serverConn.Abort()
 
-	dccp.NewGoJoin("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
+	env.NewGoJoin("end-of-test", clientConn.Joiner(), serverConn.Joiner()).Join()
 	dccp.NewAmb("line", env).E(dccp.EventMatch, "Server and client done.")
 	if err := env.Close(); err != nil {
 		t.Errorf("error closing runtime (%s)", err)

@@ -24,8 +24,8 @@ const (
 // TestRoundtripEstimation checks that round-trip times are estimated accurately.
 func TestRoundtripEstimation(t *testing.T) {
 
-	reducer := NewMeasure(t)
 	env, plex := NewEnv("rtt")
+	reducer := NewMeasure(env, t)
 	plex.Add(reducer)
 	plex.Add(newRoundtripCheckpoint(env, t))
 	plex.HighlightSamples(ccid3.RoundtripElapsedSample, ccid3.RoundtripReportSample)
@@ -38,8 +38,8 @@ func TestRoundtripEstimation(t *testing.T) {
 	// estimation without saturating the link, we generate sufficiently 
 	// regular transmissions.
 
-	cargo := []byte{1, 2, 3}
-	buf := make([]byte, len(cargo))
+	payload := []byte{1, 2, 3}
+	buf := make([]byte, len(payload))
 
 	// In order to isolate roundtrip measurement testing from the complexities
 	// of the send rate calculation mechanism, we fix the send rate of both
@@ -48,13 +48,13 @@ func TestRoundtripEstimation(t *testing.T) {
 	serverConn.Amb().Flags().SetUint32("FixRate", roundtripRate)
 
 	// Increase the client—>server latency from 0 to latency at half time
-	go func() {
+	env.Go(func() {
 		env.Sleep(roundtripDuration / 2)
 		clientToServer.SetWriteLatency(roundtripLatency)
-	}()
+	}, "test controller")
 
 	cchan := make(chan int, 1)
-	go func() {
+	env.Go(func() {
 		t0 := env.Now()
 		for env.Now() - t0 < roundtripDuration {
 			err := clientConn.Write(buf)
@@ -67,10 +67,10 @@ func TestRoundtripEstimation(t *testing.T) {
 		// server sides hangs forever on Read
 		clientConn.Close()
 		close(cchan)
-	}()
+	}, "test client")
 
 	schan := make(chan int, 1)
-	go func() {
+	env.Go(func() {
 		for {
 			_, err := serverConn.Read()
 			if err != nil {
@@ -78,7 +78,7 @@ func TestRoundtripEstimation(t *testing.T) {
 			}
 		}
 		close(schan)
-	}()
+	}, "test server")
 
 	_, _ = <-cchan
 	_, _ = <-schan
@@ -86,7 +86,7 @@ func TestRoundtripEstimation(t *testing.T) {
 	// Shutdown the connections properly
 	clientConn.Abort()
 	serverConn.Abort()
-	dccp.NewGoJoin("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
+	env.NewGoJoin("end-of-test", clientConn.Joiner(), serverConn.Joiner()).Join()
 	dccp.NewAmb("line", env).E(dccp.EventMatch, "Server and client done.")
 	if err := env.Close(); err != nil {
 		t.Errorf("error closing runtime (%s)", err)

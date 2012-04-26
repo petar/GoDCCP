@@ -20,15 +20,15 @@ const (
 // TestLoss checks that loss estimation matches actual
 func TestLoss(t *testing.T) {
 
-	reducer := NewMeasure(t)
 	env, plex := NewEnv("loss")
+	reducer := NewMeasure(env, t)
 	plex.Add(reducer)
 	plex.HighlightSamples(ccid3.LossReceiverEstimateSample)
 
 	clientConn, serverConn, clientToServer, _ := NewClientServerPipe(env)
 
-	cargo := []byte{1, 2, 3}
-	buf := make([]byte, len(cargo))
+	payload := []byte{1, 2, 3}
+	buf := make([]byte, len(payload))
 
 	// In order to force packet loss, we fix the send rate slightly above the
 	// the pipeline rate.
@@ -37,7 +37,7 @@ func TestLoss(t *testing.T) {
 	clientToServer.SetWriteRate(1e9, lossTransmitRate)
 
 	cchan := make(chan int, 1)
-	go func() {
+	env.Go(func() {
 		t0 := env.Now()
 		for env.Now() - t0 < lossDuration {
 			err := clientConn.Write(buf)
@@ -47,10 +47,10 @@ func TestLoss(t *testing.T) {
 		}
 		clientConn.Close()
 		close(cchan)
-	}()
+	}, "test client")
 
 	schan := make(chan int, 1)
-	go func() {
+	env.Go(func() {
 		for {
 			_, err := serverConn.Read()
 			if err != nil {
@@ -58,7 +58,7 @@ func TestLoss(t *testing.T) {
 			}
 		}
 		close(schan)
-	}()
+	}, "test server")
 
 	_, _ = <-cchan
 	_, _ = <-schan
@@ -68,7 +68,7 @@ func TestLoss(t *testing.T) {
 	// Shutdown the connections properly
 	clientConn.Abort()
 	serverConn.Abort()
-	dccp.NewGoJoin("end-of-test", clientConn.Waiter(), serverConn.Waiter()).Wait()
+	env.NewGoJoin("end-of-test", clientConn.Joiner(), serverConn.Joiner()).Join()
 	dccp.NewAmb("line", env).E(dccp.EventMatch, "Server and client done.")
 	if err := env.Close(); err != nil {
 		t.Errorf("error closing runtime (%s)", err)

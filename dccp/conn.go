@@ -28,10 +28,10 @@ type Conn struct {
 	writeTime      monotoneTime
 }
 
-// Waiter returns a Waiter instance that can wait until all goroutines
+// Joiner returns a Joiner instance that can wait until all goroutines
 // associated with the connection have completed.
-func (c *Conn) Waiter() Waiter {
-	return c.env.Waiter()
+func (c *Conn) Joiner() Joiner {
+	return c.env.Joiner()
 }
 
 // Amb returns the Amb instance associated with this connection

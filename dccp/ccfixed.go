@@ -32,7 +32,7 @@ func newFixedRateSenderControl(env *Env, every int64) *fixedRateSenderControl {
 }
 
 func (scc *fixedRateSenderControl) Open() {
-	go func() {
+	scc.env.Go(func() {
 		for {
 			scc.Lock()
 			if scc.strobeWrite == nil {
@@ -43,7 +43,7 @@ func (scc *fixedRateSenderControl) Open() {
 			scc.Unlock()
 			scc.env.Sleep(scc.every)
 		}
-	}()
+	}, "fixedRateSenderControl")
 }
 
 const CCID_FIXED = 0xf

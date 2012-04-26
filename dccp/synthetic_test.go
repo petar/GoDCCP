@@ -19,3 +19,9 @@ func B(r Runtime) {
 func TestGoSynthetic(t *testing.T) {
 	GoSynthetic(A)
 }
+
+func TestNewSyntheticRuntime(t *testing.T) {
+	runtime := NewSyntheticRuntime()
+	runtime.Go(func() { A(runtime) })
+	runtime.Join()
+}

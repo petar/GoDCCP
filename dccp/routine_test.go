@@ -10,18 +10,19 @@ import (
 )
 
 func TestGoJoin(t *testing.T) {
+	runtime := RealRuntime
 	var hello, world bool
-	NewGoJoin("hello+world", 
-		Go(func() { 
+	NewGoJoin(runtime, "hello+world", 
+		Go(runtime, func() { 
 			hello = true
 			time.Sleep(time.Second)
 		}, "hello"), 
-		Go(func() { 
+		Go(runtime, func() { 
 			world = true
 			time.Sleep(time.Second/2)
 		}, "world"), 
-	).Wait()
+	).Join()
 	if !hello || !world {
-		t.Errorf("go routines did not complete")
+		t.Errorf("goroutines did not complete")
 	}
 }
