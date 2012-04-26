@@ -23,6 +23,7 @@ const (
 
 // TestRoundtripEstimation checks that round-trip times are estimated accurately.
 func TestRoundtripEstimation(t *testing.T) {
+	dccp.InstallCtrlCPanic()
 
 	env, plex := NewEnv("rtt")
 	reducer := NewMeasure(env, t)
@@ -61,7 +62,6 @@ func TestRoundtripEstimation(t *testing.T) {
 			if err != nil {
 				break
 			}
-			env.Sleep(roundtripInterval)
 		}
 		// Close is necessary because otherwise, if no read timeout is in place, the
 		// server sides hangs forever on Read

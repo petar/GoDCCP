@@ -1,6 +1,7 @@
 package dccp
 
 import (
+	"log"
 	"sort"
 )
 
@@ -57,41 +58,53 @@ func (x *SyntheticRuntime) loop() {
 	var sleepers sleeperQueue
 	var now int64
 	var ntogo int = 0
+	var goroutinesForked bool
 	for {
 		req := <-x.reqch
 		switch t := req.(type) {
 		case requestSleep:
-			if t.duration < 0 {
-				panic("sleeping negative time")
+			if ntogo < 1 || t.duration < 0 {
+				panic("sleeping outside runtime or for negative time")
 			}
 			sleepers.Add(&scheduledToSleep{ wake: now + t.duration, resp: t.resp })
+			log.Printf("—>sleep %d/%d until %d", sleepers.Len(), ntogo, now + t.duration)
 		case requestNow:
+			log.Printf("—>now")
 			t.resp <- now
 		case requestGo:
 			ntogo++
+			goroutinesForked = true
+			log.Printf("—>go %d/%d", sleepers.Len(), ntogo)
 		case requestDie:
 			if ntogo < 1 {
 				panic("die before birth")
 			}
 			ntogo--
+			log.Printf("—>die %d/%d", sleepers.Len(), ntogo)
 		default:
 			panic("unknown")
 		} 
 
-		if sleepers.Len() < ntogo {
+		// Are there still goroutines which haven't blocked?
+		if !goroutinesForked || sleepers.Len() < ntogo {
 			continue
 		}
 
 		nextToWake := sleepers.DeleteMin()
+
+		// If no goroutines are left running, then quit the loop
 		if nextToWake == nil {
 			break
 		}
+		// Otherwise set clock forward and wake goroutine
 		if nextToWake.wake < now {
 			panic("waking in the past")
 		}
 		now = nextToWake.wake
+		log.Printf("—— %d", now)
 		close(nextToWake.resp)
 	}
+	log.Printf("—>synend")
 	close(x.donech)
 }
 
