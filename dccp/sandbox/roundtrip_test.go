@@ -176,7 +176,7 @@ func checkDeviation(t *testing.T, name string, actual []float64, expected []floa
 		dev := math.Abs(actual[i]-expected[i]) / expected[i]
 		if dev > tolerance[i] {
 			fmt.Fprintf(os.Stderr, "%s=%v, expected=%v, tolerance=%v\n", name, actual, expected, tolerance)
-			t.Errorf("%s deviates by %0.2f%% in i-th term", name, dev * 100, i)
+			t.Errorf("%s deviates by %0.2f%% in %d-th term", name, dev * 100, i)
 		}
 	}
 }

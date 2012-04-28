@@ -83,7 +83,7 @@ ForLoop:
 				//fmt.Fprintf(os.Stderr, "=>sleep %d\n", sleepers.Len())
 			case requestNow:
 				t.resp <- now
-				//fmt.Fprintf(os.Stderr, "=>now %d\n", now)
+				//fmt.Fprintf(os.Stderr, " now = %d\n", now)
 			default:
 				panic("unknown request")
 			} 
@@ -115,6 +115,7 @@ ForLoop:
 		}
 		//fmt.Fprintf(os.Stderr, "=>waking %d\n", sleepers.Len())
 		now = nextToWake.wake
+		//fmt.Fprintf(os.Stderr, "wake = %d\n", now)
 		close(nextToWake.resp)
 	}
 	fmt.Fprintf(os.Stderr, "=>out-of-time %d\n", now)

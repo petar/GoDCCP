@@ -41,6 +41,6 @@ func TestSleeperQueue(t *testing.T) {
 		t.Errorf("expecting 3")
 	}
 	if sleepers.Len() != 0 {
-		r.Errorf("expecting 0-length")
+		t.Errorf("expecting 0-length")
 	}
 }

@@ -5,9 +5,6 @@
 package dccp
 
 import (
-	"bytes"
-	"fmt"
-	"runtime"
 	"reflect"
 	"github.com/petar/GoGauge/filter"
 )
@@ -92,43 +89,6 @@ func (t *Amb) SetState(s int) {
 		return
 	}
 	t.env.Filter().SetAttr([]string{t.labels[0]}, "state", StateString(s))
-}
-
-// StackTrace formats the stack trace of the calling goroutine, 
-// excluding pointer information and including DCCP runtime-specific information, 
-// in a manner convenient for debugging DCCP
-func StackTrace(labels []string, skip int, sfile string, sline int) string {
-	var w bytes.Buffer
-	var stk []uintptr = make([]uintptr, 32)	// DCCP logic stack should not be deeper than that
-	n := runtime.Callers(skip+1, stk)
-	stk = stk[:n]
-	var utf2byte int
-	for _, l := range labels {
-		fmt.Fprintf(&w, "%s·", l)
-		utf2byte++
-	}
-	for w.Len() < 40 + 4 + utf2byte {
-		w.WriteRune(' ')
-	}
-	fmt.Fprintf(&w, " (%s:%d)\n", sfile, sline)
-	var nondccp bool
-	for _, pc := range stk {
-		f := runtime.FuncForPC(pc)
-		if f == nil {
-			break
-		}
-		file, line := f.FileLine(pc)
-		fname, isdccp := TrimFuncName(f.Name())
-		if !isdccp {
-			nondccp = true
-		} else {
-			if nondccp {
-				fmt.Fprintf(&w, "    ···· ···· ···· \n")
-			}
-			fmt.Fprintf(&w, "    %-40s (%s:%d)\n", fname, TrimSourceFile(file), line)
-		}
-	}
-	return string(w.Bytes())
 }
 
 // E emits a new log record. The arguments args are scanned in turn. The first argument of

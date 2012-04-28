@@ -27,6 +27,9 @@ func (x *monotoneTime) Now() int64 {
 	defer x.Unlock()
 	now := x.env.Now()
 	// TODO: If now - x.last is hugely negative we might want to report some sort of error
+	if now < x.last {
+		panic("negative time in mono")
+	}
 	x.last = max64(now, x.last)
 	return x.last
 }
