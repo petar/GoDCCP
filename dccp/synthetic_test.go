@@ -25,3 +25,22 @@ func TestNewSyntheticRuntime(t *testing.T) {
 	go func() { A(runtime) }()
 	runtime.Join()
 }
+
+func TestSleeperQueue(t *testing.T) {
+	var sleepers sleeperQueue
+	sleepers.Add(&scheduledToSleep{wake:3})
+	sleepers.Add(&scheduledToSleep{wake:2})
+	sleepers.Add(&scheduledToSleep{wake:1})
+	if x := sleepers.DeleteMin(); x == nil || x.wake != 1 {
+		t.Errorf("expecting 1")
+	}
+	if x := sleepers.DeleteMin(); x == nil || x.wake != 2 {
+		t.Errorf("expecting 2")
+	}
+	if x := sleepers.DeleteMin(); x == nil || x.wake != 3 {
+		t.Errorf("expecting 3")
+	}
+	if sleepers.Len() != 0 {
+		r.Errorf("expecting 0-length")
+	}
+}

@@ -1,8 +1,11 @@
 package dccp
 
 import (
+	"fmt"
 	"runtime"
 	"sort"
+	"time"
+	"os"
 )
 
 // SyntheticRuntime is a Runtime implementation that simulates real time without performing real sleeping
@@ -51,36 +54,53 @@ type scheduledToSleep struct {
 	resp chan int
 }
 
-const SpinThreshold = 100
+const (
+	syntheticSleep         = time.Millisecond
+	syntheticSleepCount    = 2
+
+)
 
 func (x *SyntheticRuntime) loop() {
 	var now int64
 	var sleepers sleeperQueue
-	var nidle int
+	var nidle  int
+	var nsleep int
 ForLoop:
 	for {
 		runtime.Gosched()
+		var req interface{}
 		select {
-		case req := <-x.reqch:
+		case req = <-x.reqch:
+		default:
+		}
+		if req != nil {
 			switch t := req.(type) {
 			case requestSleep:
 				if t.duration < 0 {
 					panic("sleeping for negative time")
 				}
 				sleepers.Add(&scheduledToSleep{ wake: now + t.duration, resp: t.resp })
+				//fmt.Fprintf(os.Stderr, "=>sleep %d\n", sleepers.Len())
 			case requestNow:
 				t.resp <- now
+				//fmt.Fprintf(os.Stderr, "=>now %d\n", now)
 			default:
 				panic("unknown request")
 			} 
 			continue ForLoop
-		default:
 		}
 
 		nidle++
-		if nidle < SpinThreshold {
-			continue
+		if nidle < runtime.NumGoroutine()*2 {
+			continue ForLoop
 		}
+		nidle = 0
+		if nsleep < syntheticSleepCount {
+			time.Sleep(syntheticSleep)
+			nsleep++
+			continue ForLoop
+		}
+		nsleep = 0
 
 		nextToWake := sleepers.DeleteMin()
 
@@ -93,9 +113,11 @@ ForLoop:
 		if nextToWake.wake < now {
 			panic("waking in the past")
 		}
+		//fmt.Fprintf(os.Stderr, "=>waking %d\n", sleepers.Len())
 		now = nextToWake.wake
 		close(nextToWake.resp)
 	}
+	fmt.Fprintf(os.Stderr, "=>out-of-time %d\n", now)
 	close(x.donech)
 	// If there are lingering goroutines that think the runtime is still alive,
 	// when they call into the runtime, they will send a message to x.reqch,
