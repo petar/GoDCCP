@@ -15,9 +15,6 @@ type Runtime interface {
 
 	// Now returns the current time in nanoseconds since an abstract 0-moment
 	Now() int64
-
-	// Go executes f in a new goroutine
-	Go(f func())
 }
 
 // realRuntime is an implementation of Runtime that represents real time
@@ -31,8 +28,4 @@ func (realRuntime) Now() int64 {
 
 func (realRuntime) Sleep(ns int64) {
 	time.Sleep(time.Duration(ns))
-}
-
-func (realRuntime) Go(f func()) {
-	go f()
 }

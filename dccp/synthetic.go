@@ -1,7 +1,7 @@
 package dccp
 
 import (
-	"log"
+	"runtime"
 	"sort"
 )
 
@@ -21,9 +21,6 @@ type requestNow struct {
 	resp chan int64
 }
 
-type requestGo  struct{}
-type requestDie struct{}
-
 // GoSynthetic runs g inside a synthetic time runtime.
 // Access to the runtime is given to g via the its singleton argument.
 // GoSynthetic "blocks" until g and any goroutines started by g complete.
@@ -35,7 +32,7 @@ func GoSynthetic(g func(Runtime)) {
 		reqch:  make(chan interface{}, 1),
 		donech: make(chan int),
 	}
-	s.Go(func() { g(s) })
+	go g(s)
 	s.loop()
 }
 
@@ -54,39 +51,34 @@ type scheduledToSleep struct {
 	resp chan int
 }
 
-func (x *SyntheticRuntime) loop() {
-	var sleepers sleeperQueue
-	var now int64
-	var ntogo int = 0
-	var goroutinesForked bool
-	for {
-		req := <-x.reqch
-		switch t := req.(type) {
-		case requestSleep:
-			if ntogo < 1 || t.duration < 0 {
-				panic("sleeping outside runtime or for negative time")
-			}
-			sleepers.Add(&scheduledToSleep{ wake: now + t.duration, resp: t.resp })
-			log.Printf("—>sleep %d/%d until %d", sleepers.Len(), ntogo, now + t.duration)
-		case requestNow:
-			log.Printf("—>now")
-			t.resp <- now
-		case requestGo:
-			ntogo++
-			goroutinesForked = true
-			log.Printf("—>go %d/%d", sleepers.Len(), ntogo)
-		case requestDie:
-			if ntogo < 1 {
-				panic("die before birth")
-			}
-			ntogo--
-			log.Printf("—>die %d/%d", sleepers.Len(), ntogo)
-		default:
-			panic("unknown")
-		} 
+const SpinThreshold = 100
 
-		// Are there still goroutines which haven't blocked?
-		if !goroutinesForked || sleepers.Len() < ntogo {
+func (x *SyntheticRuntime) loop() {
+	var now int64
+	var sleepers sleeperQueue
+	var nidle int
+ForLoop:
+	for {
+		runtime.Gosched()
+		select {
+		case req := <-x.reqch:
+			switch t := req.(type) {
+			case requestSleep:
+				if t.duration < 0 {
+					panic("sleeping for negative time")
+				}
+				sleepers.Add(&scheduledToSleep{ wake: now + t.duration, resp: t.resp })
+			case requestNow:
+				t.resp <- now
+			default:
+				panic("unknown request")
+			} 
+			continue ForLoop
+		default:
+		}
+
+		nidle++
+		if nidle < SpinThreshold {
 			continue
 		}
 
@@ -96,20 +88,23 @@ func (x *SyntheticRuntime) loop() {
 		if nextToWake == nil {
 			break
 		}
+
 		// Otherwise set clock forward and wake goroutine
 		if nextToWake.wake < now {
 			panic("waking in the past")
 		}
 		now = nextToWake.wake
-		log.Printf("—— %d", now)
 		close(nextToWake.resp)
 	}
-	log.Printf("—>synend")
 	close(x.donech)
+	// If there are lingering goroutines that think the runtime is still alive,
+	// when they call into the runtime, they will send a message to x.reqch,
+	// which will cause a panic.
+	close(x.reqch)
 }
 
 func (x *SyntheticRuntime) Sleep(nsec int64) {
-	log.Printf("sleep: %s", StackTrace(nil, 0, "", 0))
+	//log.Printf("sleep: %s", StackTrace(nil, 0, "", 0))
 	resp := make(chan int)
 	x.reqch <- requestSleep{
 		duration: nsec,
@@ -125,28 +120,12 @@ func (x *SyntheticRuntime) Join() {
 
 // Now returns the current time inside the synthetic runtime
 func (x *SyntheticRuntime) Now() int64 {
-	log.Printf("now: %s", StackTrace(nil, 0, "", 0))
+	//log.Printf("now: %s", StackTrace(nil, 0, "", 0))
 	resp := make(chan int64)
 	x.reqch <- requestNow{
 		resp: resp,
 	}
 	return <-resp
-}
-
-func (x *SyntheticRuntime) Go(f func()) {
-	log.Printf("go: %s", StackTrace(nil, 0, "", 0))
-	x.reqch <- requestGo{}
-	go func() {
-		// REMARK: Here we intentionally don't recover from panic in f, since proper program
-		// logic demands that no subroutine ever panics
-		f()
-		x.die()
-	}()
-}
-
-func (x *SyntheticRuntime) die() {
-	log.Printf("die: %s", StackTrace(nil, 0, "", 0))
-	x.reqch <- requestDie{}
 }
 
 // sleeperQueue sorts scheduledToSleep instances ascending by timestamp

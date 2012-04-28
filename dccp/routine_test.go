@@ -10,14 +10,13 @@ import (
 )
 
 func TestGoJoin(t *testing.T) {
-	runtime := RealRuntime
 	var hello, world bool
-	NewGoJoin(runtime, "hello+world", 
-		Go(runtime, func() { 
+	NewGoJoin("hello+world", 
+		Go(func() { 
 			hello = true
 			time.Sleep(time.Second)
 		}, "hello"), 
-		Go(runtime, func() { 
+		Go(func() { 
 			world = true
 			time.Sleep(time.Second/2)
 		}, "world"), 

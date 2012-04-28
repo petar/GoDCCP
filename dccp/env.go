@@ -29,7 +29,7 @@ func NewEnv(runtime Runtime, guzzle Guzzle) *Env {
 		runtime:  runtime,
 		guzzle:   guzzle,
 		filter:   filter.NewFilter(),
-		gojoin:   NewGoJoin(runtime, "Env"),
+		gojoin:   NewGoJoin("Env"),
 		timeZero: now,
 		timeLast: now,
 	}
@@ -46,7 +46,7 @@ func (t *Env) Joiner() Joiner {
 }
 
 func (t *Env) NewGoJoin(annotation string, group ...Joiner) *GoJoin {
-	return NewGoJoin(t.runtime, annotation, group...)
+	return NewGoJoin(annotation, group...)
 }
 
 func (t *Env) Guzzle() Guzzle {

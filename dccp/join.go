@@ -31,7 +31,7 @@ type GoRoutine struct {
 
 // Go runs f in a new goroutine and returns a handle object, which can
 // then be used for various synchronization mechanisms.
-func GoCaller(run Runtime, f func(), skip int, fmt_ string, args_ ...interface{}) *GoRoutine {
+func GoCaller(f func(), skip int, fmt_ string, args_ ...interface{}) *GoRoutine {
 	sfile, sline := FetchCaller(1 + skip)
 	ch := make(chan int)
 	g := &GoRoutine{ 
@@ -40,15 +40,15 @@ func GoCaller(run Runtime, f func(), skip int, fmt_ string, args_ ...interface{}
 		line: sline,
 		anno: fmt.Sprintf(fmt_, args_...),
 	}
-	run.Go(func() {
+	go func() {
 		f()
 		close(ch)
-	})
+	}()
 	return g
 }
 
-func Go(run Runtime, f func(), fmt_ string, args_ ...interface{}) *GoRoutine {
-	return GoCaller(run, f, 1, fmt_, args_...)
+func Go(f func(), fmt_ string, args_ ...interface{}) *GoRoutine {
+	return GoCaller(f, 1, fmt_, args_...)
 }
 
 // Join blocks until the goroutine completes; otherwise,
@@ -107,7 +107,6 @@ func TrimFuncName(fname string) (trimmed string, isDCCP bool) {
 // GoJoin waits until a set of GoRoutines all complete. It also allows
 // new routines to be added dynamically before the completion event.
 type GoJoin struct {
-	run        Runtime
 	srcFile    string
 	srcLine    int
 	annotation string
@@ -120,10 +119,9 @@ type GoJoin struct {
 }
 
 // NewGoJoinCaller creates an object capable of waiting until all supplied GoRoutines complete.
-func NewGoJoinCaller(run Runtime, skip int, annotation string, group ...Joiner) *GoJoin {
+func NewGoJoinCaller(skip int, annotation string, group ...Joiner) *GoJoin {
 	sfile, sline := FetchCaller(1 + skip)
 	var w *GoJoin = &GoJoin{ 
-		run:        run,
 		srcFile:    sfile,
 		srcLine:    sline,
 		annotation: annotation,
@@ -136,8 +134,8 @@ func NewGoJoinCaller(run Runtime, skip int, annotation string, group ...Joiner) 
 	return w
 }
 
-func NewGoJoin(run Runtime, annotation string, group ...Joiner) *GoJoin {
-	return NewGoJoinCaller(run, 1, annotation, group...)
+func NewGoJoin(annotation string, group ...Joiner) *GoJoin {
+	return NewGoJoinCaller(1, annotation, group...)
 }
 
 // String returns a unique, readable string representation of this instance.
@@ -157,17 +155,17 @@ func (t *GoJoin) Add(u Joiner) {
 	}
 	t.group = append(t.group, u)
 	ch := t.ch
-	t.run.Go(func(){
+	go func(){
 		u.Join()
 		ch <- u
-	})
+	}()
 }
 
 // Go is a convenience method which forks f into a new GoRoutine and
 // adds the latter to the waiting queue. fmt is a formatted annotation
 // with arguments args.
 func (t *GoJoin) Go(f func(), fmt_ string, args_ ...interface{}) {
-	t.Add(GoCaller(t.run, f, 1, fmt_, args_...))
+	t.Add(GoCaller(f, 1, fmt_, args_...))
 }
 
 // Join blocks until all goroutines in the group have completed.

@@ -6,7 +6,7 @@ import (
 )
 
 func A(r Runtime) {
-	r.Go(func() { B(r) })
+	go func() { B(r) }()
 	r.Sleep(6000)
 	fmt.Printf("A, now=%d\n", r.Now())
 }
@@ -22,6 +22,6 @@ func TestGoSynthetic(t *testing.T) {
 
 func TestNewSyntheticRuntime(t *testing.T) {
 	runtime := NewSyntheticRuntime()
-	runtime.Go(func() { A(runtime) })
+	go func() { A(runtime) }()
 	runtime.Join()
 }
