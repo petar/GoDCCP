@@ -63,11 +63,11 @@ const (
 func (x *SyntheticRuntime) loop() {
 	var now int64
 	var sleepers sleeperQueue
-	var nidle  int
-	var nsleep int
 ForLoop:
 	for {
-		runtime.Gosched()
+		for nspin := 0; nspin < runtime.NumGoroutine()*100; nspin++ {
+			runtime.Gosched()
+		}
 		var req interface{}
 		select {
 		case req = <-x.reqch:
@@ -89,18 +89,6 @@ ForLoop:
 			} 
 			continue ForLoop
 		}
-
-		nidle++
-		if nidle < runtime.NumGoroutine()*2 {
-			continue ForLoop
-		}
-		nidle = 0
-		if nsleep < syntheticSleepCount {
-			time.Sleep(syntheticSleep)
-			nsleep++
-			continue ForLoop
-		}
-		nsleep = 0
 
 		nextToWake := sleepers.DeleteMin()
 

@@ -5,8 +5,8 @@
 package dccp
 
 import (
-	"fmt"
-	"os"
+	//"fmt"
+	//"os"
 	"sync"
 	"github.com/petar/GoGauge/filter"
 )
@@ -72,9 +72,9 @@ func (t *Env) Now() int64 {
 }
 
 func (t *Env) Sleep(ns int64) {
-	fmt.Fprintf(os.Stderr, "sleep  %11d  %s\n", t.Now(), Caller())
+	//fmt.Fprintf(os.Stderr, "sleep  %11d  %s\n", t.Now() - t.timeZero, Caller())
 	t.runtime.Sleep(ns)
-	fmt.Fprintf(os.Stderr, "wake   %11d  %s\n", t.Now(), Caller())
+	//fmt.Fprintf(os.Stderr, "wake   %11d  %s\n", t.Now() - t.timeZero, Caller())
 }
 
 func (t *Env) Snap() (sinceZero int64, sinceLast int64) {

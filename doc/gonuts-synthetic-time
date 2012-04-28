@@ -1,0 +1,260 @@
+Hi all,
+
+I have been working on a fascinating, I think, problem
+that pushes the limits of language and runtime, and
+raises some interesting questions. These questions
+have to do with implementing "synthetic time" and
+its applications to real-time control (think robotics 
+or Internet congestion control e.g.) algorithms.
+
+First, and briefly: How this problem came to be.
+
+I have been working on a user-space version of the IETF
+congestion control protocol DCCP, authored by Eddie Kohler.
+My project itself is found at github.com/petar/GoDCCP
+
+At a high-level, the core functionality of this project is
+the "control logic" whose job it is to listen for exeternal
+network events (like reads) and create responses (like writes),
+which (and this is the twist) are scheduled to be executed
+at some future point in time.
+
+In order to decouple the control logic from the details of 
+networking and OS, the control logic is implemented as an
+object (a struct, say, called ControlLogic) which interacts 
+with the outside world through a narrow interface, which is 
+passed to it upon initialization:
+
+	func NewControlLogic(world OutsideWorld) *ControlLogic { ... }
+
+	type OutsideWorld interface {
+		Sleep(nanoseconds int64)  // Block for the duration of nanoseconds
+		Now() (nanoseconds int64) // Tell me the time now
+
+		Read() (packet []byte)    // Block until a packet is available for reading
+		Write(packet []byte)      // Block until you can write this packet
+	}
+
+ControlLogic itself has no public methods.
+
+Internally, the control logic is allowed to use the 
+facilities of the Go Language. In particular, it can
+us the go-operator and it can create and manipulate channels.
+However, it does not use any packages whatsoever.
+
+The interesting problem arises, when we attempt to write 
+tests for the control logic.
+
+Our goal is to test the control logic as a black box. This means
+we want to test whether it _responds_ as expected to its _input_.
+
+Observe that the _input_ to the control logic is implicit in the
+behavior of the OutsideWorld interface. There is no other point
+of interaction with the outside world.
+
+Furthermore, observe that the _response_ of the control logic is
+implicit in what calls it makes to the methods of OutsideWorld
+(and in what order and with what timing).
+
+The obvious way to design a test is to implement OutsideWorld,
+so that Now and Sleep simply invoke their respective functions
+from the time package, while Read and Write can be implemented
+to simulate whatever network blocking behavior we like.
+
+This works. But there is an issue with it.
+
+Typically, we would want to run a test that spans minutes
+of real time, so that multiple corners of the ControlLogic
+can be tested.
+
+In a typical long-lasting execution of the ControlLogic,
+most of the time is spend just waiting on Sleep or I/O
+operations.
+
+And here comes the crux:
+
+We would like to design a testing environment which runs
+instantaneously, while faithfully simulating a long-running 
+test in real time. 
+
+Intuitively, we would like to implement a "synthetic time"
+version of OutsideWorld, where Sleeps return immediately,
+while the Nows account for the passing of time correctly.
+
+It turns out (and this is not hard to check), that we
+can simplify the problem, by assuming that the interaction
+with the outside world is given by this simpler interface:
+
+	type SimpleOutsideWorld interface {
+		Sleep(nanoseconds int64)
+		Now() (nanoseconds int64)
+	}
+
+Is it possible to come up with an implementation SyntheticTime of 
+SimpleOutsideWorld in a manner so that executing ControlLogic with
+SyntheticTime as its argument is functionally equivalent to 
+an execution where SimpleOutsideWorld is implemented by RealTime,
+given below:
+
+	type RealTime struct {}
+
+	func (RealTime) Sleep(nanoseconds int64) { time.Sleep(time.Duration(nanoseconds)) }
+
+	func (RealTime) Now() int64 { return int64(time.Now()) }
+
+So, to prove that this is not a hopeless problem, I am inclusing below
+an implementation of SyntheticTime that does work, however it relies
+on a non-existent (imaginary) function that would be provided by the
+Go runtime. This function is called 
+
+// YieldUntilAllOtherBlock blocks the execution of the current Go routine and
+// yields to other goroutines. It returns when all other goroutines have blocked.
+func YieldUntilAllOtherBlock()
+
+With this imaginary function under our belt, we can implement SyntheticTime
+and the implementation is shown below.
+
+I do not think that a semantically correct implementation of SyntheticTime is 
+possible in Go without circumventing the language in an unsafe manner, or 
+without adding some additional interface into the runtime similar to
+YieldUntilAllOtherBlock. 
+
+Furthermore, even if you require that ControlLogic does not
+call the go-operator directly, but rather goes through the outside world
+interface:
+
+	type OutsideWorldWithGo interface {
+		Sleep(nanoseconds int64)
+		Now() (nanoseconds int64)
+		Go(f func())
+	}
+
+SyntheticTime is still impossible. In fact, SyntheticTime is impossible
+even if outside world captures the channel operations of ControlLogic as well.
+
+If you prove me wrong, I will be amazed. The more likely outcome of this
+discussion, I think, is that the runtime package of Go needs to include
+some additional access to the underlying runtime.
+
+PS: Note that runtime.Gosched() feels very similar to our imaginary
+YieldUntilAllOtherBlock, but it does not carry the desired semantics
+and does not work as a replacement for YieldUntilAllOtherBlock.
+
+PSS: I am not suggesting that YieldUntilAllOtherBlock is the function that
+should be added to the runtime package. For one, it is not clear what
+its behavior should be if called from multiple goroutines.
+This exposition is supposed to demonstrate that if we believe that
+synthetic time is something we should be able to implement, than
+_some_ addition has to made to the runtime package of Go.
+
+__________________________________________________________________________
+Here goes the code for SyntheticTime:
+__________________________________________________________________________
+
+type SyntheticTime struct {
+	reqch  chan interface{}
+	donech chan int
+}
+
+func NewSyntheticTime() *SyntheticTime {
+	s := &SyntheticTime{
+		reqch:  make(chan interface{}, 1),
+		donech: make(chan int),
+	}
+	go s.loop()
+	return s
+}
+
+type requestSleep struct {
+	duration int64
+	resp     chan int
+}
+
+type requestNow struct {
+	resp chan int64
+}
+
+type scheduledToSleep struct {
+	wake int64
+	resp chan int
+}
+
+func (x *SyntheticTime) loop() {
+	var now int64
+	var sleepers sleeperQueue
+ForLoop:
+	for {
+		YieldUntilAllOtherBlock()
+		var req interface{}
+		select {
+		case req = <-x.reqch:
+		default:
+		}
+		if req != nil {
+			switch t := req.(type) {
+			case requestSleep:
+				sleepers.Add(&scheduledToSleep{ wake: now + t.duration, resp: t.resp })
+			case requestNow:
+				t.resp <- now
+			default:
+				panic("unknown request")
+			} 
+			continue ForLoop
+		}
+
+		nextToWake := sleepers.DeleteMin()
+
+		if nextToWake == nil {
+			break
+		}
+
+		now = nextToWake.wake
+		close(nextToWake.resp)
+	}
+}
+
+func (x *SyntheticTime) Sleep(nsec int64) {
+	resp := make(chan int)
+	x.reqch <- requestSleep{
+		duration: nsec,
+		resp:     resp,
+	}
+	<-resp
+}
+
+func (x *SyntheticTime) Now() int64 {
+	resp := make(chan int64)
+	x.reqch <- requestNow{
+		resp: resp,
+	}
+	return <-resp
+}
+
+// sleeperQueue sorts scheduledToSleep instances ascending by timestamp
+type sleeperQueue []*scheduledToSleep
+
+func (t sleeperQueue) Len() int {
+	return len(t)
+}
+
+func (t sleeperQueue) Less(i, j int) bool {
+	return t[i].wake < t[j].wake
+}
+
+func (t sleeperQueue) Swap(i, j int) {
+	t[i], t[j] = t[j], t[i]
+}
+
+func (t *sleeperQueue) Add(a *scheduledToSleep) {
+	*t = append(*t, a)
+	sort.Sort(t)
+}
+
+func (t *sleeperQueue) DeleteMin() *scheduledToSleep {
+	if len(*t) == 0 {
+		return nil
+	}
+	q := (*t)[0]
+	*t = (*t)[1:]
+	return q
+}
