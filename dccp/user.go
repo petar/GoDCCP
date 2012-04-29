@@ -24,6 +24,9 @@ func (c *Conn) GetMTU() int {
 
 // Write blocks until the slice b is sent.
 func (c *Conn) Write(data []byte) error {
+
+	//?
+
 	c.writeDataLk.Lock()
 	defer c.writeDataLk.Unlock()
 	if c.writeData == nil {
