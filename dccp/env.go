@@ -5,9 +5,8 @@
 package dccp
 
 import (
-	//"fmt"
-	//"os"
 	"sync"
+	"time"
 	"github.com/petar/GoGauge/filter"
 )
 
@@ -15,7 +14,6 @@ import (
 // time interface, in order to allow for use of real as well as synthetic (accelerated) time
 // (for testing purposes), as well as a amb interface.
 type Env struct {
-	runtime Runtime
 	guzzle  Guzzle
 	filter  *filter.Filter
 	gojoin  *GoJoin
@@ -25,10 +23,9 @@ type Env struct {
 	timeLast int64 // Time of last log message
 }
 
-func NewEnv(runtime Runtime, guzzle Guzzle) *Env {
-	now := runtime.Now()
+func NewEnv(guzzle Guzzle) *Env {
+	now := time.Now().UnixNano()
 	r := &Env{
-		runtime:  runtime,
 		guzzle:   guzzle,
 		filter:   filter.NewFilter(),
 		gojoin:   NewGoJoin("Env"),
@@ -68,13 +65,11 @@ func (t *Env) Close() error {
 }
 
 func (t *Env) Now() int64 {
-	return t.runtime.Now()
+	return time.Now().UnixNano()
 }
 
 func (t *Env) Sleep(ns int64) {
-	//fmt.Fprintf(os.Stderr, "sleep  %11d  %s\n", t.Now() - t.timeZero, Caller())
-	t.runtime.Sleep(ns)
-	//fmt.Fprintf(os.Stderr, "wake   %11d  %s\n", t.Now() - t.timeZero, Caller())
+	time.Sleep(time.Duration(ns))
 }
 
 func (t *Env) Snap() (sinceZero int64, sinceLast int64) {
