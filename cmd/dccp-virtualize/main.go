@@ -26,7 +26,7 @@ func usage() {
 
 func FilterGoFiles(fi os.FileInfo) bool {
 	name := fi.Name()
-	return !f.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".go")
+	return !fi.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".go")
 }
 
 func main() {
@@ -36,14 +36,13 @@ func main() {
 		usage()
 	}
 	fileSet := token.NewFileSet()
-	pkgs, err := parser.ParseDir(fileSet, *flagPath, FilterGoFiles, 0)
+	pkgs, err := parser.ParseDir(fileSet, *flagSrc, FilterGoFiles, 0)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "parse error: %s\n", err)
 		os.Exit(1)
 	}
 
-	for pkgName, pkg := range pkgs {
-		fmt.Printf("Virtualizing package: %s\n", pkgName)
-		VirtualizePackage(pkg, *flagDest)
+	for _, pkg := range pkgs {
+		VirtualizePackage(fileSet, pkg, *flagDest)
 	}
 }
