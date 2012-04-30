@@ -10,6 +10,7 @@ import (
 	"go/ast"
 	//"go/printer"
 	"go/token"
+	"io"
 	"os"
 )
 
@@ -28,47 +29,69 @@ func VirtualizeFile(fileSet *token.FileSet, file *ast.File, destDir string) {
 			Value: "\"github.com/petar/GoDCCP/vtime\"",
 		},
 	})
-	u := bufio.NewWriter(os.Stdout)
-	xform(u, file)
+	Transform(os.Stdout, file)
+}
+
+func Transform(w io.Writer, node ast.Node) {
+	u := &transform{ Writer: bufio.NewWriter(w) }
+	u.xform(node)
 	u.Flush()
 }
 
-func xform(u *bufio.Writer, t_ ast.Node) {
+type transform struct {
+	*bufio.Writer
+	indent int
+}
+
+func (u *transform) Indent() {
+	u.indent++
+}
+
+func (u *transform) Unindent() {
+	u.indent--
+}
+
+func (u *transform) NL() {
+	u.WriteByte('\n')
+	for i := 0; i < u.indent; i++ {
+		u.WriteByte('\t')
+	}
+}
+
+func (u *transform) xform(t_ ast.Node) {
 	switch t := t_.(type) {
 	case *ast.ArrayType:
 		u.WriteByte('[')
-		xform(u, t.Len)
+		u.xform(t.Len)
 		u.WriteByte(']')
-		xform(u, t.Elt)
+		u.xform(t.Elt)
 	case *ast.AssignStmt:
 		for i, lhe := range t.Lhs {
-			xform(u, lhe)
+			u.xform(lhe)
 			if i+1 < len(t.Lhs) {
 				u.WriteString(", ")
 			}
 		}
 		u.WriteString(t.Tok.String())
 		for i, rhe := range t.Rhs {
-			xform(u, rhe)
+			u.xform(rhe)
 			if i+1 < len(t.Lhs) {
 				u.WriteString(", ")
 			}
 		}
 		u.WriteByte('\n')
-	case *ast.Ident:
-		u.WriteString(t.Name)
 	case *ast.BadDecl, *ast.BadExpr, *ast.BadStmt:
 		u.WriteRune('¢')
 	case *ast.BasicLit:
 		u.WriteString(t.Value)
 	case *ast.BinaryExpr:
-		xform(u, t.X)
+		u.xform(t.X)
 		u.WriteString(" " + t.Op.String() + " ")
-		xform(u, t.Y)
+		u.xform(t.Y)
 	case *ast.BlockStmt:
 		u.WriteString("{\n")
 		for _, stmt := range t.List {
-			xform(u, stmt)
+			u.xform(stmt)
 			u.WriteByte('\n')
 		}
 		u.WriteString("}\n")
@@ -79,10 +102,10 @@ func xform(u *bufio.Writer, t_ ast.Node) {
 			u.WriteString(t.Label.Name)
 		}
 	case *ast.CallExpr:
-		xform(u, t.Fun)
+		u.xform(t.Fun)
 		u.WriteByte('(')
 		for i, arg := range t.Args {
-			xform(u, arg)
+			u.xform(arg)
 			if i+1 < len(t.Args) {
 				u.WriteString(", ")
 			}
@@ -94,7 +117,7 @@ func xform(u *bufio.Writer, t_ ast.Node) {
 		} else {
 			u.WriteString("case ")
 			for i, arg := range t.List {
-				xform(u, arg)
+				u.xform(arg)
 				if i+1 < len(t.List) {
 					u.WriteString(", ")
 				}
@@ -102,7 +125,7 @@ func xform(u *bufio.Writer, t_ ast.Node) {
 			u.WriteString(":\n")
 		}
 		for _, stmt := range t.Body {
-			xform(u, stmt)
+			u.xform(stmt)
 			u.WriteByte('\n')
 		}
 	case *ast.ChanType:
@@ -114,31 +137,162 @@ func xform(u *bufio.Writer, t_ ast.Node) {
 		default:
 			u.WriteString("chan ")
 		}
-		xform(u, t.Value)
+		u.xform(t.Value)
 	case *ast.CommClause:
-		?
+		if t.Comm == nil {
+			u.WriteString("default:\n")
+		} else {
+			u.WriteString("case ")
+			u.xform(t.Comm)
+			u.WriteString(":\n")
+		}
+		for _, stmt := range t.Body {
+			u.xform(stmt)
+			u.WriteByte('\n')
+		}
+	case *ast.Comment:
+	case *ast.CommentGroup:
+	case *ast.CompositeLit:
+		if t.Type != nil {
+			u.xform(t.Type)
+		}
+		u.WriteString("{\n")
+		for _, elt := range t.Elts {
+			u.xform(elt)
+			u.WriteByte('\n')
+		}
+		u.WriteString("}\n")
+	case *ast.DeclStmt:
+		u.xform(t.Decl)
+	case *ast.DeferStmt:
+		u.WriteString("defer ")
+		u.xform(t.Call)
+	case *ast.Ellipsis:
+		u.WriteString("...")
+		if t.Elt != nil {
+			u.xform(t.Elt)
+		}
+	case *ast.EmptyStmt:
+		u.WriteString("; ")
+	case *ast.ExprStmt:
+		u.xform(t.X)
+	case *ast.Field:
+		u.WriteString("¢")
+	case *ast.FieldList:
+		u.WriteString("¢")
 	case *ast.File:
 		u.WriteString("package ")
 		u.WriteString(t.Name.Name)
-		u.WriteString("\n\n")
+		u.NL(); u.NL()
 		if len(t.Imports) > 0 {
-			u.WriteString("import (\n")
+			u.WriteString("import (")
+			u.Indent(); u.NL()
 		}
 		for _, imp := range t.Imports {
-			if imp.Name != nil {
-				u.WriteString(imp.Name.Name + " ")
-			}
-			u.WriteString(imp.Path.Value)
-			u.WriteByte('\n')
+			u.xform(imp)
+			u.NL()
 		}
 		if len(t.Imports) > 0 {
-			u.WriteString(")\n")
+			u.WriteString(")")
+			u.Unindent(); u.NL()
 		}
-		u.WriteByte('\n')
+		u.NL()
 		for _, decl := range t.Decls {
-			xform(u, decl)
-			u.WriteByte('\n')
+			u.xform(decl)
+			u.NL()
 		}
+	case *ast.ForStmt:
+		u.WriteString("¢")
+	case *ast.FuncDecl:
+		u.WriteString("¢")
+	case *ast.FuncLit:
+		u.WriteString("¢")
+	case *ast.FuncType:
+		u.WriteString("¢")
+	case *ast.GenDecl:
+		u.WriteString("¢")
+	case *ast.GoStmt:
+		u.WriteString("¢")
+	case *ast.Ident:
+		u.WriteString(t.String())
+	case *ast.IfStmt:
+		u.WriteString("¢")
+	case *ast.ImportSpec:
+		if t.Name != nil {
+			u.WriteString(t.Name.Name + " ")
+		}
+		u.WriteString(t.Path.Value)
+	case *ast.IncDecStmt:
+		u.WriteString("¢")
+	case *ast.IndexExpr:
+		u.WriteString("¢")
+	case *ast.InterfaceType:
+		u.WriteString("¢")
+	case *ast.KeyValueExpr:
+		u.WriteString("¢")
+	case *ast.LabeledStmt:
+		u.WriteString("¢")
+	case *ast.MapType:
+		u.WriteString("¢")
+	case *ast.Package:
+		u.WriteString("¢")
+	case *ast.ParenExpr:
+		u.WriteString("¢")
+	case *ast.RangeStmt:
+		u.WriteString("¢")
+	case *ast.ReturnStmt:
+		u.WriteString("¢")
+	case *ast.SelectStmt:
+		u.WriteString("¢")
+	case *ast.SelectorExpr:
+		u.WriteString("¢")
+	case *ast.SendStmt:
+		u.WriteString("¢")
+	case *ast.SliceExpr:
+		u.WriteString("¢")
+	case *ast.StarExpr:
+		u.WriteString("¢")
+	case *ast.StructType:
+		u.WriteString("¢")
+	case *ast.SwitchStmt:
+		u.WriteString("switch ")
+		if t.Init != nil {
+			u.xform(t.Init)
+			u.WriteString("; ")
+		}
+		u.xform(t.Tag)
+		u.WriteString(" ")
+		u.xform(t.Body)
+	case *ast.TypeAssertExpr:
+		u.xform(t.X)
+		u.WriteString(".(")
+		if t.Type == nil {
+			u.WriteString("type")
+		} else {
+			u.xform(t.Type)
+		}
+		u.WriteString(")")
+	case *ast.TypeSpec:
+		u.WriteString("type ")
+		u.xform(t.Name)
+		u.WriteString(" ")
+		u.xform(t.Type)
+	case *ast.TypeSwitchStmt:
+		u.WriteString("switch ")
+		if t.Init != nil {
+			u.xform(t.Init)
+			u.WriteString("; ")
+		}
+		u.xform(t.Assign)
+		u.WriteString(" ")
+		if t.Body != nil {
+			u.xform(t.Body)
+		}
+	case *ast.UnaryExpr:
+		u.WriteString(t.Op.String())
+		u.xform(t.X)
+	case *ast.ValueSpec:
+		u.WriteString("¢")
 	default:
 		u.WriteRune('·')
 	}
