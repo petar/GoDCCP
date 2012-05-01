@@ -95,7 +95,21 @@ func loop() {
 
 type vgo struct{}
 
-// Go is invoked before go statements in the transformed source
+// Go is invoked before go statements in the virtualized source.
+// In particular, the virtualizing compiler rewrites go statements like so:
+//
+// Original:
+//
+//	go FuncName()
+//
+// Virtualized:
+//
+//	vtime.Go()
+//	go func() {
+//		FuncName()
+//		vtime.Die()
+//	}
+//
 func Go() {
 	vch <- vgo{}
 }
@@ -103,7 +117,7 @@ func Go() {
 type vdie struct{}
 
 // Die is invoked after the end of functions called in go statements in the
-// transformed source
+// virtualized source. See the doc for Go.
 func Die() {
 	vch <- vdie{}
 }
