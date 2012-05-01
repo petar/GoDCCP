@@ -177,9 +177,9 @@ func (u *transform) xform(t_ ast.Node) {
 	case *ast.ExprStmt:
 		u.xform(t.X)
 	case *ast.Field:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.FieldList:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.File:
 		u.WriteString("package ")
 		u.WriteString(t.Name.Name)
@@ -202,58 +202,58 @@ func (u *transform) xform(t_ ast.Node) {
 			u.NL()
 		}
 	case *ast.ForStmt:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.FuncDecl:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.FuncLit:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.FuncType:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.GenDecl:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.GoStmt:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.Ident:
 		u.WriteString(t.String())
 	case *ast.IfStmt:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.ImportSpec:
 		if t.Name != nil {
 			u.WriteString(t.Name.Name + " ")
 		}
 		u.WriteString(t.Path.Value)
 	case *ast.IncDecStmt:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.IndexExpr:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.InterfaceType:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.KeyValueExpr:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.LabeledStmt:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.MapType:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.Package:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.ParenExpr:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.RangeStmt:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.ReturnStmt:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.SelectStmt:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.SelectorExpr:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.SendStmt:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.SliceExpr:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.StarExpr:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.StructType:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	case *ast.SwitchStmt:
 		u.WriteString("switch ")
 		if t.Init != nil {
@@ -292,7 +292,7 @@ func (u *transform) xform(t_ ast.Node) {
 		u.WriteString(t.Op.String())
 		u.xform(t.X)
 	case *ast.ValueSpec:
-		u.WriteString("¢")
+		u.WriteString(fmt.Sprintf("%T", t))
 	default:
 		u.WriteRune('·')
 	}
