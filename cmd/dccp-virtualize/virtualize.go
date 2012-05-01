@@ -22,5 +22,37 @@ func VirtualizePackage(fileSet *token.FileSet, pkg *ast.Package, destDir string)
 func VirtualizeFile(fileSet *token.FileSet, file *ast.File, destDir string) {
 	// Add import of "vtime" package
 	addImport(file, "github.com/petar/GoDCCP/vtime")
+	// Replace go statements
+	fixGoStmt(file)
+
 	printer.Fprint(os.Stdout, fileSet, file)
+}
+
+func fixGoStmt(file *ast.File) {
+	walk(file, visitGoStmt)
+}
+
+func visitGoStmt(x interface{}) {
+	gostmt, ok := x.(*ast.GoStmt)
+	if !ok {
+		return
+	}
+	origcall := gostmt.Call
+	gostmt.Call = &ast.CallExpr{
+		Fun: &ast.FuncLit{
+			Type: &ast.FuncType{
+				Params: &ast.FieldList{},
+			},
+			Body: &ast.BlockStmt{
+				List: []ast.Stmt{
+					&ast.ExprStmt{ X: origcall },
+					&ast.ExprStmt{
+						X: &ast.CallExpr{
+							Fun: &ast.Ident{ Name: "vtime.Die" },
+						},
+					},
+				},
+			},
+		},
+	}
 }
