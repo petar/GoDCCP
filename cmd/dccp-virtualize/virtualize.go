@@ -8,7 +8,7 @@ import (
 	"bufio"
 	"fmt"
 	"go/ast"
-	//"go/printer"
+	"go/printer"
 	"go/token"
 	"io"
 	"os"
@@ -23,13 +23,9 @@ func VirtualizePackage(fileSet *token.FileSet, pkg *ast.Package, destDir string)
 
 func VirtualizeFile(fileSet *token.FileSet, file *ast.File, destDir string) {
 	// Add import of "vtime" package
-	file.Imports = append(file.Imports, &ast.ImportSpec{
-		Path: &ast.BasicLit{
-			Kind:  token.STRING,
-			Value: "\"github.com/petar/GoDCCP/vtime\"",
-		},
-	})
-	Transform(os.Stdout, file)
+	addImport(file, "github.com/petar/GoDCCP/vtime")
+	printer.Fprint(os.Stdout, fileSet, file)
+	//Transform(os.Stdout, file)
 }
 
 func Transform(w io.Writer, node ast.Node) {
