@@ -101,6 +101,8 @@ func fixChanOps(file *ast.File) {
 	walk(file, visitChanOps)
 }
 
+// BlockStmt -> AssignStmt, SendStmt, SelectStmt
+
 func visitChanOps(x interface{}) {
 	?
 }
