@@ -39,7 +39,7 @@ func StackTrace(labels []string, skip int, sfile string, sline int) string {
 		w.WriteRune(' ')
 	}
 	fmt.Fprintf(&w, " (%s:%d)\n", sfile, sline)
-	var nondccp bool
+	var external bool
 	for _, pc := range stk {
 		f := runtime.FuncForPC(pc)
 		if f == nil {
@@ -48,9 +48,9 @@ func StackTrace(labels []string, skip int, sfile string, sline int) string {
 		file, line := f.FileLine(pc)
 		fname, isdccp := TrimFuncName(f.Name())
 		if !isdccp {
-			nondccp = true
+			external = true
 		} else {
-			if nondccp {
+			if external {
 				fmt.Fprintf(&w, "    ···· ···· ···· \n")
 			}
 			fmt.Fprintf(&w, "    %-40s (%s:%d)\n", fname, TrimSourceFile(file), line)
