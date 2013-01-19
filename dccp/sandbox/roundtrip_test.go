@@ -124,7 +124,7 @@ func newRoundtripCheckpoint(env *dccp.Env, t *testing.T) *roundtripCheckpoint {
 	}
 }
 
-func (x *roundtripCheckpoint) Write(r *dccp.LogRecord) {
+func (x *roundtripCheckpoint) Write(r *dccp.Trace) {
 	reading, ok := r.Sample()
 	if !ok {
 		return

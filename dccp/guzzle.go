@@ -14,7 +14,7 @@ import (
 
 // Guzzle is a type that consumes log entries.
 type Guzzle interface {
-	Write(*LogRecord)
+	Write(*Trace)
 	Sync() error
 	Close() error
 }
@@ -45,7 +45,7 @@ func NewFileGuzzle(filename string) *FileGuzzle {
 	return NewFileGuzzleDup(filename, nil)
 }
 
-func (t *FileGuzzle) Write(r *LogRecord) {
+func (t *FileGuzzle) Write(r *Trace) {
 	t.Lock()
 	err := t.enc.Encode(r)
 	t.Unlock()

@@ -30,7 +30,7 @@ func (t *GuzzlePlex) Add(g dccp.Guzzle) {
 	t.guzzles = append(t.guzzles, g)
 }
 
-func (t *GuzzlePlex) Write(r *dccp.LogRecord) {
+func (t *GuzzlePlex) Write(r *dccp.Trace) {
 	sample, ok := r.Sample()
 	if ok {
 		for _, hi := range t.highlight {

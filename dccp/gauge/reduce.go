@@ -16,39 +16,41 @@ import (
 // that is convenient as input to illustration tools
 type LogReducer struct {
 	sync.Mutex
-	checkIns []*dccp.LogRecord
+	checkIns []*dccp.Trace
 	places   map[string]*Place
 	trips    map[int64]*Trip
 }
 
 type Place struct {
-	latest   *dccp.LogRecord
-	CheckIns []*dccp.LogRecord
+	latest   *dccp.Trace
+	CheckIns []*dccp.Trace
 }
 
 // A Trip instance captures all packet check-ins whose SeqNo or AckNo are related
 type Trip struct {
 	SeqNo    int64
-	Forward  []*dccp.LogRecord
-	Backward []*dccp.LogRecord
+	Forward  []*dccp.Trace
+	Backward []*dccp.Trace
 	Source   string
 	Sink     string
 	Round    bool
 }
 
+// Make a new log reducer
 func NewLogReducer() *LogReducer {
 	t := &LogReducer{}
 	t.Init()
 	return t
 }
 
+// Init (re)initializes an existing log reducer structure
 func (t *LogReducer) Init() {
-	t.checkIns = make([]*dccp.LogRecord, 0, 16)
+	t.checkIns = make([]*dccp.Trace, 0, 16)
 	t.places = make(map[string]*Place)
 	t.trips = make(map[int64]*Trip)
 }
 
-func (t *LogReducer) Write(r *dccp.LogRecord) {
+func (t *LogReducer) Write(r *dccp.Trace) {
 	t.Lock()
 	defer t.Unlock()
 
@@ -63,7 +65,7 @@ func (t *LogReducer) Write(r *dccp.LogRecord) {
 	if !ok {
 		p = &Place{ 
 			latest:   nil,
-			CheckIns: make([]*dccp.LogRecord, 0),
+			CheckIns: make([]*dccp.Trace, 0),
 		}
 		t.places[r.Labels[0]] = p
 	}
@@ -85,37 +87,37 @@ func (t *LogReducer) Write(r *dccp.LogRecord) {
 	}
 }
 
-func (t *LogReducer) tripForward(r *dccp.LogRecord) {
+func (t *LogReducer) tripForward(r *dccp.Trace) {
 	x, ok := t.trips[r.SeqNo]
 	if !ok {
 		x = &Trip{
 			SeqNo:    r.SeqNo,
-			Forward:  make([]*dccp.LogRecord, 0),
-			Backward: make([]*dccp.LogRecord, 0),
+			Forward:  make([]*dccp.Trace, 0),
+			Backward: make([]*dccp.Trace, 0),
 		}
 		t.trips[r.SeqNo] = x
 	}
 
 	x.Forward = append(x.Forward, r)
-	sort.Sort(LogRecordChrono(x.Forward))
+	sort.Sort(TraceChrono(x.Forward))
 	x.Source = x.Forward[0].Labels[0]
 	
 	updateTrip(x)
 }
 
-func (t *LogReducer) tripBackward(r *dccp.LogRecord) {
+func (t *LogReducer) tripBackward(r *dccp.Trace) {
 	y, ok := t.trips[r.AckNo]
 	if !ok {
 		y = &Trip{
 			SeqNo:    r.AckNo,
-			Forward:  make([]*dccp.LogRecord, 0),
-			Backward: make([]*dccp.LogRecord, 0),
+			Forward:  make([]*dccp.Trace, 0),
+			Backward: make([]*dccp.Trace, 0),
 		}
 		t.trips[r.AckNo] = y
 	}
 
 	y.Backward = append(y.Backward, r)
-	sort.Sort(LogRecordChrono(y.Backward))
+	sort.Sort(TraceChrono(y.Backward))
 	y.Sink = y.Backward[len(y.Backward)-1].Labels[0]
 
 	updateTrip(y)
@@ -131,12 +133,12 @@ func updateTrip(t *Trip) {
 }
 
 // CheckIns returns a list of all check-ins
-func (t *LogReducer) CheckIns() []*dccp.LogRecord {
+func (t *LogReducer) CheckIns() []*dccp.Trace {
 	t.Lock()
 	defer func() { t.checkIns = nil }()  // So Write does not try to update after this call accidentally
 	defer t.Unlock()
 
-	sort.Sort(LogRecordChrono(t.checkIns))
+	sort.Sort(TraceChrono(t.checkIns))
 	return t.checkIns
 }
 
@@ -168,17 +170,17 @@ func TripMapToSlice(m map[int64]*Trip) []*Trip {
 	return s
 }
 
-// LogRecordChrono is a chronological sort driver for []*dccp.LogRecord
-type LogRecordChrono []*dccp.LogRecord
+// TraceChrono is a chronological sort driver for []*dccp.Trace
+type TraceChrono []*dccp.Trace
 
-func (t LogRecordChrono) Len() int {
+func (t TraceChrono) Len() int {
 	return len(t)
 }
 
-func (t LogRecordChrono) Less(i, j int) bool {
+func (t TraceChrono) Less(i, j int) bool {
 	return t[i].Time < t[j].Time
 }
 
-func (t LogRecordChrono) Swap(i, j int) {
+func (t TraceChrono) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }

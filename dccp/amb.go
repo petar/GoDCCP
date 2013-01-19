@@ -147,7 +147,7 @@ func (t *Amb) EC(skip int, event Event, comment string, args ...interface{}) {
 	sfile, sline := FetchCaller(1+skip)
 
 	if t.env.Guzzle() != nil {
-		r := &LogRecord{
+		r := &Trace{
 			Time:       sinceZero,
 			Labels:     t.labels,
 			Event:      event,

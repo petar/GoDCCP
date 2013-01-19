@@ -42,7 +42,7 @@ func NewMeasure(env *dccp.Env, t *testing.T) *Measure {
 	return x
 }
 
-func (x *Measure) Write(r *dccp.LogRecord) {
+func (x *Measure) Write(r *dccp.Trace) {
 	now := x.env.Now()
 	switch r.Event {
 	case dccp.EventWrite:
