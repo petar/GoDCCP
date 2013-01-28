@@ -12,40 +12,33 @@ import (
 	"sync"
 )
 
-// Guzzle is a type that consumes log entries.
-type Guzzle interface {
-	Write(*Trace)
-	Sync() error
-	Close() error
-}
-
-// FileGuzzle saves all log entries to a file in JSON format
-type FileGuzzle struct {
+// FileTraceWriter saves all log entries to a file in JSON format
+type FileTraceWriter struct {
 	sync.Mutex
 	f   *os.File
 	enc *json.Encoder
-	dup Guzzle
+	dup TraceWriter
 }
 
-// NewFileGuzzleDup creates a Guzzle that saves logs in a file and also passes them to dup.
-func NewFileGuzzleDup(filename string, dup Guzzle) *FileGuzzle {
+// NewFileTraceWriterDup creates a TraceWriter that saves logs in a file and also passes them to dup.
+func NewFileTraceWriterDup(filename string, dup TraceWriter) *FileTraceWriter {
 	os.Remove(filename)
 	f, err := os.Create(filename)
 	if err != nil {
 		panic(fmt.Sprintf("cannot create log file '%s'", filename))
 	}
-	w := &FileGuzzle{ f:f, enc:json.NewEncoder(f), dup:dup }
-	runtime.SetFinalizer(w, func(w *FileGuzzle) { 
+	w := &FileTraceWriter{ f:f, enc:json.NewEncoder(f), dup:dup }
+	runtime.SetFinalizer(w, func(w *FileTraceWriter) { 
 		w.f.Close() 
 	})
 	return w
 }
 
-func NewFileGuzzle(filename string) *FileGuzzle {
-	return NewFileGuzzleDup(filename, nil)
+func NewFileTraceWriter(filename string) *FileTraceWriter {
+	return NewFileTraceWriterDup(filename, nil)
 }
 
-func (t *FileGuzzle) Write(r *Trace) {
+func (t *FileTraceWriter) Write(r *Trace) {
 	t.Lock()
 	err := t.enc.Encode(r)
 	t.Unlock()
@@ -57,14 +50,14 @@ func (t *FileGuzzle) Write(r *Trace) {
 	}
 }
 
-func (t *FileGuzzle) Sync() error {
+func (t *FileTraceWriter) Sync() error {
 	if t.dup != nil {
 		t.dup.Sync()
 	}
 	return t.f.Sync()
 }
 
-func (t *FileGuzzle) Close() error {
+func (t *FileTraceWriter) Close() error {
 	if t.dup != nil {
 		t.dup.Close()
 	}

@@ -8,6 +8,13 @@ import (
 	"bytes"
 )
 
+// TraceWriter is a type that consumes log entries.
+type TraceWriter interface {
+	Write(*Trace)
+	Sync() error
+	Close() error
+}
+
 // Trace stores a log event. It can be used to marshal to JSON and pass to external
 // visualisation tools.
 type Trace struct {
@@ -97,7 +104,7 @@ func (x *Trace) Sample() (sample *Sample, present bool) {
 }
 
 // Highlight sets the highlight flag on this Trace. This is used in test-specific
-// Guzzles to indicate to the inspector that this record is of particular interest for
+// TraceWriters to indicate to the inspector that this record is of particular interest for
 // visualization purposes.
 func (x *Trace) SetHighlight() {
 	x.Highlight = true

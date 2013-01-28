@@ -11,18 +11,18 @@ import (
 	"github.com/petar/GoDCCP/dccp/ccid3"
 )
 
-// NewEnv creates a dccp.Env for test purposes, whose dccp.Guzzle writes to a file
+// NewEnv creates a dccp.Env for test purposes, whose dccp.TraceWriter writes to a file
 // and duplicates all emits to any number of additional guzzles, which are usually used to check
-// test conditions. The GuzzlePlex is returned to facilitate adding further guzzles.
-func NewEnv(guzzleFilename string, guzzles ...dccp.Guzzle) (env *dccp.Env, plex *GuzzlePlex) {
-	fileGuzzle := dccp.NewFileGuzzle(path.Join(os.Getenv("DCCPLOG"), guzzleFilename + ".emit"))
-	plex = NewGuzzlePlex(append(guzzles, fileGuzzle)...)
+// test conditions. The TraceWriterPlex is returned to facilitate adding further guzzles.
+func NewEnv(guzzleFilename string, guzzles ...dccp.TraceWriter) (env *dccp.Env, plex *TraceWriterPlex) {
+	fileTraceWriter := dccp.NewFileTraceWriter(path.Join(os.Getenv("DCCPLOG"), guzzleFilename + ".emit"))
+	plex = NewTraceWriterPlex(append(guzzles, fileTraceWriter)...)
 	return dccp.NewEnv(plex), plex
 }
 
 // NewClientServerPipe creates a sandbox communication pipe and attaches a DCCP client and a DCCP
 // server to its endpoints. In addition to sending all emits to a standard DCCP log file, it sends a
-// copy of all emits to the dup Guzzle.
+// copy of all emits to the dup TraceWriter.
 func NewClientServerPipe(env *dccp.Env) (clientConn, serverConn *dccp.Conn, clientToServer, serverToClient *headerHalfPipe) {
 	llog := dccp.NewAmb("line", env)
 	hca, hcb, _ := NewPipe(env, llog, "client", "server")

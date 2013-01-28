@@ -11,7 +11,7 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-// Measure is a dccp.Guzzle which listens to the logs emitted from the
+// Measure is a dccp.TraceWriter which listens to the logs emitted from the
 // Roundtrip. It measures the real roundtrip time between the sender and
 // receiver, based on read and write logs and prints out this information.
 type Measure struct {

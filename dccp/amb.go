@@ -146,7 +146,7 @@ func (t *Amb) EC(skip int, event Event, comment string, args ...interface{}) {
 
 	sfile, sline := FetchCaller(1+skip)
 
-	if t.env.Guzzle() != nil {
+	if t.env.TraceWriter() != nil {
 		r := &Trace{
 			Time:       sinceZero,
 			Labels:     t.labels,
@@ -161,7 +161,7 @@ func (t *Amb) EC(skip int, event Event, comment string, args ...interface{}) {
 			SourceLine: sline,
 			Trace:      StackTrace(t.labels, skip+2, sfile, sline),
 		}
-		t.env.Guzzle().Write(r)
+		t.env.TraceWriter().Write(r)
 	}
 }
 

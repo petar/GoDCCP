@@ -8,29 +8,29 @@ import (
 	"github.com/petar/GoDCCP/dccp"
 )
 
-// GuzzlePlex is a dccp.Guzzle that replicates Guzzle method invocations to a set of Guzzles
-type GuzzlePlex struct {
-	guzzles   []dccp.Guzzle
+// TraceWriterPlex is a dccp.TraceWriter that replicates TraceWriter method invocations to a set of TraceWriters
+type TraceWriterPlex struct {
+	guzzles   []dccp.TraceWriter
 	highlight []string
 }
 
-func NewGuzzlePlex(guzzles ...dccp.Guzzle) *GuzzlePlex {
-	return &GuzzlePlex{
+func NewTraceWriterPlex(guzzles ...dccp.TraceWriter) *TraceWriterPlex {
+	return &TraceWriterPlex{
 		guzzles: guzzles,
 	}
 }
 
 // HighlightSamples instructs the guzzle to highlight any records carrying samples of the given names
-func (t *GuzzlePlex) HighlightSamples(samples ...string) {
+func (t *TraceWriterPlex) HighlightSamples(samples ...string) {
 	t.highlight = samples
 }
 
 // Add adds an additional guzzle to the plex
-func (t *GuzzlePlex) Add(g dccp.Guzzle) {
+func (t *TraceWriterPlex) Add(g dccp.TraceWriter) {
 	t.guzzles = append(t.guzzles, g)
 }
 
-func (t *GuzzlePlex) Write(r *dccp.Trace) {
+func (t *TraceWriterPlex) Write(r *dccp.Trace) {
 	sample, ok := r.Sample()
 	if ok {
 		for _, hi := range t.highlight {
@@ -46,7 +46,7 @@ func (t *GuzzlePlex) Write(r *dccp.Trace) {
 }
 
 // Sync syncs all the guzzles in the plex
-func (t *GuzzlePlex) Sync() error {
+func (t *TraceWriterPlex) Sync() error {
 	var err error
 	for _, g := range t.guzzles {
 		e := g.Sync()
@@ -58,7 +58,7 @@ func (t *GuzzlePlex) Sync() error {
 }
 
 // Close closes all the guzzles in the plex
-func (t *GuzzlePlex) Close() error {
+func (t *TraceWriterPlex) Close() error {
 	var err error
 	for _, g := range t.guzzles {
 		e := g.Close()

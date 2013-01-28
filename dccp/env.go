@@ -14,7 +14,7 @@ import (
 // time interface, in order to allow for use of real as well as synthetic (accelerated) time
 // (for testing purposes), as well as a amb interface.
 type Env struct {
-	guzzle  Guzzle
+	guzzle  TraceWriter
 	filter  *filter.Filter
 	gojoin  *GoJoin
 
@@ -23,7 +23,7 @@ type Env struct {
 	timeLast int64 // Time of last log message
 }
 
-func NewEnv(guzzle Guzzle) *Env {
+func NewEnv(guzzle TraceWriter) *Env {
 	now := time.Now().UnixNano()
 	r := &Env{
 		guzzle:   guzzle,
@@ -48,7 +48,7 @@ func (t *Env) NewGoJoin(annotation string, group ...Joiner) *GoJoin {
 	return NewGoJoin(annotation, group...)
 }
 
-func (t *Env) Guzzle() Guzzle {
+func (t *Env) TraceWriter() TraceWriter {
 	return t.guzzle
 }
 
