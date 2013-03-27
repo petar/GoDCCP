@@ -31,7 +31,7 @@ type emitSubPipe struct {
 }
 
 type logPipe struct {
-	Log  *dccp.LogRecord
+	Log  *dccp.Trace
 	Pipe *emitPipe
 }
 
@@ -87,7 +87,7 @@ func htmlize(records []*logPipe, srt bool, includeEmits bool) {
 
 // pipeEmit converts a log record into an HTMLRecord.
 // The Time field of the 
-func pipeEmit(t *dccp.LogRecord) *logPipe {
+func pipeEmit(t *dccp.Trace) *logPipe {
 	var pipe *emitPipe
 	switch t.Event {
 	case dccp.EventWrite:
@@ -149,7 +149,7 @@ func htmlizePipe(e *emitPipe) string {
 
 const htmlPacketWidth = 21 
 
-func pipeWrite(r *dccp.LogRecord) *emitPipe {
+func pipeWrite(r *dccp.Trace) *emitPipe {
 	switch r.Labels[0] {
 	case "server":
 		return &emitPipe{
@@ -184,7 +184,7 @@ func pipeWrite(r *dccp.LogRecord) *emitPipe {
 	return nil
 }
 
-func pipeRead(r *dccp.LogRecord) *emitPipe {
+func pipeRead(r *dccp.Trace) *emitPipe {
 	switch r.Labels[0] {
 	case "client":
 		return &emitPipe{
@@ -219,7 +219,7 @@ func pipeRead(r *dccp.LogRecord) *emitPipe {
 	return nil
 }
 
-func pipeIdle(r *dccp.LogRecord) *emitPipe {
+func pipeIdle(r *dccp.Trace) *emitPipe {
 	switch r.Labels[0] {
 	case "client":
 		return &emitPipe{
@@ -239,7 +239,7 @@ func pipeIdle(r *dccp.LogRecord) *emitPipe {
 	return nil
 }
 
-func pipeDrop(r *dccp.LogRecord) *emitPipe {
+func pipeDrop(r *dccp.Trace) *emitPipe {
 	switch r.Labels[0] {
 	case "line":
 		switch r.Labels[1] {
@@ -314,14 +314,14 @@ func pipeDrop(r *dccp.LogRecord) *emitPipe {
 
 const htmlEventWidth = 41
 
-func sprintPacketEventCommentHTML(r *dccp.LogRecord) string {
+func sprintPacketEventCommentHTML(r *dccp.Trace) string {
 	if r.Type == "" {
 		return fmt.Sprintf("   %s ", cut(r.Comment, htmlEventWidth-4))
 	}
 	return fmt.Sprintf(" ¶ %s ", cut(r.Comment, htmlEventWidth-4))
 }
 
-func pipeGeneric(r *dccp.LogRecord) *emitPipe {
+func pipeGeneric(r *dccp.Trace) *emitPipe {
 	switch r.Labels[0] {
 	case "line":
 		return &emitPipe{

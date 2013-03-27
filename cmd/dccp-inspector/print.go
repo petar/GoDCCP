@@ -12,12 +12,12 @@ import (
 )
 
 type PrintRecord struct {
-	Log  *dccp.LogRecord
+	Log  *dccp.Trace
 	Text string
 }
 
 // printRecord converts a log record into a PrintRecord
-func printRecord(t *dccp.LogRecord) *PrintRecord {
+func printRecord(t *dccp.Trace) *PrintRecord {
 	switch t.Event {
 	case dccp.EventWrite:
 		return printWrite(t)
@@ -36,7 +36,7 @@ const (
 	skipState = "         "
 )
 
-func printWrite(r *dccp.LogRecord) *PrintRecord {
+func printWrite(r *dccp.Trace) *PrintRecord {
 	switch r.Labels[0] {
 	case "server":
 		return &PrintRecord{
@@ -54,7 +54,7 @@ func printWrite(r *dccp.LogRecord) *PrintRecord {
 	return nil
 }
 
-func printRead(r *dccp.LogRecord) *PrintRecord {
+func printRead(r *dccp.Trace) *PrintRecord {
 	switch r.Labels[0] {
 	case "client":
 		return &PrintRecord{
@@ -72,7 +72,7 @@ func printRead(r *dccp.LogRecord) *PrintRecord {
 	return nil
 }
 
-func printDrop(r *dccp.LogRecord) *PrintRecord {
+func printDrop(r *dccp.Trace) *PrintRecord {
 	var text string
 	switch r.Labels[0] {
 	// XXX: Seems there is a bug in the print out formats below (the server case format feels like it should be the line case)
@@ -113,7 +113,7 @@ func printDrop(r *dccp.LogRecord) *PrintRecord {
 	}
 }
 
-func printIdle(r *dccp.LogRecord) *PrintRecord {
+func printIdle(r *dccp.Trace) *PrintRecord {
 	var text string
 	switch r.Labels[0] {
 	case "client":
@@ -132,7 +132,7 @@ func printIdle(r *dccp.LogRecord) *PrintRecord {
 	}
 }
 
-func printGeneric(r *dccp.LogRecord) *PrintRecord {
+func printGeneric(r *dccp.Trace) *PrintRecord {
 	var text string
 	switch r.Labels[0] {
 	case "client":
@@ -154,22 +154,22 @@ func printGeneric(r *dccp.LogRecord) *PrintRecord {
 	}
 }
 
-func sprintIdle(r *dccp.LogRecord) string {
+func sprintIdle(r *dccp.Trace) string {
 	return "————————————————————————————————"
 }
 
-func sprintPacket(r *dccp.LogRecord) string {
+func sprintPacket(r *dccp.Trace) string {
 	return sprintPacketWidth(r, 9)
 }
 
-func sprintPacketWide(r *dccp.LogRecord) string {
+func sprintPacketWide(r *dccp.Trace) string {
 	if r.Type == "" {
 		return ""
 	}
 	return fmt.Sprintf("Type=%s SeqNo=%06x AckNo=%06x", r.Type, r.SeqNo, r.AckNo)
 }
 
-func sprintPacketWidth(r *dccp.LogRecord, width int) string {
+func sprintPacketWidth(r *dccp.Trace, width int) string {
 	var w bytes.Buffer
 	w.WriteString(r.Type)
 	for i := 0; i < width-len(r.Type); i++ {
@@ -178,7 +178,7 @@ func sprintPacketWidth(r *dccp.LogRecord, width int) string {
 	return fmt.Sprintf(" %s%06x·%06x ", string(w.Bytes()), r.SeqNo, r.AckNo)
 }
 
-func sprintPacketEventComment(r *dccp.LogRecord) string {
+func sprintPacketEventComment(r *dccp.Trace) string {
 	if r.SeqNo == 0 {
 		return fmt.Sprintf("     %-22s     ", cut(r.Comment, 22))
 	}

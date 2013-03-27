@@ -25,7 +25,7 @@ var (
 	printNop = &PrintRecord{}
 )
 
-func printTrip(emits []*dccp.LogRecord) {
+func printTrip(emits []*dccp.Trace) {
 	reducer := dccp_gauge.NewLogReducer()
 	for _, rec := range emits {
 		reducer.Write(rec)

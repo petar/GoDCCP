@@ -31,7 +31,7 @@ func (x *SeriesSweeper) Init() {
 
 // Add adds a new log record to the series. It assumes that records are added
 // in increasing chronological order
-func (x *SeriesSweeper) Add(r *dccp.LogRecord) {
+func (x *SeriesSweeper) Add(r *dccp.Trace) {
 	if !r.IsHighlighted() {
 		return
 	}
