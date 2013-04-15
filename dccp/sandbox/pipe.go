@@ -239,11 +239,6 @@ func (x *headerHalfPipe) Close() error {
 	return nil
 }
 
-// LocalLabel implements dccp.HeaderConn.LocalLabel
-func (x *headerHalfPipe) LocalLabel() dccp.Bytes {
-	return &dccp.Label{}
-}
-
 // RemoteLabel implements dccp.HeaderConn.RemoteLabel
 func (x *headerHalfPipe) RemoteLabel() dccp.Bytes {
 	return &dccp.Label{}

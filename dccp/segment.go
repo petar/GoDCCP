@@ -26,8 +26,6 @@ type SegmentConn interface {
 	// and the block is not sent.
 	Write(block []byte) (err error)
 
-	LocalLabel() Bytes
-
 	RemoteLabel() Bytes
 
 	// SetReadExpire sets the expiration time for any blocked calls to Read
@@ -59,8 +57,6 @@ type HeaderConn interface {
 
 	// Write can return ErrTooBig, if the wire-format of h exceeds the MTU
 	Write(h *Header) (err error)
-
-	LocalLabel() Bytes
 
 	RemoteLabel() Bytes
 
@@ -102,10 +98,6 @@ func (hc *headerConn) Write(h *Header) (err error) {
 		return err
 	}
 	return hc.bc.Write(p)
-}
-
-func (hc *headerConn) LocalLabel() Bytes {
-	return hc.bc.LocalLabel()
 }
 
 func (hc *headerConn) RemoteLabel() Bytes {

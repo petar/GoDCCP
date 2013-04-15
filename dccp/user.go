@@ -100,9 +100,6 @@ func (c *Conn) Abort() {
 	c.abortWith(ResetAborted)
 }
 
-// LocalLabel implements SegmentConn.LocalLabel
-func (c *Conn) LocalLabel() Bytes { return c.hc.LocalLabel() }
-
 // RemoteLabel implements SegmentConn.RemoteLabel
 func (c *Conn) RemoteLabel() Bytes { return c.hc.RemoteLabel() }
 

@@ -97,9 +97,6 @@ func (f *flow) getLocal() *Label {
 	return f.local
 }
 
-// LocalLabel implements SegmentConn.LocalLabel
-func (f *flow) LocalLabel() Bytes { return f.getLocal() }
-
 func (f *flow) String() string {
 	return f.getLocal().String() + "--" + f.getRemote().String()
 }
