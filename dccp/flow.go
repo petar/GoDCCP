@@ -88,9 +88,6 @@ func (f *flow) getRemote() *Label {
 	return f.remote
 }
 
-// RemoteLabel implements SegmentConn.RemoteLabel
-func (f *flow) RemoteLabel() Bytes { return f.getRemote() }
-
 func (f *flow) getLocal() *Label {
 	f.Lock()
 	defer f.Unlock()

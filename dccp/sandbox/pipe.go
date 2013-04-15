@@ -239,11 +239,6 @@ func (x *headerHalfPipe) Close() error {
 	return nil
 }
 
-// RemoteLabel implements dccp.HeaderConn.RemoteLabel
-func (x *headerHalfPipe) RemoteLabel() dccp.Bytes {
-	return &dccp.Label{}
-}
-
 // SetReadExpire implements dccp.HeaderConn.SetReadExpire
 func (x *headerHalfPipe) SetReadExpire(nsec int64) error {
 	x.readDeadlineLk.Lock()

@@ -100,9 +100,6 @@ func (c *Conn) Abort() {
 	c.abortWith(ResetAborted)
 }
 
-// RemoteLabel implements SegmentConn.RemoteLabel
-func (c *Conn) RemoteLabel() Bytes { return c.hc.RemoteLabel() }
-
 // SetReadExpire implements SegmentConn.SetReadExpire
 func (c *Conn) SetReadExpire(nsec int64) error {
 	panic("not implemented")
