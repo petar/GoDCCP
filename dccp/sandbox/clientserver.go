@@ -17,6 +17,7 @@ import (
 func NewEnv(guzzleFilename string) (env *dccp.Env, plex *TraceWriterPlex) {
 	fileTraceWriter := dccp.NewFileTraceWriter(path.Join(os.Getenv("DCCPLOG"), guzzleFilename + ".emit"))
 	plex = NewTraceWriterPlex(fileTraceWriter)
+	plex = NewSyncTraceWriter(plex)
 	return dccp.NewEnv(plex), plex
 }
 
