@@ -6,7 +6,6 @@ package dccp
 
 import (
 	"reflect"
-	"github.com/petar/GoGauge/filter"
 )
 
 // Amb represents a runtime context, embodied by a runtime, a stack of labels
@@ -65,10 +64,6 @@ func (t *Amb) Labels() []string {
 func (t *Amb) Push(l string) *Amb {
 	t.labels = append(t.labels, l)
 	return t
-}
-
-func (t *Amb) Filter() *filter.Filter {
-	return t.env.Filter()
 }
 
 // GetState retrieves the state of the owning object, using the runtime value store

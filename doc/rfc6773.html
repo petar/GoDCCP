@@ -1,0 +1,1279 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head profile="http://dublincore.org/documents/2008/08/04/dc-html/">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="robots" content="index,follow" />
+    <meta name="creator" content="rfcmarkup version 1.103" />
+    <link rel="schema.DC" href="http://purl.org/dc/elements/1.1/" />
+<meta name="DC.Relation.Replaces" content="draft-phelan-dccp-natencap" />
+<meta name="DC.Identifier" content="urn:ietf:rfc:6773" />
+<meta name="DC.Date.Issued" content="November, 2012" />
+<meta name="DC.Creator" content="Perkins, Colin" />
+<meta name="DC.Creator" content="Fairhurst, Gorry" />
+<meta name="DC.Creator" content="Phelan, Thomas" />
+<meta name="DC.Description.Abstract" content="This document specifies an alternative encapsulation of the Datagram\nCongestion Control Protocol (DCCP), referred to as DCCP-UDP. This\nencapsulation allows DCCP to be carried through the current generation\nof Network Address Translation (NAT) middleboxes without modification\nof those middleboxes. This document also updates the Session\nDescription Protocol (SDP) information for DCCP defined in RFC 5762.\n[STANDARDS-TRACK]" />
+<meta name="DC.Title" content="DCCP-UDP: A Datagram Congestion Control Protocol UDP Encapsulation for NAT Traversal" />
+
+    <link rel="icon" href="/images/rfc.png" type="image/png" />
+    <link rel="shortcut icon" href="/images/rfc.png" type="image/png" />
+    <title>RFC 6773 - DCCP-UDP: A Datagram Congestion Control Protocol UDP Encapsulation for NAT Traversal</title>
+    
+    
+    <style type="text/css">
+	body {
+	    margin: 0px 8px;
+            font-size: 1em;
+	}
+        h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+	    font-weight: bold;
+            line-height: 0pt;
+            display: inline;
+            white-space: pre;
+            font-family: monospace;
+            font-size: 1em;
+	    font-weight: bold;
+        }
+        pre {
+            font-size: 1em;
+            margin-top: 0px;
+            margin-bottom: 0px;
+        }
+	.pre {
+	    white-space: pre;
+	    font-family: monospace;
+	}
+	.header{
+	    font-weight: bold;
+	}
+        .newpage {
+            page-break-before: always;
+        }
+        .invisible {
+            text-decoration: none;
+            color: white;
+        }
+        a.selflink {
+          color: black;
+          text-decoration: none;
+        }
+        @media print {
+            body {
+                font-family: monospace;
+                font-size: 10.5pt;
+            }
+            h1, h2, h3, h4, h5, h6 {
+                font-size: 1em;
+            }
+        
+            a:link, a:visited {
+                color: inherit;
+                text-decoration: none;
+            }
+            .noprint {
+                display: none;
+            }
+        }
+	@media screen {
+	    .grey, .grey a:link, .grey a:visited {
+		color: #777;
+	    }
+            .docinfo {
+                background-color: #EEE;
+            }
+            .top {
+                border-top: 7px solid #EEE;
+            }
+            .bgwhite  { background-color: white; }
+            .bgred    { background-color: #F44; }
+            .bggrey   { background-color: #666; }
+            .bgbrown  { background-color: #840; }            
+            .bgorange { background-color: #FA0; }
+            .bgyellow { background-color: #EE0; }
+            .bgmagenta{ background-color: #F4F; }
+            .bgblue   { background-color: #66F; }
+            .bgcyan   { background-color: #4DD; }
+            .bggreen  { background-color: #4F4; }
+
+            .legend   { font-size: 90%; }
+            .cplate   { font-size: 70%; border: solid grey 1px; }
+	}
+    </style>
+    <!--[if IE]>
+    <style>
+    body {
+       font-size: 13px;
+       margin: 10px 10px;
+    }
+    </style>
+    <![endif]-->
+
+    <script type="text/javascript"><!--
+    function addHeaderTags() {
+	var spans = document.getElementsByTagName("span");
+	for (var i=0; i < spans.length; i++) {
+	    var elem = spans[i];
+	    if (elem) {
+		var level = elem.getAttribute("class");
+                if (level == "h1" || level == "h2" || level == "h3" || level == "h4" || level == "h5" || level == "h6") {
+                    elem.innerHTML = "<"+level+">"+elem.innerHTML+"</"+level+">";		
+                }
+	    }
+	}
+    }
+    var legend_html = "Colour legend:<br />      <table>         <tr><td>Unknown:</td>          <td><span class='cplate bgwhite'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Draft:</td>            <td><span class='cplate bgred'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Informational:</td>    <td><span class='cplate bgorange'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Experimental:</td>     <td><span class='cplate bgyellow'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Best Common Practice:</td><td><span class='cplate bgmagenta'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Proposed Standard:</td><td><span class='cplate bgblue'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Draft Standard:</td>   <td><span class='cplate bgcyan'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Standard:</td>         <td><span class='cplate bggreen'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Historic:</td>         <td><span class='cplate bggrey'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>         <tr><td>Obsolete:</td>         <td><span class='cplate bgbrown'>&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>     </table>";
+    function showElem(id) {
+        var elem = document.getElementById(id);
+        elem.innerHTML = eval(id+"_html");
+        elem.style.visibility='visible';
+    }
+    function hideElem(id) {
+        var elem = document.getElementById(id);
+        elem.style.visibility='hidden';        
+        elem.innerHTML = "";
+    }
+    // -->
+    </script>
+</head>
+<body onload="addHeaderTags()">
+   <div style="height: 13px;">
+      <div onmouseover="this.style.cursor='pointer';"
+         onclick="showElem('legend');"
+         onmouseout="hideElem('legend')"
+	 style="height: 6px; position: absolute;"
+         class="pre noprint docinfo bgblue"
+         title="Click for colour legend." >                                                                        </div>
+      <div id="legend"
+           class="docinfo noprint pre legend"
+           style="position:absolute; top: 4px; left: 4ex; visibility:hidden; background-color: white; padding: 4px 9px 5px 7px; border: solid #345 1px; "
+           onmouseover="showElem('legend');"
+           onmouseout="hideElem('legend');">
+      </div>
+   </div>
+<span class="pre noprint docinfo top">[<a href="../html/" title="Document search and retrieval page">Docs</a>] [<a href="/rfc/rfc6773.txt" title="Plaintext version of this document">txt</a>|<a href="/pdf/rfc6773" title="PDF version of this document">pdf</a>] [<a href="./draft-ietf-dccp-udpencap" title="draft-ietf-dccp-udpencap">draft-ietf-dccp-u...</a>] [<a href="/rfcdiff?difftype=--hwdiff&amp;url2=rfc6773" title="Inline diff (wdiff)">Diff1</a>] [<a href="/rfcdiff?url2=rfc6773" title="Side-by-side diff">Diff2</a>]                 </span><br />
+<span class="pre noprint docinfo">                                                                        </span><br />
+<span class="pre noprint docinfo">                                                       PROPOSED STANDARD</span><br />
+<span class="pre noprint docinfo">                                                                        </span><br />
+<pre>
+Internet Engineering Task Force (IETF)                         T. Phelan
+Request for Comments: 6773                                         Sonus
+Updates: <a href="./rfc4340">4340</a>, <a href="./rfc5762">5762</a>                                         G. Fairhurst
+Category: Standards Track                         University of Aberdeen
+ISSN: 2070-1721                                               C. Perkins
+                                                   University of Glasgow
+                                                           November 2012
+
+
+ <span class="h1">DCCP-UDP: A Datagram Congestion Control Protocol UDP Encapsulation for</span>
+                             <span class="h1">NAT Traversal</span>
+
+Abstract
+
+   This document specifies an alternative encapsulation of the Datagram
+   Congestion Control Protocol (DCCP), referred to as DCCP-UDP.  This
+   encapsulation allows DCCP to be carried through the current
+   generation of Network Address Translation (NAT) middleboxes without
+   modification of those middleboxes.  This document also updates the
+   Session Description Protocol (SDP) information for DCCP defined in
+   <a href="./rfc5762">RFC 5762</a>.
+
+Status of This Memo
+
+   This is an Internet Standards Track document.
+
+   This document is a product of the Internet Engineering Task Force
+   (IETF).  It represents the consensus of the IETF community.  It has
+   received public review and has been approved for publication by the
+   Internet Engineering Steering Group (IESG).  Further information on
+   Internet Standards is available in <a href="./rfc5741#section-2">Section&nbsp;2 of RFC 5741</a>.
+
+   Information about the current status of this document, any errata,
+   and how to provide feedback on it may be obtained at
+   <a href="http://www.rfc-editor.org/info/rfc6773">http://www.rfc-editor.org/info/rfc6773</a>.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<span class="grey">Phelan, et al.               Standards Track                    [Page 1]</span>
+</pre><!--NewPage--><pre class='newpage'><a name="page-2" id="page-2" href="#page-2" class="invisible"> </a>
+<span class="grey"><a href="./rfc6773">RFC 6773</a>                 DCCP-UDP Encapsulation            November 2012</span>
+
+
+Copyright Notice
+
+   Copyright (c) 2012 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to <a href="./bcp78">BCP 78</a> and the IETF Trust's Legal
+   Provisions Relating to IETF Documents
+   (<a href="http://trustee.ietf.org/license-info">http://trustee.ietf.org/license-info</a>) in effect on the date of
+   publication of this document.  Please review these documents
+   carefully, as they describe your rights and restrictions with respect
+   to this document.  Code Components extracted from this document must
+   include Simplified BSD License text as described in <a href="#section-4">Section 4</a>.e of
+   the Trust Legal Provisions and are provided without warranty as
+   described in the Simplified BSD License.
+
+Table of Contents
+
+   <a href="#section-1">1</a>.  Introduction . . . . . . . . . . . . . . . . . . . . . . . . .  <a href="#page-3">3</a>
+   <a href="#section-2">2</a>.  Terminology  . . . . . . . . . . . . . . . . . . . . . . . . .  <a href="#page-4">4</a>
+   <a href="#section-3">3</a>.  DCCP-UDP . . . . . . . . . . . . . . . . . . . . . . . . . . .  <a href="#page-4">4</a>
+     <a href="#section-3.1">3.1</a>.  The UDP Header . . . . . . . . . . . . . . . . . . . . . .  <a href="#page-5">5</a>
+     <a href="#section-3.2">3.2</a>.  The DCCP Generic Header  . . . . . . . . . . . . . . . . .  <a href="#page-5">5</a>
+     <a href="#section-3.3">3.3</a>.  DCCP-UDP Checksum Procedures . . . . . . . . . . . . . . .  <a href="#page-6">6</a>
+       3.3.1.  Partial Checksums and the Minimum Checksum
+               Coverage Feature . . . . . . . . . . . . . . . . . . .  <a href="#page-7">7</a>
+     <a href="#section-3.4">3.4</a>.  Network-Layer Options  . . . . . . . . . . . . . . . . . .  <a href="#page-8">8</a>
+     <a href="#section-3.5">3.5</a>.  Explicit Congestion Notification . . . . . . . . . . . . .  <a href="#page-8">8</a>
+     <a href="#section-3.6">3.6</a>.  ICMP Handling for Messages Relating to DCCP-UDP  . . . . .  <a href="#page-8">8</a>
+     <a href="#section-3.7">3.7</a>.  Path Maximum Transmission Unit Discovery . . . . . . . . .  <a href="#page-9">9</a>
+     <a href="#section-3.8">3.8</a>.  Usage of the UDP Port by DCCP-UDP  . . . . . . . . . . . .  <a href="#page-9">9</a>
+     <a href="#section-3.9">3.9</a>.  Service Codes and the DCCP Port Registry . . . . . . . . . <a href="#page-11">11</a>
+   <a href="#section-4">4</a>.  DCCP-UDP and Higher-Layer Protocols  . . . . . . . . . . . . . <a href="#page-11">11</a>
+     <a href="#section-5.1">5.1</a>.  Protocol Identification  . . . . . . . . . . . . . . . . . <a href="#page-12">12</a>
+     <a href="#section-5.2">5.2</a>.  Signalling Encapsulated DCCP Ports . . . . . . . . . . . . <a href="#page-13">13</a>
+     <a href="#section-5.3">5.3</a>.  Connection Management  . . . . . . . . . . . . . . . . . . <a href="#page-14">14</a>
+     5.4.  Negotiating the DCCP-UDP Encapsulation versus Native
+           DCCP . . . . . . . . . . . . . . . . . . . . . . . . . . . <a href="#page-14">14</a>
+     <a href="#section-5.5">5.5</a>.  Example of SDP Use . . . . . . . . . . . . . . . . . . . . <a href="#page-15">15</a>
+   <a href="#section-6">6</a>.  Security Considerations  . . . . . . . . . . . . . . . . . . . <a href="#page-16">16</a>
+   <a href="#section-7">7</a>.  IANA Considerations  . . . . . . . . . . . . . . . . . . . . . <a href="#page-17">17</a>
+     <a href="#section-7.1">7.1</a>.  UDP Port Allocation  . . . . . . . . . . . . . . . . . . . <a href="#page-17">17</a>
+     <a href="#section-7.2">7.2</a>.  DCCP Reset . . . . . . . . . . . . . . . . . . . . . . . . <a href="#page-17">17</a>
+     <a href="#section-7.3">7.3</a>.  SDP Attribute Allocation . . . . . . . . . . . . . . . . . <a href="#page-17">17</a>
+   <a href="#section-8">8</a>.  Acknowledgments  . . . . . . . . . . . . . . . . . . . . . . . <a href="#page-18">18</a>
+   <a href="#section-9">9</a>.  References . . . . . . . . . . . . . . . . . . . . . . . . . . <a href="#page-18">18</a>
+     <a href="#section-9.1">9.1</a>.  Normative References . . . . . . . . . . . . . . . . . . . <a href="#page-18">18</a>
+     <a href="#section-9.2">9.2</a>.  Informative References . . . . . . . . . . . . . . . . . . <a href="#page-18">18</a>
+
+
+
+
+<span class="grey">Phelan, et al.               Standards Track                    [Page 2]</span>
+</pre><!--NewPage--><pre class='newpage'><a name="page-3" id="page-3" href="#page-3" class="invisible"> </a>
+<span class="grey"><a href="./rfc6773">RFC 6773</a>                 DCCP-UDP Encapsulation            November 2012</span>
+
+
+<span class="h2"><a class="selflink" name="section-1" href="#section-1">1</a>.  Introduction</span>
+
+   The Datagram Congestion Control Protocol (DCCP) [<a href="./rfc4340" title="&quot;Datagram Congestion Control Protocol (DCCP)&quot;">RFC4340</a>] is a
+   transport-layer protocol that provides upper layers with the ability
+   to use non-reliable congestion-controlled flows.  The current
+   specification for DCCP [<a href="./rfc4340" title="&quot;Datagram Congestion Control Protocol (DCCP)&quot;">RFC4340</a>] specifies a direct native
+   encapsulation in IPv4 or IPv6 packets.
+
+   DCCP support has been specified for devices that use Network Address
+   Translation (NAT) or Network Address and Port Translation (NAPT)
+   [<a href="./rfc5597" title="&quot;Network Address Translation (NAT) Behavioral Requirements for the Datagram Congestion Control Protocol&quot;">RFC5597</a>].  However, there is a significant installed base of NAT/
+   NAPT devices that do not support [<a href="./rfc5597" title="&quot;Network Address Translation (NAT) Behavioral Requirements for the Datagram Congestion Control Protocol&quot;">RFC5597</a>].  It is therefore useful
+   to have an encapsulation for DCCP that is compatible with this
+   installed base of NAT/NAPT devices that support [<a href="./rfc4787" title="&quot;Network Address Translation (NAT) Behavioral Requirements for Unicast UDP&quot;">RFC4787</a>] but do not
+   support [<a href="./rfc5597" title="&quot;Network Address Translation (NAT) Behavioral Requirements for the Datagram Congestion Control Protocol&quot;">RFC5597</a>].  This document specifies that encapsulation, which
+   is referred to as DCCP-UDP.  For convenience, the standard
+   encapsulation for DCCP [<a href="./rfc4340" title="&quot;Datagram Congestion Control Protocol (DCCP)&quot;">RFC4340</a>] (including [<a href="./rfc5596" title="&quot;Datagram Congestion Control Protocol (DCCP) Simultaneous-Open Technique to Facilitate NAT/ Middlebox Traversal&quot;">RFC5596</a>] as required) is
+   referred to as DCCP-STD.
+
+   The encapsulation described in this document may also be used as a
+   transition mechanism to enable support for DCCP in devices that
+   support UDP but do not yet natively support DCCP.  This also allows
+   the DCCP transport to be implemented within an application using
+   DCCP-UDP.
+
+   This document also updates the SDP specification for DCCP [<a href="./rfc5762" title="&quot;RTP and the Datagram Congestion Control Protocol (DCCP)&quot;">RFC5762</a>]
+   to convey the encapsulation type.  In this respect only, it updates
+   the method in [<a href="./rfc5762" title="&quot;RTP and the Datagram Congestion Control Protocol (DCCP)&quot;">RFC5762</a>].
+
+   The DCCP-UDP encapsulation specified in this document supports all of
+   the features contained in DCCP-STD, but with limited functionality
+   for partial checksums.
+
+   Network optimisations for DCCP-STP and UDP may need to be updated to
+   allow these optimisations to take advantage of DCCP-UDP.
+   Encapsulation with an additional UDP protocol header can complicate
+   or prevent inspection of DCCP header fields by equipment along the
+   network path in the case where multiple DCCP connections share the
+   same UDP 4-tuple, for example, routers that wish to identify DCCP
+   ports to perform Equal-Cost Multi-Path (ECMP) routing, network
+   devices that wish to inspect DCCP ports to inform algorithms for
+   sharing the network load across multiple links, firewalls that wish
+   to inspect DCCP ports and service codes to inform algorithms that
+   implement access rules, media gateways that inspect SDP information
+   to derive characteristics of the transport and session, etc.
+
+
+
+
+
+
+<span class="grey">Phelan, et al.               Standards Track                    [Page 3]</span>
+</pre><!--NewPage--><pre class='newpage'><a name="page-4" id="page-4" href="#page-4" class="invisible"> </a>
+<span class="grey"><a href="./rfc6773">RFC 6773</a>                 DCCP-UDP Encapsulation            November 2012</span>
+
+
+<span class="h2"><a class="selflink" name="section-2" href="#section-2">2</a>.  Terminology</span>
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in [<a href="./rfc2119" title="&quot;Key words for use in RFCs to Indicate Requirement Levels&quot;">RFC2119</a>].
+
+<span class="h2"><a class="selflink" name="section-3" href="#section-3">3</a>.  DCCP-UDP</span>
+
+   The basic approach is to insert a UDP [<a href="./rfc0768" title="&quot;User Datagram Protocol&quot;">RFC0768</a>] header between the IP
+   header and the DCCP packet.  Note that this is not a tunneling
+   approach.  The IP addresses of the communicating end systems are
+   carried in the IP header.  The method does not embed additional IP
+   addresses.
+
+   The method is designed to support use when these addresses are
+   modified by a device that implements NAT/NAPT.  A NAT translates the
+   IP addresses, which impacts the transport-layer checksum.  A NAPT
+   device may also translate the port values (usually the source port).
+   In both cases, the outer transport header that includes these values
+   would need to be updated by the NAT/NAPT.
+
+   A device offering or using DCCP services via DCCP-UDP encapsulation
+   listens on a UDP port (default port, 6511) or may bind to a specified
+   port utilising out-of-band signalling, such as the Session
+   Description Protocol (SDP).  The DCCP-UDP server accepts incoming
+   packets over the UDP transport and passes the received packets to the
+   DCCP protocol module, after removing the UDP encapsulation.
+
+   A DCCP implementation endpoint may simultaneously provide services
+   over any or all combinations of DCCP-STD and/or DCCP-UDP
+   encapsulations with IPv4 and/or IPv6.
+
+   The basic format of a DCCP-UDP packet is:
+
+    +-----------------------------------+
+    |     IP Header (IPv4 or IPv6)      |  Variable length
+    +-----------------------------------+
+    |            UDP Header             |  8 bytes
+    +-----------------------------------+
+    |       DCCP Generic Header         |  12 or 16 bytes
+    +-----------------------------------+
+    | Additional (type-specific) Fields |  Variable length (could be 0)
+    +-----------------------------------+
+    |           DCCP Options            |  Variable length (could be 0)
+    +-----------------------------------+
+    |      Application Data Area        |  Variable length (could be 0)
+    +-----------------------------------+
+
+
+
+
+<span class="grey">Phelan, et al.               Standards Track                    [Page 4]</span>
+</pre><!--NewPage--><pre class='newpage'><a name="page-5" id="page-5" href="#page-5" class="invisible"> </a>
+<span class="grey"><a href="./rfc6773">RFC 6773</a>                 DCCP-UDP Encapsulation            November 2012</span>
+
+
+   <a href="#section-3.8">Section 3.8</a> describes usage of UDP ports.  This includes
+   implementation of a DCCP-UDP encapsulation service as a daemon that
+   listens on a well-known port, allowing multiplexing of different DCCP
+   applications over the same port.
+
+<span class="h3"><a class="selflink" name="section-3.1" href="#section-3.1">3.1</a>.  The UDP Header</span>
+
+   The format of the UDP header is specified in [<a href="./rfc0768" title="&quot;User Datagram Protocol&quot;">RFC0768</a>]:
+
+       0                   1                   2                   3
+       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |          Source Port          |           Dest Port           |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |             Length            |           Checksum            |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+   For DCCP-UDP, the fields are interpreted as follows:
+
+   Source and Dest(ination) Ports: 16 bits each
+
+      These fields identify the UDP ports on which the source and
+      destination (respectively) of the packet are listening for
+      incoming DCCP-UDP packets.  The UDP port values do not identify
+      the DCCP source and destination ports.
+
+   Length: 16 bits
+
+      This field is the length of the UDP datagram, including the UDP
+      header and the payload (for DCCP-UDP, the payload is a DCCP-UDP
+      datagram).
+
+   Checksum: 16 bits
+
+      This field is the Internet checksum of a network-layer
+      pseudoheader and Length bytes of the UDP packet [<a href="./rfc0768" title="&quot;User Datagram Protocol&quot;">RFC0768</a>].  The
+      UDP checksum MUST NOT be zero for a UDP packet that carries DCCP-
+      UDP.
+
+<span class="h3"><a class="selflink" name="section-3.2" href="#section-3.2">3.2</a>.  The DCCP Generic Header</span>
+
+   The DCCP Generic Header [<a href="./rfc4340" title="&quot;Datagram Congestion Control Protocol (DCCP)&quot;">RFC4340</a>] takes two forms, one with long
+   sequence numbers (48 bits) and the other with short sequence numbers
+   (24 bits).
+
+
+
+
+
+
+
+<span class="grey">Phelan, et al.               Standards Track                    [Page 5]</span>
+</pre><!--NewPage--><pre class='newpage'><a name="page-6" id="page-6" href="#page-6" class="invisible"> </a>
+<span class="grey"><a href="./rfc6773">RFC 6773</a>                 DCCP-UDP Encapsulation            November 2012</span>
+
+
+       0                   1                   2                   3
+       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |          Source Port          |           Dest Port           |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |  Data Offset  | CCVal | CsCov |           Checksum            |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |     |       |X|               |                               .
+      | Res | Type  |=|   Reserved    |  Sequence Number (high bits)  .
+      |     |       |1|               |                               .
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |                  Sequence Number (low bits)                   |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+       The Generic DCCP Header with Long Sequence Numbers [<a href="./rfc4340" title="&quot;Datagram Congestion Control Protocol (DCCP)&quot;">RFC4340</a>]
+
+
+       0                   1                   2                   3
+       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |          Source Port          |           Dest Port           |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |  Data Offset  | CCVal | CsCov |           Checksum            |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |     |       |X|                                               |
+      | Res | Type  |=|   Sequence Number (low bits)                  |
+      |     |       |0|                                               |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+       The Generic DCCP Header with Short Sequence Numbers [<a href="./rfc4340" title="&quot;Datagram Congestion Control Protocol (DCCP)&quot;">RFC4340</a>]
+
+   All generic header fields, except for the Checksum field, have the
+   meaning specified in [<a href="./rfc4340" title="&quot;Datagram Congestion Control Protocol (DCCP)&quot;">RFC4340</a>], updated by [<a href="./rfc5596" title="&quot;Datagram Congestion Control Protocol (DCCP) Simultaneous-Open Technique to Facilitate NAT/ Middlebox Traversal&quot;">RFC5596</a>].
+
+   <a href="#section-3.8">Section 3.8</a> describes how a DCCP-UDP implementation treats UDP and
+   DCCP ports.
+
+<span class="h3"><a class="selflink" name="section-3.3" href="#section-3.3">3.3</a>.  DCCP-UDP Checksum Procedures</span>
+
+   DCCP-UDP employs a checksum at the UDP level and eliminates the use
+   of the DCCP checksum.  This approach was chosen to enable use of
+   current NAT/NATP traversal methods developed for UDP.  Such methods
+   will generally be unaware whether DCCP is being encapsulated and
+   hence do not update the inner checksum in the DCCP header.  Standard
+   DCCP requires protection of the DCCP header fields; this justifies
+   any processing overhead incurred from calculating the UDP checksum.
+
+
+
+
+
+<span class="grey">Phelan, et al.               Standards Track                    [Page 6]</span>
+</pre><!--NewPage--><pre class='newpage'><a name="page-7" id="page-7" href="#page-7" class="invisible"> </a>
+<span class="grey"><a href="./rfc6773">RFC 6773</a>                 DCCP-UDP Encapsulation            November 2012</span>
+
+
+   In addition, UDP NAT traversal does not support partial checksums.
+   Although this is still permitted end-to-end in the encapsulated DCCP
+   datagram, links along the path will treat these as UDP packets and
+   can not enable special partial checksum processing.
+
+   DCCP-UDP does not update or modify the operation of UDP.  The UDP
+   transport protocol is used in the following way:
+
+   For DCCP-UDP, the function of the DCCP Checksum field is performed by
+   the UDP Checksum field.  On transmission, the DCCP Checksum field
+   SHOULD be set to zero.  On receipt, the DCCP Checksum field MUST be
+   ignored.
+
+   The UDP checksum MUST NOT be zero for a UDP packet that is sent using
+   DCCP-UDP.  If the received UDP Checksum field is zero, the packet
+   MUST be dropped.
+
+   If the UDP Length field of a received packet is less than 20 (the UDP
+   header length and minimum DCCP-UDP header length), the packet MUST be
+   dropped.
+
+   If the UDP Checksum field, computed using standard UDP methods, is
+   invalid, the received packet MUST be dropped.
+
+   If the UDP Length field in a received packet is less than the length
+   of the UDP header plus the entire DCCP-UDP header (including the
+   generic header and type-specific fields and options, if present) or
+   if the UDP Length field is greater than the length of the packet from
+   the beginning of the UDP header to the end of the packet, the packet
+   MUST be dropped.
+
+<span class="h4"><a class="selflink" name="section-3.3.1" href="#section-3.3.1">3.3.1</a>.  Partial Checksums and the Minimum Checksum Coverage Feature</span>
+
+   This document requires the UDP checksum to be enabled when using
+   DCCP-UDP.  This checksum provides coverage of the entire encapsulated
+   DCCP datagram.
+
+   DCCP-UDP supports the syntax of partial checksums.  It also supports
+   negotiation of the Minimum Checksum Coverage feature and settings of
+   the CsCov field.  However, the UDP Checksum field in DCCP-UDP always
+   covers the entire DCCP datagram, and the DCCP checksum is ignored on
+   receipt.  An application that enables the partial checksums feature
+   in the DCCP module will therefore experience a service that is
+   functionally identical to using full DCCP checksum coverage.  This is
+   also the service that the application would have received if it had
+   used a network path that did not provide optimised processing for
+   DCCP partial checksums.
+
+
+
+
+<span class="grey">Phelan, et al.               Standards Track                    [Page 7]</span>
+</pre><!--NewPage--><pre class='newpage'><a name="page-8" id="page-8" href="#page-8" class="invisible"> </a>
+<span class="grey"><a href="./rfc6773">RFC 6773</a>                 DCCP-UDP Encapsulation            November 2012</span>
+
+
+<span class="h3"><a class="selflink" name="section-3.4" href="#section-3.4">3.4</a>.  Network-Layer Options</span>
+
+   A DCCP-UDP implementation MAY transfer network-layer options intended
+   for DCCP to the network-layer header of the encapsulating UDP packet.
+
+   A DCCP-UDP endpoint that receives IP-options for the encapsulating
+   UDP packet MAY forward these to the DCCP protocol module.  If the
+   endpoint forwards a specific network-layer option to the DCCP module,
+   it MUST also forward all subsequent packets with this option.
+   Consistent forwarding is essential for correct operation of many end-
+   to-end options.
+
+<span class="h3"><a class="selflink" name="section-3.5" href="#section-3.5">3.5</a>.  Explicit Congestion Notification</span>
+
+   A DCCP-UDP endpoint SHOULD follow the procedures of DCCP-STD in
+   <a href="./rfc4340#section-12">[RFC4340], Section&nbsp;12</a> by setting the Explicit Congestion Notification
+   (ECN) in the IP headers of outgoing packets and examining the values
+   received in the ECN fields of incoming IP packets, relaying any
+   packet markings to the DCCP module.
+
+   Implementations that do not support ECN MUST follow the procedures of
+   DCCP-STD in <a href="./rfc4340#section-12.1">[RFC4340], Section&nbsp;12.1</a> with regard to implementations
+   that are not ECN capable.
+
+<span class="h3"><a class="selflink" name="section-3.6" href="#section-3.6">3.6</a>.  ICMP Handling for Messages Relating to DCCP-UDP</span>
+
+   To allow ICMP messages to be demultiplexed by the receiving endpoint,
+   part of the original packet that resulted in the message is included
+   in the payload of the ICMP error message.  The receiving endpoint can
+   therefore use this information to associate the ICMP error with the
+   transport protocol instance that resulted in the ICMP message.  When
+   DCCP-UDP is used, the error message and the payload of the ICMP error
+   message relate to the UDP transport.
+
+   DCCP-UDP endpoints SHOULD forward ICMP messages relating to a UDP
+   packet that carries a DCCP-UDP to the DCCP module.  This may imply
+   translation of the payload of the ICMP message into a form that is
+   recognised by the DCCP stack.  [<a href="./rfc5927" title="&quot;ICMP Attacks against TCP&quot;">RFC5927</a>] describes precautions that
+   are desirable before TCP acts on the receipt of an ICMP message.
+   Similar precautions are desirable prior to forwarding by DCCP-UDP to
+   the DCCP module.
+
+   The minimal length ICMP error message generated in response to
+   processing a UDP datagram only identifies the UDP source port and UDP
+   destination port.  This ICMP message does not carry sufficient
+   information to discover the encapsulated DCCP Port values.  A DCCP-
+
+
+
+
+
+<span class="grey">Phelan, et al.               Standards Track                    [Page 8]</span>
+</pre><!--NewPage--><pre class='newpage'><a name="page-9" id="page-9" href="#page-9" class="invisible"> </a>
+<span class="grey"><a href="./rfc6773">RFC 6773</a>                 DCCP-UDP Encapsulation            November 2012</span>
+
+
+   UDP endpoint that supports multiple DCCP connections over the same
+   pair of UDP ports (see <a href="#section-3.8">Section 3.8</a>) may not therefore be able to
+   associate an ICMP message with a unique DCCP-UDP connection.
+
+<span class="h3"><a class="selflink" name="section-3.7" href="#section-3.7">3.7</a>.  Path Maximum Transmission Unit Discovery</span>
+
+   DCCP-UDP implementations MUST follow DCCP-STD <a href="./rfc4340#section-14">[RFC4340], Section&nbsp;14</a>
+   with regard to determining the maximum packet size and the use of
+   Path Maximum Transmission Unit Discovery (PMTUD).  This requires the
+   processing of ICMP Destination Unreachable messages with a code that
+   indicates that an unfragmentable packet was too large to be forwarded
+   (a "Datagram Too Big" message), as defined in <a href="./rfc4340">RFC 4340</a>.
+
+   An effect of encapsulation is to incur additional datagram overhead.
+   This will reduce the Maximum Packet Size (MPS) at the DCCP level.
+
+<span class="h3"><a class="selflink" name="section-3.8" href="#section-3.8">3.8</a>.  Usage of the UDP Port by DCCP-UDP</span>
+
+   A DCCP-UDP server (that is, an initially passive endpoint that wishes
+   to receive DCCP-Request packets [<a href="./rfc4340" title="&quot;Datagram Congestion Control Protocol (DCCP)&quot;">RFC4340</a>] over DCCP-UDP) listens for
+   connections on one or more UDP ports.  UDP port number 6511 has been
+   allocated as the default listening UDP port for a DCCP-UDP server.
+   Some NAT/NAPT topologies may require using a non-default listening
+   port.
+
+   The purpose of this IANA-assigned port is for the operating system or
+   a framework to receive and process DCCP-UDP datagrams for delivery to
+   the DCCP module (e.g., to support a system-wide DCCP-UDP daemon
+   serving multiple DCCP applications or a DCCP-UDP server placed behind
+   a firewall).
+
+   An application-specific implementation SHOULD use an ephemeral port
+   and advertise this port using outside means, e.g., SDP.  This method
+   of implementation SHOULD NOT use the IANA-assigned port to listen for
+   incoming DCCP-UDP packets.
+
+   A DCCP-UDP client provides UDP source and destination ports as well
+   as DCCP source and destination ports at connection initiation time.
+   A client SHOULD ensure that each DCCP connection maps to a single
+   DCCP-UDP connection by setting the UDP source port.  Choosing a
+   distinct UDP source port for each distinct DCCP connection ensures
+   that UDP-based flow identifiers differ whenever DCCP-based flow
+   identifiers differ.  Specifically, two connections with different
+   &lt;source IP address, source DCCP port, destination IP address,
+   destination DCCP port&gt; DCCP 4-tuples will have different &lt;source IP
+   address, source UDP port, destination IP address, destination UDP
+   port&gt; UDP 4-tuples.
+
+
+
+
+<span class="grey">Phelan, et al.               Standards Track                    [Page 9]</span>
+</pre><!--NewPage--><pre class='newpage'><a name="page-10" id="page-10" href="#page-10" class="invisible"> </a>
+<span class="grey"><a href="./rfc6773">RFC 6773</a>                 DCCP-UDP Encapsulation            November 2012</span>
+
+
+   A DCCP-UDP server SHOULD accept datagrams from any UDP source port.
+   There is a risk that the same DCCP source port number could be used
+   by two endpoints, each behind a NAPT.  A DCCP-UDP server MUST
+   therefore demultiplex a DCCP-UDP flow using both the UDP source and
+   destination port numbers and the encapsulated DCCP ports.  This
+   ensures than an active DCCP connection is uniquely identified by the
+   6-tuple &lt;source IP address, source UDP port, source DCCP port,
+   destination IP address, destination UDP port, destination DCCP port&gt;.
+   (The active state of a DCCP connection is defined in <a href="#section-3.8">Section 3.8</a>: a
+   DCCP connection becomes active following transmission of a DCCP-
+   Request and becomes inactive after sending a DCCP-Close.)
+
+   This demultiplexing at a DCCP-UDP endpoint occurs in two stages:
+
+   1.  In the first stage, DCCP-UDP packets are demultiplexed using the
+       UDP 4-tuple: &lt;source IP address, source UDP port, destination IP
+       address, destination UDP port&gt;.
+
+   2.  In the second stage, a receiving endpoint MUST ensure that two
+       independent DCCP connections that were multiplexed to the same
+       UDP 4-tuple are not associated with the same connection in the
+       DCCP module.  The endpoint therefore needs to keep state for the
+       set of active DCCP-UDP endpoints using each combination of a UDP
+       4-tuple: &lt;source IP address, source UDP port, destination IP
+       address, destination UDP port&gt;.  Two DCCP endpoint methods are
+       specified.  A DCCP-UDP implementation MUST implement exactly one
+       of these:
+
+       *  The DCCP server may accept only one active 6-tuple at any one
+          time for a given UDP 4-tuple.  In this method, DCCP-UDP
+          packets that do not match an active 6-tuple MUST NOT be passed
+          to the DCCP module and the DCCP Server SHOULD send a DCCP-
+          Reset with Reset Code 12, "Encapsulated Port Reuse".  An
+          endpoint that receives a DCCP-Reset with this reset code will
+          clear its connection state but MAY immediately try again using
+          a different 4-tuple.  This provides protection should the same
+          UDP 4-tuple be re-used by multiple DCCP connections, ensuring
+          that only one DCCP connection is established at one time.
+
+       *  The DCCP server may support multiple DCCP connections over the
+          same UDP 4-tuple.  In this method, the endpoint MUST then
+          associate each 6-tuple with a single DCCP connection.  If an
+          endpoint is unable to demultiplex the 6-tuple (e.g., due to
+          internal resource limits), it MUST discard DCCP-UDP packets
+          that do not match an active 6-tuple instead of forwarding them
+          to the DCCP module.  The DCCP endpoint MAY send a DCCP-Reset
+
+
+
+
+
+<span class="grey">Phelan, et al.               Standards Track                   [Page 10]</span>
+</pre><!--NewPage--><pre class='newpage'><a name="page-11" id="page-11" href="#page-11" class="invisible"> </a>
+<span class="grey"><a href="./rfc6773">RFC 6773</a>                 DCCP-UDP Encapsulation            November 2012</span>
+
+
+          with Reset Code 12, "Encapsulated Port Reuse", indicating the
+          connection has been closed but may be retried using a
+          different UDP 4-tuple.
+
+<span class="h3"><a class="selflink" name="section-3.9" href="#section-3.9">3.9</a>.  Service Codes and the DCCP Port Registry</span>
+
+   This section clarifies the usage of DCCP Service Codes and the
+   registration of server ports by DCCP-UDP.  The section is not
+   intended to update the procedures for allocating Service Codes or
+   server ports.
+
+   There is one Service Code registry and one DCCP port registration
+   that apply to all combinations of encapsulation and IP version.  A
+   DCCP Service Code specifies an application using DCCP regardless of
+   the combination of DCCP encapsulation and IP version.  An application
+   may choose not to support some combinations of encapsulation and IP
+   version, but its Service Code will remain registered for those
+   combinations, and the Service Code must not be used by other
+   applications.  An application should not register different Service
+   Codes for different combinations of encapsulation and IP version.
+   [<a href="./rfc5595" title="&quot;The Datagram Congestion Control Protocol (DCCP) Service Codes&quot;">RFC5595</a>] provides additional information about DCCP Service Codes.
+
+   Similarly, a DCCP port registration is applicable to all combinations
+   of encapsulation and IP version.  Again, an application may choose
+   not to support some combinations of encapsulation and IP version on
+   its registered DCCP port, although the port will remain registered
+   for those combinations.  Applications should not register different
+   DCCP ports just for the purpose of using different combinations of
+   encapsulation.
+
+<span class="h2"><a class="selflink" name="section-4" href="#section-4">4</a>.  DCCP-UDP and Higher-Layer Protocols</span>
+
+   The encapsulation of a higher-layer protocol within DCCP MUST be the
+   same for both DCCP-STD and DCCP-UDP.  Encapsulation of Datagram
+   Transport Layer Security (DTLS) over DCCP is defined in [<a href="./rfc5238" title="&quot;Datagram Transport Layer Security (DTLS) over the Datagram Congestion Control Protocol (DCCP)&quot;">RFC5238</a>] and
+   RTP over DCCP is defined in [<a href="./rfc5762" title="&quot;RTP and the Datagram Congestion Control Protocol (DCCP)&quot;">RFC5762</a>].  This document therefore does
+   not update these encapsulations when using DCCP-UDP.
+
+<span class="h2"><a class="selflink" name="section-5" href="#section-5">5</a>.  Signalling the Use of DCCP-UDP</span>
+
+   Applications often signal transport connection parameters through
+   outside means, such as SDP.  Applications that define such methods
+   for DCCP MUST define how the DCCP encapsulation is chosen and MUST
+   allow either encapsulation to be signalled.  Where DCCP-STD and DCCP-
+   UDP are both supported, DCCP-STD SHOULD be preferred.
+
+   The Session Description Protocol (SDP) [<a href="./rfc4566" title="&quot;SDP: Session Description Protocol&quot;">RFC4566</a>] and the offer/answer
+   model [<a href="./rfc3264" title="&quot;An Offer/Answer Model with Session Description Protocol (SDP)&quot;">RFC3264</a>] can be used to negotiate DCCP sessions, and [<a href="./rfc5762" title="&quot;RTP and the Datagram Congestion Control Protocol (DCCP)&quot;">RFC5762</a>]
+
+
+
+<span class="grey">Phelan, et al.               Standards Track                   [Page 11]</span>
+</pre><!--NewPage--><pre class='newpage'><a name="page-12" id="page-12" href="#page-12" class="invisible"> </a>
+<span class="grey"><a href="./rfc6773">RFC 6773</a>                 DCCP-UDP Encapsulation            November 2012</span>
+
+
+   defines SDP extensions for signalling the use of an RTP session
+   running over DCCP connections.  However, since [<a href="./rfc5762" title="&quot;RTP and the Datagram Congestion Control Protocol (DCCP)&quot;">RFC5762</a>] predates
+   this document, it does not define a mechanism for signalling that the
+   DCCP-UDP encapsulation is to be used.  This section updates [<a href="./rfc5762" title="&quot;RTP and the Datagram Congestion Control Protocol (DCCP)&quot;">RFC5762</a>]
+   to describe how SDP can be used to signal RTP sessions running over
+   the DCCP-UDP encapsulation.
+
+   The new SDP support specified in this section is expected to be
+   useful when the offering party is on the public Internet or in the
+   same private addressing realm as the answering party.  In this case,
+   the DCCP-UDP server has a public address.  The client may either have
+   a public address or be behind a NAT/NAPT.  This scenario has the
+   potential to be an important use case.  Some other NAT/NAPT
+   topologies may result in the advertised port being unreachable via
+   the NAT/NAPT.
+
+<span class="h3"><a class="selflink" name="section-5.1" href="#section-5.1">5.1</a>.  Protocol Identification</span>
+
+   SDP uses a media ("m=") line to convey details of the media format
+   and transport protocol used.  The ABNF syntax [<a href="./rfc5234" title="&quot;Augmented BNF for Syntax Specifications: ABNF&quot;">RFC5234</a>] of a media
+   line for DCCP is as follows (from [<a href="./rfc4566" title="&quot;SDP: Session Description Protocol&quot;">RFC4566</a>]):
+
+      media-field =         %x6d "=" media SP port ["/" integer]
+                            SP proto 1*(SP fmt) CRLF
+
+   The proto field denotes the transport protocol used for the media,
+   while the port indicates the transport port to which the media is
+   sent, following [<a href="./rfc5762" title="&quot;RTP and the Datagram Congestion Control Protocol (DCCP)&quot;">RFC5762</a>].  This document defines the following five
+   values of the proto field to indicate media transported using DCCP-
+   UDP encapsulation:
+
+      UDP/DCCP
+
+      UDP/DCCP/RTP/AVP
+
+      UDP/DCCP/RTP/SAVP
+
+      UDP/DCCP/RTP/AVPF
+
+      UDP/DCCP/RTP/SAVPF
+
+   The "UDP/DCCP" protocol identifier is similar to the "DCCP" protocol
+   identifier defined in [<a href="./rfc5762" title="&quot;RTP and the Datagram Congestion Control Protocol (DCCP)&quot;">RFC5762</a>] and denotes the DCCP transport
+   protocol encapsulated in UDP, but not its upper-layer protocol.
+
+   The "UDP/DCCP/RTP/AVP" protocol identifier refers to RTP using the
+   RTP Profile for Audio and Video Conferences with Minimal Control
+   [<a href="./rfc3551" title="&quot;RTP Profile for Audio and Video Conferences with Minimal Control&quot;">RFC3551</a>] running over the DCCP-UDP encapsulation.
+
+
+
+<span class="grey">Phelan, et al.               Standards Track                   [Page 12]</span>
+</pre><!--NewPage--><pre class='newpage'><a name="page-13" id="page-13" href="#page-13" class="invisible"> </a>
+<span class="grey"><a href="./rfc6773">RFC 6773</a>                 DCCP-UDP Encapsulation            November 2012</span>
+
+
+   The "UDP/DCCP/RTP/SAVP" protocol identifier refers to RTP using the
+   Secure Real-time Transport Protocol [<a href="./rfc3711" title="&quot;The Secure Real-time Transport Protocol (SRTP)&quot;">RFC3711</a>] running over the DCCP-
+   UDP encapsulation.
+
+   The "UDP/DCCP/RTP/AVPF" protocol identifier refers to RTP using the
+   Extended RTP Profile for RTCP-based Feedback [<a href="./rfc4585" title="&quot;Extended RTP Profile for Real-time Transport Control Protocol (RTCP)-Based Feedback (RTP/AVPF)&quot;">RFC4585</a>] running over
+   the DCCP-UDP encapsulation.
+
+   The "UDP/DCCP/RTP/SAVPF" protocol identifier refers to RTP using the
+   Extended Secure RTP Profile for RTCP-based Feedback [<a href="./rfc5124" title="&quot;Extended Secure RTP Profile for Real-time Transport Control Protocol (RTCP)-Based Feedback (RTP/SAVPF)&quot;">RFC5124</a>] running
+   over the DCCP-UDP encapsulation.
+
+   The fmt value in the "m=" line is used as described in [<a href="./rfc5762" title="&quot;RTP and the Datagram Congestion Control Protocol (DCCP)&quot;">RFC5762</a>].
+
+   The port number specified in the "m=" line indicates the UDP port
+   that is used for the DCCP-UDP encapsulation service.  The DCCP port
+   number MUST be sent using an associated "a=dccp-port:" attribute, as
+   described in <a href="#section-5.2">Section 5.2</a>.
+
+   The use of ports with DCCP-UDP encapsulation is described further in
+   <a href="#section-3.8">Section 3.8</a>.
+
+<span class="h3"><a class="selflink" name="section-5.2" href="#section-5.2">5.2</a>.  Signalling Encapsulated DCCP Ports</span>
+
+   When using DCCP-UDP, the UDP port used for the encapsulation is
+   signalled using the SDP "m=" line.  The DCCP ports MUST NOT be
+   included in the "m=" line but are instead signalled using a new SDP
+   attribute ("dccp-port") defined according to the following ABNF:
+
+          dccp-port-attr = %x61 "=dccp-port:" dccp-port
+
+          dccp-port = 1*DIGIT
+
+   where DIGIT is as defined in [<a href="./rfc5234" title="&quot;Augmented BNF for Syntax Specifications: ABNF&quot;">RFC5234</a>].  This is a media-level
+   attribute that is not subject to the charset attribute.  The
+   "a=dccp-port:" attribute MUST be included when the protocol
+   identifiers described in <a href="#section-5.1">Section 5.1</a> are used.
+
+   The use of ports with DCCP-UDP encapsulation is described further in
+   <a href="#section-3.8">Section 3.8</a>.
+
+   o  If the "a=rtcp:" attribute [<a href="./rfc3605" title="&quot;Real Time Control Protocol (RTCP) attribute in Session Description Protocol (SDP)&quot;">RFC3605</a>] is used, then the signalled
+      port is the DCCP port used for RTCP.
+
+   o  If the "a=rtcp-mux" attribute [<a href="./rfc5761" title="&quot;Multiplexing RTP Data and Control Packets on a Single Port&quot;">RFC5761</a>] is negotiated, then RTP
+      and RTCP are multiplexed onto a single DCCP port; otherwise,
+      separate DCCP ports are used for RTP and RTCP [<a href="./rfc5762" title="&quot;RTP and the Datagram Congestion Control Protocol (DCCP)&quot;">RFC5762</a>].
+
+
+
+
+<span class="grey">Phelan, et al.               Standards Track                   [Page 13]</span>
+</pre><!--NewPage--><pre class='newpage'><a name="page-14" id="page-14" href="#page-14" class="invisible"> </a>
+<span class="grey"><a href="./rfc6773">RFC 6773</a>                 DCCP-UDP Encapsulation            November 2012</span>
+
+
+      NOTE: In each case, only a single UDP port is used for the DCCP-
+      UDP encapsulation.
+
+   o  If the "a=rtcp-mux" attribute is not present, then the second of
+      the two demultiplexing methods described in <a href="#section-3.8">Section 3.8</a> MUST be
+      implemented; otherwise, the second DCCP connection for the RTCP
+      flow will be rejected.  For this reason, using "a=rtcp-mux" is
+      RECOMMENDED when using RTP over DCCP-UDP.
+
+<span class="h3"><a class="selflink" name="section-5.3" href="#section-5.3">5.3</a>.  Connection Management</span>
+
+   The "a=setup:" attribute is used in a manner compatible with
+   <a href="./rfc5762#section-5.3">[RFC5762], Section&nbsp;5.3</a> to indicate which of the DCCP-UDP endpoints
+   should initiate the DCCP-UDP connection establishment.
+
+<span class="h3"><a class="selflink" name="section-5.4" href="#section-5.4">5.4</a>.  Negotiating the DCCP-UDP Encapsulation versus Native DCCP</span>
+
+   An endpoint that supports both native DCCP and the DCCP-UDP
+   encapsulation may wish to signal support for both options in an SDP
+   offer, allowing the answering party the option of using native DCCP
+   where possible, while falling back to the DCCP-UDP encapsulation
+   otherwise.
+
+   An approach to doing this might be to include candidates for the
+   DCCP-UDP encapsulation and native DCCP into an Interactive
+   Connectivity Establishment (ICE) [<a href="./rfc5245" title="&quot;Interactive Connectivity Establishment (ICE): A Protocol for Network Address Translator (NAT) Traversal for Offer/Answer Protocols&quot;">RFC5245</a>] exchange.  Since DCCP is
+   connection-oriented, these candidates would need to be encoded into
+   ICE in a manner analogous to TCP candidates defined in [<a href="./rfc6544" title="&quot;TCP Candidates with Interactive Connectivity Establishment (ICE)&quot;">RFC6544</a>].
+   Both active and passive candidates could be supported for native DCCP
+   and DCCP-UDP encapsulation, as may DCCP simultaneous-open candidates
+   [<a href="./rfc5596" title="&quot;Datagram Congestion Control Protocol (DCCP) Simultaneous-Open Technique to Facilitate NAT/ Middlebox Traversal&quot;">RFC5596</a>].  In choosing local preference values, it may make sense to
+   prefer DCCP-UDP over native DCCP in cases where low connection setup
+   time is important and to prioritise native DCCP in cases where low
+   overhead is preferred (on the assumption that DCCP-UDP is more likely
+   to work through legacy NAT but has higher overhead).  The details of
+   this encoding into ICE are left for future study.
+
+   While ICE is appropriate for selecting basic use of DCCP-UDP versus
+   DCCP-STD, it may not be appropriate for negotiating different RTP
+   profiles with each transport encapsulation.  The SDP Capability
+   Negotiation framework [<a href="./rfc5939" title="&quot;Session Description Protocol (SDP) Capability Negotiation&quot;">RFC5939</a>] may be more suitable.  <a href="./rfc5939#section-3.7">Section&nbsp;3.7 of
+   RFC 5939</a> specifies how to provide attributes and transport protocols
+   as capabilities and negotiate them using the framework.  The details
+   of the use of SDP Capability Negotiation with DCCP are left for
+   future study.
+
+
+
+
+
+
+<span class="grey">Phelan, et al.               Standards Track                   [Page 14]</span>
+</pre><!--NewPage--><pre class='newpage'><a name="page-15" id="page-15" href="#page-15" class="invisible"> </a>
+<span class="grey"><a href="./rfc6773">RFC 6773</a>                 DCCP-UDP Encapsulation            November 2012</span>
+
+
+<span class="h3"><a class="selflink" name="section-5.5" href="#section-5.5">5.5</a>.  Example of SDP Use</span>
+
+   The example below shows an SDP offer, where an application signals
+   support for DCCP-UDP:
+
+          v=0
+          o=alice 1129377363 1 IN IP4 192.0.2.47
+          s=-
+          c=IN IP4 192.0.2.47
+          t=0 0
+          m=video 50234 UDP/DCCP/RTP/AVP 99
+          a=rtpmap:99 h261/90000
+          a=dccp-service-code:SC=x52545056
+          a=dccp-port:5004
+          a=rtcp:5005
+          a=setup:passive
+          a=connection:new
+
+   The answering party at 192.0.2.128 receives this offer and responds
+   with the following answer:
+
+          v=0
+          o=bob 1129377364 1 IN IP4 192.0.2.128
+          s=-
+          c=IN IP4 192.0.2.128
+          t=0 0
+          m=video 40123 UDP/DCCP/RTP/AVP 99
+          a=rtpmap:99 h261/90000
+          a=dccp-service-code:SC:RTPV
+          a=dccp-port:9
+          a=setup:active
+          a=connection:new
+
+   Note that the "m=" line in the answer includes the UDP port number of
+   the encapsulation service.  The DCCP service code is set to "RTPV",
+   signalled using the "a=dccp-service-code" attribute [<a href="./rfc5762" title="&quot;RTP and the Datagram Congestion Control Protocol (DCCP)&quot;">RFC5762</a>].  The
+   "a=dccp-port:" attribute in the answer is set to 9 (the discard port)
+   in the usual manner for an active connection-oriented endpoint.
+
+   The answering party will then attempt to establish a DCCP-UDP
+   connection to the offering party.  The connection request will use an
+   ephemeral DCCP source port and DCCP destination port 5004.  The UDP
+   packet encapsulating that request will have UDP source port 40123 and
+   UDP destination port 50234.
+
+
+
+
+
+
+
+<span class="grey">Phelan, et al.               Standards Track                   [Page 15]</span>
+</pre><!--NewPage--><pre class='newpage'><a name="page-16" id="page-16" href="#page-16" class="invisible"> </a>
+<span class="grey"><a href="./rfc6773">RFC 6773</a>                 DCCP-UDP Encapsulation            November 2012</span>
+
+
+<span class="h2"><a class="selflink" name="section-6" href="#section-6">6</a>.  Security Considerations</span>
+
+   DCCP-UDP provides all of the security risk-mitigation measures
+   present in DCCP-STD and also all of the security risks.  It does not
+   maintain additional state at the encapsulation layer.
+
+   The tunnel encapsulation recommends processing of ICMP messages
+   received for packets sent using DCCP-UDP and translation to allow use
+   by DCCP.  [<a href="./rfc5927" title="&quot;ICMP Attacks against TCP&quot;">RFC5927</a>] describes precautions that are desirable before
+   TCP acts on receipt of ICMP messages.  Similar precautions are
+   desirable for endpoints processing ICMP for DCCP-UDP.  The purpose of
+   DCCP-UDP is to allow DCCP to pass through NAT/NAPT devices;
+   therefore, it exposes DCCP to the risks associated with passing
+   through NAT devices.  It does not create any new risks with regard to
+   NAT/NAPT devices.
+
+   DCCP-UDP may also allow DCCP applications to pass through existing
+   firewall devices using rules for UDP, if the administrators of the
+   devices so choose.  A simple use may either allow all DCCP
+   applications or allow none.
+
+   A firewall that interprets this specification could inspect the
+   encapsulated DCCP header to filter based on the inner DCCP header
+   information.  Full control of DCCP connections by applications will
+   require enhancements to firewalls, as discussed in [<a href="./rfc4340" title="&quot;Datagram Congestion Control Protocol (DCCP)&quot;">RFC4340</a>] and
+   related RFCs (e.g., [<a href="./rfc5595" title="&quot;The Datagram Congestion Control Protocol (DCCP) Service Codes&quot;">RFC5595</a>]).
+
+   Datagram Transport Layer Security (DTLS) provides mechanisms that can
+   be used to provide security protection for the encapsulated DCCP
+   packets.  DTLS may be used in two ways:
+
+   o  Individual DCCP connections may be protected in the same way that
+      DTLS is used with native DCCP [<a href="./rfc5595" title="&quot;The Datagram Congestion Control Protocol (DCCP) Service Codes&quot;">RFC5595</a>].  This does not encrypt
+      the UDP transport header added by DCCP-UDP.
+
+   o  This specification also permits the use of DTLS with the UDP
+      transport that encapsulates DCCP packets.  When DTLS is used at
+      the encapsulation layer, this protects the DCCP headers.  This
+      prevents the headers from being inspected or updated by network
+      middleboxes (such as firewalls and NAPT).  It also eliminates the
+      need for a separate DTLS handshake for each DCCP connection.
+
+
+
+
+
+
+
+
+
+
+<span class="grey">Phelan, et al.               Standards Track                   [Page 16]</span>
+</pre><!--NewPage--><pre class='newpage'><a name="page-17" id="page-17" href="#page-17" class="invisible"> </a>
+<span class="grey"><a href="./rfc6773">RFC 6773</a>                 DCCP-UDP Encapsulation            November 2012</span>
+
+
+<span class="h2"><a class="selflink" name="section-7" href="#section-7">7</a>.  IANA Considerations</span>
+
+   IANA has made the allocations described in the following sections.
+
+<span class="h3"><a class="selflink" name="section-7.1" href="#section-7.1">7.1</a>.  UDP Port Allocation</span>
+
+   IANA has allocated a UDP port (6511) for the DCCP-UDP service.  This
+   port is allocated for use by a transport service rather than an
+   application.  In this case, the name of the transport should
+   explicitly appear in the registry.  Use of this port is defined in
+   <a href="#section-3.8">Section 3.8</a>
+
+<span class="h3"><a class="selflink" name="section-7.2" href="#section-7.2">7.2</a>.  DCCP Reset</span>
+
+   IANA has assigned a new DCCP reset code (12) in the DCCP Reset Codes
+   Registry, with the short description "Encapsulated Port Reuse".  This
+   code applies to all DCCP congestion control IDs.  Use of this reset
+   code is defined in <a href="#section-3.8">Section 3.8</a>.  <a href="./rfc4340#section-5.6">Section&nbsp;5.6 of [RFC4340]</a> defines
+   three "Data" bytes that are carried by a DCCP Reset.  For this reset
+   code, these are defined as follows:
+
+   o  Data byte 1: The DCCP Packet Type of the DCCP datagram that
+      resulted in the error message.
+
+   o  Data bytes 2 &amp; 3: The encapsulated UDP source port from the DCCP-
+      UDP datagram that triggered the ICMP message, in network order.
+
+<span class="h3"><a class="selflink" name="section-7.3" href="#section-7.3">7.3</a>.  SDP Attribute Allocation</span>
+
+   IANA has allocated the following new SDP attribute ("att-field"):
+
+      Contact name: DCCP Working Group
+
+      Attribute name: dccp-port
+
+      Long-form attribute name in English: Encapsulated DCCP Port
+
+      Type of attribute: Media level only
+
+      Subject to charset attribute?  No
+
+      Purpose of the attribute: See this document, <a href="#section-5.1">Section 5.1</a>
+
+      Allowed attribute values: See this document, <a href="#section-5.1">Section 5.1</a>
+
+
+
+
+
+
+
+<span class="grey">Phelan, et al.               Standards Track                   [Page 17]</span>
+</pre><!--NewPage--><pre class='newpage'><a name="page-18" id="page-18" href="#page-18" class="invisible"> </a>
+<span class="grey"><a href="./rfc6773">RFC 6773</a>                 DCCP-UDP Encapsulation            November 2012</span>
+
+
+<span class="h2"><a class="selflink" name="section-8" href="#section-8">8</a>.  Acknowledgments</span>
+
+   This document was produced by the DCCP WG.  The following individuals
+   contributed during the working group last call: Andrew Lentvorski,
+   Lloyd Wood, Pasi Sarolahti, Gerrit Renker, Eddie Kohler, and Dan
+   Wing.
+
+<span class="h2"><a class="selflink" name="section-9" href="#section-9">9</a>.  References</span>
+
+<span class="h3"><a class="selflink" name="section-9.1" href="#section-9.1">9.1</a>.  Normative References</span>
+
+   [<a name="ref-RFC0768" id="ref-RFC0768">RFC0768</a>]  Postel, J., "User Datagram Protocol", STD 6, <a href="./rfc768">RFC 768</a>,
+              August 1980.
+
+   [<a name="ref-RFC2119" id="ref-RFC2119">RFC2119</a>]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", <a href="./bcp14">BCP 14</a>, <a href="./rfc2119">RFC 2119</a>, March 1997.
+
+   [<a name="ref-RFC3605" id="ref-RFC3605">RFC3605</a>]  Huitema, C., "Real Time Control Protocol (RTCP) attribute
+              in Session Description Protocol (SDP)", <a href="./rfc3605">RFC 3605</a>,
+              October 2003.
+
+   [<a name="ref-RFC4340" id="ref-RFC4340">RFC4340</a>]  Kohler, E., Handley, M., and S. Floyd, "Datagram
+              Congestion Control Protocol (DCCP)", <a href="./rfc4340">RFC 4340</a>, March 2006.
+
+   [<a name="ref-RFC5234" id="ref-RFC5234">RFC5234</a>]  Crocker, D. and P. Overell, "Augmented BNF for Syntax
+              Specifications: ABNF", STD 68, <a href="./rfc5234">RFC 5234</a>, January 2008.
+
+   [<a name="ref-RFC5762" id="ref-RFC5762">RFC5762</a>]  Perkins, C., "RTP and the Datagram Congestion Control
+              Protocol (DCCP)", <a href="./rfc5762">RFC 5762</a>, April 2010.
+
+<span class="h3"><a class="selflink" name="section-9.2" href="#section-9.2">9.2</a>.  Informative References</span>
+
+   [<a name="ref-RFC3264" id="ref-RFC3264">RFC3264</a>]  Rosenberg, J. and H. Schulzrinne, "An Offer/Answer Model
+              with Session Description Protocol (SDP)", <a href="./rfc3264">RFC 3264</a>,
+              June 2002.
+
+   [<a name="ref-RFC3551" id="ref-RFC3551">RFC3551</a>]  Schulzrinne, H. and S. Casner, "RTP Profile for Audio and
+              Video Conferences with Minimal Control", STD 65, <a href="./rfc3551">RFC 3551</a>,
+              July 2003.
+
+   [<a name="ref-RFC3711" id="ref-RFC3711">RFC3711</a>]  Baugher, M., McGrew, D., Naslund, M., Carrara, E., and K.
+              Norrman, "The Secure Real-time Transport Protocol (SRTP)",
+              <a href="./rfc3711">RFC 3711</a>, March 2004.
+
+   [<a name="ref-RFC4566" id="ref-RFC4566">RFC4566</a>]  Handley, M., Jacobson, V., and C. Perkins, "SDP: Session
+              Description Protocol", <a href="./rfc4566">RFC 4566</a>, July 2006.
+
+
+
+
+
+<span class="grey">Phelan, et al.               Standards Track                   [Page 18]</span>
+</pre><!--NewPage--><pre class='newpage'><a name="page-19" id="page-19" href="#page-19" class="invisible"> </a>
+<span class="grey"><a href="./rfc6773">RFC 6773</a>                 DCCP-UDP Encapsulation            November 2012</span>
+
+
+   [<a name="ref-RFC4585" id="ref-RFC4585">RFC4585</a>]  Ott, J., Wenger, S., Sato, N., Burmeister, C., and J. Rey,
+              "Extended RTP Profile for Real-time Transport Control
+              Protocol (RTCP)-Based Feedback (RTP/AVPF)", <a href="./rfc4585">RFC 4585</a>,
+              July 2006.
+
+   [<a name="ref-RFC4787" id="ref-RFC4787">RFC4787</a>]  Audet, F. and C. Jennings, "Network Address Translation
+              (NAT) Behavioral Requirements for Unicast UDP", <a href="./bcp127">BCP 127</a>,
+              <a href="./rfc4787">RFC 4787</a>, January 2007.
+
+   [<a name="ref-RFC5124" id="ref-RFC5124">RFC5124</a>]  Ott, J. and E. Carrara, "Extended Secure RTP Profile for
+              Real-time Transport Control Protocol (RTCP)-Based Feedback
+              (RTP/SAVPF)", <a href="./rfc5124">RFC 5124</a>, February 2008.
+
+   [<a name="ref-RFC5238" id="ref-RFC5238">RFC5238</a>]  Phelan, T., "Datagram Transport Layer Security (DTLS) over
+              the Datagram Congestion Control Protocol (DCCP)",
+              <a href="./rfc5238">RFC 5238</a>, May 2008.
+
+   [<a name="ref-RFC5245" id="ref-RFC5245">RFC5245</a>]  Rosenberg, J., "Interactive Connectivity Establishment
+              (ICE): A Protocol for Network Address Translator (NAT)
+              Traversal for Offer/Answer Protocols", <a href="./rfc5245">RFC 5245</a>,
+              April 2010.
+
+   [<a name="ref-RFC5595" id="ref-RFC5595">RFC5595</a>]  Fairhurst, G., "The Datagram Congestion Control Protocol
+              (DCCP) Service Codes", <a href="./rfc5595">RFC 5595</a>, September 2009.
+
+   [<a name="ref-RFC5596" id="ref-RFC5596">RFC5596</a>]  Fairhurst, G., "Datagram Congestion Control Protocol
+              (DCCP) Simultaneous-Open Technique to Facilitate NAT/
+              Middlebox Traversal", <a href="./rfc5596">RFC 5596</a>, September 2009.
+
+   [<a name="ref-RFC5597" id="ref-RFC5597">RFC5597</a>]  Denis-Courmont, R., "Network Address Translation (NAT)
+              Behavioral Requirements for the Datagram Congestion
+              Control Protocol", <a href="./bcp150">BCP 150</a>, <a href="./rfc5597">RFC 5597</a>, September 2009.
+
+   [<a name="ref-RFC5761" id="ref-RFC5761">RFC5761</a>]  Perkins, C. and M. Westerlund, "Multiplexing RTP Data and
+              Control Packets on a Single Port", <a href="./rfc5761">RFC 5761</a>, April 2010.
+
+   [<a name="ref-RFC5927" id="ref-RFC5927">RFC5927</a>]  Gont, F., "ICMP Attacks against TCP", <a href="./rfc5927">RFC 5927</a>, July 2010.
+
+   [<a name="ref-RFC5939" id="ref-RFC5939">RFC5939</a>]  Andreasen, F., "Session Description Protocol (SDP)
+              Capability Negotiation", <a href="./rfc5939">RFC 5939</a>, September 2010.
+
+   [<a name="ref-RFC6544" id="ref-RFC6544">RFC6544</a>]  Rosenberg, J., Keranen, A., Lowekamp, B., and A. B. Roach,
+              "TCP Candidates with Interactive Connectivity
+              Establishment (ICE)", <a href="./rfc6544">RFC 6544</a>, March 2012.
+
+
+
+
+
+
+
+<span class="grey">Phelan, et al.               Standards Track                   [Page 19]</span>
+</pre><!--NewPage--><pre class='newpage'><a name="page-20" id="page-20" href="#page-20" class="invisible"> </a>
+<span class="grey"><a href="./rfc6773">RFC 6773</a>                 DCCP-UDP Encapsulation            November 2012</span>
+
+
+Authors' Addresses
+
+   Tom Phelan
+   Sonus Networks
+   7 Technology Dr.
+   Westford, MA  01886
+   US
+
+   Phone: +1 978 614 8456
+   EMail: tphelan@sonusnet.com
+
+
+   Godred Fairhurst
+   University of Aberdeen
+   School of Engineering
+   Fraser Noble Building
+   Aberdeen, Scotland  AB24 3UE
+   UK
+
+   EMail: gorry@erg.abdn.ac.uk
+   URI:   <a href="http://www.erg.abdn.ac.uk">http://www.erg.abdn.ac.uk</a>
+
+
+   Colin Perkins
+   University of Glasgow
+   School of Computing Science
+   Glasgow, Scotland  G12 8QQ
+   UK
+
+   EMail: csp@csperkins.org
+   URI:   <a href="http://csperkins.org/">http://csperkins.org/</a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Phelan, et al.               Standards Track                   [Page 20]
+
+</pre><br />
+<span class="noprint"><small><small>Html markup produced by rfcmarkup 1.103, available from
+<a href="http://tools.ietf.org/tools/rfcmarkup/">http://tools.ietf.org/tools/rfcmarkup/</a>
+</small></small></span>
+</body></html>

@@ -13,9 +13,8 @@ func TestConnect(t *testing.T) {
 
 	// Install stacks
 	linka, linkb := NewChanPipe()
-	newscc := NewFixedRateSenderControlFunc(10)
-	newrcc := NewFixedRateReceiverControlFunc()
-	stacka, stackb := NewStack(linka, newscc, newrcc), NewStack(linkb, newscc, newrcc)
+	var ccid CCID = &CCFixed{}
+	stacka, stackb := NewStack(linka, ccid), NewStack(linkb, ccid)
 
 	// Establish connection
 	ca, err := stacka.Dial(nil, 1)
@@ -34,11 +33,11 @@ func TestConnect(t *testing.T) {
 	}
 
 	// Write and read the block
-	err = ca.WriteSegment(p)
+	err = ca.Write(p)
 	if err != nil {
 		t.Errorf("side a write: %s", err)
 	}
-	q, err := cb.ReadSegment()
+	q, err := cb.Read()
 	if err != nil {
 		t.Errorf("side b read: %s", err)
 	}

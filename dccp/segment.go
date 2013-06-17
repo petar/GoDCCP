@@ -26,10 +26,6 @@ type SegmentConn interface {
 	// and the block is not sent.
 	Write(block []byte) (err error)
 
-	LocalLabel() Bytes
-
-	RemoteLabel() Bytes
-
 	// SetReadExpire sets the expiration time for any blocked calls to Read
 	// as a time represented in nanoseconds from now. It's semantics are similar to that
 	// of net.Conn.SetReadDeadline except that the deadline is specified in time from now,
@@ -59,10 +55,6 @@ type HeaderConn interface {
 
 	// Write can return ErrTooBig, if the wire-format of h exceeds the MTU
 	Write(h *Header) (err error)
-
-	LocalLabel() Bytes
-
-	RemoteLabel() Bytes
 
 	// SetReadExpire behaves similarly to SegmentConn.SetReadExpire
 	SetReadExpire(nsec int64) error
@@ -102,14 +94,6 @@ func (hc *headerConn) Write(h *Header) (err error) {
 		return err
 	}
 	return hc.bc.Write(p)
-}
-
-func (hc *headerConn) LocalLabel() Bytes {
-	return hc.bc.LocalLabel()
-}
-
-func (hc *headerConn) RemoteLabel() Bytes {
-	return hc.bc.RemoteLabel()
 }
 
 func (hc *headerConn) SetReadExpire(nsec int64) error {

@@ -46,9 +46,9 @@ func main() {
 	logDec := json.NewDecoder(logFile)
 
 	// Raw log entries will go into emits
-	var emits []*dccp.LogRecord = make([]*dccp.LogRecord, 0)
+	var emits []*dccp.Trace = make([]*dccp.Trace, 0)
 	for {
-		rec := &dccp.LogRecord{}
+		rec := &dccp.Trace{}
 		if err = logDec.Decode(rec); err != nil {
 			break
 		}
@@ -70,8 +70,8 @@ func main() {
 	printStats(emits)
 }
 
-func printStats(emits []*dccp.LogRecord) {
-	sort.Sort(LogRecordTimeSort(emits))
+func printStats(emits []*dccp.Trace) {
+	sort.Sort(TraceTimeSort(emits))
 	reducer := dccp_gauge.NewLogReducer()
 	for _, rec := range emits {
 		reducer.Write(rec)
@@ -82,23 +82,23 @@ func printStats(emits []*dccp.LogRecord) {
 	fmt.Fprintf(os.Stderr, "Send rate: %g pkt/sec, Receive rate: %g pkt/sec\n", sr, rr)
 }
 
-// LogRecordTimeSort sorts LogRecord records by timestamp
-type LogRecordTimeSort []*dccp.LogRecord
+// TraceTimeSort sorts Trace records by timestamp
+type TraceTimeSort []*dccp.Trace
 
-func (t LogRecordTimeSort) Len() int {
+func (t TraceTimeSort) Len() int {
 	return len(t)
 }
 
-func (t LogRecordTimeSort) Less(i, j int) bool {
+func (t TraceTimeSort) Less(i, j int) bool {
 	return t[i].Time < t[j].Time
 }
 
-func (t LogRecordTimeSort) Swap(i, j int) {
+func (t TraceTimeSort) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
 // TODO: Not used any more; Remove
-func printBasic(emits []*dccp.LogRecord) {
+func printBasic(emits []*dccp.Trace) {
 	prints := make([]*PrintRecord, 0)
 	for _, t := range emits {
 		var p *PrintRecord = printRecord(t)
@@ -109,7 +109,7 @@ func printBasic(emits []*dccp.LogRecord) {
 	Print(prints, true)
 }
 
-func htmlBasic(emits []*dccp.LogRecord, includeEmits bool) {
+func htmlBasic(emits []*dccp.Trace, includeEmits bool) {
 	lps := make([]*logPipe, 0)
 	for _, t := range emits {
 		p := pipeEmit(t)

@@ -14,10 +14,10 @@ import (
 // NewEnv creates a dccp.Env for test purposes, whose dccp.TraceWriter writes to a file
 // and duplicates all emits to any number of additional guzzles, which are usually used to check
 // test conditions. The TraceWriterPlex is returned to facilitate adding further guzzles.
-func NewEnv(guzzleFilename string, guzzles ...dccp.TraceWriter) (env *dccp.Env, plex *TraceWriterPlex) {
+func NewEnv(guzzleFilename string) (env *dccp.Env, plex *TraceWriterPlex) {
 	fileTraceWriter := dccp.NewFileTraceWriter(path.Join(os.Getenv("DCCPLOG"), guzzleFilename + ".emit"))
-	plex = NewTraceWriterPlex(append(guzzles, fileTraceWriter)...)
-	return dccp.NewEnv(plex), plex
+	plex = NewTraceWriterPlex(fileTraceWriter)
+	return dccp.NewEnv(NewSyncTraceWriter(plex)), plex
 }
 
 // NewClientServerPipe creates a sandbox communication pipe and attaches a DCCP client and a DCCP
